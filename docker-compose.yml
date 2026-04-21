@@ -8,5 +8,5 @@ include:
   - ./docker-compose.carbone.yml
   - ./docker-compose.dify.yml
   - ./docker-compose.langfuse.yml
-  - ./docker-compose.pagerless.yml
+  - ./docker-compose.paperless.yml
   - ./docker-compose.deepwiki.yml

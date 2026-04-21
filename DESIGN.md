@@ -24,7 +24,7 @@ README / doc/README は概要・導線のみを記載し、仕様は本書を参
 | `docker-compose.carbone.yml` | carbone, carbone-mcp |
 | `docker-compose.dify.yml` | dify-* |
 | `docker-compose.langfuse.yml` | langfuse, postgres-langfuse, clickhouse, redis-langfuse |
-| `docker-compose.pagerless.yml` | paperless-* |
+| `docker-compose.paperless.yml` | paperless-* |
 | `docker-compose.deepwiki.yml` | deepwiki-open |
 
 ## 3. 外部公開ポート
