@@ -2,6 +2,11 @@ name: alfa-llm
 
 include:
   - ./docker-compose.common.yml
-  - ./docker-compose.observability.yml
-  - ./docker-compose.apps.yml
-  - ./docker-compose.knowledge.yml
+  - ./docker-compose.inference.yml
+  - ./docker-compose.openwebui.yml
+  - ./docker-compose.comfyui.yml
+  - ./docker-compose.carbone.yml
+  - ./docker-compose.dify.yml
+  - ./docker-compose.langfuse.yml
+  - ./docker-compose.pagerless.yml
+  - ./docker-compose.deepwiki.yml

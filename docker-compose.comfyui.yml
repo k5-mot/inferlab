@@ -1,0 +1,19 @@
+services:
+  comfyui:
+    container_name: worklab-alfa-llm-comfyui
+    restart: unless-stopped
+    profiles:
+      - media
+    build:
+      context: ./comfyui
+      dockerfile: Dockerfile.cpu
+    volumes:
+      - comfyui-data:/app/ComfyUI/output
+    networks:
+      - llm-internal
+
+volumes:
+  comfyui-data:
+
+networks:
+  llm-internal:
