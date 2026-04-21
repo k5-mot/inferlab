@@ -36,9 +36,9 @@ services:
       - --port
       - "8000"
       - --model
-      - google/gemma-4-E4B-it
+      - google/gemma-4-31b-it
       - --served-model-name
-      - gemma-4-E4B-it
+      - gemma-4-31b-it
     shm_size: 16gb
     volumes:
       - vllm-cache:/root/.cache
