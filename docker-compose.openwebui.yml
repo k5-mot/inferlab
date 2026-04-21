@@ -176,7 +176,7 @@ services:
       OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_ID:-deepwiki-open}
       OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_SECRET:-worklab-deepwiki-client-secret}
       OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_DEEPWIKI_REDIRECT_URL:-http://localhost:31003/oauth2/callback}
-      OAUTH2_PROXY_UPSTREAMS: http://deepwiki-open:3000/
+      OAUTH2_PROXY_UPSTREAMS: http://deepwiki-open:8001/
     ports:
       - "${DEEPWIKI_HOST_PORT:-31003}:4180"
 
