@@ -1,0 +1,7 @@
+name: alfa-llm
+
+include:
+  - ./docker-compose.common.yml
+  - ./docker-compose.observability.yml
+  - ./docker-compose.apps.yml
+  - ./docker-compose.knowledge.yml

@@ -1,0 +1,116 @@
+services:
+  langfuse:
+    container_name: worklab-alfa-llm-langfuse
+    restart: unless-stopped
+    image: docker.io/langfuse/langfuse:3.167.4
+    env_file:
+      - ./langfuse/langfuse.env
+    environment:
+      NEXTAUTH_URL: ${LANGFUSE_PUBLIC_URL:-http://localhost:30001}
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-worklab-alfa-langfuse-nextauth-secret}
+      SALT: ${LANGFUSE_SALT:-worklab-alfa-langfuse-salt}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      TELEMETRY_ENABLED: ${LANGFUSE_TELEMETRY_ENABLED:-false}
+      DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:-langfuse}@postgres-langfuse:5432/langfuse
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_HOST: redis-langfuse
+      REDIS_PORT: 6379
+      REDIS_AUTH: ${LANGFUSE_REDIS_PASSWORD:-langfuse-redis}
+      REDIS_TLS_ENABLED: "false"
+      AUTH_KEYCLOAK_CLIENT_ID: ${LANGFUSE_KEYCLOAK_CLIENT_ID:-langfuse}
+      AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_KEYCLOAK_CLIENT_SECRET:-worklab-langfuse-client-secret}
+      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER_URL:-http://localhost:30000/realms/worklab}
+    depends_on:
+      postgres-langfuse:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis-langfuse:
+        condition: service_healthy
+    ports:
+      - "${LANGFUSE_HOST_PORT:-30001}:3000"
+    networks:
+      - llm-public
+      - llm-internal
+
+  postgres-langfuse:
+    container_name: worklab-alfa-llm-postgres-langfuse
+    restart: unless-stopped
+    image: docker.io/library/postgres:18.3
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: ${LANGFUSE_POSTGRES_PASSWORD:-langfuse}
+      POSTGRES_DB: langfuse
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - postgres-langfuse-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U langfuse -d langfuse
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  clickhouse:
+    container_name: worklab-alfa-llm-clickhouse
+    restart: unless-stopped
+    image: docker.io/clickhouse/clickhouse-server:26.3.3.20
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  redis-langfuse:
+    container_name: worklab-alfa-llm-redis-langfuse
+    restart: unless-stopped
+    image: docker.io/library/redis:8.6.2
+    command:
+      - redis-server
+      - --requirepass
+      - ${LANGFUSE_REDIS_PASSWORD:-langfuse-redis}
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-langfuse-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$${REDISCLI_AUTH}" ping | grep -q PONG
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    environment:
+      REDISCLI_AUTH: ${LANGFUSE_REDIS_PASSWORD:-langfuse-redis}
+    networks:
+      - llm-internal
+
+volumes:
+  postgres-langfuse-data:
+  clickhouse-data:
+  clickhouse-logs:
+  redis-langfuse-data:
+
+networks:
+  llm-public:
+  llm-internal:

@@ -1,0 +1,10 @@
+use_default_settings: true
+
+server:
+  secret_key: "worklab-alfa-searxng-secret-20260315"
+  limiter: false
+
+search:
+  formats:
+    - html
+    - json

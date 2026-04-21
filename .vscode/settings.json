@@ -1,0 +1,166 @@
+{
+    // ===============
+    // 基本設定
+    // ===============
+    // ファイルのインデントではなく、VSCodeのタブ設定を採用する
+    "editor.detectIndentation": false,
+    // TABの代わりにSPACEを挿入
+    "editor.insertSpaces": true,
+    // TABのサイズ
+    "editor.tabSize": 4,
+    // 制御文字を表示
+    "editor.renderControlCharacters": true,
+    // SPACEの表示
+    "editor.renderWhitespace": "all",
+    // 貼付時自動フォーマット
+    "editor.formatOnPaste": true,
+    // 保存時自動フォーマット
+    "editor.formatOnSave": true,
+    // 入力時自動フォーマット
+    "editor.formatOnType": true,
+    // 保存時自動アクション
+    "editor.codeActionsOnSave": {
+        // JavaScript Actions
+        "source.organizeImports.biome": "explicit",
+        "source.action.useSortedAttributes.biome": "explicit",
+        // CSS Actions
+        "source.action.useSortedProperties.biome": "explicit",
+        // JSON Actions
+        "source.action.useSortedKeys.biome": "explicit",
+        // All Actions
+        "source.fixAll.biome": "explicit"
+    },
+    // 保存時に末尾を空行にする
+    "files.insertFinalNewline": true,
+    // 保存時に最終行以降を削除
+    "files.trimFinalNewlines": true,
+    // 保存時に行末のSPACEを削除
+    "files.trimTrailingWhitespace": true,
+    // 文字コード推測
+    "files.autoGuessEncoding": true,
+    // 改行コードをLFに統一
+    "files.eol": "\n",
+    // devcontainer.jsonをjsoncとして扱う
+    "files.associations": {
+        "devcontainer.json": "jsonc"
+    },
+    // 除外ファイル
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.o": true,
+        "**/*.obj": true,
+        "**/*.ilk": true,
+        "**/*.pdb": true,
+        "**/*.tlog": true,
+        "**/*.idb": true,
+        "**/*.dll": true
+    },
+    // 旧Gitの警告を無視
+    "git.ignoreLegacyWarning": true,
+    // Git自動フェッチ
+    "git.autofetch": true,
+    // 親フォルダのリポジトリも開く
+    "git.openRepositoryInParentFolders": "always",
+    // Telemetry無効化
+    "telemetry.feedback.enabled": false,
+    "telemetry.telemetryLevel": "off",
+    // 拡張機能の推奨を無視
+    "extensions.ignoreRecommendations": true,
+    // ===============
+    // 言語別設定
+    // ===============
+    "eslint.enable": false,
+    "biome.enabled": true,
+    "biome.requireConfiguration": true,
+    "biome.lsp.trace.server": "verbose",
+    "[javascript][javascriptreact][typescript][typescriptreact]": {
+        // "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.formatOnPaste": true,
+        "editor.formatOnType": true
+    },
+    "[css][postcss]": {
+        // "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "biomejs.biome"
+    },
+    "[json][jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features",
+        // "editor.defaultFormatter": "biomejs.biome",
+        "editor.tabSize": 4
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.tabSize": 4
+    },
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml"
+    },
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[markdown][markdown-math][markdown_latex_combined][juliamarkdown]": {
+        "editor.defaultFormatter": "yzhang.markdown-all-in-one"
+        // "editor.unicodeHighlight.ambiguousCharacters": false,
+        // "editor.unicodeHighlight.invisibleCharacters": false,
+        // "diffEditor.ignoreTrimWhitespace": false,
+        // "editor.wordWrap": "on",
+        // "editor.quickSuggestions": {
+        //     "comments": "off",
+        //     "strings": "off",
+        //     "other": "off"
+        // }
+    },
+    // ===============
+    // 拡張機能設定
+    // ===============
+    // AWS
+    "aws.telemetry": false,
+    "redhat.telemetry.enabled": false,
+    // YAML
+    "aws.cloudformation.telemetry.enabled": false,
+    // Claude Code
+    "claudeCode.allowDangerouslySkipPermissions": true,
+    "claudeCode.initialPermissionMode": "bypassPermissions",
+    // GitLab Do
+    "gitlab.duoAgentPlatform.enabled": false,
+    "gitlab.duoChat.enabled": false,
+    "gitlab.duoCodeSuggestions.enabled": false,
+    // GitHub Copilot
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false
+    },
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "chat.agent.enabled": true,
+    "chat.tools.terminal.autoApprove": {
+        // 環境確認
+        "pwd": true,
+        "aws --version": true,
+        "az --version": true,
+        "node --version": true,
+        "python --version": true,
+        "uv --version": true,
+        "npm --version": true,
+        "pnpm --version": true,
+        "docker (images|volumes|ps)( .*|$)": true,
+        // Git関連
+        "git (branch|status( --porcelain)?|log|show) .*": true,
+        // 操作系
+        "npm run (dev|build|test|preview|lint|type-check|check|test:ci|test:coverage|format:check)( .*|$)": true,
+        "pnpm run (dev|build|test|preview|lint|type-check|check|test:ci|test:coverage|format:check)( .*|$)": true,
+        "uv run --no-env-file -- (ruff|pyright|pytest)( .*|$)": true,
+        // 取得系
+        "curl -XGET .*": true,
+        "ls( .*|$)": true,
+        "cat (README.md|CHANGELOG.md|CONTRIBUTING.md|.gitignore)": true,
+        // 禁止
+        "cat **/.env*": false,
+        "printenv": false
+    }
+}

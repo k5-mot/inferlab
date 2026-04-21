@@ -1,0 +1,612 @@
+x-oauth2-proxy-env: &oauth2-proxy-env
+  OAUTH2_PROXY_PROVIDER: keycloak-oidc
+  OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
+  OAUTH2_PROXY_OIDC_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-http://localhost:30000/realms/worklab}
+  OAUTH2_PROXY_LOGIN_URL: ${KEYCLOAK_LOGIN_URL:-http://localhost:30000/realms/worklab/protocol/openid-connect/auth}
+  OAUTH2_PROXY_REDEEM_URL: ${KEYCLOAK_INTERNAL_TOKEN_URL:-http://keycloak:8080/realms/worklab/protocol/openid-connect/token}
+  OAUTH2_PROXY_OIDC_JWKS_URL: ${KEYCLOAK_INTERNAL_JWKS_URL:-http://keycloak:8080/realms/worklab/protocol/openid-connect/certs}
+  OAUTH2_PROXY_SCOPE: openid email profile groups
+  OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+  OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+  OAUTH2_PROXY_REVERSE_PROXY: "true"
+  OAUTH2_PROXY_COOKIE_SECURE: "false"
+  OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-0123456789abcdef0123456789abcdef}
+  OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+  OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
+  OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "true"
+  OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+
+x-oauth2-proxy-base: &oauth2-proxy-base
+  restart: unless-stopped
+  image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+  depends_on:
+    keycloak:
+      condition: service_started
+  environment:
+    <<: *oauth2-proxy-env
+  networks:
+    - llm-public
+    - llm-internal
+
+x-dify-service-env: &dify-service-env
+  CONSOLE_API_URL: ${DIFY_CONSOLE_API_URL:-http://localhost:31002/console/api}
+  CONSOLE_WEB_URL: ${DIFY_CONSOLE_WEB_URL:-http://localhost:31002}
+  SERVICE_API_URL: ${DIFY_SERVICE_API_URL:-http://localhost:31002/api}
+  TRIGGER_URL: ${DIFY_TRIGGER_URL:-http://localhost:31002}
+  APP_API_URL: ${DIFY_APP_API_URL:-http://localhost:31002/api}
+  APP_WEB_URL: ${DIFY_APP_WEB_URL:-http://localhost:31002}
+  FILES_URL: ${DIFY_FILES_URL:-http://localhost:31002/files}
+  INTERNAL_FILES_URL: http://dify-api:5001/files
+  ENDPOINT_URL_TEMPLATE: ${DIFY_ENDPOINT_URL_TEMPLATE:-http://localhost:31002/e/{hook_id}}
+  SECRET_KEY: ${DIFY_SECRET_KEY:-worklab-alfa-dify-secret-key}
+  DB_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
+  REDIS_PASSWORD: ${DIFY_REDIS_PASSWORD:-difyai123456}
+  CELERY_BROKER_URL: redis://:${DIFY_REDIS_PASSWORD:-difyai123456}@dify-redis:6379/1
+  WEAVIATE_API_KEY: ${DIFY_WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
+  CODE_EXECUTION_API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
+  SANDBOX_API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
+  PLUGIN_DAEMON_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYT6owG+71oLerGzA7GXCgOT++6ovaezWAjpCjf+Sjc3ZtU+qUEi}
+  PLUGIN_DIFY_INNER_API_KEY: ${DIFY_PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
+
+services:
+  open-webui:
+    container_name: worklab-alfa-llm-open-webui
+    restart: unless-stopped
+    image: ghcr.io/open-webui/open-webui:v0.9.1
+    depends_on:
+      litellm:
+        condition: service_started
+      chroma:
+        condition: service_started
+      docling-serve:
+        condition: service_started
+      searxng:
+        condition: service_started
+    environment:
+      WEBUI_URL: ${OPEN_WEBUI_URL:-http://localhost:31001}
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-worklab-alfa-open-webui-secret-key}
+      ENABLE_SIGNUP: "false"
+      ENABLE_OAUTH_SIGNUP: "true"
+      OAUTH_PROVIDER_NAME: Keycloak
+      OAUTH_CLIENT_ID: ${OPEN_WEBUI_OAUTH_CLIENT_ID:-open-webui}
+      OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OAUTH_CLIENT_SECRET:-worklab-open-webui-client-secret}
+      OAUTH_SCOPES: openid email profile groups
+      OPENID_PROVIDER_URL: ${OPEN_WEBUI_OPENID_PROVIDER_URL:-http://keycloak:8080/realms/worklab/.well-known/openid-configuration}
+      OPENID_REDIRECT_URI: ${OPEN_WEBUI_OPENID_REDIRECT_URI:-http://localhost:31001/oauth/oidc/callback}
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+      OPENAI_API_BASE_URL: http://litellm:4000/v1
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
+      VECTOR_DB: chroma
+      CHROMA_HTTP_HOST: chroma
+      CHROMA_HTTP_PORT: 8000
+      CONTENT_EXTRACTION_ENGINE: docling
+      DOCLING_SERVER_URL: http://docling-serve:5001
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: searxng
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      RAG_EMBEDDING_ENGINE: openai
+      RAG_EMBEDDING_MODEL: ruri-v3-310m
+      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
+      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
+      PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+      PIPELINES_URLS: http://open-webui-pipelines:9099
+      AUDIO_TTS_ENGINE: openai
+      AUDIO_TTS_MODEL: model_q8f16
+      AUDIO_TTS_VOICE: af_heart
+      AUDIO_TTS_OPENAI_API_BASE_URL: http://kokoro-web:3000/api/v1
+      AUDIO_TTS_OPENAI_API_KEY: ${KOKORO_WEB_API_KEY:-kokoro-secret-key}
+      ENABLE_IMAGE_GENERATION: "true"
+      IMAGE_GENERATION_ENGINE: comfyui
+      IMAGE_EDIT_ENGINE: comfyui
+      COMFYUI_BASE_URL: http://comfyui:8188
+    ports:
+      - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    networks:
+      - llm-public
+      - llm-internal
+
+  dify-init-permissions:
+    container_name: worklab-alfa-llm-dify-init-permissions
+    restart: "no"
+    image: busybox:1.37.0
+    command:
+      - sh
+      - -c
+      - |
+        FLAG_FILE="/app/api/storage/.init_permissions"
+        if [ -f "$${FLAG_FILE}" ]; then
+          echo "Permissions already initialized. Exiting."
+          exit 0
+        fi
+        echo "Initializing permissions for /app/api/storage"
+        chown -R 1001:1001 /app/api/storage && touch "$${FLAG_FILE}"
+        echo "Permissions initialized. Exiting."
+    volumes:
+      - dify-app-storage:/app/api/storage
+    networks:
+      - llm-internal
+
+  dify-api:
+    container_name: worklab-alfa-llm-dify-api
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-api:1.10.1
+    env_file:
+      - ./dify/dify.env
+    environment:
+      <<: *dify-service-env
+      MODE: api
+    depends_on:
+      dify-init-permissions:
+        condition: service_completed_successfully
+      dify-db-postgres:
+        condition: service_healthy
+      dify-redis:
+        condition: service_healthy
+      dify-sandbox:
+        condition: service_healthy
+      dify-plugin-daemon:
+        condition: service_started
+      dify-weaviate:
+        condition: service_healthy
+      dify-ssrf-proxy:
+        condition: service_started
+    volumes:
+      - dify-app-storage:/app/api/storage
+    networks:
+      - llm-internal
+      - llm-dify-ssrf
+
+  dify-worker:
+    container_name: worklab-alfa-llm-dify-worker
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-api:1.10.1
+    env_file:
+      - ./dify/dify.env
+    environment:
+      <<: *dify-service-env
+      MODE: worker
+    depends_on:
+      dify-init-permissions:
+        condition: service_completed_successfully
+      dify-db-postgres:
+        condition: service_healthy
+      dify-redis:
+        condition: service_healthy
+      dify-sandbox:
+        condition: service_healthy
+      dify-plugin-daemon:
+        condition: service_started
+      dify-weaviate:
+        condition: service_healthy
+      dify-ssrf-proxy:
+        condition: service_started
+    volumes:
+      - dify-app-storage:/app/api/storage
+    networks:
+      - llm-internal
+      - llm-dify-ssrf
+
+  dify-worker-beat:
+    container_name: worklab-alfa-llm-dify-worker-beat
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-api:1.10.1
+    env_file:
+      - ./dify/dify.env
+    environment:
+      <<: *dify-service-env
+      MODE: beat
+    depends_on:
+      dify-init-permissions:
+        condition: service_completed_successfully
+      dify-db-postgres:
+        condition: service_healthy
+      dify-redis:
+        condition: service_healthy
+      dify-sandbox:
+        condition: service_healthy
+      dify-plugin-daemon:
+        condition: service_started
+      dify-weaviate:
+        condition: service_healthy
+      dify-ssrf-proxy:
+        condition: service_started
+    networks:
+      - llm-internal
+      - llm-dify-ssrf
+
+  dify-web:
+    container_name: worklab-alfa-llm-dify-web
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-web:1.10.1
+    env_file:
+      - ./dify/dify.env
+    environment:
+      <<: *dify-service-env
+    depends_on:
+      dify-api:
+        condition: service_started
+    networks:
+      - llm-internal
+
+  dify-plugin-daemon:
+    container_name: worklab-alfa-llm-dify-plugin-daemon
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-plugin-daemon:0.4.1-local
+    env_file:
+      - ./dify/dify.env
+    environment:
+      <<: *dify-service-env
+      DB_DATABASE: dify_plugin
+      SERVER_PORT: 5002
+      SERVER_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYT6owG+71oLerGzA7GXCgOT++6ovaezWAjpCjf+Sjc3ZtU+qUEi}
+      DIFY_INNER_API_URL: http://dify-api:5001
+      DIFY_INNER_API_KEY: ${DIFY_PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
+      PLUGIN_REMOTE_INSTALLING_HOST: 0.0.0.0
+      PLUGIN_REMOTE_INSTALLING_PORT: 5003
+      PLUGIN_WORKING_PATH: /app/storage/cwd
+      PLUGIN_STORAGE_TYPE: local
+      PLUGIN_STORAGE_LOCAL_ROOT: /app/storage
+      PLUGIN_INSTALLED_PATH: plugin
+      PLUGIN_PACKAGE_CACHE_PATH: plugin_packages
+      PLUGIN_MEDIA_CACHE_PATH: assets
+    depends_on:
+      dify-db-postgres:
+        condition: service_healthy
+      dify-redis:
+        condition: service_healthy
+    volumes:
+      - dify-plugin-storage:/app/storage
+    networks:
+      - llm-internal
+
+  dify-sandbox:
+    container_name: worklab-alfa-llm-dify-sandbox
+    restart: unless-stopped
+    image: docker.io/langgenius/dify-sandbox:0.2.12
+    environment:
+      API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
+      GIN_MODE: release
+      WORKER_TIMEOUT: 15
+      ENABLE_NETWORK: "true"
+      HTTP_PROXY: http://dify-ssrf-proxy:3128
+      HTTPS_PROXY: http://dify-ssrf-proxy:3128
+      SANDBOX_PORT: 8194
+    volumes:
+      - dify-sandbox-dependencies:/dependencies
+      - dify-sandbox-conf:/conf
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8194/health
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-dify-ssrf
+
+  dify-db-postgres:
+    container_name: worklab-alfa-llm-dify-db-postgres
+    restart: unless-stopped
+    image: docker.io/postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
+      POSTGRES_DB: dify
+      PGDATA: /var/lib/postgresql/data/pgdata
+    command: >
+      postgres -c 'max_connections=100'
+               -c 'shared_buffers=128MB'
+               -c 'work_mem=4MB'
+               -c 'maintenance_work_mem=64MB'
+               -c 'effective_cache_size=4096MB'
+               -c 'statement_timeout=0'
+               -c 'idle_in_transaction_session_timeout=0'
+    volumes:
+      - dify-postgres-data:/var/lib/postgresql/data
+      - ./dify/postgres/init-databases.sql:/docker-entrypoint-initdb.d/001-init-databases.sql:ro
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -h
+        - localhost
+        - -U
+        - postgres
+        - -d
+        - dify
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  dify-redis:
+    container_name: worklab-alfa-llm-dify-redis
+    restart: unless-stopped
+    image: docker.io/redis:6-alpine
+    environment:
+      REDISCLI_AUTH: ${DIFY_REDIS_PASSWORD:-difyai123456}
+    command:
+      - redis-server
+      - --requirepass
+      - ${DIFY_REDIS_PASSWORD:-difyai123456}
+    volumes:
+      - dify-redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$${REDISCLI_AUTH}" ping | grep -q PONG
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  dify-weaviate:
+    container_name: worklab-alfa-llm-dify-weaviate
+    restart: unless-stopped
+    image: docker.io/semitechnologies/weaviate:1.27.0
+    environment:
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      DEFAULT_VECTORIZER_MODULE: none
+      CLUSTER_HOSTNAME: node1
+      AUTHENTICATION_APIKEY_ENABLED: "true"
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${DIFY_WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
+      AUTHENTICATION_APIKEY_USERS: hello@dify.ai
+      AUTHORIZATION_ADMINLIST_ENABLED: "true"
+      AUTHORIZATION_ADMINLIST_USERS: hello@dify.ai
+      DISABLE_TELEMETRY: "false"
+    volumes:
+      - dify-weaviate-data:/var/lib/weaviate
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://localhost:8080/v1/.well-known/ready
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  dify-ssrf-proxy:
+    container_name: worklab-alfa-llm-dify-ssrf-proxy
+    restart: unless-stopped
+    image: ubuntu/squid:5.2-22.04_beta
+    entrypoint:
+      - sh
+      - -c
+      - cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh
+    environment:
+      HTTP_PORT: 3128
+      COREDUMP_DIR: /var/spool/squid
+      REVERSE_PROXY_PORT: 8194
+      SANDBOX_HOST: dify-sandbox
+      SANDBOX_PORT: 8194
+    volumes:
+      - ./dify/ssrf_proxy/squid.conf.template:/etc/squid/squid.conf.template:ro
+      - ./dify/ssrf_proxy/docker-entrypoint.sh:/docker-entrypoint-mount.sh:ro
+    networks:
+      - llm-internal
+      - llm-dify-ssrf
+
+  dify:
+    container_name: worklab-alfa-llm-dify
+    restart: unless-stopped
+    image: nginx:1.29.1
+    depends_on:
+      dify-api:
+        condition: service_started
+      dify-web:
+        condition: service_started
+      dify-plugin-daemon:
+        condition: service_started
+    entrypoint:
+      - sh
+      - -c
+      - cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh
+    environment:
+      NGINX_SERVER_NAME: _
+      NGINX_HTTPS_ENABLED: "false"
+      NGINX_SSL_PORT: 443
+      NGINX_PORT: 80
+      NGINX_SSL_CERT_FILENAME: dify.crt
+      NGINX_SSL_CERT_KEY_FILENAME: dify.key
+      NGINX_SSL_PROTOCOLS: TLSv1.2 TLSv1.3
+      NGINX_WORKER_PROCESSES: auto
+      NGINX_CLIENT_MAX_BODY_SIZE: 100M
+      NGINX_KEEPALIVE_TIMEOUT: 65
+      NGINX_PROXY_READ_TIMEOUT: 3600s
+      NGINX_PROXY_SEND_TIMEOUT: 3600s
+      NGINX_ENABLE_CERTBOT_CHALLENGE: "false"
+      CERTBOT_DOMAIN: ""
+    volumes:
+      - ./dify/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./dify/nginx/proxy.conf.template:/etc/nginx/proxy.conf.template:ro
+      - ./dify/nginx/https.conf.template:/etc/nginx/https.conf.template:ro
+      - ./dify/nginx/conf.d:/etc/nginx/conf.d
+      - ./dify/nginx/docker-entrypoint.sh:/docker-entrypoint-mount.sh:ro
+    networks:
+      - llm-internal
+
+  oauth2-proxy-dify:
+    <<: *oauth2-proxy-base
+    container_name: worklab-alfa-llm-oauth2-proxy-dify
+    depends_on:
+      keycloak:
+        condition: service_started
+      dify:
+        condition: service_started
+    environment:
+      <<: *oauth2-proxy-env
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_DIFY_CLIENT_ID:-dify}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_DIFY_CLIENT_SECRET:-worklab-dify-client-secret}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_DIFY_REDIRECT_URL:-http://localhost:31002/oauth2/callback}
+      OAUTH2_PROXY_UPSTREAMS: http://dify:80/
+    ports:
+      - "${DIFY_HOST_PORT:-31002}:4180"
+
+  deepwiki-open:
+    container_name: worklab-alfa-llm-deepwiki-open
+    restart: unless-stopped
+    image: ghcr.io/asyncfuncai/deepwiki-open:latest
+    environment:
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
+      OPENAI_BASE_URL: http://litellm:4000/v1
+      PORT: 8001
+    volumes:
+      - deepwiki-open-data:/root/.adalflow
+    networks:
+      - llm-internal
+
+  oauth2-proxy-deepwiki:
+    <<: *oauth2-proxy-base
+    container_name: worklab-alfa-llm-oauth2-proxy-deepwiki
+    depends_on:
+      keycloak:
+        condition: service_started
+      deepwiki-open:
+        condition: service_started
+    environment:
+      <<: *oauth2-proxy-env
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_ID:-deepwiki-open}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_SECRET:-worklab-deepwiki-client-secret}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_DEEPWIKI_REDIRECT_URL:-http://localhost:31003/oauth2/callback}
+      OAUTH2_PROXY_UPSTREAMS: http://deepwiki-open:3000/
+    ports:
+      - "${DEEPWIKI_HOST_PORT:-31003}:4180"
+
+  paperless-ngx:
+    container_name: worklab-alfa-llm-paperless-ngx
+    restart: unless-stopped
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.14
+    depends_on:
+      paperless-postgres:
+        condition: service_healthy
+      paperless-redis:
+        condition: service_healthy
+      paperless-tika:
+        condition: service_started
+      paperless-gotenberg:
+        condition: service_started
+    environment:
+      PAPERLESS_URL: ${PAPERLESS_URL:-http://localhost:31004}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:-worklab-alfa-paperless-secret-key}
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: paperless-postgres
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_POSTGRES_PASSWORD:-paperless}
+      PAPERLESS_TIKA_ENABLED: "1"
+      PAPERLESS_TIKA_ENDPOINT: http://paperless-tika:9998
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://paperless-gotenberg:3000
+      PAPERLESS_TIME_ZONE: ${PAPERLESS_TIME_ZONE:-UTC}
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE:-jpn+eng}
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - paperless-media:/usr/src/paperless/media
+      - paperless-export:/usr/src/paperless/export
+      - paperless-consume:/usr/src/paperless/consume
+    networks:
+      - llm-internal
+
+  paperless-postgres:
+    container_name: worklab-alfa-llm-paperless-postgres
+    restart: unless-stopped
+    image: docker.io/postgres:18.3
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_POSTGRES_PASSWORD:-paperless}
+    volumes:
+      - paperless-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U paperless -d paperless
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  paperless-redis:
+    container_name: worklab-alfa-llm-paperless-redis
+    restart: unless-stopped
+    image: docker.io/redis:8.6.2
+    volumes:
+      - paperless-redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  paperless-gotenberg:
+    container_name: worklab-alfa-llm-paperless-gotenberg
+    restart: unless-stopped
+    image: docker.io/gotenberg/gotenberg:8
+    command:
+      - gotenberg
+      - --chromium-disable-javascript=true
+      - --chromium-allow-list=file:///tmp/.*
+    networks:
+      - llm-internal
+
+  paperless-tika:
+    container_name: worklab-alfa-llm-paperless-tika
+    restart: unless-stopped
+    image: docker.io/apache/tika:3.3.0.0
+    networks:
+      - llm-internal
+
+  oauth2-proxy-paperless:
+    <<: *oauth2-proxy-base
+    container_name: worklab-alfa-llm-oauth2-proxy-paperless
+    depends_on:
+      keycloak:
+        condition: service_started
+      paperless-ngx:
+        condition: service_started
+    environment:
+      <<: *oauth2-proxy-env
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_PAPERLESS_CLIENT_ID:-paperless-ngx}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_PAPERLESS_CLIENT_SECRET:-worklab-paperless-client-secret}
+      OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_PAPERLESS_REDIRECT_URL:-http://localhost:31004/oauth2/callback}
+      OAUTH2_PROXY_UPSTREAMS: http://paperless-ngx:8000/
+    ports:
+      - "${PAPERLESS_HOST_PORT:-31004}:4180"
+
+volumes:
+  open-webui-data:
+  dify-app-storage:
+  dify-postgres-data:
+  dify-redis-data:
+  dify-plugin-storage:
+  dify-sandbox-dependencies:
+  dify-sandbox-conf:
+  dify-weaviate-data:
+  deepwiki-open-data:
+  paperless-data:
+  paperless-media:
+  paperless-export:
+  paperless-consume:
+  paperless-postgres-data:
+  paperless-redis-data:
+
+networks:
+  llm-public:
+  llm-internal:
+  llm-dify-ssrf:
