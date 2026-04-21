@@ -1,0 +1,100 @@
+services:
+  paperless-ngx:
+    container_name: worklab-alfa-llm-paperless-ngx
+    restart: unless-stopped
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.14
+    depends_on:
+      paperless-postgres:
+        condition: service_healthy
+      paperless-redis:
+        condition: service_healthy
+      paperless-tika:
+        condition: service_started
+      paperless-gotenberg:
+        condition: service_started
+    environment:
+      PAPERLESS_URL: ${PAPERLESS_URL:-http://localhost:31004}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:-worklab-alfa-paperless-secret-key}
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_DBHOST: paperless-postgres
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_POSTGRES_PASSWORD:-paperless}
+      PAPERLESS_TIKA_ENABLED: "1"
+      PAPERLESS_TIKA_ENDPOINT: http://paperless-tika:9998
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://paperless-gotenberg:3000
+      PAPERLESS_TIME_ZONE: ${PAPERLESS_TIME_ZONE:-UTC}
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE:-jpn+eng}
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - paperless-media:/usr/src/paperless/media
+      - paperless-export:/usr/src/paperless/export
+      - paperless-consume:/usr/src/paperless/consume
+    networks:
+      - llm-internal
+
+  paperless-postgres:
+    container_name: worklab-alfa-llm-paperless-postgres
+    restart: unless-stopped
+    image: docker.io/postgres:18.3
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_POSTGRES_PASSWORD:-paperless}
+    volumes:
+      - paperless-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U paperless -d paperless
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  paperless-redis:
+    container_name: worklab-alfa-llm-paperless-redis
+    restart: unless-stopped
+    image: docker.io/redis:8.6.2
+    volumes:
+      - paperless-redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - llm-internal
+
+  paperless-gotenberg:
+    container_name: worklab-alfa-llm-paperless-gotenberg
+    restart: unless-stopped
+    image: docker.io/gotenberg/gotenberg:8
+    command:
+      - gotenberg
+      - --chromium-disable-javascript=true
+      - --chromium-allow-list=file:///tmp/.*
+    networks:
+      - llm-internal
+
+  paperless-tika:
+    container_name: worklab-alfa-llm-paperless-tika
+    restart: unless-stopped
+    image: docker.io/apache/tika:3.3.0.0
+    networks:
+      - llm-internal
+
+volumes:
+  paperless-data:
+  paperless-media:
+  paperless-export:
+  paperless-consume:
+  paperless-postgres-data:
+  paperless-redis-data:
+
+networks:
+  llm-internal:
