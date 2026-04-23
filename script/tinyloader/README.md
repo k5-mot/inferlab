@@ -1,192 +1,169 @@
 # tinyloader
 
-Docker / Podman / WSL を使えない Windows 環境で、`regctl image export` の出力を固定サイズの `Part*.tar` に分割するための補助スクリプトです。
+容量制限の厳しいオンライン環境で OCI イメージを少しずつ取得し、オフラインの Linux 環境で `docker load` できる tar に変換するためのスクリプト集です。
 
-Windows 側では 1 回の実行で Part を 1 個だけ作ります。ユーザがその Part を Samba ファイルサーバへ手動で移動し、もう一度 `download.ps1` を実行すると次の Part を作ります。
+`docker pull` や `docker save` を直接使えない環境でも、registry API から manifest と blob を順番に取得して持ち出せるようにしています。
 
-## regctl の準備
+## 想定している使い方
 
-```powershell
-Invoke-WebRequest `
-  -Uri "https://github.com/regclient/regclient/releases/download/v0.11.3/regctl-windows-amd64.exe" `
-  -OutFile "regctl.exe"
-```
+- オンライン環境
+  - Windows 11
+  - WSL を使えない
+  - Docker / Podman を使えない
+  - Disk Quota が厳しい
+  - Cygwin 上で bash を実行できる
+- オフライン環境
+  - Linux
+  - Docker がインストールされている
+  - 十分なストレージがある
 
-## Windows 側の手順
+## スクリプト一覧
 
-初回:
+### `download.sh`
 
-```powershell
-.\download.ps1 `
-  -ImageRef "docker.io/vllm/vllm-openai:v0.19.1" `
-  -PartSizeGB 4 `
-  -RegctlPath ".\regctl.exe"
-```
+レジストリから OCI manifest と blob を直接取得します。
 
-`download.ps1` と同じディレクトリ直下にイメージ名+タグのサブディレクトリが作成され、Part はその中に出力されます。
+- `state.json` で進捗を管理します
+- 指定サイズを超えそうになったら停止し、blob の退避を促します
+- 同じコマンドを再実行すると、前回の続きから再開します
+- `docker.io`、`ghcr.io`、`quay.io`、`public.ecr.aws` のような public registry を想定しています
 
-```text
-<download.ps1 のディレクトリ>\vllm_vllm-openai_v0.19.1\
-  .download-state.json
-  vllm_vllm-openai_v0.19.1_Part1.tar
-```
+必要コマンド:
 
-`Part1.tar` をユーザが手動で Samba ファイルサーバへ移動します。
+- `bash`
+- `curl`
+- `jq`
+- `sha256sum`
+- `awk`
 
-その後、同じコマンドを再実行します。
+### `convert.sh`
 
-```powershell
-.\download.ps1 `
-  -ImageRef "docker.io/vllm/vllm-openai:v0.19.1" `
-  -PartSizeGB 4 `
-  -RegctlPath ".\regctl.exe"
-```
+`download.sh` が作った `out/<image>/` を元に、`docker load -i` できる tar を `archive/` に生成します。
 
-前回の Part がローカルから消えていれば、`.download-state.json` が更新され、次の Part が作成されます。
+- 入力は `manifest.json` と `blobs/sha256/*` です
+- 出力は Docker が読み込める OCI layout tar です
+- 必要な blob が不足している場合は tar を作らずに停止します
 
-```text
-vllm_vllm-openai_v0.19.1_Part2.tar
-```
+必要コマンド:
 
-これを繰り返します。
+- `bash`
+- `jq`
+- `tar`
+- `sha256sum`
+- `awk`
 
-```text
-download.ps1 実行 -> Part1 を手動移動
-download.ps1 実行 -> Part2 を手動移動
-download.ps1 実行 -> Part3 を手動移動
-...
-```
+### `test.sh`
 
-最後の Part を移動したあと、もう一度 `download.ps1` を実行すると完了状態になります。
+`download.sh` と `convert.sh` を通しで試すためのテストスクリプトです。
 
-## パラメータ
+- 実運用と同じく `out/` と `archive/` を使います
+- `download.sh` が容量超過で停止したら、blob を一時退避して自動で再開します
+- 必要なら最後に `docker load` まで実行します
 
-| パラメータ | 説明 |
-| --- | --- |
-| `-ImageRef` | 取得するイメージ参照。例: `docker.io/vllm/vllm-openai:v0.19.1` |
-| `-PartSizeGB` | 1 Part の最大サイズ GB。Windows 側の quota より十分小さくします。 |
-| `-RegctlPath` | `regctl.exe` のパス。省略時は `.\regctl.exe`。 |
-| `-ProgressIntervalMB` | 進捗表示間隔 MB。既定値は `256`。 |
-| `-SkipOciValidation` | 初回の OCI 検証を省略します。 |
-| `-OciMetadataMaxMB` | 検証時にメモリ保持する JSON/blob メタデータ上限 MB。既定値は `16`。 |
-| `-ResetState` | Part が残っていない場合に `.download-state.json` を作り直します。 |
+必要コマンド:
 
-## OCI 検証
+- `bash`
+- `jq`
+- `docker` (`--skip-load` を付けない場合)
 
-既定では初回だけ、Part 作成前に `regctl image export` を一度ストリーム読み捨てし、OCI layout と layer blob を検証します。巨大な完全 tar は保存しません。
+## クイックスタート
 
-検証内容:
-
-- tar ヘッダ checksum と危険なパスの検出
-- `oci-layout`, `index.json` の存在と JSON 構造
-- `manifest.json` が含まれる export の場合は、その JSON 構造
-- `blobs/sha256/<digest>` の SHA256 一致
-- `index.json` と OCI image manifest の参照先 blob 存在確認
-- `manifest.json` の `Layers` が OCI blob path を指していること
-
-通信量を抑えたい場合は省略できます。
-
-巨大イメージでは registry 側の一時的な接続断が起きることがあります。`download.ps1` は `regctl` 子プロセスで HTTP/1.1 を優先し、ストリーム断時は未完成の Part を削除して同じ Part 作成を数回だけ再試行します。
-
-```powershell
-.\download.ps1 `
-  -ImageRef "docker.io/vllm/vllm-openai:v0.19.1" `
-  -PartSizeGB 4 `
-  -RegctlPath ".\regctl.exe" `
-  -SkipOciValidation
-```
-
-タグが更新される可能性を避けたい場合は、可能なら digest 形式の `ImageRef` を使ってください。
-
-```text
-docker.io/vllm/vllm-openai@sha256:<digest>
-```
-
-## GPU サーバ側の手順
-
-ファイルサーバから GPU サーバへ、すべての Part を同じディレクトリへ配置します。
-
-```text
-/data/parts/
-  vllm_vllm-openai_v0.19.1_Part1.tar
-  vllm_vllm-openai_v0.19.1_Part2.tar
-  vllm_vllm-openai_v0.19.1_Part3.tar
-```
-
-結合して `docker load` します。
+### 1. オンライン環境で取得する
 
 ```bash
-./merge.sh /data/parts vllm_vllm-openai_v0.19.1
+bash download.sh \
+  --image-ref "docker.io/vllm/vllm-openai:v0.19.1" \
+  --platform "linux/amd64" \
+  --part-size-gb 4
 ```
 
-既定の出力先は次の形式です。
+容量上限に達すると停止して、次のようなメッセージを出します。
 
 ```text
-/data/parts/vllm_vllm-openai_v0.19.1_FullPart.tar
+ALERT: local blob usage reached the configured limit.
+Move the files under .../out/<image>/blobs/sha256 to your temporary storage, keep state.json and manifest.json in place, then rerun the same command.
 ```
 
-明示的に出力先を指定する場合:
+このときは `out/<image>/blobs/sha256/` の blob を別の場所に移し、同じコマンドを再実行してください。`state.json` と `manifest.json` はそのまま残します。
+
+すべての取得が終わると `Complete` が表示されます。
+
+### 2. オフライン環境へ移す
+
+オンライン環境で取得した以下をまとめてオフライン環境へ持ち込みます。
+
+- `out/<image>/state.json`
+- `out/<image>/manifest.json`
+- `out/<image>/blobs/sha256/*`
+
+### 3. オフライン環境で tar を作る
 
 ```bash
-./merge.sh --sha256 \
-  /data/parts \
-  vllm_vllm-openai_v0.19.1 \
-  /data/vllm_vllm-openai_v0.19.1_FullPart.tar
+bash convert.sh \
+  --image-ref "docker.io/vllm/vllm-openai:v0.19.1"
 ```
 
-`merge.sh` は `sort -V` で Part を並べ、`Part1` から連番になっていることを確認します。欠損、空 Part、既存出力ファイルがある場合は停止します。既存 tar を上書きしたい場合は `--force` を指定してください。
+成功すると、次のような tar ができます。
 
-Docker に load せず、結合だけ確認する場合:
+```text
+archive/docker.io_vllm_vllm-openai_v0.19.1.tar
+```
+
+### 4. Docker にロードする
 
 ```bash
-./merge.sh --no-load --sha256 /data/parts vllm_vllm-openai_v0.19.1
+tar -tf archive/docker.io_vllm_vllm-openai_v0.19.1.tar
+docker load -i archive/docker.io_vllm_vllm-openai_v0.19.1.tar
 ```
 
-Windows 側から WSL で動作確認する例:
+## テスト方法
 
-```powershell
-wsl.exe --exec ./merge.sh --no-load --sha256 /mnt/c/Temp/parts vllm_vllm-openai_v0.19.1
+通常の通し確認:
+
+```bash
+bash test.sh \
+  --image-ref "docker.io/vllm/vllm-openai:v0.19.1" \
+  --platform "linux/amd64" \
+  --part-size-gb 4
 ```
 
-## test.ps1
+容量超過での停止と再開も含めて確認したい場合:
 
-`test.ps1` はテスト用の最小 OCI tar と fake `regctl` を一時生成し、手動搬送フローを `Move-Item` で模擬して `download.ps1` と `merge.sh` を検証します。外部レジストリや Docker には依存しません。
-
-```powershell
-.\test.ps1
+```bash
+bash test.sh \
+  --image-ref "docker.io/vllm/vllm-openai:v0.19.1" \
+  --platform "linux/amd64" \
+  --part-size-gb 3.5 \
+  --skip-load
 ```
 
-任意の実イメージを使って検証する場合は、ImageRef を引数に指定します。この場合は実際に registry から取得し、Part を結合した tar も作成します。
+`test.sh` は内部的に `.test-stash/` を使って blob の退避と復元を自動化しますが、完了後には削除します。
 
-```powershell
-.\test.ps1 "vllm/vllm-openai:v0.19.1"
+## ディレクトリ構成
+
+```text
+script/tinyloader/
+├── download.sh
+├── convert.sh
+├── test.sh
+├── out/
+│   └── <image>/
+│       ├── state.json
+│       ├── manifest.json
+│       └── blobs/
+│           └── sha256/
+│               ├── <digest1>
+│               ├── <digest2>
+│               └── ...
+└── archive/
+    └── <image>.tar
 ```
 
-Part サイズや regctl のパスを指定する例:
+`<image>` はイメージ参照を安全なファイル名に変換したものです。たとえば `docker.io/vllm/vllm-openai:v0.19.1` は `docker.io_vllm_vllm-openai_v0.19.1` になります。
 
-```powershell
-.\test.ps1 "docker.io/library/hello-world:latest" `
-  -PartSizeGB 1 `
-  -RegctlPath ".\regctl.exe"
-```
+## 制約
 
-通信量を抑えたい検証では `download.ps1` 側の OCI 事前検証を省略できます。
-
-```powershell
-.\test.ps1 "vllm/vllm-openai:v0.19.1" -SkipOciValidation
-```
-
-テスト作業ディレクトリを残したい場合:
-
-```powershell
-.\test.ps1 -KeepWorkDir
-```
-
-## 注意点
-
-- `download.ps1` は途中 Part を作るたびに停止します。Part を手動で移動してから再実行してください。
-- ローカルに Part が残っている状態で再実行すると停止します。これは同時に複数 Part を保持しないための制御です。
-- `.download-state.json` は小さい状態管理ファイルです。Part だけを移動し、このファイルは Windows 側に残してください。
-- 2 回目以降の `download.ps1` は `regctl image export` を先頭から再実行し、作成済みバイト数を読み捨てて次の Part を作ります。完全 tar は保存しませんが、後半の Part ほど通信量と時間が増えます。
-- Part 欠損や順序違いがあると、後続の merge / `docker load` は失敗します。
-- `merge.sh` の通常実行は `docker load -i` まで行います。結合だけなら `--no-load` を使ってください。
+- `download.sh` のサイズ判定は「今ローカルに残っている blob の合計サイズ」です
+- 単一 blob 自体が `--part-size-gb` を超える場合、この方式では分割できないため停止します
+- `convert.sh` を実行する前に、必要な blob 一式が `out/<image>/blobs/sha256/` に揃っている必要があります
+- digest 指定のイメージ参照も扱えますが、`docker load` 後の tag は自動では付きません
