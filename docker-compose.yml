@@ -1,11 +1,13 @@
-name: alfa-llm
+name: inferlab
 
 include:
   - ./docker-compose.common.yml
-  - ./docker-compose.inference.yml
+  - ./docker-compose.inference-ollama.yml
   - ./docker-compose.openwebui.yml
   - ./docker-compose.comfyui.yml
   - ./docker-compose.carbone.yml
+  - ./docker-compose.hermes-agent.yml
+  - ./docker-compose.openclaw.yml
   - ./docker-compose.dify.yml
   - ./docker-compose.langfuse.yml
   - ./docker-compose.paperless.yml

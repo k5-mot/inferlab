@@ -1,0 +1,101 @@
+services:
+  litellm:
+    image: docker.io/litellm/litellm:v1.83.3-stable
+    container_name: inferlab-litellm
+    restart: unless-stopped
+    profiles:
+      - inference-ollama
+    command:
+      - --config
+      - /app/config.yaml
+      - --host
+      - 0.0.0.0
+      - --port
+      - "4000"
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-inferlab}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-inferlab}
+      LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-http://langfuse:3000/api/public/otel}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
+    ports:
+      - "${LITELLM_HOST_PORT:-40000}:4000"
+    volumes:
+      - ./litellm/config-ollama.yaml:/app/config.yaml:ro
+    networks:
+      - llm-public
+      - llm-internal
+
+  ollama:
+    image: docker.io/ollama/ollama:0.21.2
+    container_name: inferlab-ollama
+    restart: unless-stopped
+    profiles:
+      - inference-ollama
+    volumes:
+      - ollama-cache:/root/.ollama
+    tty: true
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - llm-internal
+
+  ollama-init:
+    image: docker.io/ollama/ollama:0.21.2
+    container_name: inferlab-ollama-init
+    restart: none
+    profiles:
+      - inference-ollama
+    volumes:
+      - ollama-cache:/root/.ollama
+    tty: true
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - llm-internal
+    command: >
+      sh -c "
+        until curl -s http://inferlab-ollama:11434/v1/models > /dev/null; do
+          echo 'Waiting for Ollama to be ready...'
+          sleep 5
+        done &&
+        echo 'Ollama is ready. Importing models...' &&
+        ollama pull deepseek-v4-flash:cloud &&
+        ollama pull kimi-k2.6:cloud &&
+        ollama pull glm-5.1:cloud &&
+        ollama pull minimax-m2.7:cloud &&
+        ollama pull gemma4:31b-cloud &&
+        ollama pull qwen3.5:397b-cloud &&
+        ollama pull qwen3-coder-next:cloud &&
+        ollama pull gpt-oss:120b-cloud
+      "
+
+  inifinity:
+    image: docker.io/michaelf34/infinity:0.0.77
+    container_name: inferlab-infinity
+    restart: unless-stopped
+    profiles:
+      - inference-ollama
+    command:
+      - v2
+      - --model-id
+      - cl-nagoya/ruri-v3-310m
+      - --model-id
+      - cl-nagoya/ruri-v3-reranker-310m
+      - --model-id
+      - Qwen/Qwen3-Embedding-0.6B
+      - --model-id
+      - Qwen/Qwen3-Reranker-0.6B
+      - --port
+      - "4000"
+    networks:
+      - llm-internal
+
+volumes:
+  ollama-cache:
+
+networks:
+  llm-public:
+  llm-internal:

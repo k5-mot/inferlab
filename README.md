@@ -17,10 +17,13 @@
 | Compose | 主なサービス |
 | --- | --- |
 | `docker-compose.common.yml` | keycloak, postgres-keycloak |
-| `docker-compose.inference.yml` | litellm, vllm-* |
+| `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity |
+| `docker-compose.inference-vllm.yml` | litellm, vllm-* |
 | `docker-compose.openwebui.yml` | open-webui, kokoro-web, chroma, open-webui-pipelines, docling-serve, searxng, oauth2-proxy-* |
 | `docker-compose.comfyui.yml` | comfyui |
 | `docker-compose.carbone.yml` | carbone, carbone-mcp |
+| `docker-compose.hermes-agent.yml` | hermes-agent |
+| `docker-compose.openclaw.yml` | openclaw |
 | `docker-compose.dify.yml` | dify-* |
 | `docker-compose.langfuse.yml` | langfuse, postgres-langfuse, clickhouse, redis-langfuse |
 | `docker-compose.paperless.yml` | paperless-* |
@@ -37,6 +40,8 @@
 | deepwiki-open | `31003` | oauth2-proxy 経由 |
 | Paperless-ngx | `31004` | oauth2-proxy 経由 |
 | Carbone | `31005` | oauth2-proxy 経由 |
+| Hermes Agent | `31006` | profile: hermes-agent |
+| OpenClaw | `31007` | profile: openclaw |
 | LiteLLM | `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP | `51001` | oauth2-proxy 経由 |
 
@@ -55,7 +60,48 @@ docker compose up -d
 docker compose --profile inference up -d
 docker compose --profile media up -d
 docker compose --profile inference --profile media up -d
+docker compose --profile hermes-agent up -d
+docker compose --profile openclaw up -d
+docker compose --profile hermes-agent --profile openclaw up -d
 ```
+
+Hermes Agent と OpenClaw の image は環境変数で上書きできる。
+
+```bash
+export HERMES_AGENT_IMAGE=ghcr.io/<your-org>/hermes-agent:<tag>
+export OPENCLAW_IMAGE=ghcr.io/<your-org>/openclaw:<tag>
+docker compose --profile hermes-agent --profile openclaw up -d
+```
+
+OpenClaw は公式 Docker 手順に合わせ、config/workspace を named volume に保存する。
+`./openclaw/openclaw.json` はユーザー編集用の seed 設定として扱い、初回だけ `inferlab_openclaw-config` に CLI 経由で import する。
+初回は `setup.sh` 相当の順番で、所有者補正、必要に応じた onboard、gateway 設定を行う。
+
+```bash
+docker compose --profile openclaw run --rm openclaw-permissions
+docker compose --profile openclaw run --rm openclaw-config-import
+docker compose --profile openclaw run --rm --no-deps --entrypoint node openclaw-gateway \
+  dist/index.js config set --batch-json '[{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:31007","http://127.0.0.1:31007","http://192.168.3.10:31007"]}]'
+docker compose --profile openclaw up -d openclaw-gateway
+```
+
+`./openclaw/openclaw.json` を編集した後、named volume に反映し直す場合は `OPENCLAW_CONFIG_SYNC=always` を付けて seed を再 import する。
+
+```bash
+docker compose --profile openclaw run --rm -e OPENCLAW_CONFIG_SYNC=always openclaw-config-import
+docker compose --profile openclaw up -d --force-recreate openclaw-gateway
+```
+
+seed 設定を使わずに OpenClaw の初期設定を生成したい場合は、公式手順と同じく `onboard` を実行する。
+
+```bash
+docker compose --profile openclaw run --rm --no-deps --entrypoint node openclaw-gateway \
+  dist/index.js onboard --mode local --no-install-daemon
+```
+
+OpenClaw の永続データは `inferlab_openclaw-config` と `inferlab_openclaw-workspace` に保存する。
+Control UI は `http://127.0.0.1:31007/` または `http://192.168.3.10:31007/` を開き、`./openclaw/openclaw.json` の `gateway.auth.token` か `OPENCLAW_GATEWAY_TOKEN` の値を入力する。
+詳細は公式 Docker docs を参照する: https://docs.openclaw.ai/install/docker
 
 ## 5. 検証
 

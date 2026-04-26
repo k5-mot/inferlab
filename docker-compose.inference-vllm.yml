@@ -2,6 +2,8 @@ services:
   litellm:
     container_name: worklab-alfa-llm-litellm
     restart: unless-stopped
+    profiles:
+      - inference-vllm
     image: docker.io/litellm/litellm:v1.83.3-stable
     command:
       - --config
@@ -28,6 +30,7 @@ services:
     container_name: worklab-alfa-llm-vllm-gemma4-31b
     restart: unless-stopped
     profiles:
+      - inference-vllm
       - inference
     image: docker.io/vllm/vllm-openai:v0.19.1
     command:
@@ -49,6 +52,7 @@ services:
     container_name: worklab-alfa-llm-vllm-ruri-v3-310m
     restart: unless-stopped
     profiles:
+      - inference-vllm
       - inference
     image: docker.io/vllm/vllm-openai:v0.19.1
     command:
@@ -72,6 +76,7 @@ services:
     container_name: worklab-alfa-llm-vllm-ruri-v3-reranker-310m
     restart: unless-stopped
     profiles:
+      - inference-vllm
       - inference
     image: docker.io/vllm/vllm-openai:v0.19.1
     command:

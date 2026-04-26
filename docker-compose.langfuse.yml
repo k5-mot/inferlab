@@ -2,6 +2,8 @@ services:
   langfuse:
     container_name: worklab-alfa-llm-langfuse
     restart: unless-stopped
+    profiles:
+      - langfuse
     image: docker.io/langfuse/langfuse:3.167.4
     env_file:
       - ./langfuse/langfuse.env
@@ -40,6 +42,8 @@ services:
   postgres-langfuse:
     container_name: worklab-alfa-llm-postgres-langfuse
     restart: unless-stopped
+    profiles:
+      - langfuse
     image: docker.io/library/postgres:18.3
     environment:
       POSTGRES_USER: langfuse
@@ -62,6 +66,8 @@ services:
   clickhouse:
     container_name: worklab-alfa-llm-clickhouse
     restart: unless-stopped
+    profiles:
+      - langfuse
     image: docker.io/clickhouse/clickhouse-server:26.3.3.20
     user: "101:101"
     environment:
@@ -84,6 +90,8 @@ services:
   redis-langfuse:
     container_name: worklab-alfa-llm-redis-langfuse
     restart: unless-stopped
+    profiles:
+      - langfuse
     image: docker.io/library/redis:8.6.2
     command:
       - redis-server

@@ -2,6 +2,8 @@ services:
   paperless-ngx:
     container_name: worklab-alfa-llm-paperless-ngx
     restart: unless-stopped
+    profiles:
+      - paperless
     image: ghcr.io/paperless-ngx/paperless-ngx:2.20.14
     depends_on:
       paperless-postgres:
@@ -36,6 +38,8 @@ services:
   paperless-postgres:
     container_name: worklab-alfa-llm-paperless-postgres
     restart: unless-stopped
+    profiles:
+      - paperless
     image: docker.io/postgres:18.3
     environment:
       POSTGRES_DB: paperless
@@ -56,6 +60,8 @@ services:
   paperless-redis:
     container_name: worklab-alfa-llm-paperless-redis
     restart: unless-stopped
+    profiles:
+      - paperless
     image: docker.io/redis:8.6.2
     volumes:
       - paperless-redis-data:/data
@@ -73,6 +79,8 @@ services:
   paperless-gotenberg:
     container_name: worklab-alfa-llm-paperless-gotenberg
     restart: unless-stopped
+    profiles:
+      - paperless
     image: docker.io/gotenberg/gotenberg:8
     command:
       - gotenberg
@@ -84,6 +92,8 @@ services:
   paperless-tika:
     container_name: worklab-alfa-llm-paperless-tika
     restart: unless-stopped
+    profiles:
+      - paperless
     image: docker.io/apache/tika:3.3.0.0
     networks:
       - llm-internal

@@ -32,6 +32,8 @@ services:
   open-webui:
     container_name: worklab-alfa-llm-open-webui
     restart: unless-stopped
+    profiles:
+      - openwebui
     image: ghcr.io/open-webui/open-webui:v0.9.1
     depends_on:
       litellm:
@@ -91,6 +93,7 @@ services:
     container_name: worklab-alfa-llm-kokoro-web
     restart: unless-stopped
     profiles:
+      - openwebui
       - media
     image: ghcr.io/eduardolat/kokoro-web:0.1.3
     environment:
@@ -103,6 +106,8 @@ services:
   chroma:
     container_name: worklab-alfa-llm-chroma
     restart: unless-stopped
+    profiles:
+      - openwebui
     image: docker.io/chromadb/chroma:1.5.8
     environment:
       IS_PERSISTENT: "TRUE"
@@ -116,6 +121,8 @@ services:
   open-webui-pipelines:
     container_name: worklab-alfa-llm-open-webui-pipelines
     restart: unless-stopped
+    profiles:
+      - openwebui
     image: ghcr.io/open-webui/pipelines:main
     environment:
       PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
@@ -127,6 +134,8 @@ services:
   docling-serve:
     container_name: worklab-alfa-llm-docling-serve
     restart: unless-stopped
+    profiles:
+      - openwebui
     image: quay.io/docling-project/docling-serve:v1.16.1
     environment:
       DOCLING_SERVE_HOST: 0.0.0.0
@@ -140,6 +149,8 @@ services:
   searxng:
     container_name: worklab-alfa-llm-searxng
     restart: unless-stopped
+    profiles:
+      - openwebui
     image: docker.io/searxng/searxng:2026.4.13-ee66b070a
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
@@ -149,6 +160,8 @@ services:
   oauth2-proxy-dify:
     <<: *oauth2-proxy-base
     container_name: worklab-alfa-llm-oauth2-proxy-dify
+    profiles:
+      - openwebui
     depends_on:
       keycloak:
         condition: service_started
@@ -166,6 +179,8 @@ services:
   oauth2-proxy-deepwiki:
     <<: *oauth2-proxy-base
     container_name: worklab-alfa-llm-oauth2-proxy-deepwiki
+    profiles:
+      - openwebui
     depends_on:
       keycloak:
         condition: service_started
@@ -183,6 +198,8 @@ services:
   oauth2-proxy-paperless:
     <<: *oauth2-proxy-base
     container_name: worklab-alfa-llm-oauth2-proxy-paperless
+    profiles:
+      - openwebui
     depends_on:
       keycloak:
         condition: service_started
@@ -200,6 +217,8 @@ services:
   oauth2-proxy-carbone:
     <<: *oauth2-proxy-base
     container_name: worklab-alfa-llm-oauth2-proxy-carbone
+    profiles:
+      - openwebui
     depends_on:
       keycloak:
         condition: service_started
@@ -217,6 +236,8 @@ services:
   oauth2-proxy-carbone-mcp:
     <<: *oauth2-proxy-base
     container_name: worklab-alfa-llm-oauth2-proxy-carbone-mcp
+    profiles:
+      - openwebui
     depends_on:
       keycloak:
         condition: service_started

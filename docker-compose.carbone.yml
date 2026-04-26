@@ -2,6 +2,8 @@ services:
   carbone:
     container_name: worklab-alfa-llm-carbone
     restart: unless-stopped
+    profiles:
+      - carbone
     image: docker.io/carbone/carbone-ee:full-5.4.5
     environment:
       LANG: C.UTF-8
@@ -18,6 +20,8 @@ services:
   carbone-mcp:
     container_name: worklab-alfa-llm-carbone-mcp
     restart: unless-stopped
+    profiles:
+      - carbone
     image: docker.io/carbone/carbone-mcp:1.1.1
     environment:
       CARBONE_BASE_URL: http://carbone:4000

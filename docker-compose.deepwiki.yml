@@ -2,6 +2,8 @@ services:
   deepwiki-open:
     container_name: worklab-alfa-llm-deepwiki-open
     restart: unless-stopped
+    profiles:
+      - deepwiki
     image: ghcr.io/asyncfuncai/deepwiki-open:latest
     environment:
       OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}

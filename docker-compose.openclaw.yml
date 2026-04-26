@@ -1,0 +1,190 @@
+services:
+  openclaw-permissions:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
+    container_name: inferlab-openclaw-permissions
+    profiles:
+      - openclaw
+    user: root
+    entrypoint:
+      - sh
+      - -c
+      - >
+        set -eu;
+        bundle_root=/home/node/.openclaw/bundled-dist;
+        bundle_dir="$$bundle_root/extensions";
+        rm -rf "$$bundle_root";
+        mkdir -p /home/node/.openclaw/workspace /home/node/.openclaw/logs "$$bundle_dir";
+        find /app/dist -maxdepth 1 -type f -exec sh -c 'for f do ln -s "$$f" "$$0/$(basename "$$f")"; done' "$$bundle_root" {} +;
+        ln -s /app/dist/extensions/node_modules "$$bundle_dir/node_modules";
+        for plugin in litellm speech-core image-generation-core media-understanding-core; do
+          if [ -d "/app/dist/extensions/$$plugin" ]; then
+            cp -a "/app/dist/extensions/$$plugin" "$$bundle_dir/$$plugin";
+          fi;
+        done;
+        find /home/node/.openclaw -xdev -exec chown node:node {} +;
+        find /home/node/.openclaw/workspace -xdev -exec chown node:node {} +
+    volumes:
+      - openclaw-config:/home/node/.openclaw
+      - openclaw-workspace:/home/node/.openclaw/workspace
+
+  openclaw-config-import:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
+    container_name: inferlab-openclaw-config-import
+    profiles:
+      - openclaw
+    depends_on:
+      openclaw-permissions:
+        condition: service_completed_successfully
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+    entrypoint:
+      - sh
+      - -c
+      - >
+        set -eu;
+        if [ "$${OPENCLAW_CONFIG_SYNC:-missing}" != "always" ] &&
+        [ -e /home/node/.openclaw/openclaw.json ]; then
+          exit 0;
+        fi;
+        node -e '
+        const fs = require("node:fs");
+        const { spawnSync } = require("node:child_process");
+        const seedPath = "/openclaw-seed/openclaw.json";
+        const cfg = JSON.parse(fs.readFileSync(seedPath, "utf8"));
+        delete cfg.meta;
+        const batch = Object.entries(cfg).map(([path, value]) => ({ path, value }));
+        const result = spawnSync(process.execPath, [
+          "dist/index.js",
+          "config",
+          "set",
+          "--replace",
+          "--batch-json",
+          JSON.stringify(batch)
+        ], { cwd: "/app", stdio: "inherit" });
+        if ((result.status ?? 1) !== 0) process.exit(result.status ?? 1);
+        if (!Object.prototype.hasOwnProperty.call(cfg, "plugins")) {
+          spawnSync(process.execPath, [
+            "dist/index.js",
+            "config",
+            "unset",
+            "plugins"
+          ], { cwd: "/app", stdio: "inherit" });
+        }
+        process.exit(0);
+        '
+    volumes:
+      - ./openclaw/openclaw.json:/openclaw-seed/openclaw.json:ro
+      - openclaw-config:/home/node/.openclaw
+      - openclaw-workspace:/home/node/.openclaw/workspace
+
+  openclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
+    container_name: inferlab-openclaw-gateway
+    restart: unless-stopped
+    profiles:
+      - openclaw
+    depends_on:
+      openclaw-config-import:
+        condition: service_completed_successfully
+    init: true
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      - ${OPENCLAW_GATEWAY_BIND:-lan}
+      - --port
+      - "18789"
+      - --verbose
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-1}
+      OPENCLAW_GATEWAY_STARTUP_TRACE: ${OPENCLAW_GATEWAY_STARTUP_TRACE:-1}
+      OPENCLAW_SKIP_CHANNELS: ${OPENCLAW_SKIP_CHANNELS:-1}
+      OPENCLAW_SKIP_PROVIDERS: ${OPENCLAW_SKIP_PROVIDERS:-1}
+      OPENCLAW_SKIP_CRON: ${OPENCLAW_SKIP_CRON:-1}
+      OPENCLAW_SKIP_CANVAS_HOST: ${OPENCLAW_SKIP_CANVAS_HOST:-1}
+      OPENCLAW_DISABLE_BUNDLED_PLUGINS: ${OPENCLAW_DISABLE_BUNDLED_PLUGINS:-0}
+      OPENCLAW_BUNDLED_PLUGINS_DIR: ${OPENCLAW_BUNDLED_PLUGINS_DIR:-/home/node/.openclaw/bundled-dist/extensions}
+      OPENCLAW_PLUGIN_LOAD_PROFILE: ${OPENCLAW_PLUGIN_LOAD_PROFILE:-1}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT:-31007}:18789"
+      - "${OPENCLAW_BRIDGE_PORT:-31008}:18790"
+    volumes:
+      - openclaw-config:/home/node/.openclaw
+      - openclaw-workspace:/home/node/.openclaw/workspace
+      ## Uncomment the lines below to enable sandbox isolation
+      ## (agents.defaults.sandbox). Requires Docker CLI in the image.
+      ## Set DOCKER_GID to the host's docker group GID.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    # group_add:
+    #   - "${DOCKER_GID:-999}"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - llm-public
+      - llm-internal
+
+  openclaw-cli:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
+    container_name: inferlab-openclaw-cli
+    profiles:
+      - openclaw
+    network_mode: service:openclaw-gateway
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-1}
+      OPENCLAW_DISABLE_BUNDLED_PLUGINS: ${OPENCLAW_DISABLE_BUNDLED_PLUGINS:-0}
+      OPENCLAW_BUNDLED_PLUGINS_DIR: ${OPENCLAW_BUNDLED_PLUGINS_DIR:-/home/node/.openclaw/bundled-dist/extensions}
+      BROWSER: echo
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+    volumes:
+      - openclaw-config:/home/node/.openclaw
+      - openclaw-workspace:/home/node/.openclaw/workspace
+    stdin_open: true
+    tty: true
+    init: true
+    entrypoint:
+      - node
+      - dist/index.js
+    depends_on:
+      - openclaw-gateway
+
+volumes:
+  openclaw-config:
+  openclaw-workspace:
+
+networks:
+  llm-public:
+  llm-internal:

@@ -3,6 +3,7 @@ services:
     container_name: worklab-alfa-llm-comfyui
     restart: unless-stopped
     profiles:
+      - comfyui
       - media
     build:
       context: ./comfyui

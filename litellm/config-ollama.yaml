@@ -1,0 +1,72 @@
+model_list:
+  - model_name: deepseek-v4-flash
+    litellm_params:
+      model: ollama/deepseek-v4-flash:cloud
+      api_base: http://ollama:11434
+
+  - model_name: kimi-k2.6
+    litellm_params:
+      model: ollama/kimi-k2.6:cloud
+      api_base: http://ollama:11434
+
+  - model_name: glm-5.1
+    litellm_params:
+      model: ollama/glm-5.1:cloud
+      api_base: http://ollama:11434
+
+  - model_name: minimax-m2.7
+    litellm_params:
+      model: ollama/minimax-m2.7:cloud
+      api_base: http://ollama:11434
+
+  - model_name: gemma4-31b
+    litellm_params:
+      model: ollama/gemma4:31b-cloud
+      api_base: http://ollama:11434
+
+  - model_name: qwen3.5-397b
+    litellm_params:
+      model: ollama/qwen3.5:397b-cloud
+      api_base: http://ollama:11434
+
+  - model_name: qwen3-coder-next
+    litellm_params:
+      model: ollama/qwen3-coder-next:cloud
+      api_base: http://ollama:11434
+
+  - model_name: gpt-oss-120b
+    litellm_params:
+      model: ollama/gpt-oss:120b-cloud
+      api_base: http://ollama:11434
+
+  - model_name: ruri-v3-ruri-v3-310m
+    litellm_params:
+      model: infinity/cl-nagoya/ruri-v3-ruri-v3-310m
+      api_base: https://infinity:4000
+
+  - model_name: ruri-v3-reranker-310m
+    litellm_params:
+      model: infinity/cl-nagoya/ruri-v3-reranker-310m
+      api_base: https://infinity:4000
+
+  - model_name: Qwen3-Embedding-0.6B
+    litellm_params:
+      model: infinity/Qwen/Qwen3-Embedding-0.6B
+      api_base: https://infinity:4000
+
+  - model_name: Qwen3-Reranker-0.6B
+    litellm_params:
+      model: infinity/Qwen/Qwen3-Reranker-0.6B
+      api_base: https://infinity:4000
+
+litellm_settings:
+  callbacks:
+    - langfuse_otel
+  drop_params: true
+  request_timeout: 600
+
+# general_settings:
+#   master_key: os.environ/LITELLM_MASTER_KEY
+
+general_settings:
+  master_key: "sk-inferlab-litellm"
