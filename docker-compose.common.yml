@@ -40,8 +40,9 @@ services:
       POSTGRES_DB: ${KEYCLOAK_POSTGRES_DB:-keycloak}
       POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER:-keycloak}
       POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak}
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - postgres-keycloak-data:/var/lib/postgresql/data
+      - postgres-keycloak-data:/var/lib/postgresql
     healthcheck:
       test:
         - CMD-SHELL

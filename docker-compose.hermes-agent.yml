@@ -6,16 +6,45 @@ services:
     profiles:
       - hermes-agent
     command:
-      - setup
+      - gateway
+      - run
     environment:
-      HERMES_AGENT_PORT: ${HERMES_AGENT_PORT:-8080}
+      HERMES_AGENT_PORT: ${HERMES_AGENT_PORT:-8642}
     ports:
-      - "${HERMES_AGENT_HOST_PORT:-31006}:${HERMES_AGENT_PORT:-8080}"
+      - "${HERMES_AGENT_HOST_PORT:-31006}:${HERMES_AGENT_PORT:-8642}"
     volumes:
       - hermes-agent-data:/opt/data
     networks:
       - llm-public
       - llm-internal
+
+  hermes-agent-dashboard:
+    image: docker.io/nousresearch/hermes-agent:v2026.4.23
+    container_name: inferlab-hermes-agent-dashboard
+    restart: unless-stopped
+    profiles:
+      - hermes-agent
+    depends_on:
+      hermes-agent:
+        condition: service_started
+    command:
+      - dashboard
+      - --host
+      - 0.0.0.0
+      - --port
+      - "${HERMES_AGENT_DASHBOARD_PORT:-9119}"
+      - --no-open
+      - --insecure
+    ports:
+      - "127.0.0.1:${HERMES_AGENT_DASHBOARD_HOST_PORT:-31009}:${HERMES_AGENT_DASHBOARD_PORT:-9119}"
+    volumes:
+      - hermes-agent-data:/opt/data
+    networks:
+      - llm-public
+      - llm-internal
+
+volumes:
+  hermes-agent-data:
 
 networks:
   llm-public:

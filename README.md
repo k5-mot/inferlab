@@ -40,7 +40,8 @@
 | deepwiki-open | `31003` | oauth2-proxy 経由 |
 | Paperless-ngx | `31004` | oauth2-proxy 経由 |
 | Carbone | `31005` | oauth2-proxy 経由 |
-| Hermes Agent | `31006` | profile: hermes-agent |
+| Hermes Agent Gateway | `31006` | profile: hermes-agent |
+| Hermes Agent Dashboard | `31009` | profile: hermes-agent |
 | OpenClaw | `31007` | profile: openclaw |
 | LiteLLM | `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP | `51001` | oauth2-proxy 経由 |
@@ -65,6 +66,10 @@ docker compose --profile openclaw up -d
 docker compose --profile hermes-agent --profile openclaw up -d
 ```
 
+Hermes Agent profile を起動すると、gateway に加えて web dashboard も起動する。
+既定では `http://127.0.0.1:31009/` で開ける。安全のため Docker 側で localhost のみに公開している。
+ポート番号は `HERMES_AGENT_DASHBOARD_HOST_PORT` と `HERMES_AGENT_DASHBOARD_PORT` で調整できる。
+
 Hermes Agent と OpenClaw の image は環境変数で上書きできる。
 
 ```bash
@@ -79,7 +84,7 @@ OpenClaw は公式 Docker 手順に合わせ、config/workspace を named volume
 
 ```bash
 docker compose --profile openclaw run --rm openclaw-permissions
-docker compose --profile openclaw run --rm openclaw-config-import
+docker compose --profile openclaw run --rm openclaw-init
 docker compose --profile openclaw run --rm --no-deps --entrypoint node openclaw-gateway \
   dist/index.js config set --batch-json '[{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:31007","http://127.0.0.1:31007","http://192.168.3.10:31007"]}]'
 docker compose --profile openclaw up -d openclaw-gateway
@@ -89,6 +94,7 @@ docker compose --profile openclaw up -d openclaw-gateway
 
 ```bash
 docker compose --profile openclaw run --rm -e OPENCLAW_CONFIG_SYNC=always openclaw-config-import
+docker compose --profile openclaw run --rm -e OPENCLAW_CONFIG_SYNC=always openclaw-init
 docker compose --profile openclaw up -d --force-recreate openclaw-gateway
 ```
 

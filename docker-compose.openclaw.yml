@@ -1,10 +1,14 @@
 services:
-  openclaw-permissions:
+  openclaw-init:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
-    container_name: inferlab-openclaw-permissions
+    container_name: inferlab-openclaw-init
     profiles:
       - openclaw
+    restart: no
     user: root
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
     entrypoint:
       - sh
       - -c
@@ -22,27 +26,7 @@ services:
           fi;
         done;
         find /home/node/.openclaw -xdev -exec chown node:node {} +;
-        find /home/node/.openclaw/workspace -xdev -exec chown node:node {} +
-    volumes:
-      - openclaw-config:/home/node/.openclaw
-      - openclaw-workspace:/home/node/.openclaw/workspace
-
-  openclaw-config-import:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:2026.4.24}
-    container_name: inferlab-openclaw-config-import
-    profiles:
-      - openclaw
-    depends_on:
-      openclaw-permissions:
-        condition: service_completed_successfully
-    environment:
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
-      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
-    entrypoint:
-      - sh
-      - -c
-      - >
-        set -eu;
+        find /home/node/.openclaw/workspace -xdev -exec chown node:node {} +;
         if [ "$${OPENCLAW_CONFIG_SYNC:-missing}" != "always" ] &&
         [ -e /home/node/.openclaw/openclaw.json ]; then
           exit 0;
@@ -85,7 +69,7 @@ services:
     profiles:
       - openclaw
     depends_on:
-      openclaw-config-import:
+      openclaw-init:
         condition: service_completed_successfully
     init: true
     command:

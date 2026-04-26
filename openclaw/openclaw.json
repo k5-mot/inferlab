@@ -4,7 +4,7 @@
             "model": {
                 "primary": "litellm/gpt-oss-120b"
             },
-            "thinkingDefault": "low",
+            "thinkingDefault": "off",
             "sandbox": {
                 "mode": "off"
             }
@@ -29,9 +29,6 @@
     },
     "tools": {
         "profile": "coding",
-        "deny": [
-            "cron"
-        ],
         "sandbox": {
             "tools": {
                 "allow": [
@@ -43,13 +40,13 @@
                     "sessions_list",
                     "sessions_history",
                     "sessions_send",
-                    "sessions_spawn"
+                    "sessions_spawn",
+                    "cron"
                 ],
                 "deny": [
                     "browser",
                     "canvas",
                     "nodes",
-                    "cron",
                     "discord",
                     "gateway"
                 ]
