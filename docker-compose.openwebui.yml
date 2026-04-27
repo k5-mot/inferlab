@@ -1,10 +1,10 @@
 x-oauth2-proxy-env: &oauth2-proxy-env
   OAUTH2_PROXY_PROVIDER: keycloak-oidc
   OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
-  OAUTH2_PROXY_OIDC_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-http://localhost:30000/realms/worklab}
-  OAUTH2_PROXY_LOGIN_URL: ${KEYCLOAK_LOGIN_URL:-http://localhost:30000/realms/worklab/protocol/openid-connect/auth}
-  OAUTH2_PROXY_REDEEM_URL: ${KEYCLOAK_INTERNAL_TOKEN_URL:-http://keycloak:8080/realms/worklab/protocol/openid-connect/token}
-  OAUTH2_PROXY_OIDC_JWKS_URL: ${KEYCLOAK_INTERNAL_JWKS_URL:-http://keycloak:8080/realms/worklab/protocol/openid-connect/certs}
+  OAUTH2_PROXY_OIDC_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-http://localhost:30000/realms/inferlab}
+  OAUTH2_PROXY_LOGIN_URL: ${KEYCLOAK_LOGIN_URL:-http://localhost:30000/realms/inferlab/protocol/openid-connect/auth}
+  OAUTH2_PROXY_REDEEM_URL: ${KEYCLOAK_INTERNAL_TOKEN_URL:-http://keycloak:8080/realms/inferlab/protocol/openid-connect/token}
+  OAUTH2_PROXY_OIDC_JWKS_URL: ${KEYCLOAK_INTERNAL_JWKS_URL:-http://keycloak:8080/realms/inferlab/protocol/openid-connect/certs}
   OAUTH2_PROXY_SCOPE: openid email profile groups
   OAUTH2_PROXY_EMAIL_DOMAINS: "*"
   OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
@@ -45,7 +45,7 @@ services:
       searxng:
         condition: service_started
     environment:
-      WEBUI_URL: ${OPEN_WEBUI_URL:-http://localhost:31001}
+      WEBUI_URL: ${OPEN_WEBUI_URL:-http://192.168.3.10:31001}
       WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-worklab-alfa-open-webui-secret-key}
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"
@@ -53,8 +53,8 @@ services:
       OAUTH_CLIENT_ID: ${OPEN_WEBUI_OAUTH_CLIENT_ID:-open-webui}
       OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OAUTH_CLIENT_SECRET:-worklab-open-webui-client-secret}
       OAUTH_SCOPES: openid email profile groups
-      OPENID_PROVIDER_URL: ${OPEN_WEBUI_OPENID_PROVIDER_URL:-http://keycloak:8080/realms/worklab/.well-known/openid-configuration}
-      OPENID_REDIRECT_URI: ${OPEN_WEBUI_OPENID_REDIRECT_URI:-http://localhost:31001/oauth/oidc/callback}
+      OPENID_PROVIDER_URL: ${OPEN_WEBUI_OPENID_PROVIDER_URL:-http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration}
+      OPENID_REDIRECT_URI: ${OPEN_WEBUI_OPENID_REDIRECT_URI:-http://192.168.3.10:31001/oauth/oidc/callback}
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OPENAI_API_BASE_URL: http://litellm:4000/v1
       OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
