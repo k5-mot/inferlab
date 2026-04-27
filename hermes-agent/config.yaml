@@ -1,5 +1,5 @@
 model:
-  default: ollama/gemma4:31b-cloud
+  default: ollama/gpt-oss:120b-cloud
   provider: custom
-  base_url: http://litellm:4000/v1
+  base_url: http://ollama:11434/v1
   api_key: sk-inferlab-litellm

@@ -1,21 +1,21 @@
 services:
-  # hermes-agent-init:
-  #   image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
-  #   container_name: inferlab-hermes-agent-init
-  #   restart: no
-  #   profiles:
-  #     - hermes-agent
-  #   command:
-  #     - setup
-  #   environment:
-  #     GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
-  #     GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
-  #   volumes:
-  #     - hermes-agent-data:/opt/data
-  #     - ./hermes-agent/config.yaml:/root/.hermes/config.yaml:ro
-  #   networks:
-  #     - llm-public
-  #     - llm-internal
+  hermes-agent-config:
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
+    container_name: inferlab-hermes-agent-config
+    restart: "no"
+    profiles:
+      - hermes-agent
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        set -eu
+        cp /config/config.yaml /opt/data/config.yaml
+        chown -R 1000:1000 /opt/data || true
+    volumes:
+      - hermes-agent-data:/opt/data
+      - ./hermes-agent/config.yaml:/config/config.yaml:ro
 
   hermes-agent:
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
@@ -37,13 +37,14 @@ services:
       - "${HERMES_AGENT_HOST_PORT:-31006}:${HERMES_AGENT_PORT:-8642}"
     volumes:
       - hermes-agent-data:/opt/data
-      - ./hermes-agent/config.yaml:/root/.hermes/config.yaml:ro
     networks:
       - llm-public
       - llm-internal
-    # depends_on:
-    #   hermes-agent-init:
-    #     condition: service_started
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    depends_on:
+      hermes-agent-config:
+        condition: service_completed_successfully
 
   hermes-agent-dashboard:
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
