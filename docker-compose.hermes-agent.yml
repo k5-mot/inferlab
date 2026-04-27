@@ -1,6 +1,24 @@
 services:
+  # hermes-agent-init:
+  #   image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
+  #   container_name: inferlab-hermes-agent-init
+  #   restart: no
+  #   profiles:
+  #     - hermes-agent
+  #   command:
+  #     - setup
+  #   environment:
+  #     GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
+  #     GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
+  #   volumes:
+  #     - hermes-agent-data:/opt/data
+  #     - ./hermes-agent/config.yaml:/root/.hermes/config.yaml:ro
+  #   networks:
+  #     - llm-public
+  #     - llm-internal
+
   hermes-agent:
-    image: docker.io/nousresearch/hermes-agent:v2026.4.23
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
     container_name: inferlab-hermes-agent
     restart: unless-stopped
     profiles:
@@ -9,24 +27,30 @@ services:
       - gateway
       - run
     environment:
-      HERMES_AGENT_PORT: ${HERMES_AGENT_PORT:-8642}
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
+      API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
+      GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
+      GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
     ports:
       - "${HERMES_AGENT_HOST_PORT:-31006}:${HERMES_AGENT_PORT:-8642}"
     volumes:
       - hermes-agent-data:/opt/data
+      - ./hermes-agent/config.yaml:/root/.hermes/config.yaml:ro
     networks:
       - llm-public
       - llm-internal
+    # depends_on:
+    #   hermes-agent-init:
+    #     condition: service_started
 
   hermes-agent-dashboard:
-    image: docker.io/nousresearch/hermes-agent:v2026.4.23
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
     container_name: inferlab-hermes-agent-dashboard
     restart: unless-stopped
     profiles:
       - hermes-agent
-    depends_on:
-      hermes-agent:
-        condition: service_started
     command:
       - dashboard
       - --host
@@ -35,6 +59,8 @@ services:
       - "${HERMES_AGENT_DASHBOARD_PORT:-9119}"
       - --no-open
       - --insecure
+    environment:
+      GATEWAY_HEALTH_URL: http://hermes-agent:${HERMES_AGENT_PORT:-8642}
     ports:
       - "127.0.0.1:${HERMES_AGENT_DASHBOARD_HOST_PORT:-31009}:${HERMES_AGENT_DASHBOARD_PORT:-9119}"
     volumes:
@@ -42,6 +68,9 @@ services:
     networks:
       - llm-public
       - llm-internal
+    depends_on:
+      hermes-agent:
+        condition: service_started
 
 volumes:
   hermes-agent-data:

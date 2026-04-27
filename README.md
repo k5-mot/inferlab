@@ -70,6 +70,11 @@ Hermes Agent profile を起動すると、gateway に加えて web dashboard も
 既定では `http://127.0.0.1:31009/` で開ける。安全のため Docker 側で localhost のみに公開している。
 ポート番号は `HERMES_AGENT_DASHBOARD_HOST_PORT` と `HERMES_AGENT_DASHBOARD_PORT` で調整できる。
 
+Hermes Agent gateway のログに `No user allowlists configured` と出る場合、Telegram/Discord/Slack などのメッセージング経由ユーザーが未許可のため拒否されるという警告である。
+メッセージング連携を使う場合は、`.env` などで `HERMES_AGENT_GATEWAY_ALLOWED_USERS` に許可するユーザー ID をカンマ区切りで設定する。
+検証用途で全ユーザーを許可したい場合のみ、`HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS=true` を設定する。
+API サーバーだけを Open WebUI などから使う場合、この警告は無視できる。
+
 Hermes Agent と OpenClaw の image は環境変数で上書きできる。
 
 ```bash

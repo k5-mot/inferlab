@@ -190,6 +190,33 @@ Open WebUI 側のユーザーロールが `pending` になっています。
 
 変更後は Open WebUI コンテナを再作成します。
 
+### H. 音声モードで `メディアデバイスへのアクセス時に権限が拒否されました`
+
+Open WebUI を `http://192.168.3.10:31001` のような LAN IP の HTTP URL で開いている場合、ブラウザがマイクアクセスを拒否します。
+マイクやカメラを使う Web API は、原則として HTTPS または `localhost` などの安全なコンテキストでのみ許可されます。
+
+同じホスト上のブラウザから使う場合は、`localhost` に寄せるのが最短です。
+既存の Keycloak レルムを使っている場合は、先に `open-webui` クライアントの `Redirect URIs` に次を追加します。
+
+- `http://localhost:31001/oauth/oidc/callback`
+
+```bash
+OPEN_WEBUI_PUBLIC_URL=http://localhost:31001 \
+sudo docker compose \
+  --profile common \
+  --profile inference-ollama \
+  --profile openwebui \
+  up -d --force-recreate open-webui
+```
+
+その後、`http://localhost:31001/auth?redirect=%2F` を開きます。
+
+別端末から LAN 経由で使う場合は、信頼済み証明書つきの HTTPS リバースプロキシを前段に置きます。
+その HTTPS URL を `OPEN_WEBUI_PUBLIC_URL` に設定し、Keycloak の `Redirect URIs` と `Web origins` にも同じ origin/callback を追加します。
+
+ブラウザ側で一度拒否している場合は、アドレスバー左のサイト設定からマイク許可をリセットします。
+OS 側のマイク権限も Chrome/Edge/Firefox など対象ブラウザに許可されていることを確認します。
+
 ## 8. 運用上の注意
 
 現在の `realm-export.json` はレルムとクライアントを定義していますが、ユーザーは含んでいません。

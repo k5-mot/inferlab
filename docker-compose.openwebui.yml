@@ -35,11 +35,12 @@ services:
     restart: unless-stopped
     profiles:
       - openwebui
-
     environment:
       ### General
-      WEBUI_URL: "http://192.168.3.10:31001"
+      WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}
       WEBUI_SECRET_KEY: "b6ae5f7e56bde383e2928d43b8d6500123dd205142bca46b51f11cb860fd9cb5"
+      ENABLE_NOTES: "true"
+      ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"
       ### For Keycloak
       ENABLE_SIGNUP: "false"
@@ -47,14 +48,16 @@ services:
       DEFAULT_USER_ROLE: "user"
       OAUTH_CLIENT_ID: "open-webui"
       OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
-      OPENID_PROVIDER_URL: http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration
-      OPENID_REDIRECT_URI: http://192.168.3.10:31001/oauth/oidc/callback
+      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://192.168.3.10:30000}/realms/inferlab/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}/oauth/oidc/callback
       OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak
       ### For LLM on LiteLLM
-      OPENAI_API_BASE_URL: http://litellm:4000/v1
-      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      # OPENAI_API_BASE_URL: http://litellm:4000/v1
+      OPENAI_API_BASE_URLS: "http://litellm:4000/v1,http://hermes-agent:8642/v1"
+      # OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      OPENAI_API_KEYS: "sk-inferlab-litellm,hermes-agent-secret-key"
       DEFAULT_MODELS: "gemma4-31b"
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
@@ -79,7 +82,29 @@ services:
       DOCLING_API_KEY: "docling-serve-api-key"
       # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "tesseract", "ocr_preset": "tesseract", "ocr_lang": ["jpn", "eng"]}'
       # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "easyocr", "ocr_preset": "easyocr", "ocr_lang": ["jp", "en"]}'
-      DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "rapidocr", "ocr_preset": "rapidocr", "ocr_lang": ["japanese", "english"]}'
+      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "rapidocr", "ocr_preset": "rapidocr", "ocr_lang": ["japanese", "english"]}'
+      DOCLING_PARAMS: >-
+        {
+          "do_ocr": true,
+          "ocr_engine": "rapidocr",
+          "ocr_preset": "rapidocr",
+          "ocr_lang": ["japanese", "english"],
+          "do_picture_description": true,
+          "picture_description_options": {
+            "kind": "api",
+            "url": "http://litellm:4000/v1/chat/completions",
+            "headers": {
+              "Authorization": "Bearer sk-inferlab-litellm"
+            },
+            "params": {
+              "model": "gemma4:31b",
+              "temperature": 0.0,
+              "max_tokens": 1024
+            },
+            "prompt": "この画像を日本語でRAG用に説明してください。図表、表、スクリーンショット、模式図の場合は、読み取れる文字・構造・意味をMarkdownで簡潔かつ正確に記述してください。推測できない内容は書かないでください。"
+          },
+          "generate_picture_images": true
+        }
       ### For Chroma (Vector DB)
       VECTOR_DB: chroma
       CHROMA_HTTP_HOST: chroma
@@ -101,8 +126,8 @@ services:
       # IMAGE_EDIT_ENGINE: comfyui
       # COMFYUI_BASE_URL: http://comfyui:8188
       ### For Open WebUI Pipelines
-      PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-      PIPELINES_URLS: http://open-webui-pipelines:9099
+      # PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+      # PIPELINES_URLS: http://open-webui-pipelines:9099
     ports:
       - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
     volumes:
@@ -131,6 +156,7 @@ services:
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"
       DOCLING_SERVE_API_KEY: "docling-serve-api-key"
+      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
     ports:
       - 50001:5001
     volumes:
@@ -138,8 +164,19 @@ services:
     networks:
       - llm-internal
 
+  searxng:
+    image: docker.io/searxng/searxng:2026.4.13-ee66b070a
+    container_name: inferlab-searxng
+    restart: unless-stopped
+    profiles:
+      - openwebui
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    networks:
+      - llm-internal
+
   openai-edge-tts:
-    image: travisvn/openai-edge-tts:latest
+    image: docker.io/travisvn/openai-edge-tts:latest
     container_name: inferlab-openai-edge-tts
     restart: unless-stopped
     environment:
@@ -157,11 +194,11 @@ services:
       - llm-internal
 
   chroma:
+    image: docker.io/chromadb/chroma:1.5.8
     container_name: inferlab-chroma
     restart: unless-stopped
     profiles:
       - openwebui
-    image: docker.io/chromadb/chroma:1.5.8
     environment:
       IS_PERSISTENT: "TRUE"
       ALLOW_RESET: "TRUE"
@@ -172,11 +209,11 @@ services:
       - llm-internal
 
   open-webui-pipelines:
+    image: ghcr.io/open-webui/pipelines:main
     container_name: inferlab-open-webui-pipelines
     restart: unless-stopped
     profiles:
       - openwebui
-    image: ghcr.io/open-webui/pipelines:main
     environment:
       PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
     volumes:
@@ -186,16 +223,6 @@ services:
 
 
 
-  searxng:
-    container_name: inferlab-searxng
-    restart: unless-stopped
-    profiles:
-      - openwebui
-    image: docker.io/searxng/searxng:2026.4.13-ee66b070a
-    volumes:
-      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
-    networks:
-      - llm-internal
 
   # oauth2-proxy-dify:
   #   <<: *oauth2-proxy-base
