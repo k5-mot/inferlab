@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 使い方とオプションを表示する。
 usage() {
   cat <<'EOF'
 Usage:
-  bash download.sh --image-ref IMAGE_REF --part-size-gb SIZE [options]
+  bash download.sh --image-ref IMAGE_REF [options]
 
 Options:
   --image-ref IMAGE_REF   OCI registry image reference to download.
   --part-size-gb SIZE     Maximum local blob size budget in GiB before pausing.
+                          Default: 20
   --platform PLATFORM     Target platform when the tag points to a manifest list.
                           Default: linux/amd64
   --out-dir PATH          Output root directory. Default: <script-dir>/out
+  --debug                 Enable bash xtrace debug output.
   -h, --help              Show this help.
 
 Exit codes:
@@ -21,19 +24,58 @@ Exit codes:
 EOF
 }
 
+if [[ -t 2 ]]; then
+  COLOR_RESET=$'\033[0m'
+  COLOR_DEBUG=$'\033[36m'
+  COLOR_INFO=$'\033[32m'
+  COLOR_WARN=$'\033[33m'
+  COLOR_ERROR=$'\033[31m'
+else
+  COLOR_RESET=""
+  COLOR_DEBUG=""
+  COLOR_INFO=""
+  COLOR_WARN=""
+  COLOR_ERROR=""
+fi
+
+# ログレベル付きメッセージを整形して出力する。
+print_level() {
+  local level=$1
+  local color=$2
+  local stream=$3
+  shift 3
+
+  local ts
+  ts=$(date -u '+%H:%M:%S')
+  if [[ "$stream" == "stdout" ]]; then
+    printf '[%s] %b%s%b %s\n' "$ts" "$color" "$level" "$COLOR_RESET" "$*"
+  else
+    printf '[%s] %b%s%b %s\n' "$ts" "$color" "$level" "$COLOR_RESET" "$*" >&2
+  fi
+}
+
+# エラーメッセージを表示して終了する。
 die() {
-  echo "ERROR: $*" >&2
+  print_level "ERROR" "$COLOR_ERROR" stderr "$*"
   exit 1
 }
 
+# タイムスタンプ付きの通常ログを出力する。
 log() {
-  printf '[%s] %s\n' "$(date -u '+%H:%M:%S')" "$*"
+  print_level "INFO" "$COLOR_INFO" stdout "$*"
 }
 
+# デバッグメッセージを標準エラーへ出力する。
+debug() {
+  print_level "DEBUG" "$COLOR_DEBUG" stderr "$*"
+}
+
+# 警告メッセージを標準エラーへ出力する。
 warn() {
-  echo "WARN: $*" >&2
+  print_level "WARN" "$COLOR_WARN" stderr "$*"
 }
 
+# 必須コマンドの存在を検証する。
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
 }
@@ -41,8 +83,9 @@ require_cmd() {
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 out_root="$script_dir/out"
 image_ref=""
-part_size_gb=""
+part_size_gb="20"
 platform="linux/amd64"
+debug=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -66,6 +109,10 @@ while [[ $# -gt 0 ]]; do
       out_root=$2
       shift 2
       ;;
+    --debug)
+      debug=true
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -80,30 +127,34 @@ done
   usage >&2
   exit 2
 }
-[[ -n "$part_size_gb" ]] || {
-  usage >&2
-  exit 2
-}
+if [[ "$debug" == true ]]; then
+  debug "bash xtrace enabled"
+  set -x
+fi
 
 require_cmd curl
 require_cmd jq
 require_cmd sha256sum
 require_cmd awk
 
+# イメージ参照をディレクトリ名として安全な文字列へ変換する。
 safe_name() {
   printf '%s' "$1" | sed 's|[/:@]|_|g; s|[^A-Za-z0-9._-]|_|g'
 }
 
+# digest (sha256:...) から 16 進部分のみを取り出す。
 digest_hex() {
   local digest=$1
   printf '%s' "${digest#*:}"
 }
 
+# ファイルサイズをバイト単位で取得する。
 file_size() {
   local path=$1
   wc -c < "$path" | awk '{print $1}'
 }
 
+# バイト数を人間向けの単位付き文字列へ変換する。
 bytes_to_human() {
   awk -v bytes="$1" '
     BEGIN {
@@ -119,6 +170,7 @@ bytes_to_human() {
   '
 }
 
+# GiB 指定値をバイト数へ変換する。
 gb_to_bytes() {
   awk -v size_gb="$1" '
     BEGIN {
@@ -130,14 +182,17 @@ gb_to_bytes() {
   '
 }
 
+# URL クエリ用に文字列をエンコードする。
 url_encode() {
   jq -nr --arg value "$1" '$value | @uri'
 }
 
+# UTC タイムスタンプを生成する。
 timestamp() {
   date -u '+%Y-%m-%dT%H:%M:%SZ'
 }
 
+# platform 文字列を os/arch[/variant] 形式として検証し分解する。
 parse_platform() {
   local raw=$1
   IFS='/' read -r platform_os platform_arch platform_variant extra <<<"$raw"
@@ -147,9 +202,13 @@ parse_platform() {
   [[ -z "${extra:-}" ]] || die "platform has too many components: $raw"
 }
 
+# イメージ参照を正規化し、registry/repository/reference を確定する。
 parse_image_ref() {
   local raw=$1
   local first path last
+
+  # "registry/repo:tag" と "repo:tag" の両方を受け取り、内部で正規化する。
+  # docker.io 省略時は library/ 補完まで行い、以降の API URL 組み立てを単純化する。
 
   first=${raw%%/*}
   if [[ "$raw" == */* ]] && [[ "$first" == *.* || "$first" == *:* || "$first" == "localhost" ]]; then
@@ -196,6 +255,7 @@ parse_image_ref() {
   fi
 }
 
+# レスポンスヘッダから指定ヘッダ値を抽出する。
 get_header_value() {
   local header_file=$1
   local header_name=$2
@@ -215,6 +275,7 @@ get_header_value() {
   ' "$header_file"
 }
 
+# WWW-Authenticate から指定パラメータを抜き出す。
 extract_auth_param() {
   local challenge=$1
   local key=$2
@@ -226,6 +287,7 @@ registry_auth_header=""
 last_response_headers=""
 last_response_code=""
 
+# Bearer challenge を元にトークンを取得し Authorization ヘッダを準備する。
 fetch_bearer_token() {
   local challenge=$1
   local realm service scope token_url response token
@@ -261,6 +323,7 @@ fetch_bearer_token() {
   registry_auth_header="Bearer $token"
 }
 
+# レジストリ API を呼び出し、必要なら認証付きで再試行する。
 registry_get() {
   local url=$1
   local accept_header=$2
@@ -283,6 +346,8 @@ registry_get() {
   fi
 
   if [[ "$last_response_code" == "401" ]]; then
+    # 初回リクエストで challenge を受け取り、トークン取得後に 1 回だけ再試行する。
+    # ここで再試行の責務を閉じることで、呼び出し側を単純に保つ。
     challenge=$(get_header_value "$headers" "www-authenticate")
     rm -f "$headers"
     [[ -n "$challenge" ]] || die "registry returned 401 without WWW-Authenticate header"
@@ -317,6 +382,7 @@ registry_get() {
 requested_manifest_digest=""
 requested_manifest_media_type=""
 
+# 参照 (tag/digest) から manifest を取得し、関連メタデータを確定する。
 fetch_manifest_by_ref() {
   local ref=$1
   local target_path=$2
@@ -344,6 +410,7 @@ selected_manifest_digest=""
 selected_manifest_media_type=""
 selected_manifest_size=""
 
+# manifest list なら platform を解決し、最終 manifest を保存する。
 resolve_manifest() {
   local request_body resolved_body selected_descriptor
   local manifest_kind
@@ -396,6 +463,7 @@ resolve_manifest() {
   esac
 }
 
+# 新規 state.json を作成し、ダウンロード対象 blob 一覧を初期化する。
 write_state() {
   local now
   local tmp_state
@@ -449,6 +517,7 @@ write_state() {
   mv "$tmp_state" "$state_file"
 }
 
+# 指定 digest の blob を downloaded=true に更新する。
 set_blob_downloaded() {
   local digest=$1
   local now tmp_state
@@ -471,6 +540,7 @@ set_blob_downloaded() {
   mv "$tmp_state" "$state_file"
 }
 
+# 既存 state/manifest の整合を確認し、必要に応じて再生成する。
 refresh_manifest_and_state() {
   if [[ -f "$state_file" ]]; then
     local existing_ref existing_platform
@@ -482,6 +552,7 @@ refresh_manifest_and_state() {
   fi
 
   if [[ ! -f "$state_file" || ! -f "$manifest_file" ]]; then
+    # 初回実行、または途中で制御ファイルが欠けたケースは manifest/state を作り直す。
     log "Resolving manifest for ${canonical_image_ref} (${platform})"
     resolve_manifest
     write_state
@@ -493,6 +564,7 @@ refresh_manifest_and_state() {
   selected_manifest_size=$(jq -r '.manifest.size // 0' "$state_file")
 }
 
+# blobs ディレクトリに残っている blob 合計サイズを計算する。
 local_blob_bytes() {
   local total=0
   local path size
@@ -510,6 +582,7 @@ local_blob_bytes() {
   echo "$total"
 }
 
+# 既に存在する完全な blob を state.json 側へ反映する。
 mark_existing_blobs() {
   local digest size downloaded blob_path actual_size
 
@@ -530,6 +603,7 @@ mark_existing_blobs() {
   done < <(jq -r '.blobs[] | [.digest, (.size | tostring), (.downloaded | tostring)] | @tsv' "$state_file")
 }
 
+# 容量上限到達時の案内を表示して exit 20 で停止する。
 pause_for_quota() {
   local current_bytes=$1
   local next_digest=${2:-}
@@ -537,7 +611,7 @@ pause_for_quota() {
 
   # ここでは自動退避せず止まるだけにして、実運用ではユーザが別媒体へ逃がせるようにする。
   echo
-  echo "ALERT: local blob usage reached the configured limit." >&2
+  printf "\033[33mALERT\033[0m: local blob usage reached the configured limit." >&2
   echo "  current: $(bytes_to_human "$current_bytes")" >&2
   echo "  limit:   $(bytes_to_human "$part_size_bytes")" >&2
   if [[ -n "$next_digest" ]]; then
@@ -548,6 +622,7 @@ pause_for_quota() {
   exit 20
 }
 
+# 単一 blob を取得し、サイズと digest を検証して配置する。
 download_blob() {
   local digest=$1
   local expected_size=$2
@@ -580,6 +655,8 @@ download_blob() {
   mv "$tmp_path" "$blob_path"
 }
 
+# ここから下は「1回の実行フロー」本体。
+# 1) 引数正規化 2) state 準備 3) 未取得 blob を順に取得、の順で進める。
 parse_platform "$platform"
 parse_image_ref "$image_ref"
 part_size_bytes=$(gb_to_bytes "$part_size_gb") || die "--part-size-gb must be a positive number"
@@ -604,6 +681,9 @@ log "Local blob usage: $(bytes_to_human "$current_bytes") / $(bytes_to_human "$p
 
 while IFS=$'\t' read -r digest size role downloaded; do
   [[ "$downloaded" == "true" ]] && continue
+
+  # 次の blob を置くと上限超過する場合は、exit 20 で意図的に停止する。
+  # 利用者は blob を退避して同じコマンドを再実行すれば続きから再開できる。
 
   if (( current_bytes > 0 && current_bytes + size > part_size_bytes )); then
     pause_for_quota "$current_bytes" "$digest" "$size"
