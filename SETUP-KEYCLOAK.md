@@ -1,10 +1,10 @@
-# Keycloak Initial Setup
+# Keycloak 初期セットアップ
 
-This document describes the initial setup flow for Keycloak used by this repository.
+このドキュメントでは、このリポジトリで使用する Keycloak の初期セットアップ手順を説明します。
 
-## 1. Start required containers
+## 1. 必要なコンテナを起動する
 
-Run services including `common` and `openwebui` profiles.
+`common`、`inference-ollama`、`openwebui` プロファイルを含めてサービスを起動します。
 
 ```bash
 sudo docker compose \
@@ -14,71 +14,71 @@ sudo docker compose \
   up -d --force-recreate --remove-orphans
 ```
 
-Verify Keycloak is up:
+Keycloak が起動していることを確認します。
 
 ```bash
 sudo docker ps | grep inferlab-keycloak
 ```
 
-## 2. Open Keycloak Admin Console
+## 2. Keycloak 管理コンソールを開く
 
-Open:
+次の URL を開きます。
 
 - `http://192.168.3.10:30000/admin/master/console/`
 
-Login with bootstrap admin (master realm):
+ブートストラップ管理者（`master` レルム）でログインします。
 
-- Username: `admin`
-- Password: `admin`
+- ユーザー名: `admin`
+- パスワード: `admin`
 
-Notes:
+補足:
 
-- Bootstrap admin is for administration tasks.
-- Open WebUI login uses the `inferlab` realm, not `master`.
+- ブートストラップ管理者は管理作業用です。
+- Open WebUI のログインでは `master` ではなく `inferlab` レルムを使用します。
 
-## 3. Confirm realm and client
+## 3. レルムとクライアントを確認する
 
-Target realm is `inferlab`.
+対象レルムは `inferlab` です。
 
-Open client settings in Keycloak:
+Keycloak でクライアント設定を開きます。
 
-- Realm: `inferlab`
-- Client: `open-webui`
+- レルム: `inferlab`
+- クライアント: `open-webui`
 
-Required values:
+必要な設定値:
 
 - `Client authentication`: ON (confidential client)
 - `Standard flow`: ON
-- Redirect URIs includes:
+- `Redirect URIs` に次を含める:
   - `http://localhost:31001/oauth/oidc/callback`
   - `http://192.168.3.10:31001/oauth/oidc/callback`
-- Web origins includes:
+- `Web origins` に次を含める:
   - `http://localhost:31001`
   - `http://192.168.3.10:31001`
 
-## 4. Create first login user for inferlab realm
+## 4. inferlab レルムに初回ログイン用ユーザーを作成する
 
-If no users exist in `inferlab`, Open WebUI login stops with credential errors.
+`inferlab` にユーザーが存在しない場合、Open WebUI のログインは認証情報エラーで停止します。
 
-Create a user in `inferlab` realm (example):
+`inferlab` レルムにユーザーを作成します（例）。
 
-- Username: `owui`
+- ユーザー名: `owui`
 - Enabled: ON
 - Email verified: ON
-- Set password: `OwuiPass123!`
-- Temporary password: OFF
+- 設定するパスワード: `OwuiPass123!`
+- 一時パスワード: OFF
 
-Recommended: also clear any required actions (profile update, password update, etc.) for the first user.
+推奨: 初回ユーザーに Required actions（プロフィール更新、パスワード更新など）が設定されている場合は解除します。
 
-## 5. Verify Open WebUI OIDC endpoints
+## 5. Open WebUI の OIDC エンドポイントを確認する
 
-In compose config, Open WebUI should use public Keycloak URL for browser flow:
+compose 設定では、Open WebUI のブラウザフロー用に公開側の Keycloak URL を使用します。
 
 - `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
 - `OPENID_REDIRECT_URI=http://192.168.3.10:31001/oauth/oidc/callback`
 - `WEBUI_URL=http://192.168.3.10:31001`
 
-Apply container changes:
+コンテナ設定の変更を反映します。
 
 ```bash
 sudo docker compose \
@@ -88,52 +88,110 @@ sudo docker compose \
   up -d --force-recreate open-webui
 ```
 
-## 6. Login test flow
+## 6. ログイン動作を確認する
 
-1. Open `http://192.168.3.10:31001/auth?redirect=%2F`
-2. Click `Continue with Keycloak`
-3. Confirm redirect target starts with:
+1. `http://192.168.3.10:31001/auth?redirect=%2F` を開く
+2. `Continue with Keycloak` をクリックする
+3. リダイレクト先が次の URL で始まることを確認する
    - `http://192.168.3.10:30000/realms/inferlab/protocol/openid-connect/auth`
-4. Login using the user created in step 4
+4. 手順 4 で作成したユーザーでログインする
 
-## 7. Troubleshooting
+## 7. トラブルシューティング
 
 ### A. `Timeout when waiting for 3rd party check iframe message`
 
-Check Keycloak hostname and access host consistency:
+Keycloak のホスト名とアクセス元ホストの整合性を確認します。
 
-- Access Keycloak and Open WebUI with the same host/IP (`192.168.3.10`)
-- Avoid mixing `localhost` and LAN IP in the same browser session
+- Keycloak と Open WebUI は同じホスト/IP（`192.168.3.10`）でアクセスする
+- 同じブラウザセッションで `localhost` と LAN IP を混在させない
 
-### B. Redirect goes to `http://keycloak:8080/...`
+### B. リダイレクト先が `http://keycloak:8080/...` になる
 
-Cause: browser-facing provider URL is incorrectly set to container-internal hostname.
+原因: ブラウザ向けのプロバイダー URL が、コンテナ内部のホスト名に設定されています。
 
-Fix: ensure Open WebUI uses:
+対応: Open WebUI が次を使用していることを確認します。
 
 - `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
 
-### C. `The email or password provided is incorrect`
+### C. `/oauth/oidc/login` が `Internal Server Error` になる
 
-Typical causes:
+Open WebUI のログで、`.well-known/openid-configuration` の取得が 404 になっていないか確認します。
 
-- User does not exist in `inferlab` realm
-- Password is temporary
-- Required actions remain on the user
-- User is disabled
+例:
 
-### D. `Account is not fully set up`
+- `http://192.168.3.10:30000/realms/open-webui/.well-known/openid-configuration`
 
-User needs setup completion.
+原因: `OPENID_PROVIDER_URL` のレルム名が誤っています。
 
-Fix for the user:
+対応: Open WebUI の `OPENID_PROVIDER_URL` を `inferlab` レルムに合わせます。
 
-- Set non-temporary password
-- Clear required actions
-- Ensure `enabled=true` and `emailVerified=true`
+- `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
 
-## 8. Operational note
+変更後は Open WebUI コンテナを再作成します。
 
-`realm-export.json` currently defines realms/clients but does not include users.
+```bash
+sudo docker compose \
+  --profile common \
+  --profile inference-ollama \
+  --profile openwebui \
+  up -d --force-recreate open-webui
+```
 
-Therefore, user creation for `inferlab` realm is required after first deployment.
+### D. `The email or password provided is incorrect`
+
+よくある原因:
+
+- ユーザーが `inferlab` レルムに存在しない
+- パスワードが一時パスワードになっている
+- ユーザーに Required actions が残っている
+- ユーザーが無効化されている
+
+### E. `Account is not fully set up`
+
+ユーザーのセットアップが完了していません。
+
+対象ユーザーに対して次を確認します。
+
+- 一時パスワードではないパスワードを設定する
+- Required actions を解除する
+- `enabled=true` および `emailVerified=true` になっていることを確認する
+
+### F. `Uh-oh! This email is already registered.`
+
+Keycloak のメールアドレスと同じメールアドレスのユーザーが Open WebUI 側に既に存在しています。
+
+対応: Open WebUI で既存ユーザーと OAuth ログインをメールアドレスで統合できるようにします。
+
+- `OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true`
+
+変更後は Open WebUI コンテナを再作成します。
+
+```bash
+sudo docker compose \
+  --profile common \
+  --profile inference-ollama \
+  --profile openwebui \
+  up -d --force-recreate open-webui
+```
+
+### G. `アカウント承認待ち` と表示される
+
+Open WebUI 側のユーザーロールが `pending` になっています。
+
+手動承認する場合:
+
+1. Open WebUI に管理者ユーザーでログインする
+2. 管理者パネルのユーザー管理を開く
+3. 対象ユーザーのロールを `user` または `admin` に変更する
+
+新規ユーザーを自動承認する場合は、Open WebUI に次を設定します。
+
+- `DEFAULT_USER_ROLE=user`
+
+変更後は Open WebUI コンテナを再作成します。
+
+## 8. 運用上の注意
+
+現在の `realm-export.json` はレルムとクライアントを定義していますが、ユーザーは含んでいません。
+
+そのため、初回デプロイ後に `inferlab` レルムのユーザー作成が必要です。

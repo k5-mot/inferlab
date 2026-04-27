@@ -28,17 +28,17 @@
             "protocol": "openid-connect",
             "publicClient": false,
             "clientAuthenticatorType": "client-secret",
-            "secret": "worklab-open-webui-client-secret",
+            "secret": "open-webui-oauth-client-secret-key",
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
+            "rootUrl": "http://192.168.3.10:31001/",
             "redirectUris": [
-                "http://localhost:31001/oauth/oidc/callback",
                 "http://192.168.3.10:31001/oauth/oidc/callback"
             ],
             "webOrigins": [
-                "http://localhost:31001",
-                "http://192.168.3.10:31001"
+                "http://192.168.3.10:31001",
+                "http://localhost:31001"
             ],
             "protocolMappers": [
                 {

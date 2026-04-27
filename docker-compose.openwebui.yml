@@ -30,57 +30,79 @@ x-oauth2-proxy-base: &oauth2-proxy-base
 
 services:
   open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.9.2
     container_name: inferlab-open-webui
     restart: unless-stopped
     profiles:
       - openwebui
-    image: ghcr.io/open-webui/open-webui:v0.9.1
-    depends_on:
-      litellm:
-        condition: service_started
-      chroma:
-        condition: service_started
-      docling-serve:
-        condition: service_started
-      searxng:
-        condition: service_started
+
     environment:
-      WEBUI_URL: ${OPEN_WEBUI_URL:-http://192.168.3.10:31001}
-      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-worklab-alfa-open-webui-secret-key}
+      ### General
+      WEBUI_URL: "http://192.168.3.10:31001"
+      WEBUI_SECRET_KEY: "b6ae5f7e56bde383e2928d43b8d6500123dd205142bca46b51f11cb860fd9cb5"
+      ENABLE_CHANNELS: "true"
+      ### For Keycloak
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"
-      OAUTH_PROVIDER_NAME: Keycloak
-      OAUTH_CLIENT_ID: ${OPEN_WEBUI_OAUTH_CLIENT_ID:-open-webui}
-      OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OAUTH_CLIENT_SECRET:-worklab-open-webui-client-secret}
-      OAUTH_SCOPES: openid email profile groups
-      OPENID_PROVIDER_URL: ${OPEN_WEBUI_OPENID_PROVIDER_URL:-http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration}
-      OPENID_REDIRECT_URI: ${OPEN_WEBUI_OPENID_REDIRECT_URI:-http://192.168.3.10:31001/oauth/oidc/callback}
+      DEFAULT_USER_ROLE: "user"
+      OAUTH_CLIENT_ID: "open-webui"
+      OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
+      OPENID_PROVIDER_URL: http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: http://192.168.3.10:31001/oauth/oidc/callback
+      OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+      OAUTH_PROVIDER_NAME: Keycloak
+      ### For LLM on LiteLLM
       OPENAI_API_BASE_URL: http://litellm:4000/v1
-      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      DEFAULT_MODELS: "gemma4-31b"
+      ### For Embedding model on LiteLLM
+      RAG_EMBEDDING_ENGINE: openai
+      RAG_EMBEDDING_MODEL: "ruri-v3:310m"
+      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
+      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      RAG_TEXT_SPLITTER: recursive
+      CHUNK_SIZE: 800
+      CHUNK_OVERLAP: 120
+      ### For Reranking model on LiteLLM
+      ENABLE_RAG_HYBRID_SEARCH: "true"
+      RAG_RERANKING_ENGINE: "external"
+      RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000/v1/reranking"
+      # RAG_EXTERNAL_RERANKER_URL: "http://infinity:4000/v1/reranking"
+      RAG_EXTERNAL_RERANKER_API_KEY: "sk-inferlab-litellm"
+      RAG_RERANKING_MODEL: "ruri-v3-reranker:310m"
+      RAG_TOP_K: 12
+      RAG_TOP_K_RERANKER: 6
+      ### For Docling (Content Extraction)
+      CONTENT_EXTRACTION_ENGINE: docling
+      DOCLING_SERVER_URL: http://docling:5001
+      DOCLING_API_KEY: "docling-serve-api-key"
+      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "tesseract", "ocr_preset": "tesseract", "ocr_lang": ["jpn", "eng"]}'
+      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "easyocr", "ocr_preset": "easyocr", "ocr_lang": ["jp", "en"]}'
+      DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "rapidocr", "ocr_preset": "rapidocr", "ocr_lang": ["japanese", "english"]}'
+      ### For Chroma (Vector DB)
       VECTOR_DB: chroma
       CHROMA_HTTP_HOST: chroma
       CHROMA_HTTP_PORT: 8000
-      CONTENT_EXTRACTION_ENGINE: docling
-      DOCLING_SERVER_URL: http://docling-serve:5001
+      ### For SearXNG (Web Search)
       ENABLE_WEB_SEARCH: "true"
       WEB_SEARCH_ENGINE: searxng
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
-      RAG_EMBEDDING_ENGINE: openai
-      RAG_EMBEDDING_MODEL: ruri-v3-310m
-      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
-      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
+      ### For Edge-TTS (Text-to-Speech)
+      AUDIO_TTS_ENGINE: openai
+      AUDIO_TTS_OPENAI_API_BASE_URL: http://openai-edge-tts:5050/v1
+      AUDIO_TTS_OPENAI_API_KEY: "openai-edge-tts-api-secret-key"
+      # AUDIO_TTS_MODEL: model_q8f16
+      AUDIO_TTS_VOICE: "ja-JP-NanamiNeural"
+      # AUDIO_TTS_OPENAI_API_KEY: ${KOKORO_WEB_API_KEY:-kokoro-secret-key}
+      ### For ComfyUI (Image Generation and Editing)
+      # ENABLE_IMAGE_GENERATION: "true"
+      # IMAGE_GENERATION_ENGINE: comfyui
+      # IMAGE_EDIT_ENGINE: comfyui
+      # COMFYUI_BASE_URL: http://comfyui:8188
+      ### For Open WebUI Pipelines
       PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
       PIPELINES_URLS: http://open-webui-pipelines:9099
-      AUDIO_TTS_ENGINE: openai
-      AUDIO_TTS_MODEL: model_q8f16
-      AUDIO_TTS_VOICE: af_heart
-      AUDIO_TTS_OPENAI_API_BASE_URL: http://kokoro-web:3000/api/v1
-      AUDIO_TTS_OPENAI_API_KEY: ${KOKORO_WEB_API_KEY:-kokoro-secret-key}
-      ENABLE_IMAGE_GENERATION: "true"
-      IMAGE_GENERATION_ENGINE: comfyui
-      IMAGE_EDIT_ENGINE: comfyui
-      COMFYUI_BASE_URL: http://comfyui:8188
     ports:
       - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
     volumes:
@@ -88,18 +110,49 @@ services:
     networks:
       - llm-public
       - llm-internal
+    depends_on:
+      litellm:
+        condition: service_started
+      chroma:
+        condition: service_started
+      docling:
+        condition: service_started
+      searxng:
+        condition: service_started
 
-  kokoro-web:
-    container_name: inferlab-kokoro-web
+  docling:
+    image: quay.io/docling-project/docling-serve:v1.16.1
+    container_name: inferlab-docling
     restart: unless-stopped
     profiles:
       - openwebui
-      - media
-    image: ghcr.io/eduardolat/kokoro-web:0.1.3
     environment:
-      KW_SECRET_API_KEY: ${KOKORO_WEB_API_KEY:-kokoro-secret-key}
+      DOCLING_SERVE_HOST: 0.0.0.0
+      DOCLING_SERVE_PORT: 5001
+      DOCLING_SERVE_ENABLE_UI: "true"
+      DOCLING_SERVE_API_KEY: "docling-serve-api-key"
+    ports:
+      - 50001:5001
     volumes:
-      - ./kokoro-cache:/kokoro/cache
+      - docling-data:/data
+    networks:
+      - llm-internal
+
+  openai-edge-tts:
+    image: travisvn/openai-edge-tts:latest
+    container_name: inferlab-openai-edge-tts
+    restart: unless-stopped
+    environment:
+      API_KEY: "openai-edge-tts-api-secret-key"
+      DEFAULT_VOICE: "ja-JP-NanamiNeural"
+      DEFAULT_RESPONSE_FORMAT: "mp3"
+      DEFAULT_SPEED: 1.0
+      DEFAULT_LANGUAGE: "ja-JP"
+      REQUIRE_API_KEY: "True"
+      REMOVE_FILTER: "True"
+      EXPAND_API: "True"
+    ports:
+      - "5050:5050"
     networks:
       - llm-internal
 
@@ -131,20 +184,7 @@ services:
     networks:
       - llm-internal
 
-  docling-serve:
-    container_name: inferlab-docling-serve
-    restart: unless-stopped
-    profiles:
-      - openwebui
-    image: quay.io/docling-project/docling-serve:v1.16.1
-    environment:
-      DOCLING_SERVE_HOST: 0.0.0.0
-      DOCLING_SERVE_PORT: 5001
-      DOCLING_SERVE_ENABLE_UI: "true"
-    volumes:
-      - docling-serve-data:/data
-    networks:
-      - llm-internal
+
 
   searxng:
     container_name: inferlab-searxng
@@ -256,7 +296,7 @@ volumes:
   open-webui-data:
   chroma-data:
   open-webui-pipelines-data:
-  docling-serve-data:
+  docling-data:
 
 networks:
   llm-public:

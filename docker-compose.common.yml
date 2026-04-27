@@ -9,6 +9,9 @@ services:
       - start-dev
       - --http-port=8080
       - --import-realm
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
@@ -22,9 +25,6 @@ services:
       KC_HOSTNAME_ADMIN: ${KEYCLOAK_HOSTNAME_ADMIN:-http://192.168.3.10:30000}
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
-    depends_on:
-      postgres-keycloak:
-        condition: service_healthy
     ports:
       - "${KEYCLOAK_HOST_PORT:-30000}:8080"
     volumes:
@@ -46,6 +46,8 @@ services:
       PGDATA: /var/lib/postgresql/18/docker
     volumes:
       - postgres-keycloak-data:/var/lib/postgresql
+    networks:
+      - llm-internal
     healthcheck:
       test:
         - CMD-SHELL
@@ -54,8 +56,6 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    networks:
-      - llm-internal
 
 volumes:
   postgres-keycloak-data:

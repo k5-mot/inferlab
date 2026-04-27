@@ -72,7 +72,7 @@ services:
         ollama pull gpt-oss:120b-cloud
       "
 
-  inifinity:
+  infinity:
     image: docker.io/michaelf34/infinity:0.0.77
     container_name: inferlab-infinity
     restart: unless-stopped

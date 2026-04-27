@@ -1,60 +1,60 @@
 model_list:
-  - model_name: deepseek-v4-flash
+  - model_name: deepseek-v4-flash:158b
     litellm_params:
       model: ollama/deepseek-v4-flash:cloud
       api_base: http://ollama:11434
 
-  - model_name: kimi-k2.6
+  - model_name: kimi-k2.6:1t
     litellm_params:
       model: ollama/kimi-k2.6:cloud
       api_base: http://ollama:11434
 
-  - model_name: glm-5.1
+  - model_name: glm-5.1:754b
     litellm_params:
       model: ollama/glm-5.1:cloud
       api_base: http://ollama:11434
 
-  - model_name: minimax-m2.7
+  - model_name: minimax-m2.7:229b
     litellm_params:
       model: ollama/minimax-m2.7:cloud
       api_base: http://ollama:11434
 
-  - model_name: gemma4-31b
+  - model_name: gemma4:31b
     litellm_params:
       model: ollama/gemma4:31b-cloud
       api_base: http://ollama:11434
 
-  - model_name: qwen3.5-397b
+  - model_name: qwen3.5:397b
     litellm_params:
       model: ollama/qwen3.5:397b-cloud
       api_base: http://ollama:11434
 
-  - model_name: qwen3-coder-next
+  - model_name: qwen3-coder-next:80b
     litellm_params:
       model: ollama/qwen3-coder-next:cloud
       api_base: http://ollama:11434
 
-  - model_name: gpt-oss-120b
+  - model_name: gpt-oss:120b
     litellm_params:
       model: ollama/gpt-oss:120b-cloud
       api_base: http://ollama:11434
 
-  - model_name: ruri-v3-ruri-v3-310m
+  - model_name: ruri-v3:310m
     litellm_params:
-      model: infinity/cl-nagoya/ruri-v3-ruri-v3-310m
+      model: infinity/cl-nagoya/ruri-v3-310m
       api_base: https://infinity:4000
 
-  - model_name: ruri-v3-reranker-310m
+  - model_name: ruri-v3-reranker:310m
     litellm_params:
       model: infinity/cl-nagoya/ruri-v3-reranker-310m
       api_base: https://infinity:4000
 
-  - model_name: Qwen3-Embedding-0.6B
+  - model_name: Qwen3-Embedding:0.6B
     litellm_params:
       model: infinity/Qwen/Qwen3-Embedding-0.6B
       api_base: https://infinity:4000
 
-  - model_name: Qwen3-Reranker-0.6B
+  - model_name: Qwen3-Reranker:0.6B
     litellm_params:
       model: infinity/Qwen/Qwen3-Reranker-0.6B
       api_base: https://infinity:4000
