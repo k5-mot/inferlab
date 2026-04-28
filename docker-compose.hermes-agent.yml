@@ -15,6 +15,7 @@ services:
         chown -R 1000:1000 /opt/data || true
     volumes:
       - hermes-agent-data:/opt/data
+      - ./skills:/opt/inferlab/skills:ro
       - ./hermes-agent/config.yaml:/config/config.yaml:ro
 
   hermes-agent:
@@ -33,10 +34,22 @@ services:
       API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
       GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
       GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
+      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
+      OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+      OPEN_WEBUI_DEFAULT_CHANNEL: ${OPEN_WEBUI_DEFAULT_CHANNEL:-report}
+      OPEN_WEBUI_CHANNELS_LIST_PATH: ${OPEN_WEBUI_CHANNELS_LIST_PATH:-/api/v1/channels/}
+      OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
+      OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
+      PYTHONPATH: /opt/inferlab
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
     ports:
-      - "${HERMES_AGENT_HOST_PORT:-31006}:${HERMES_AGENT_PORT:-8642}"
+      - 31006:8642
     volumes:
       - hermes-agent-data:/opt/data
+      - ./skills:/opt/inferlab/skills:ro
     networks:
       - llm-public
       - llm-internal
@@ -55,17 +68,18 @@ services:
     command:
       - dashboard
       - --host
-      - 0.0.0.0
+      - "0.0.0.0"
       - --port
-      - "${HERMES_AGENT_DASHBOARD_PORT:-9119}"
+      - "9119"
       - --no-open
       - --insecure
     environment:
-      GATEWAY_HEALTH_URL: http://hermes-agent:${HERMES_AGENT_PORT:-8642}
+      GATEWAY_HEALTH_URL: http://hermes-agent:8642
     ports:
-      - "127.0.0.1:${HERMES_AGENT_DASHBOARD_HOST_PORT:-31009}:${HERMES_AGENT_DASHBOARD_PORT:-9119}"
+      - 31009:9119
     volumes:
       - hermes-agent-data:/opt/data
+      - ./skills:/opt/inferlab/skills:ro
     networks:
       - llm-public
       - llm-internal

@@ -42,6 +42,7 @@ services:
       ENABLE_NOTES: "true"
       ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"
+      ENABLE_API_KEYS: "true"
       ### For Keycloak
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"

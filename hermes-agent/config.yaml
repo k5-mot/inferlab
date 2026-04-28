@@ -3,3 +3,23 @@ model:
   provider: custom
   base_url: http://ollama:11434/v1
   api_key: sk-inferlab-litellm
+
+skills:
+  external_dirs:
+    - /opt/inferlab/skills
+
+terminal:
+  env_passthrough:
+    - REPORT_TIMEZONE
+    - OPEN_WEBUI_BASE_URL
+    - OPEN_WEBUI_API_KEY
+    - OPEN_WEBUI_DEFAULT_CHANNEL
+    - OPEN_WEBUI_CHANNELS_LIST_PATH
+    - OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE
+    - OPEN_WEBUI_MAX_MESSAGE_CHARS
+    - OPEN_WEBUI_TIMEOUT_SECONDS
+    - OPEN_WEBUI_MAX_RETRIES
+    - PYTHONPATH
+    - LANGFUSE_HOST
+    - LANGFUSE_PUBLIC_KEY
+    - LANGFUSE_SECRET_KEY
