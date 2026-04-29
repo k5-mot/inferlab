@@ -1,5 +1,5 @@
 model:
-  default: ollama/gpt-oss:120b-cloud
+  default: ollama_chat/gpt-oss:120b-cloud
   provider: custom
   base_url: http://ollama:11434/v1
   api_key: sk-inferlab-litellm
@@ -7,6 +7,11 @@ model:
 skills:
   external_dirs:
     - /opt/inferlab/skills
+
+mcp_servers:
+  rss:
+    command: "node"
+    args: ["/opt/data/node_modules/rss-mcp/dist/index.js"]
 
 terminal:
   env_passthrough:

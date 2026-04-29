@@ -154,30 +154,42 @@ def generate_activity_report(
             file_count += len(_extract_file_ids(message))
 
         channel_id = messages_result.get("channel_id", channel)
-        title = f"LLM活動レポート - {channel}"
+        report_date = until_dt.astimezone().date().isoformat()
         lines = [
-            f"## {title}",
+            "---",
+            f"# 📊 アクティビティレポート ({report_date})",
             "",
-            f"対象期間: {since_dt.isoformat()} から {until_dt.isoformat()}",
-            f"チャンネル: `{channel}` (`{channel_id}`)",
+            f"- 🔢 合計LLM呼び出し回数：{len(messages)}回",
+            f"- 📝 対象チャンネル `{channel}` (`{channel_id}`)、期間 {since_dt.isoformat()} 〜 {until_dt.isoformat()} の活動を集計。",
+            f"- 👥 活動ユーザー数：{len(by_user)}名 / 参照ファイル数：{file_count}件",
             "",
-            "### サマリー",
-            f"- 確認した投稿数: {len(messages)}",
-            f"- 活動ユーザー数: {len(by_user)}",
-            f"- 参照ファイル数: {file_count}",
-            "",
-            "### ユーザー別アクティビティ",
+            "## 🔥 本日の主要イベント",
         ]
 
-        if by_user:
-            for user, user_messages in sorted(by_user.items(), key=lambda item: (-len(item[1]), item[0])):
-                snippets = [str(msg.get("content") or "").strip().replace("\n", " ")[:120] for msg in user_messages[:3]]
-                lines.append(f"- {user}: {len(user_messages)} 件の投稿")
-                for snippet in snippets:
-                    if snippet:
-                        lines.append(f"  - {snippet}")
+        sorted_users = sorted(by_user.items(), key=lambda item: (-len(item[1]), item[0]))
+        if sorted_users:
+            for index, (user, user_messages) in enumerate(sorted_users[:3], start=1):
+                snippets = [str(msg.get("content") or "").strip().replace("\n", " ")[:100] for msg in user_messages[:2]]
+                message_ids = [str(msg.get("id") or "") for msg in user_messages[:3] if msg.get("id")]
+                summary = " / ".join([text for text in snippets if text]) or "投稿内容の要約を生成できませんでした。"
+                related_posts = ", ".join(f"message:{msg_id}" for msg_id in message_ids) or "なし"
+                lines.extend(
+                    [
+                        f"{index}. {user}の主要アクティビティ",
+                        f"   - 説明：{summary}",
+                        f"   - 関連ユーザー：{user}",
+                        f"   - 関連投稿：{related_posts}",
+                    ]
+                )
         else:
-            lines.append("- 指定期間内の投稿は見つかりませんでした。")
+            lines.extend(
+                [
+                    "1. 主要イベントなし",
+                    "   - 説明：指定期間内の投稿は見つかりませんでした。",
+                    "   - 関連ユーザー：なし",
+                    "   - 関連投稿：なし",
+                ]
+            )
 
         action_words = Counter()
         for message in messages:
@@ -185,24 +197,63 @@ def generate_activity_report(
             for word in ("deploy", "fix", "review", "investigate", "release", "error", "incident", "cost", "model", "障害", "費用", "調査", "修正", "リリース"):
                 if word in text:
                     action_words[word] += 1
-        lines.extend(["", "### 注目シグナル"])
+
+        lines.extend(["", "## ✅ 推奨アクションアイテム"])
         if action_words:
-            for word, count in action_words.most_common():
-                lines.append(f"- `{word}` が {count} 件の投稿で言及されています")
+            for index, (word, count) in enumerate(action_words.most_common(3), start=1):
+                lines.extend(
+                    [
+                        f"{index}. `{word}` に関する確認",
+                        f"   - 詳細：`{word}` が {count} 件の投稿で言及されています。担当者と期限を確認してください。",
+                        "   - 担当者：未定（チャンネルオーナー確認）",
+                        "   - 期限：次回定例まで",
+                    ]
+                )
         else:
-            lines.append("- 目立ったアクションまたはリスク関連キーワードは検出されませんでした。")
+            lines.extend(
+                [
+                    "1. 継続監視",
+                    "   - 詳細：目立ったアクションまたはリスク関連キーワードは検出されませんでした。",
+                    "   - 担当者：チャンネル参加者全員",
+                    "   - 期限：次回レポートまで",
+                ]
+            )
+
+        lines.extend(["", "## ⚠️ 潜在的な問題"])
+        risk_words = [(word, count) for word, count in action_words.items() if word in {"error", "incident", "障害"}]
+        if risk_words:
+            for index, (word, count) in enumerate(risk_words[:3], start=1):
+                lines.extend(
+                    [
+                        f"{index}. `{word}` の継続監視が必要",
+                        f"   - 詳細：`{word}` が {count} 件の投稿で言及されています。根本原因の特定状況を確認してください。",
+                        "   - 関連ユーザー：未特定（該当スレッド確認）",
+                        "   - 関連投稿：チャンネル内の該当メッセージを参照",
+                    ]
+                )
+        else:
+            lines.extend(
+                [
+                    "1. 顕在化した重大リスクなし",
+                    "   - 詳細：エラー・障害系キーワードの集中は確認されませんでした。",
+                    "   - 関連ユーザー：なし",
+                    "   - 関連投稿：なし",
+                ]
+            )
+
+        lines.extend(["", "### 👥 ユーザー別アクティビティ"])
+        if sorted_users:
+            for user, user_messages in sorted_users:
+                snippets = [str(msg.get("content") or "").strip().replace("\n", " ")[:100] for msg in user_messages[:2]]
+                lines.append(f"- {user}：🗨️ {len(user_messages)}件のチャンネル投稿、🤖 0件のチャット利用")
+                for snippet in snippets:
+                    if snippet:
+                        lines.append(f"  - `{snippet}`")
+        else:
+            lines.append("- 対象ユーザーの投稿はありませんでした。")
 
         if include_langfuse:
-            lines.extend(["", "### Langfuse", *_langfuse_lines(since_dt, until_dt)])
-
-        lines.extend(
-            [
-                "",
-                "### 推奨フォローアップ",
-                "1. 未解決の障害、ブロッカー、担当者の割り当てを確認する。",
-                "2. 次回レポート前に、重要度の高いスレッドと添付ファイルを確認する。",
-            ]
-        )
+            lines.extend(["", "### 🔍 Langfuse補足", *_langfuse_lines(since_dt, until_dt)])
         return {
             "ok": True,
             "content_markdown": "\n".join(lines),

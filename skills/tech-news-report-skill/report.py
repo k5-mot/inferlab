@@ -21,39 +21,35 @@ def format_news_report(
     """
     try:
         items = items or []
+        report_date = datetime.now(timezone.utc).date().isoformat()
         lines = [
-            f"## {title}",
+            "---",
+            f"# {title} ({report_date})",
             "",
-            f"生成日時: {datetime.now(timezone.utc).isoformat()}",
-            f"対象領域: {focus}",
+            f"- 📝 対象領域: {focus}",
             "",
-            "### 注目ニュース",
+            "## 🔥 本日の主要ニュース",
         ]
         if not items:
-            lines.append("- ニュース項目が渡されていません。先にweb/searchで情報を収集し、要約済みの項目を渡してください。")
+            lines.append("\n### 1. 情報不足: ニュース項目が渡されていません")
+            lines.append("- URL：N/A")
+            lines.append("- 概要：先に web/search や mcp_rss_get_feed で情報を収集してください。")
+            lines.append("- 重要ポイント：要約済み項目が必要です。")
         for index, item in enumerate(items, start=1):
             headline = str(item.get("title") or item.get("headline") or "タイトル未設定")
+            category = str(item.get("category") or item.get("genre") or "トピック")
             source = str(item.get("source") or "")
             url = str(item.get("url") or "")
             summary = str(item.get("summary") or "")
             impact = str(item.get("impact") or "")
-            lines.append(f"{index}. {headline}")
-            if source or url:
-                source_line = f"{source} {url}".strip()
-                lines.append(f"   - 出典: {source_line}")
-            if summary:
-                lines.append(f"   - 概要: {summary}")
-            if impact:
-                lines.append(f"   - 重要ポイント: {impact}")
+            lines.append(f"\n### {index}. {category}: {headline}")
+            if source and not url:
+                lines.append(f"- URL：{source}")
+            else:
+                lines.append(f"- URL：{url or 'N/A'}")
+            lines.append(f"- 概要：{summary or '概要未設定'}")
+            lines.append(f"- 重要ポイント：{impact or '重要ポイント未設定'}")
 
-        lines.extend(
-            [
-                "",
-                "### 推奨アクション",
-                "1. インフラコスト、セキュリティ、モデルやランタイム選定、開発者体験に影響する項目を共有する。",
-                "2. 追加検証が必要なベンダー発表やツール更新を継続ウォッチする。",
-            ]
-        )
         return {"ok": True, "content_markdown": "\n".join(lines), "metadata": {"items": len(items), "focus": focus}}
     except Exception as exc:
         return {"ok": False, "error": str(exc), "exception_type": exc.__class__.__name__}

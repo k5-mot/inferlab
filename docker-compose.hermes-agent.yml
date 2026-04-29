@@ -12,6 +12,7 @@ services:
       - |
         set -eu
         cp /config/config.yaml /opt/data/config.yaml
+        npm install --prefix /opt/data rss-mcp --silent
         chown -R 1000:1000 /opt/data || true
     volumes:
       - hermes-agent-data:/opt/data
