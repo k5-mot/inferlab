@@ -2,7 +2,7 @@ services:
   hermes-agent-config:
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
     container_name: inferlab-hermes-agent-config
-    restart: "no"
+    restart: no
     profiles:
       - hermes-agent
     entrypoint:
@@ -37,17 +37,17 @@ services:
       GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
       REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
       OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_PUBLIC_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
       OPEN_WEBUI_DEFAULT_CHANNEL: ${OPEN_WEBUI_DEFAULT_CHANNEL:-report}
       OPEN_WEBUI_CHANNELS_LIST_PATH: ${OPEN_WEBUI_CHANNELS_LIST_PATH:-/api/v1/channels/}
       OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
+      OPEN_WEBUI_CHATS_ALL_DB_PATH: ${OPEN_WEBUI_CHATS_ALL_DB_PATH:-/api/v1/chats/all/db}
       OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
       PYTHONPATH: /opt/inferlab
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
-    ports:
-      - 31006:8642
     volumes:
       - hermes-agent-data:/opt/data
       - ./skills:/opt/inferlab/skills:ro

@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def load_client():
-    path = Path(__file__).resolve().parents[1] / "skills" / "open-webui-skill" / "client.py"
+    path = Path(__file__).resolve().parents[1] / "scripts" / "client.py"
     spec = importlib.util.spec_from_file_location("ow_client_test", path)
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
@@ -110,6 +110,18 @@ def test_post_message_calls_post(monkeypatch):
     assert post_call[4]["meta"]["skill"] == "open-webui-skill"
 
 
+def test_post_message_to_thread_sets_parent_id(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.post_queue.append(FakeResponse(200, {"id": "reply1"}))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.post_message("channel-id-1234567890", "thread reply", thread_id="msg-parent")
+
+    assert result["ok"] is True
+    assert fake.calls[0][4]["parent_id"] == "msg-parent"
+
+
 def test_list_channel_messages_calls_get(monkeypatch):
     set_required_env(monkeypatch)
     fake = FakeRequests()
@@ -125,6 +137,21 @@ def test_list_channel_messages_calls_get(monkeypatch):
     assert fake.calls[1][1] == "https://openwebui.example.test/api/v1/channels/ch_daily/messages?skip=0&limit=10"
 
 
+def test_list_all_channel_messages_pages_until_short_page(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.get_queue.append(FakeResponse(200, [{"id": "m1"}, {"id": "m2"}]))
+    fake.get_queue.append(FakeResponse(200, [{"id": "m3"}]))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.list_all_channel_messages("channel-id-1234567890", page_size=2)
+
+    assert result["ok"] is True
+    assert result["count"] == 3
+    assert fake.calls[0][1] == "https://openwebui.example.test/api/v1/channels/channel-id-1234567890/messages?skip=0&limit=2"
+    assert fake.calls[1][1] == "https://openwebui.example.test/api/v1/channels/channel-id-1234567890/messages?skip=2&limit=2"
+
+
 def test_get_file_content_calls_data_content(monkeypatch):
     set_required_env(monkeypatch)
     fake = FakeRequests()
@@ -136,6 +163,84 @@ def test_get_file_content_calls_data_content(monkeypatch):
     assert result["ok"] is True
     assert result["content"] == "file text"
     assert fake.calls[0][1] == "https://openwebui.example.test/api/v1/files/file1/data/content"
+
+
+def test_list_models_calls_api_models(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.get_queue.append(FakeResponse(200, {"models": [{"id": "llama3.2"}]}))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.list_models()
+
+    assert result["ok"] is True
+    assert result["models"][0]["id"] == "llama3.2"
+    assert fake.calls[0][1] == "https://openwebui.example.test/api/models"
+
+
+def test_list_all_chats_pages_until_short_page(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.get_queue.append(FakeResponse(200, {"chats": [{"id": "chat1"}, {"id": "chat2"}]}))
+    fake.get_queue.append(FakeResponse(200, {"chats": [{"id": "chat3"}]}))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.list_all_chats(page_size=2)
+
+    assert result["ok"] is True
+    assert result["count"] == 3
+    assert fake.calls[0][1] == "https://openwebui.example.test/api/v1/chats?skip=0&limit=2&include_archived=False"
+    assert fake.calls[1][1] == "https://openwebui.example.test/api/v1/chats?skip=2&limit=2&include_archived=False"
+
+
+def test_add_user_message_to_chat_updates_then_completes(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.get_queue.append(
+        FakeResponse(
+            200,
+            {
+                "id": "chat1",
+                "chat": {
+                    "messages": [{"id": "old-a", "role": "assistant", "content": "hello", "childrenIds": []}],
+                    "history": {
+                        "currentId": "old-a",
+                        "messages": {"old-a": {"id": "old-a", "role": "assistant", "content": "hello", "childrenIds": []}},
+                    },
+                },
+            },
+        )
+    )
+    fake.post_queue.append(FakeResponse(200, {"id": "chat1"}))
+    fake.post_queue.append(FakeResponse(200, {"content": "done"}))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.add_user_message_to_chat("chat1", "next question", "llama3.2", stream=False)
+
+    assert result["ok"] is True
+    update_call = fake.calls[1]
+    completion_call = fake.calls[2]
+    assert update_call[1] == "https://openwebui.example.test/api/v1/chats/chat1"
+    assert update_call[4]["chat"]["history"]["currentId"] == result["assistant_message_id"]
+    assert completion_call[1] == "https://openwebui.example.test/api/chat/completions"
+    assert completion_call[4]["chat_id"] == "chat1"
+    assert completion_call[4]["id"] == result["assistant_message_id"]
+
+
+def test_list_all_knowledge_hydrates_details(monkeypatch):
+    set_required_env(monkeypatch)
+    fake = FakeRequests()
+    fake.get_queue.append(FakeResponse(200, [{"id": "kb1"}, {"id": "kb2"}]))
+    fake.get_queue.append(FakeResponse(200, {"id": "kb1", "name": "One"}))
+    fake.get_queue.append(FakeResponse(200, {"id": "kb2", "name": "Two"}))
+    monkeypatch.setattr(client, "requests", fake)
+
+    result = client.list_all_knowledge(include_details=True)
+
+    assert result["ok"] is True
+    assert result["knowledge"][0]["name"] == "One"
+    assert fake.calls[0][1] == "https://openwebui.example.test/api/v1/knowledge"
+    assert fake.calls[1][1] == "https://openwebui.example.test/api/v1/knowledge/kb1"
 
 
 def test_empty_content_is_not_sent(monkeypatch):
