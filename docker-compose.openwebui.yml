@@ -162,7 +162,7 @@ services:
       DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
       DOCLING_SERVE_ARTIFACTS_PATH: ""
-      DOCLING_SERVE_MAX_SYNC_WAIT: 999999
+      DOCLING_SERVE_MAX_SYNC_WAIT: 36000
     ports:
       - 50001:5001
     volumes:

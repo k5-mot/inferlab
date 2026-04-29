@@ -1,10 +1,10 @@
 services:
   litellm:
-    container_name: worklab-alfa-llm-litellm
+    image: docker.io/litellm/litellm:v1.83.3-stable
+    container_name: inferlab-litellm
     restart: unless-stopped
     profiles:
       - inference-vllm
-    image: docker.io/litellm/litellm:v1.83.3-stable
     command:
       - --config
       - /app/config.yaml
@@ -13,9 +13,9 @@ services:
       - --port
       - "4000"
     environment:
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-worklab-litellm}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-worklab}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-worklab}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-langfuse-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-langfuse-secret-key}
       LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-http://langfuse:3000/api/public/otel}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
     ports:
@@ -26,71 +26,126 @@ services:
       - llm-public
       - llm-internal
 
-  vllm-gemma4-31b:
-    container_name: worklab-alfa-llm-vllm-gemma4-31b
+  vllm-gemma4-e4b:
+    image: docker.io/vllm/vllm-openai:v0.19.1
+    container_name: inferlab-vllm-gemma4-e4b
     restart: unless-stopped
+    # shm_size: 16gb
     profiles:
       - inference-vllm
-      - inference
-    image: docker.io/vllm/vllm-openai:v0.19.1
     command:
+      - "google/gemma-4-E4B-it"
       - --host
-      - 0.0.0.0
+      - "0.0.0.0"
       - --port
       - "8000"
-      - --model
-      - google/gemma-4-31b-it
+      - --convert
+      - "auto"
+      - --dtype
+      - "bfloat16"
+      - --max-model-len
+      - "32768"
+      - --gpu-memory-utilization
+      - "0.5"
+      - --chat-template
+      - "chat_template.jinja"
+      - --enable-auto-tool-choice
+      - "true"
+      - --tool-call-parser
+      - "gemma4"
+      - --reasoning-parser
+      - "gemma4"
       - --served-model-name
-      - gemma-4-31b-it
-    shm_size: 16gb
+      - "gemma4:e4b"
     volumes:
       - vllm-cache:/root/.cache
     networks:
       - llm-internal
 
+  # vllm-gemma4-31b:
+  #   image: docker.io/vllm/vllm-openai:v0.19.1
+  #   container_name: inferlab-vllm-gemma4-31b
+  #   restart: unless-stopped
+  #   shm_size: 16gb
+  #   profiles:
+  #     - inference-vllm
+  #   command:
+  #     - "google/gemma-4-31B-it"
+  #     - --host
+  #     - "0.0.0.0"
+  #     - --port
+  #     - "8000"
+  #     - --convert
+  #     - "auto"
+  #     - --dtype
+  #     - "bfloat16"
+  #     - --max-model-len
+  #     - "32768"
+  #     - --gpu-memory-utilization
+  #     - "0.5"
+  #     - --chat-template
+  #     - "chat_template.jinja"
+  #     - --enable-auto-tool-choice
+  #     - "true"
+  #     - --tool-call-parser
+  #     - "gemma4"
+  #     - --reasoning-parser
+  #     - "gemma4"
+  #     - --served-model-name
+  #     - "gemma4:31b"
+  #   volumes:
+  #     - vllm-cache:/root/.cache
+  #   networks:
+  #     - llm-internal
+
   vllm-ruri-v3-310m:
-    container_name: worklab-alfa-llm-vllm-ruri-v3-310m
+    image: docker.io/vllm/vllm-openai:v0.19.1
+    container_name: inferlab-vllm-ruri-v3-310m
     restart: unless-stopped
+    # shm_size: 8gb
     profiles:
       - inference-vllm
-      - inference
-    image: docker.io/vllm/vllm-openai:v0.19.1
     command:
+      - "cl-nagoya/ruri-v3-310m"
       - --host
-      - 0.0.0.0
+      - "0.0.0.0"
       - --port
       - "8000"
-      - --model
-      - cl-nagoya/ruri-v3-310m
+      - --convert
+      - "embed"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
       - --served-model-name
-      - ruri-v3-310m
-      - --task
-      - embed
-    shm_size: 8gb
+      - "ruri-v3:310m"
     volumes:
       - vllm-cache:/root/.cache
     networks:
       - llm-internal
 
   vllm-ruri-v3-reranker-310m:
-    container_name: worklab-alfa-llm-vllm-ruri-v3-reranker-310m
+    image: docker.io/vllm/vllm-openai:v0.19.1
+    container_name: inferlab-vllm-ruri-v3-reranker-310m
     restart: unless-stopped
+    # shm_size: 8gb
     profiles:
       - inference-vllm
       - inference
-    image: docker.io/vllm/vllm-openai:v0.19.1
     command:
+      - "cl-nagoya/ruri-v3-reranker-310m"
       - --host
-      - 0.0.0.0
+      - "0.0.0.0"
       - --port
       - "8000"
-      - --model
-      - cl-nagoya/ruri-v3-reranker-310m
+      - --convert
+      - "classify"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
       - --served-model-name
-      - ruri-v3-reranker-310m
-      - --task
-      - score
-    shm_size: 8gb
+      - "ruri-v3-reranker:310m"
     volumes:
       - vllm-cache:/root/.cache
     networks:
