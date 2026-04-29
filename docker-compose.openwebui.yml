@@ -59,52 +59,51 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       # OPENAI_API_BASE_URL: http://litellm:4000/v1
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
-      # OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
+      # OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       OPENAI_API_KEYS: "sk-litellm-master-key;hermes-agent-secret-key"
       DEFAULT_MODELS: "gemma4:31b"
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
       RAG_EMBEDDING_MODEL: "ruri-v3:310m"
-      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
-      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
-      RAG_TEXT_SPLITTER: recursive
+      RAG_OPENAI_API_BASE_URL: http://litellm:4000
+      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      RAG_TEXT_SPLITTER: token
       CHUNK_SIZE: 800
       CHUNK_OVERLAP: 120
       ### For Reranking model on LiteLLM
       ENABLE_RAG_HYBRID_SEARCH: "true"
       RAG_RERANKING_ENGINE: "external"
-      RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000/v1/reranking"
-      # RAG_EXTERNAL_RERANKER_URL: "http://infinity:4000/v1/reranking"
-      RAG_EXTERNAL_RERANKER_API_KEY: "sk-inferlab-litellm"
+      RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000"
+      RAG_EXTERNAL_RERANKER_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       RAG_RERANKING_MODEL: "ruri-v3-reranker:310m"
       RAG_TOP_K: 12
       RAG_TOP_K_RERANKER: 6
       ### For Docling (Content Extraction)
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
-      DOCLING_API_KEY: "docling-serve-api-key"
-      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "tesseract", "ocr_preset": "tesseract", "ocr_lang": ["jpn", "eng"]}'
-      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "easyocr", "ocr_preset": "easyocr", "ocr_lang": ["jp", "en"]}'
-      # DOCLING_PARAMS: '{"do_ocr": true, "ocr_engine": "rapidocr", "ocr_preset": "rapidocr", "ocr_lang": ["japanese", "english"]}'
+      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      # DOCLING_PARAMS: >-
+      #   {
+      #     "do_ocr": true,
+      #     "force_ocr": false,
+      #     "ocr_engine": "tesseract_cli",
+      #     "ocr_preset": "tesseract",
+      #     "ocr_lang": ["jpn", "eng"]
+      #   }
       DOCLING_PARAMS: >-
         {
           "do_ocr": true,
-          "ocr_engine": "rapidocr",
-          "ocr_preset": "rapidocr",
-          "ocr_lang": ["japanese", "english"],
+          "force_ocr": false,
+          "ocr_engine": "tesseract_cli",
+          "ocr_preset": "tesseract",
+          "ocr_lang": ["jpn", "jpn_vert", "eng"],
           "do_picture_description": true,
-          "picture_description_options": {
+          "picture_description_custom_config": {
             "kind": "api",
             "url": "http://litellm:4000/v1/chat/completions",
-            "headers": {
-              "Authorization": "Bearer sk-inferlab-litellm"
-            },
-            "params": {
-              "model": "gemma4:31b",
-              "temperature": 0.0,
-              "max_tokens": 1024
-            },
-            "prompt": "この画像を日本語でRAG用に説明してください。図表、表、スクリーンショット、模式図の場合は、読み取れる文字・構造・意味をMarkdownで簡潔かつ正確に記述してください。推測できない内容は書かないでください。"
+            "headers": { "Authorization": "Bearer sk-litellm-master-key" },
+            "params": { "model": "gemma4:31b", "temperature": 0.0, "max_tokens": 1024 },
+            "prompt": "この画像を日本語でRAG用に説明してください。..."
           },
           "generate_picture_images": true
         }
@@ -149,7 +148,9 @@ services:
         condition: service_started
 
   docling:
-    image: quay.io/docling-project/docling-serve:v1.16.1
+    # image: quay.io/docling-project/docling-serve:v1.16.1
+    # image: quay.io/docling-project/docling-serve:v1.17.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.17.0
     container_name: inferlab-docling
     restart: unless-stopped
     profiles:
@@ -158,8 +159,10 @@ services:
       DOCLING_SERVE_HOST: 0.0.0.0
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"
-      DOCLING_SERVE_API_KEY: "docling-serve-api-key"
+      DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+      DOCLING_SERVE_ARTIFACTS_PATH: ""
+      DOCLING_SERVE_MAX_SYNC_WAIT: 999999
     ports:
       - 50001:5001
     volumes:

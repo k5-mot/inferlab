@@ -7,8 +7,8 @@ services:
     restart: no
     user: root
     environment:
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
-      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-litellm-master-key}}
     entrypoint:
       - sh
       - -c
@@ -99,8 +99,8 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
-      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-litellm-master-key}}
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-31007}:18789"
       - "${OPENCLAW_BRIDGE_PORT:-31008}:18790"
@@ -151,8 +151,8 @@ services:
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-inferlab-litellm}
-      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-inferlab-litellm}}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-litellm-master-key}}
     volumes:
       - openclaw-config:/home/node/.openclaw
       - openclaw-workspace:/home/node/.openclaw/workspace

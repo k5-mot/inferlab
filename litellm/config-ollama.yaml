@@ -65,26 +65,44 @@ model_list:
   - model_name: ruri-v3:310m
     litellm_params:
       model: infinity/cl-nagoya/ruri-v3-310m
-      api_base: https://infinity:4000
+      api_base: http://infinity:4000
       # raw_scores: True
 
   - model_name: ruri-v3-reranker:310m
     litellm_params:
       model: infinity/cl-nagoya/ruri-v3-reranker-310m
-      api_base: https://infinity:4000
+      api_base: http://infinity:4000
       # raw_scores: True
 
-  - model_name: Qwen3-Embedding:0.6B
+  - model_name: harrier-oss-v1:0.6b
     litellm_params:
-      model: infinity/Qwen/Qwen3-Embedding-0.6B
-      api_base: https://infinity:4000
+      model: infinity/microsoft/harrier-oss-v1-0.6b
+      api_base: http://infinity:4000
       # raw_scores: True
 
-  - model_name: Qwen3-Reranker:0.6B
+  - model_name: E2Rank:0.6B
     litellm_params:
-      model: infinity/Qwen/Qwen3-Reranker-0.6B
-      api_base: https://infinity:4000
+      model: infinity/Alibaba-NLP/E2Rank-0.6B
+      api_base: http://infinity:4000
       # raw_scores: True
+
+  # - model_name: gte-multilingual-reranker-base:0.3b
+  #   litellm_params:
+  #     model: infinity/Alibaba-NLP/gte-multilingual-reranker-base
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
+
+  # - model_name: Qwen3-Embedding:0.6B
+  #   litellm_params:
+  #     model: infinity/Qwen/Qwen3-Embedding-0.6B
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
+
+  # - model_name: Qwen3-Reranker:0.6B
+  #   litellm_params:
+  #     model: infinity/Qwen/Qwen3-Reranker-0.6B
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
 
 
 litellm_settings:

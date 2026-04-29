@@ -78,21 +78,46 @@ services:
         OLLAMA_PID=$$!;
         until ollama list > /dev/null 2>&1; do
           echo 'Waiting for Ollama to be ready...';
-          sleep 5;
-        done &&
-        echo 'Ollama is ready. Importing models...' &&
-        ollama pull gemma4:e4b                   &&
-        ollama pull gemma4:31b-cloud             &&
-        ollama pull gpt-oss:120b-cloud           &&
-        ollama pull minimax-m2.7:cloud           &&
-        ollama pull qwen3.5:397b-cloud           &&
-        ollama pull glm-5.1:cloud                &&
-        ollama pull kimi-k2.6:cloud              &&
-        ollama pull deepseek-v4-flash:cloud      &&
-        ollama pull deepseek-v4-pro:cloud        &&
-        ollama pull gemini-3-flash-preview:cloud &&
-        ollama pull qwen3-coder-next:cloud       &&
+          sleep 1;
+        done;
+        echo 'Ollama is ready. Importing models in parallel...';
+        (
+          ollama pull gemma4:e4b                   &
+          ollama pull gemma4:31b-cloud             &
+          ollama pull gpt-oss:120b-cloud           &
+          ollama pull minimax-m2.7:cloud           &
+          ollama pull qwen3.5:397b-cloud           &
+          ollama pull glm-5.1:cloud                &
+          ollama pull kimi-k2.6:cloud              &
+          ollama pull deepseek-v4-flash:cloud      &
+          ollama pull deepseek-v4-pro:cloud        &
+          ollama pull gemini-3-flash-preview:cloud &
+          ollama pull qwen3-coder-next:cloud       &
+          wait
+        );
+        echo 'All models pulled.';
         kill "$$OLLAMA_PID"
+    # command:
+    #   - >-
+    #     ollama serve &
+    #     OLLAMA_PID=$$!;
+    #     until ollama list > /dev/null 2>&1; do
+    #       echo 'Waiting for Ollama to be ready...';
+    #       sleep 5;
+    #     done &&
+    #     echo 'Ollama is ready. Importing models...' &&
+    #     ollama pull gemma4:e4b                   &&
+    #     ollama pull gemma4:31b-cloud             &&
+    #     ollama pull gpt-oss:120b-cloud           &&
+    #     ollama pull minimax-m2.7:cloud           &&
+    #     ollama pull qwen3.5:397b-cloud           &&
+    #     ollama pull glm-5.1:cloud                &&
+    #     ollama pull kimi-k2.6:cloud              &&
+    #     ollama pull deepseek-v4-flash:cloud      &&
+    #     ollama pull deepseek-v4-pro:cloud        &&
+    #     ollama pull gemini-3-flash-preview:cloud &&
+    #     ollama pull qwen3-coder-next:cloud       &&
+    #     kill "$$OLLAMA_PID"
 
   infinity:
     image: docker.io/michaelf34/infinity:0.0.77
@@ -106,10 +131,16 @@ services:
       - cl-nagoya/ruri-v3-310m
       - --model-id
       - cl-nagoya/ruri-v3-reranker-310m
-      - --model-id
-      - Qwen/Qwen3-Embedding-0.6B
-      - --model-id
-      - Qwen/Qwen3-Reranker-0.6B
+      # - --model-id
+      # - microsoft/harrier-oss-v1-0.6b
+      # - --model-id
+      # - Alibaba-NLP/E2Rank-0.6B
+      # - --model-id
+      # - Alibaba-NLP/gte-multilingual-reranker-base
+      # - --model-id
+      # - Qwen/Qwen3-Embedding-0.6B
+      # - --model-id
+      # - Qwen/Qwen3-Reranker-0.6B
       - --port
       - "4000"
     networks:

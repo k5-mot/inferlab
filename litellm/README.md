@@ -1,11 +1,11 @@
 
 ```bash
 curl -sS http://localhost:40000/v1/models \
-  -H 'Authorization: Bearer sk-inferlab-litellm' \
+  -H 'Authorization: Bearer sk-litellm-master-key' \
   | jq .
 
 curl -sS http://localhost:40000/v1/chat/completions \
-  -H 'Authorization: Bearer sk-inferlab-litellm' \
+  -H 'Authorization: Bearer sk-litellm-master-key' \
   -H 'Content-Type: application/json' \
   -d '{
     "model": "gemma4:e4b",
