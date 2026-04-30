@@ -108,9 +108,13 @@ services:
           "generate_picture_images": true
         }
       ### For Chroma (Vector DB)
-      VECTOR_DB: chroma
-      CHROMA_HTTP_HOST: chroma
-      CHROMA_HTTP_PORT: 8000
+      # VECTOR_DB: chroma
+      # CHROMA_HTTP_HOST: chroma
+      # CHROMA_HTTP_PORT: 8000
+      ### For Qdrant (Vector DB)
+      VECTOR_DB: qdrant
+      QDRANT_API_KEY: "sk-qdrant-api-key"
+      QDRANT_URI: http://qdrant:6333
       ### For SearXNG (Web Search)
       ENABLE_WEB_SEARCH: "true"
       WEB_SEARCH_ENGINE: searxng
@@ -140,8 +144,10 @@ services:
     depends_on:
       litellm:
         condition: service_started
-      chroma:
+      qdrant:
         condition: service_started
+      # chroma:
+      #   condition: service_started
       docling:
         condition: service_started
       searxng:
@@ -169,6 +175,10 @@ services:
       - docling-data:/data
     networks:
       - llm-internal
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   searxng:
     image: docker.io/searxng/searxng:2026.4.13-ee66b070a
@@ -199,20 +209,36 @@ services:
     networks:
       - llm-internal
 
-  chroma:
-    image: docker.io/chromadb/chroma:1.5.8
-    container_name: inferlab-chroma
+  qdrant:
+    image: docker.io/qdrant/qdrant:v1.17.1
+    container_name: inferlab-qdrant
     restart: unless-stopped
     profiles:
       - openwebui
-    environment:
-      IS_PERSISTENT: "TRUE"
-      ALLOW_RESET: "TRUE"
-      PERSIST_DIRECTORY: /data
     volumes:
-      - chroma-data:/data
+      - qdrant-storage:/qdrant/storage
+      - qdrant-snapshots:/qdrant/snapshots
+      # - qdrant-config:/qdrant/config
+      - ./qdrant/config.yaml:/qdrant/config/production.yaml
+    # ports:
+    #   - 6333:6333
     networks:
       - llm-internal
+
+  # chroma:
+  #   image: docker.io/chromadb/chroma:1.5.8
+  #   container_name: inferlab-chroma
+  #   restart: unless-stopped
+  #   profiles:
+  #     - openwebui
+  #   environment:
+  #     IS_PERSISTENT: "TRUE"
+  #     ALLOW_RESET: "TRUE"
+  #     PERSIST_DIRECTORY: /data
+  #   volumes:
+  #     - chroma-data:/data
+  #   networks:
+  #     - llm-internal
 
   open-webui-pipelines:
     image: ghcr.io/open-webui/pipelines:main
@@ -226,9 +252,6 @@ services:
       - open-webui-pipelines-data:/app/pipelines
     networks:
       - llm-internal
-
-
-
 
   # oauth2-proxy-dify:
   #   <<: *oauth2-proxy-base
@@ -327,7 +350,9 @@ services:
 
 volumes:
   open-webui-data:
-  chroma-data:
+  # chroma-data:
+  qdrant-storage:
+  qdrant-snapshots:
   open-webui-pipelines-data:
   docling-data:
 

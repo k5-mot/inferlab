@@ -7,7 +7,7 @@ services:
       - inference-vllm
     command:
       - --config
-      - /app/config.yaml
+      - /app/config-vllm.yaml
       - --host
       - 0.0.0.0
       - --port
@@ -21,7 +21,7 @@ services:
     ports:
       - "${LITELLM_HOST_PORT:-40000}:4000"
     volumes:
-      - ./litellm/config.yaml:/app/config.yaml:ro
+      - ./litellm/config-vllm.yaml:/app/config.yaml:ro
     networks:
       - llm-public
       - llm-internal
@@ -99,7 +99,7 @@ services:
   #     - llm-internal
 
   vllm-ruri-v3-310m:
-    image: docker.io/vllm/vllm-openai:v0.19.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
     container_name: inferlab-vllm-ruri-v3-310m
     restart: unless-stopped
     # shm_size: 8gb
@@ -115,8 +115,8 @@ services:
       - "embed"
       - --dtype
       - "float32"
-      - --gpu-memory-utilization
-      - "0.05"
+      # - --gpu-memory-utilization
+      # - "0.05"
       - --served-model-name
       - "ruri-v3:310m"
     volumes:
@@ -125,13 +125,12 @@ services:
       - llm-internal
 
   vllm-ruri-v3-reranker-310m:
-    image: docker.io/vllm/vllm-openai:v0.19.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
     container_name: inferlab-vllm-ruri-v3-reranker-310m
     restart: unless-stopped
     # shm_size: 8gb
     profiles:
       - inference-vllm
-      - inference
     command:
       - "cl-nagoya/ruri-v3-reranker-310m"
       - --host
@@ -142,10 +141,62 @@ services:
       - "classify"
       - --dtype
       - "float32"
-      - --gpu-memory-utilization
-      - "0.05"
+      # - --gpu-memory-utilization
+      # - "0.05"
       - --served-model-name
       - "ruri-v3-reranker:310m"
+    volumes:
+      - vllm-cache:/root/.cache
+    networks:
+      - llm-internal
+
+  vllm-qwen3-embedding-06b:
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    container_name: inferlab-vllm-qwen3-embedding-06b
+    restart: unless-stopped
+    # shm_size: 8gb
+    profiles:
+      - inference-vllm
+    command:
+      - "Qwen/Qwen3-Embedding-0.6B"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "embed"
+      - --dtype
+      - "bfloat16"
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --served-model-name
+      - "Qwen3-Embedding:0.6b"
+    volumes:
+      - vllm-cache:/root/.cache
+    networks:
+      - llm-internal
+
+  vllm-qwen3-reranker-06b:
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    container_name: inferlab-vllm-qwen3-reranker-06b
+    restart: unless-stopped
+    # shm_size: 8gb
+    profiles:
+      - inference-vllm
+    command:
+      - "Qwen/Qwen3-Reranker-0.6B"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "classify"
+      - --dtype
+      - "bfloat16"
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --served-model-name
+      - "Qwen3-Reranker:0.6b"
     volumes:
       - vllm-cache:/root/.cache
     networks:

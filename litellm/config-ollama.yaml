@@ -61,30 +61,55 @@ model_list:
       model: ollama_chat/qwen3-coder-next:cloud
       api_base: http://ollama:11434
 
-  # Infinity
+  # vLLM
   - model_name: ruri-v3:310m
     litellm_params:
-      model: infinity/cl-nagoya/ruri-v3-310m
-      api_base: http://infinity:4000
-      # raw_scores: True
+      model: openai/ruri-v3:310m
+      api_base: http://vllm-ruri-v3-310m:8000
+      api_key: EMPTY
 
   - model_name: ruri-v3-reranker:310m
     litellm_params:
-      model: infinity/cl-nagoya/ruri-v3-reranker-310m
-      api_base: http://infinity:4000
-      # raw_scores: True
+      model: openai/ruri-v3-reranker:310m
+      api_base: http://vllm-ruri-v3-reranker-310m:8000
+      api_key: EMPTY
 
-  - model_name: harrier-oss-v1:0.6b
-    litellm_params:
-      model: infinity/microsoft/harrier-oss-v1-0.6b
-      api_base: http://infinity:4000
-      # raw_scores: True
+  # - model_name: qwen3-embedding:0.6b
+  #   litellm_params:
+  #     model: openai/qwen3-embedding:0.6b
+  #     api_base: http://vllm-qwen3-embedding-06b:8000
+  #     api_key: EMPTY
 
-  - model_name: E2Rank:0.6B
-    litellm_params:
-      model: infinity/Alibaba-NLP/E2Rank-0.6B
-      api_base: http://infinity:4000
-      # raw_scores: True
+  # - model_name: qwen3-reranker:0.6b
+  #   litellm_params:
+  #     model: openai/qwen3-reranker:0.6b
+  #     api_base: http://vllm-qwen3-reranker-06b:8000
+  #     api_key: EMPTY
+
+  # Infinity
+  # - model_name: ruri-v3:310m
+  #   litellm_params:
+  #     model: infinity/cl-nagoya/ruri-v3-310m
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
+
+  # - model_name: ruri-v3-reranker:310m
+  #   litellm_params:
+  #     model: infinity/cl-nagoya/ruri-v3-reranker-310m
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
+
+  # - model_name: harrier-oss-v1:0.6b
+  #   litellm_params:
+  #     model: infinity/microsoft/harrier-oss-v1-0.6b
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
+
+  # - model_name: E2Rank:0.6B
+  #   litellm_params:
+  #     model: infinity/Alibaba-NLP/E2Rank-0.6B
+  #     api_base: http://infinity:4000
+  #     # raw_scores: True
 
   # - model_name: gte-multilingual-reranker-base:0.3b
   #   litellm_params:
@@ -105,8 +130,8 @@ model_list:
   #     # raw_scores: True
 
 
-litellm_settings:
-  callbacks:
-    - langfuse_otel
-  drop_params: true
-  request_timeout: 600
+# litellm_settings:
+#   callbacks:
+#     - langfuse_otel
+#   drop_params: true
+#   request_timeout: 600

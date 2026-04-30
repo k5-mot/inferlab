@@ -28,6 +28,18 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
+      vllm-ruri-v3-310m:
+        condition: service_started
+      vllm-ruri-v3-reranker-310m:
+        condition: service_started
+      # vllm-qwen3-embedding-06b:
+      #   condition: service_started
+      # vllm-qwen3-reranker-06b:
+      #   condition: service_started
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   ollama:
     image: docker.io/ollama/ollama:0.21.2
@@ -35,7 +47,6 @@ services:
     restart: unless-stopped
     profiles:
       - inference-ollama
-
     tty: true
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
@@ -97,57 +108,141 @@ services:
         );
         echo 'All models pulled.';
         kill "$$OLLAMA_PID"
-    # command:
-    #   - >-
-    #     ollama serve &
-    #     OLLAMA_PID=$$!;
-    #     until ollama list > /dev/null 2>&1; do
-    #       echo 'Waiting for Ollama to be ready...';
-    #       sleep 5;
-    #     done &&
-    #     echo 'Ollama is ready. Importing models...' &&
-    #     ollama pull gemma4:e4b                   &&
-    #     ollama pull gemma4:31b-cloud             &&
-    #     ollama pull gpt-oss:120b-cloud           &&
-    #     ollama pull minimax-m2.7:cloud           &&
-    #     ollama pull qwen3.5:397b-cloud           &&
-    #     ollama pull glm-5.1:cloud                &&
-    #     ollama pull kimi-k2.6:cloud              &&
-    #     ollama pull deepseek-v4-flash:cloud      &&
-    #     ollama pull deepseek-v4-pro:cloud        &&
-    #     ollama pull gemini-3-flash-preview:cloud &&
-    #     ollama pull qwen3-coder-next:cloud       &&
-    #     kill "$$OLLAMA_PID"
 
-  infinity:
-    image: docker.io/michaelf34/infinity:0.0.77
-    container_name: inferlab-infinity
+  # infinity:
+  #   image: docker.io/michaelf34/infinity:0.0.77
+  #   container_name: inferlab-infinity
+  #   restart: unless-stopped
+  #   profiles:
+  #     - inference-ollama
+  #   command:
+  #     - v2
+  #     - --model-id
+  #     - cl-nagoya/ruri-v3-310m
+  #     - --model-id
+  #     - cl-nagoya/ruri-v3-reranker-310m
+  #     # - --model-id
+  #     # - microsoft/harrier-oss-v1-0.6b
+  #     # - --model-id
+  #     # - Alibaba-NLP/E2Rank-0.6B
+  #     # - --model-id
+  #     # - Alibaba-NLP/gte-multilingual-reranker-base
+  #     # - --model-id
+  #     # - Qwen/Qwen3-Embedding-0.6B
+  #     # - --model-id
+  #     # - Qwen/Qwen3-Reranker-0.6B
+  #     - --port
+  #     - "4000"
+  #   networks:
+  #     - llm-internal
+
+  vllm-ruri-v3-310m:
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    container_name: inferlab-vllm-ruri-v3-310m
     restart: unless-stopped
+    # shm_size: 8gb
     profiles:
       - inference-ollama
     command:
-      - v2
-      - --model-id
-      - cl-nagoya/ruri-v3-310m
-      - --model-id
-      - cl-nagoya/ruri-v3-reranker-310m
-      # - --model-id
-      # - microsoft/harrier-oss-v1-0.6b
-      # - --model-id
-      # - Alibaba-NLP/E2Rank-0.6B
-      # - --model-id
-      # - Alibaba-NLP/gte-multilingual-reranker-base
-      # - --model-id
-      # - Qwen/Qwen3-Embedding-0.6B
-      # - --model-id
-      # - Qwen/Qwen3-Reranker-0.6B
+      - "cl-nagoya/ruri-v3-310m"
+      - --host
+      - "0.0.0.0"
       - --port
-      - "4000"
+      - "8000"
+      - --convert
+      - "embed"
+      - --dtype
+      - "float32"
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --served-model-name
+      - "ruri-v3:310m"
+    volumes:
+      - ollama-vllm-cache:/root/.cache
     networks:
       - llm-internal
 
+  vllm-ruri-v3-reranker-310m:
+    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    container_name: inferlab-vllm-ruri-v3-reranker-310m
+    restart: unless-stopped
+    # shm_size: 8gb
+    profiles:
+      - inference-ollama
+    command:
+      - "cl-nagoya/ruri-v3-reranker-310m"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "classify"
+      - --dtype
+      - "float32"
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --served-model-name
+      - "ruri-v3-reranker:310m"
+    volumes:
+      - ollama-vllm-cache:/root/.cache
+    networks:
+      - llm-internal
+
+  # vllm-qwen3-embedding-06b:
+  #   image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+  #   container_name: inferlab-vllm-qwen3-embedding-06b
+  #   restart: unless-stopped
+  #   # shm_size: 8gb
+  #   profiles:
+  #     - inference-ollama
+  #   command:
+  #     - "Qwen/Qwen3-Embedding-0.6B"
+  #     - --host
+  #     - "0.0.0.0"
+  #     - --port
+  #     - "8000"
+  #     - --convert
+  #     - "embed"
+  #     - --dtype
+  #     - "bfloat16"
+  #     # - --gpu-memory-utilization
+  #     # - "0.05"
+  #     - --served-model-name
+  #     - "Qwen3-Embedding:0.6b"
+  #   volumes:
+  #     - ollama-vllm-cache:/root/.cache
+  #   networks:
+  #     - llm-internal
+
+  # vllm-qwen3-reranker-06b:
+  #   image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+  #   container_name: inferlab-vllm-qwen3-reranker-06b
+  #   restart: unless-stopped
+  #   # shm_size: 8gb
+  #   profiles:
+  #     - inference-ollama
+  #   command:
+  #     - "Qwen/Qwen3-Reranker-0.6B"
+  #     - --host
+  #     - "0.0.0.0"
+  #     - --port
+  #     - "8000"
+  #     - --convert
+  #     - "classify"
+  #     - --dtype
+  #     - "bfloat16"
+  #     # - --gpu-memory-utilization
+  #     # - "0.05"
+  #     - --served-model-name
+  #     - "Qwen3-Reranker:0.6b"
+  #   volumes:
+  #     - ollama-vllm-cache:/root/.cache
+  #   networks:
+  #     - llm-internal
+
 volumes:
   ollama-cache:
+  ollama-vllm-cache:
 
 networks:
   llm-public:
