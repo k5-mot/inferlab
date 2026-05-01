@@ -1,2 +1,5 @@
 .claude
 __pycache__
+devcontainer-lock.json
+.env
+.env.local
