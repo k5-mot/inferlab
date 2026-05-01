@@ -1,7 +1,7 @@
 use_default_settings: true
 
 server:
-  secret_key: "worklab-alfa-searxng-secret-20260315"
+  secret_key: "sk-searxng-secret-key"
   limiter: false
 
 search:

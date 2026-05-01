@@ -38,7 +38,7 @@ services:
     environment:
       ### General
       WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}
-      WEBUI_SECRET_KEY: "b6ae5f7e56bde383e2928d43b8d6500123dd205142bca46b51f11cb860fd9cb5"
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-}
       ENABLE_NOTES: "true"
       ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"
@@ -152,13 +152,22 @@ services:
         condition: service_started
       searxng:
         condition: service_started
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
 
   docling:
-    # image: quay.io/docling-project/docling-serve:v1.16.1
     # image: quay.io/docling-project/docling-serve:v1.17.0
     image: ghcr.io/k5-mot/docling-serve-jp:v1.17.0
+    # build:
+    #     context: ./docling-jp
+    #     dockerfile: Dockerfile
+    #     args:
+    #         BASE_TAG: v1.17.0
     container_name: inferlab-docling
     restart: unless-stopped
+    # pull_policy: always
     profiles:
       - openwebui
     environment:
@@ -167,10 +176,11 @@ services:
       DOCLING_SERVE_ENABLE_UI: "true"
       DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
-      DOCLING_SERVE_ARTIFACTS_PATH: ""
+      DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
-    ports:
-      - 50001:5001
+    # ports:
+    #   - 50001:5001
     volumes:
       - docling-data:/data
     networks:
@@ -186,6 +196,8 @@ services:
     restart: unless-stopped
     profiles:
       - openwebui
+    # ports:
+    #   - 32001:8080
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
@@ -204,8 +216,8 @@ services:
       REQUIRE_API_KEY: "True"
       REMOVE_FILTER: "True"
       EXPAND_API: "True"
-    ports:
-      - "5050:5050"
+    # ports:
+    #   - "5050:5050"
     networks:
       - llm-internal
 
@@ -252,7 +264,6 @@ services:
       - open-webui-pipelines-data:/app/pipelines
     networks:
       - llm-internal
-
   # oauth2-proxy-dify:
   #   <<: *oauth2-proxy-base
   #   container_name: inferlab-oauth2-proxy-dify
