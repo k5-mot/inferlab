@@ -1,0 +1,19 @@
+model:
+  provider: "openai-codex"
+  default: "gpt-5.5"
+
+fallback_model:
+  default: "gpt-oss:120b"
+  provider: "custom"
+  base_url: "http://litellm:4000/v1"
+  api_key: "sk-litellm-master-key"
+
+discord:
+  require_mention: true
+
+mcp_servers:
+  searxng:
+    command: "npx"
+    args: ["-y", "mcp-searxng"]
+    env:
+      SEARXNG_URL: "http://searxng:8080/"

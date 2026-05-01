@@ -1,6 +1,6 @@
 services:
   hermes-agent-config:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
     container_name: inferlab-hermes-agent-config
     restart: no
     profiles:
@@ -8,19 +8,30 @@ services:
     entrypoint:
       - /bin/sh
       - -c
+        # cp -rv  /opt/config/.codex/auth.json  /opt/data/auth.json
+        # cp -rfv /opt/config/.codex/           /opt/data
     command:
       - |
         set -eu
-        cp /config/config.yaml /opt/data/config.yaml
+        mkdir -p /opt/data/skills
+        cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
+        cp -rfv /opt/config/skills/*          /opt/data/skills
         npm install --prefix /opt/data rss-mcp --silent
         chown -R 1000:1000 /opt/data || true
     volumes:
       - hermes-agent-data:/opt/data
-      - ./skills:/opt/inferlab/skills:ro
-      - ./hermes-agent/config.yaml:/config/config.yaml:ro
+      - ./hermes/hermes-config.yaml:/opt/config/config.yaml
+      - ~/.codex:/opt/config/.codex:ro
+      - ./skills:/opt/config/skills:ro
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
+      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
+      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
+      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
 
   hermes-agent:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
     container_name: inferlab-hermes-agent
     restart: unless-stopped
     profiles:
@@ -29,8 +40,9 @@ services:
       - gateway
       - run
     environment:
+      # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       API_SERVER_ENABLED: "true"
-      API_SERVER_HOST: 0.0.0.0
+      API_SERVER_HOST: "0.0.0.0"
       API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
       API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
       GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
@@ -44,13 +56,16 @@ services:
       OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
       OPEN_WEBUI_CHATS_ALL_DB_PATH: ${OPEN_WEBUI_CHATS_ALL_DB_PATH:-/api/v1/chats/all/db}
       OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
-      PYTHONPATH: /opt/inferlab
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
+      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
+      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
+      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
     volumes:
       - hermes-agent-data:/opt/data
-      - ./skills:/opt/inferlab/skills:ro
     networks:
       - llm-public
       - llm-internal
@@ -61,7 +76,7 @@ services:
         condition: service_completed_successfully
 
   hermes-agent-dashboard:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.23}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
     container_name: inferlab-hermes-agent-dashboard
     restart: unless-stopped
     profiles:
@@ -76,11 +91,15 @@ services:
       - --insecure
     environment:
       GATEWAY_HEALTH_URL: http://hermes-agent:8642
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
+      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
+      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
+      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
     ports:
       - 31009:9119
     volumes:
       - hermes-agent-data:/opt/data
-      - ./skills:/opt/inferlab/skills:ro
     networks:
       - llm-public
       - llm-internal
