@@ -22,36 +22,42 @@ model_list:
       model: openai/harrier-06b
       api_base: http://vllm-harrier-06b:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
   - model_name: harrier-27b
     litellm_params:
       model: openai/harrier-27b
       api_base: http://vllm-harrier-27b:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
   - model_name: ruri-v3-310m
     litellm_params:
       model: openai/ruri-v3-310m
       api_base: http://vllm-ruri-v3-310m:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
   - model_name: qwen3-reranker-06b
     litellm_params:
       model: openai/qwen3-reranker-06b
       api_base: http://vllm-qwen3-reranker-06b:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
   - model_name: qwen3-reranker-8b
     litellm_params:
       model: openai/qwen3-reranker-8b
       api_base: http://vllm-qwen3-reranker-8b:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
   - model_name: ruri-v3-reranker-310m
     litellm_params:
       model: openai/ruri-v3-reranker-310m
       api_base: http://vllm-ruri-v3-reranker-310m:8000/v1
       api_key: EMPTY
+      encoding_format: float
 
 litellm_settings:
   callbacks:
