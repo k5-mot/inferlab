@@ -14,37 +14,37 @@
 
 `docker-compose.yml` は以下を include する。
 
-| Compose | 主なサービス |
-| --- | --- |
-| `docker-compose.common.yml` | keycloak, postgres-keycloak |
-| `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity |
-| `docker-compose.inference-vllm.yml` | litellm, vllm-* |
-| `docker-compose.openwebui.yml` | open-webui, kokoro-web, chroma, open-webui-pipelines, docling-serve, searxng, oauth2-proxy-* |
-| `docker-compose.comfyui.yml` | comfyui |
-| `docker-compose.carbone.yml` | carbone, carbone-mcp |
-| `docker-compose.hermes-agent.yml` | hermes-agent |
-| `docker-compose.openclaw.yml` | openclaw |
-| `docker-compose.dify.yml` | dify-* |
-| `docker-compose.langfuse.yml` | langfuse, postgres-langfuse, clickhouse, redis-langfuse |
-| `docker-compose.paperless.yml` | paperless-* |
-| `docker-compose.deepwiki.yml` | deepwiki-open |
+| Compose                               | 主なサービス                                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `docker-compose.common.yml`           | keycloak, postgres-keycloak                                                                  |
+| `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity                                                      |
+| `docker-compose.inference-vllm.yml`   | litellm, vllm-*                                                                              |
+| `docker-compose.openwebui.yml`        | open-webui, kokoro-web, chroma, open-webui-pipelines, docling-serve, searxng, oauth2-proxy-* |
+| `docker-compose.comfyui.yml`          | comfyui                                                                                      |
+| `docker-compose.carbone.yml`          | carbone, carbone-mcp                                                                         |
+| `docker-compose.hermes-agent.yml`     | hermes-agent                                                                                 |
+| `docker-compose.openclaw.yml`         | openclaw                                                                                     |
+| `docker-compose.dify.yml`             | dify-*                                                                                       |
+| `docker-compose.langfuse.yml`         | langfuse, postgres-langfuse, clickhouse, redis-langfuse                                      |
+| `docker-compose.paperless.yml`        | paperless-*                                                                                  |
+| `docker-compose.deepwiki.yml`         | deepwiki-open                                                                                |
 
 ## 3. 外部公開ポート
 
-| サービス | 既定ポート | 備考 |
-| --- | ---: | --- |
-| Keycloak | `30000` | OIDC / 管理 |
-| Langfuse | `30001` | observability |
-| Open WebUI | `31001` | 主ポータル |
-| Dify | `31002` | oauth2-proxy 経由 |
-| deepwiki-open | `31003` | oauth2-proxy 経由 |
-| Paperless-ngx | `31004` | oauth2-proxy 経由 |
-| Carbone | `31005` | oauth2-proxy 経由 |
-| Hermes Agent Gateway | `31006` | profile: hermes-agent |
-| Hermes Agent Dashboard | `31009` | profile: hermes-agent |
-| OpenClaw | `31007` | profile: openclaw |
-| LiteLLM | `40000` | 外部向け OpenAI 互換 API |
-| Carbone MCP | `51001` | oauth2-proxy 経由 |
+| サービス               | 既定ポート | 備考                     |
+| ---------------------- | ---------: | ------------------------ |
+| Keycloak               |    `30000` | OIDC / 管理              |
+| Langfuse               |    `30001` | observability            |
+| Open WebUI             |    `31001` | 主ポータル               |
+| Dify                   |    `31002` | oauth2-proxy 経由        |
+| deepwiki-open          |    `31003` | oauth2-proxy 経由        |
+| Paperless-ngx          |    `31004` | oauth2-proxy 経由        |
+| Carbone                |    `31005` | oauth2-proxy 経由        |
+| Hermes Agent Gateway   |    `31006` | profile: hermes-agent    |
+| Hermes Agent Dashboard |    `31009` | profile: hermes-agent    |
+| OpenClaw               |    `31007` | profile: openclaw        |
+| LiteLLM                |    `40000` | 外部向け OpenAI 互換 API |
+| Carbone MCP            |    `51001` | oauth2-proxy 経由        |
 
 vLLM、Chroma、Docling、Pipelines、SearXNG、DB/Redis/ClickHouse は内部のみ。
 
@@ -121,4 +121,28 @@ docker compose config --quiet
 docker compose --profile inference --profile media config --quiet
 docker compose config --services
 docker compose --profile inference --profile media config --services
+```
+
+```bash
+docker compose \
+  --env-file ./.env \
+  --profile common \
+  --profile inference-ollama \
+  --profile hermes-agent \
+  --profile openwebui \
+  down --remove-orphans
+docker compose \
+  --env-file ./.env \
+  --profile common \
+  --profile inference-ollama \
+  --profile hermes-agent \
+  --profile openwebui \
+  up -d --no-deps --force-recreate --remove-orphans
+docker compose \
+  --env-file ./.env \
+  --profile common \
+  --profile inference-ollama \
+  --profile hermes-agent \
+  --profile openwebui \
+  ps
 ```
