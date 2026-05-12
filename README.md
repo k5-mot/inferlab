@@ -6,6 +6,7 @@
 
 - 推論基盤は **vLLM**、外部公開する OpenAI 互換 API は **LiteLLM** に統一する
 - 主ポータルは **Open WebUI**、AI アプリ構築は **Dify** を採用する
+- 文書RAG基盤は **RAGFlow** を採用し、通常利用時は **Open WebUI + Pipelines** から呼び出す
 - LLM observability は **Langfuse** に集約する
 - コード理解は **deepwiki-open**、文書管理は **Paperless-ngx**、文書生成は **Carbone + Carbone MCP** を採用する
 - Compose はレイヤではなく機能単位で分割し、公開面を最小化する
@@ -19,7 +20,8 @@
 | `docker-compose.common.yml`           | keycloak, postgres-keycloak                                                                  |
 | `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity                                                      |
 | `docker-compose.inference-vllm.yml`   | litellm, vllm-*                                                                              |
-| `docker-compose.openwebui.yml`        | open-webui, kokoro-web, chroma, open-webui-pipelines, docling-serve, searxng, oauth2-proxy-* |
+| `docker-compose.openwebui.yml`        | open-webui, qdrant, open-webui-pipelines, docling-serve, searxng, openai-edge-tts, oauth2-proxy-* |
+| `docker-compose.ragflow.yml`          | ragflow, ragflow-es01, ragflow-mysql, ragflow-minio, ragflow-redis                            |
 | `docker-compose.comfyui.yml`          | comfyui                                                                                      |
 | `docker-compose.carbone.yml`          | carbone, carbone-mcp                                                                         |
 | `docker-compose.hermes-agent.yml`     | hermes-agent                                                                                 |
@@ -43,10 +45,11 @@
 | Hermes Agent Gateway   |    `31006` | profile: hermes-agent    |
 | Hermes Agent Dashboard |    `31009` | profile: hermes-agent    |
 | OpenClaw               |    `31007` | profile: openclaw        |
+| RAGFlow                |    `31008` | profile: ragflow         |
 | LiteLLM                |    `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP            |    `51001` | oauth2-proxy 経由        |
 
-vLLM、Chroma、Docling、Pipelines、SearXNG、DB/Redis/ClickHouse は内部のみ。
+vLLM、Qdrant、Docling、Pipelines、SearXNG、RAGFlow API/DB/Redis/MinIO/Elasticsearch、DB/Redis/ClickHouse は内部のみ。
 
 ## 4. 起動
 
@@ -55,7 +58,7 @@ COMPOSE_PARALLEL_LIMIT=1 docker compose pull --policy missing --quiet
 docker compose up -d
 ```
 
-必要時のみ profile を有効化する。
+必要時のみ profile を有効化する。Open WebUI は LiteLLM を参照するため、通常は inference 系 profile と一緒に起動する。
 
 ```bash
 docker compose --profile inference up -d
@@ -65,6 +68,24 @@ docker compose --profile hermes-agent up -d
 docker compose --profile openclaw up -d
 docker compose --profile hermes-agent --profile openclaw up -d
 ```
+
+RAGFlow を Open WebUI のバックエンドとして使う場合は、Open WebUI と RAGFlow を同時に起動する。
+
+```bash
+docker compose --profile inference-ollama --profile openwebui --profile ragflow up -d
+```
+
+RAGFlow の初期設定は `http://localhost:31008/` で行う。モデルプロバイダは既定で LiteLLM (`http://litellm:4000/v1`) を向くようにしている。RAGFlow 側で Chat または Agent を作成し、API Key と ID を `.env` に設定すると、Open WebUI のモデル一覧に `RAGFlow: Chat: <label>` または `RAGFlow: Agent: <label>` として表示される。
+
+```bash
+RAGFLOW_API_KEY=ragflow-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RAGFLOW_CHAT_IDS=manuals:<chat_id>,policies:<chat_id>
+RAGFLOW_AGENT_IDS=research:<agent_id>
+RAGFLOW_VISION_MODEL=gemma3:31b
+RAGFLOW_TTS_BASE_URL=http://openai-edge-tts:5050/v1
+```
+
+RAGFlow の vision 既定モデルは `gemma3:31b@OpenAI`、TTS 既定モデルは `tts-1@OpenAI` として初期化する。TTS の OpenAI 互換 API は `openai-edge-tts` に向ける。
 
 Hermes Agent profile を起動すると、gateway に加えて web dashboard も起動する。
 既定では `http://127.0.0.1:31009/` で開ける。安全のため Docker 側で localhost のみに公開している。
@@ -130,6 +151,7 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
+  --profile ragflow \
   down --remove-orphans
 docker compose \
   --env-file ./.env \
@@ -137,6 +159,7 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
+  --profile ragflow \
   up -d --no-deps --force-recreate --remove-orphans
 docker compose \
   --env-file ./.env \
@@ -144,5 +167,6 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
+  --profile ragflow \
   ps
 ```

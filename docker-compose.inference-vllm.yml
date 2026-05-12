@@ -43,20 +43,29 @@ services:
       - "auto"
       - --dtype
       - "bfloat16"
+      - --quantization
+      - "fp8"
+      - --kv-cache-dtype
+      - "fp8"
       - --max-model-len
-      - "32768"
+      # - "32768"
+      - "131072"
       - --gpu-memory-utilization
-      - "0.5"
+      - "0.92"
+      - --max-num-seqs
+      - "1"
       - --chat-template
       - "chat_template.jinja"
       - --enable-auto-tool-choice
-      - "true"
+      - --enable-prefix-caching
       - --tool-call-parser
       - "gemma4"
       - --reasoning-parser
       - "gemma4"
       - --served-model-name
       - "gemma4:e4b"
+      # - --limit-mm-per-prompt
+      # - '{"image":0,"audio":0}'
     volumes:
       - vllm-cache:/root/.cache
     networks:

@@ -1,0 +1,232 @@
+services:
+  ragflow:
+    image: ${RAGFLOW_IMAGE:-infiniflow/ragflow:v0.25.2}
+    container_name: inferlab-ragflow
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - --enable-adminserver
+    environment:
+      DOC_ENGINE: elasticsearch
+      DEVICE: cpu
+      API_PROXY_SCHEME: python
+      TZ: ${TZ:-Asia/Tokyo}
+      REGISTER_ENABLED: ${RAGFLOW_REGISTER_ENABLED:-1}
+      MYSQL_HOST: ragflow-mysql
+      MYSQL_PORT: 3306
+      MYSQL_DBNAME: ${RAGFLOW_MYSQL_DBNAME:-rag_flow}
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${RAGFLOW_MYSQL_PASSWORD:-infini_rag_flow}
+      MYSQL_MAX_PACKET: ${RAGFLOW_MYSQL_MAX_PACKET:-1073741824}
+      MINIO_HOST: ragflow-minio
+      MINIO_USER: ${RAGFLOW_MINIO_USER:-rag_flow}
+      MINIO_PASSWORD: ${RAGFLOW_MINIO_PASSWORD:-infini_rag_flow}
+      REDIS_HOST: ragflow-redis
+      REDIS_PASSWORD: ${RAGFLOW_REDIS_PASSWORD:-infini_rag_flow}
+      ES_HOST: ragflow-es01
+      ES_USER: elastic
+      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-infini_rag_flow}
+      RAGFLOW_OPENAI_BASE_URL: ${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}
+      RAGFLOW_OPENAI_API_KEY: ${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}
+      RAGFLOW_CHAT_MODEL: ${RAGFLOW_CHAT_MODEL:-gemma4:31b}
+      RAGFLOW_EMBEDDING_MODEL: ${RAGFLOW_EMBEDDING_MODEL:-ruri-v3:310m}
+      RAGFLOW_RERANK_MODEL: ${RAGFLOW_RERANK_MODEL:-ruri-v3-reranker:310m}
+      RAGFLOW_VISION_MODEL: ${RAGFLOW_VISION_MODEL:-gemma3:31b}
+      RAGFLOW_VISION_BASE_URL: ${RAGFLOW_VISION_BASE_URL:-http://litellm:4000/v1}
+      RAGFLOW_VISION_API_KEY: ${RAGFLOW_VISION_API_KEY:-sk-litellm-master-key}
+      DOC_BULK_SIZE: ${RAGFLOW_DOC_BULK_SIZE:-4}
+      EMBEDDING_BATCH_SIZE: ${RAGFLOW_EMBEDDING_BATCH_SIZE:-16}
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "1"
+      THREAD_POOL_MAX_WORKERS: ${RAGFLOW_THREAD_POOL_MAX_WORKERS:-128}
+      DISABLE_PASSWORD_LOGIN: ${RAGFLOW_DISABLE_PASSWORD_LOGIN:-false}
+    ports:
+      - "${RAGFLOW_HOST_PORT:-31008}:80"
+    volumes:
+      - ragflow-logs:/ragflow/logs
+      - ./ragflow/service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template:ro
+      - ./ragflow/overrides/task_executor.py:/ragflow/rag/svr/task_executor.py:ro
+    networks:
+      - llm-public
+      - llm-internal
+    depends_on:
+      ragflow-es01:
+        condition: service_healthy
+      ragflow-mysql:
+        condition: service_healthy
+      ragflow-minio:
+        condition: service_healthy
+      ragflow-redis:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ragflow-init-default-models:
+    image: docker.io/library/mysql:8.0.39
+    container_name: inferlab-ragflow-init-default-models
+    restart: "no"
+    profiles:
+      - ragflow
+    environment:
+      RAGFLOW_MYSQL_DBNAME: ${RAGFLOW_MYSQL_DBNAME:-rag_flow}
+      RAGFLOW_MYSQL_PASSWORD: ${RAGFLOW_MYSQL_PASSWORD:-infini_rag_flow}
+      RAGFLOW_OPENAI_BASE_URL: ${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}
+      RAGFLOW_OPENAI_API_KEY: ${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}
+      RAGFLOW_CHAT_MODEL: ${RAGFLOW_CHAT_MODEL:-gemma4:31b}
+      RAGFLOW_EMBEDDING_MODEL: ${RAGFLOW_EMBEDDING_MODEL:-ruri-v3:310m}
+      RAGFLOW_RERANK_MODEL: ${RAGFLOW_RERANK_MODEL:-ruri-v3-reranker:310m}
+      RAGFLOW_RERANK_FACTORY: ${RAGFLOW_RERANK_FACTORY:-OpenAI-API-Compatible}
+      RAGFLOW_VISION_MODEL: ${RAGFLOW_VISION_MODEL:-gemma3:31b}
+      RAGFLOW_VISION_BASE_URL: ${RAGFLOW_VISION_BASE_URL:-http://litellm:4000/v1}
+      RAGFLOW_VISION_API_KEY: ${RAGFLOW_VISION_API_KEY:-sk-litellm-master-key}
+      RAGFLOW_VISION_MAX_TOKENS: ${RAGFLOW_VISION_MAX_TOKENS:-128000}
+      RAGFLOW_TTS_MODEL: ${RAGFLOW_TTS_MODEL:-tts-1}
+      RAGFLOW_TTS_BASE_URL: ${RAGFLOW_TTS_BASE_URL:-http://openai-edge-tts:5050/v1}
+      RAGFLOW_TTS_API_KEY: ${RAGFLOW_TTS_API_KEY:-openai-edge-tts-api-secret-key}
+      RAGFLOW_TTS_MAX_TOKENS: ${RAGFLOW_TTS_MAX_TOKENS:-4096}
+    volumes:
+      - ./ragflow/init-default-models.sh:/usr/local/bin/init-default-models.sh:ro
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/init-default-models.sh
+    networks:
+      - llm-internal
+    depends_on:
+      ragflow:
+        condition: service_started
+      ragflow-mysql:
+        condition: service_healthy
+
+  ragflow-es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${RAGFLOW_STACK_VERSION:-8.11.3}
+    container_name: inferlab-ragflow-es01
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    environment:
+      node.name: ragflow-es01
+      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-infini_rag_flow}
+      bootstrap.memory_lock: "false"
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      cluster.routing.allocation.disk.watermark.low: 5gb
+      cluster.routing.allocation.disk.watermark.high: 3gb
+      cluster.routing.allocation.disk.watermark.flood_stage: 2gb
+    mem_limit: ${RAGFLOW_MEM_LIMIT:-8073741824}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl http://localhost:9200
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    volumes:
+      - ragflow-esdata01:/usr/share/elasticsearch/data
+    networks:
+      - llm-internal
+
+  ragflow-mysql:
+    image: docker.io/library/mysql:8.0.39
+    container_name: inferlab-ragflow-mysql
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    environment:
+      MYSQL_ROOT_PASSWORD: ${RAGFLOW_MYSQL_PASSWORD:-infini_rag_flow}
+    command:
+      - --max_connections=1000
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --tls_version=TLSv1.2,TLSv1.3
+      - --init-file=/data/application/init.sql
+      - --binlog_expire_logs_seconds=604800
+    volumes:
+      - ragflow-mysql-data:/var/lib/mysql
+      - ./ragflow/init.sql:/data/application/init.sql:ro
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -uroot
+        - -p${RAGFLOW_MYSQL_PASSWORD:-infini_rag_flow}
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      - llm-internal
+
+  ragflow-minio:
+    image: docker.io/pgsty/minio:RELEASE.2026-03-25T00-00-00Z
+    container_name: inferlab-ragflow-minio
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - server
+      - --console-address
+      - :9001
+      - /data
+    environment:
+      MINIO_ROOT_USER: ${RAGFLOW_MINIO_USER:-rag_flow}
+      MINIO_ROOT_PASSWORD: ${RAGFLOW_MINIO_PASSWORD:-infini_rag_flow}
+    volumes:
+      - ragflow-minio-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:9000/minio/health/live
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      - llm-internal
+
+  ragflow-redis:
+    image: docker.io/valkey/valkey:8
+    container_name: inferlab-ragflow-redis
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - redis-server
+      - --requirepass
+      - ${RAGFLOW_REDIS_PASSWORD:-infini_rag_flow}
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - ragflow-redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - -a
+        - ${RAGFLOW_REDIS_PASSWORD:-infini_rag_flow}
+        - ping
+      interval: 10s
+      timeout: 10s
+      retries: 120
+    networks:
+      - llm-internal
+
+volumes:
+  ragflow-logs:
+  ragflow-esdata01:
+  ragflow-mysql-data:
+  ragflow-minio-data:
+  ragflow-redis-data:
+
+networks:
+  llm-public:
+  llm-internal:

@@ -4,6 +4,7 @@ include:
   - ./docker-compose.common.yml
   - ./docker-compose.inference-ollama.yml
   - ./docker-compose.openwebui.yml
+  - ./docker-compose.ragflow.yml
   - ./docker-compose.comfyui.yml
   - ./docker-compose.carbone.yml
   - ./docker-compose.hermes-agent.yml

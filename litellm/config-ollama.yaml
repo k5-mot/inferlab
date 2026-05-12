@@ -16,6 +16,11 @@ model_list:
       model: ollama_chat/gemma4:31b-cloud
       api_base: http://ollama:11434
 
+  - model_name: gemma3:31b
+    litellm_params:
+      model: ollama_chat/gemma3:31b
+      api_base: http://ollama:11434
+
   - model_name: gpt-oss:120b
     litellm_params:
       model: ollama_chat/gpt-oss:120b-cloud
@@ -134,8 +139,8 @@ model_list:
   #     # raw_scores: True
 
 
-# litellm_settings:
+litellm_settings:
 #   callbacks:
 #     - langfuse_otel
-#   drop_params: true
-#   request_timeout: 600
+  drop_params: true
+  request_timeout: 600

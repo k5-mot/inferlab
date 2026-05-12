@@ -132,8 +132,8 @@ services:
       # IMAGE_EDIT_ENGINE: comfyui
       # COMFYUI_BASE_URL: http://comfyui:8188
       ### For Open WebUI Pipelines
-      # PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-      # PIPELINES_URLS: http://open-webui-pipelines:9099
+      PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+      PIPELINES_URLS: http://open-webui-pipelines:9099
     ports:
       - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
     volumes:
@@ -151,6 +151,8 @@ services:
       docling:
         condition: service_started
       searxng:
+        condition: service_started
+      open-webui-pipelines:
         condition: service_started
     ulimits:
       nofile:
@@ -260,8 +262,14 @@ services:
       - openwebui
     environment:
       PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+      RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://ragflow:9380}
+      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+      RAGFLOW_CHAT_IDS: ${RAGFLOW_CHAT_IDS:-}
+      RAGFLOW_AGENT_IDS: ${RAGFLOW_AGENT_IDS:-}
+      RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
     volumes:
       - open-webui-pipelines-data:/app/pipelines
+      - ./ragflow/pipelines/ragflow_pipeline.py:/app/pipelines/ragflow_pipeline.py:ro
     networks:
       - llm-internal
   # oauth2-proxy-dify:
