@@ -3,7 +3,13 @@ model_list:
     litellm_params:
       model: openai/gemma-4-31b-it
       api_base: http://vllm-gemma4-31b:8000/v1
-      api_key: EMPTY
+      # api_key: EMPTY
+      api_key: os.environ/VLLM_API_KEY
+    model_info:
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      supports_function_calling: true
+      supports_parallel_function_calling: false
 
   - model_name: qwen3-swallow-32b
     litellm_params:
@@ -64,6 +70,8 @@ litellm_settings:
     - langfuse_otel
   drop_params: true
   request_timeout: 600
+
+
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

@@ -33,31 +33,43 @@ services:
     # shm_size: 16gb
     profiles:
       - inference-vllm
+    # environment:
+    #   VLLM_API_KEY: ${VLLM_API_KEY:-sk-vllm-api-key}
     command:
-      - "google/gemma-4-E4B-it"
+      # - "google/gemma-4-E4B-it"
+      - "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit"
+      # - "QuantTrio/gemma-4-31B-it-AWQ"
       - --host
       - "0.0.0.0"
       - --port
       - "8000"
+      - --api-key
+      - "${VLLM_API_KEY}"
       - --convert
       - "auto"
       - --dtype
-      - "bfloat16"
+      # - "bfloat16"
+      - "half"
       - --quantization
-      - "fp8"
+      # - "fp8"
+      - "awq"
       - --kv-cache-dtype
       - "fp8"
       - --max-model-len
-      # - "32768"
-      - "131072"
+      - "32768"
+      - --max-num-batched-tokens
+      - "32768"
+      # - "131072"
       - --gpu-memory-utilization
       - "0.92"
       - --max-num-seqs
-      - "1"
+      - "4"
       - --chat-template
       - "chat_template.jinja"
       - --enable-auto-tool-choice
       - --enable-prefix-caching
+      - --generation-config
+      - vllm
       - --tool-call-parser
       - "gemma4"
       - --reasoning-parser
@@ -66,6 +78,8 @@ services:
       - "gemma4:e4b"
       # - --limit-mm-per-prompt
       # - '{"image":0,"audio":0}'
+      # Context Window: 32768, 28672〜30000
+      # Max Output Tokens: 4096〜8192
     volumes:
       - vllm-cache:/root/.cache
     networks:
