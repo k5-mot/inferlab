@@ -63,6 +63,7 @@ services:
       - --gpu-memory-utilization
       - "0.92"
       - --max-num-seqs
+      # - "2"
       - "4"
       - --chat-template
       - "chat_template.jinja"
@@ -79,7 +80,9 @@ services:
       # - --limit-mm-per-prompt
       # - '{"image":0,"audio":0}'
       # Context Window: 32768, 28672〜30000
+      # Context Window: 28672
       # Max Output Tokens: 4096〜8192
+      # Max Output Tokens: 4096
     volumes:
       - vllm-cache:/root/.cache
     networks:

@@ -6,8 +6,10 @@ model_list:
       # api_key: EMPTY
       api_key: os.environ/VLLM_API_KEY
     model_info:
-      max_input_tokens: 32768
-      max_output_tokens: 8192
+      # max_input_tokens: 32768
+      max_input_tokens: 28672
+      # max_output_tokens: 8192
+      max_output_tokens: 4096
       supports_function_calling: true
       supports_parallel_function_calling: false
 
