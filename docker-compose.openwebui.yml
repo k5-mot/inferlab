@@ -30,7 +30,7 @@ x-oauth2-proxy-base: &oauth2-proxy-base
 
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.2
+    image: ghcr.io/open-webui/open-webui:v0.9.5
     container_name: inferlab-open-webui
     restart: unless-stopped
     profiles:
@@ -82,14 +82,6 @@ services:
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
-      # DOCLING_PARAMS: >-
-      #   {
-      #     "do_ocr": true,
-      #     "force_ocr": false,
-      #     "ocr_engine": "tesseract_cli",
-      #     "ocr_preset": "tesseract",
-      #     "ocr_lang": ["jpn", "eng"]
-      #   }
       DOCLING_PARAMS: >-
         {
           "do_ocr": true,
@@ -98,19 +90,24 @@ services:
           "ocr_preset": "tesseract",
           "ocr_lang": ["jpn", "jpn_vert", "eng"],
           "do_picture_description": true,
-          "picture_description_custom_config": {
-            "kind": "api",
-            "url": "http://litellm:4000/v1/chat/completions",
-            "headers": { "Authorization": "Bearer sk-litellm-master-key" },
-            "params": { "model": "gemma4:31b", "temperature": 0.0, "max_tokens": 1024 },
-            "prompt": "この画像を日本語でRAG用に説明してください。..."
-          },
-          "generate_picture_images": true
+          "generate_picture_images": true,
+          "picture_description_custom_config": "{\"picture_area_threshold\": 0.01, \"batch_size\": 1, \"scale\": 2.0, \"engine_options\": {\"engine_type\": \"api\", \"url\": \"http://litellm:4000/v1/chat/completions\", \"headers\": {\"Authorization\": \"Bearer sk-litellm-master-key\"}, \"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}, \"timeout\": 90, \"concurrency\": 1}, \"model_spec\": {\"name\": \"gemma4:31b\", \"default_repo_id\": \"gemma4:31b\", \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"response_format\": \"plaintext\", \"api_overrides\": {\"api\": {\"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}}}}, \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"generation_config\": {\"temperature\": 0.0, \"max_tokens\": 1024}}"
         }
-      ### For Chroma (Vector DB)
-      # VECTOR_DB: chroma
-      # CHROMA_HTTP_HOST: chroma
-      # CHROMA_HTTP_PORT: 8000
+      # DOCLING_PARAMS: >-
+      #   {
+      #     "do_ocr": true,
+      #     "force_ocr": false,
+      #     "ocr_preset": "auto",
+      #     "ocr_custom_config": {
+      #       "kind": "tesseract",
+      #       "lang": ["jpn", "jpn_vert", "eng"],
+      #       "force_full_page_ocr": false,
+      #       "bitmap_area_threshold": 0.30
+      #     },
+      #     "do_picture_description": true,
+      #     "generate_picture_images": true,
+      #     "picture_description_preset": "litellm"
+      #   }
       ### For Qdrant (Vector DB)
       VECTOR_DB: qdrant
       QDRANT_API_KEY: "sk-qdrant-api-key"
@@ -160,16 +157,10 @@ services:
         hard: 65535
 
   docling:
-    # image: quay.io/docling-project/docling-serve:v1.17.0
-    image: ghcr.io/k5-mot/docling-serve-jp:v1.17.0
-    # build:
-    #     context: ./docling-jp
-    #     dockerfile: Dockerfile
-    #     args:
-    #         BASE_TAG: v1.17.0
+    # image: quay.io/docling-project/docling-serve:v1.18.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.18.0
     container_name: inferlab-docling
     restart: unless-stopped
-    # pull_policy: always
     profiles:
       - openwebui
     environment:
@@ -177,12 +168,56 @@ services:
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"
       DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
-      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
       DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
       DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
-    # ports:
-    #   - 50001:5001
+      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+      DOCLING_SERVE_ALLOWED_PICTURE_DESCRIPTION_ENGINES: '["api"]'
+      DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG: "true"
+      # DOCLING_SERVE_CUSTOM_PICTURE_DESCRIPTION_PRESETS: |-
+      #   {
+      #     "litellm": {
+      #       "picture_area_threshold": 0.01,
+      #       "batch_size": 1,
+      #       "scale": 2.0,
+      #       "engine_options": {
+      #         "engine_type": "api",
+      #         "url": "http://litellm:4000/v1/chat/completions",
+      #         "headers": {
+      #           "Authorization": "Bearer sk-litellm-master-key"
+      #         },
+      #         "params": {
+      #           "model": "gemma4:31b",
+      #           "temperature": 0.0,
+      #           "max_tokens": 1024
+      #         },
+      #         "timeout": 90,
+      #         "concurrency": 1
+      #       },
+      #       "model_spec": {
+      #         "name": "gemma4:31b",
+      #         "default_repo_id": "gemma4:31b",
+      #         "prompt": "この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。",
+      #         "response_format": "plaintext",
+      #         "api_overrides": {
+      #           "api": {
+      #             "params": {
+      #               "model": "gemma4:31b",
+      #               "temperature": 0.0,
+      #               "max_tokens": 1024
+      #             }
+      #           }
+      #         }
+      #       },
+      #       "prompt": "この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。",
+      #       "generation_config": {
+      #         "temperature": 0.0,
+      #         "max_tokens": 1024
+      #       }
+      #     }
+      #   }
+      # ports:
+      #   - 50001:5001
     volumes:
       - docling-data:/data
     networks:
@@ -368,8 +403,8 @@ services:
   #     - "${CARBONE_MCP_HOST_PORT:-51001}:4180"
 
 volumes:
-  open-webui-data:
-  # chroma-data:
+  open-webui-data: # chroma-data:
+
   qdrant-storage:
   qdrant-snapshots:
   open-webui-pipelines-data:
