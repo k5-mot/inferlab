@@ -37,8 +37,14 @@ services:
     #   VLLM_API_KEY: ${VLLM_API_KEY:-sk-vllm-api-key}
     command:
       # - "google/gemma-4-E4B-it"
+      # - "google/gemma-4-26B-A4B-it"
       - "cyankiwi/gemma-4-26B-A4B-it-AWQ-4bit"
-      # - "QuantTrio/gemma-4-31B-it-AWQ"
+      # - "google/gemma-4-31B-it"
+      # - "cyankiwi/gemma-4-31B-it-AWQ-4bit"
+      # - "Qwen/Qwen3-Coder-30B-A3B-Instruct"
+      # - "cyankiwi/Qwen3-Coder-30B-A3B-Instruct-AWQ-4bit"
+      # - "Qwen/Qwen3-Coder-Next"
+      # - "cyankiwi/Qwen3-Coder-Next-AWQ-4bit"
       - --host
       - "0.0.0.0"
       - --port
