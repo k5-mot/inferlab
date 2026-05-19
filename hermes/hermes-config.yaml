@@ -3,12 +3,18 @@ model:
   default: "gpt-5.5"
 
 fallback_providers:
+  # - provider: "openrouter"
+  #   model: "openrouter/free"
+  - provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
   - provider: "custom"
-    model: "gpt-oss:120b-cloud"
+    model: "gemma4:31b-cloud"
     base_url: "http://ollama:11434/v1"
     api_mode: "chat_completions"
-  - provider: "openrouter"
-    model: "anthropic/claude-sonnet-4"
+  - provider: "custom"
+    model: "gemma4:e4b"
+    base_url: "http://ollama:11434/v1"
+    api_mode: "chat_completions"
 
 discord:
   require_mention: true
