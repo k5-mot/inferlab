@@ -17,7 +17,7 @@ services:
         cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
         cp -rfv /opt/config/skills/*          /opt/data/skills
         npm install --prefix /opt/data rss-mcp --silent
-        chown -R 1000:1000 /opt/data || true
+        chown -R 10000:10000 /opt/data || true
     volumes:
       - hermes-agent-data:/opt/data
       - ./hermes/hermes-config.yaml:/opt/config/config.yaml
@@ -31,7 +31,7 @@ services:
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
 
   hermes-agent:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.5.16}
     container_name: inferlab-hermes-agent
     restart: unless-stopped
     profiles:
@@ -64,6 +64,9 @@ services:
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       - hermes-agent-data:/opt/data
     networks:
@@ -71,12 +74,18 @@ services:
       - llm-internal
     extra_hosts:
       - host.docker.internal:host-gateway
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${HERMES_AGENT_PORT:-8642}/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
       hermes-agent-config:
         condition: service_completed_successfully
 
   hermes-agent-dashboard:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.5.16}
     container_name: inferlab-hermes-agent-dashboard
     restart: unless-stopped
     profiles:
@@ -105,7 +114,7 @@ services:
       - llm-internal
     depends_on:
       hermes-agent:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   hermes-agent-data:

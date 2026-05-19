@@ -2,11 +2,13 @@ model:
   provider: "openai-codex"
   default: "gpt-5.5"
 
-fallback_model:
-  default: "gpt-oss:120b"
-  provider: "custom"
-  base_url: "http://litellm:4000/v1"
-  api_key: "sk-litellm-master-key"
+fallback_providers:
+  - provider: "custom"
+    model: "gpt-oss:120b-cloud"
+    base_url: "http://ollama:11434/v1"
+    api_mode: "chat_completions"
+  - provider: "openrouter"
+    model: "anthropic/claude-sonnet-4"
 
 discord:
   require_mention: true

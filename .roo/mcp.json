@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "docling": {
+            "type": "streamable-http",
+            "url": "http://localhost:50001/mcp",
+            "headers": {
+                "X-API-Key": "sk-docling-master-key"
+            }
+        }
+    }
+}
