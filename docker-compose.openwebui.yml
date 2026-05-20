@@ -298,9 +298,12 @@ services:
       RAGFLOW_CHAT_IDS: ${RAGFLOW_CHAT_IDS:-}
       RAGFLOW_AGENT_IDS: ${RAGFLOW_AGENT_IDS:-}
       RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
+      CARBONE_GATEWAY_URL: ${CARBONE_GATEWAY_URL:-http://carbone-gateway:8080}
+      CARBONE_TIMEOUT_SECONDS: ${CARBONE_TIMEOUT_SECONDS:-300}
     volumes:
       - open-webui-pipelines-data:/app/pipelines
       - ./ragflow/pipelines/ragflow_pipeline.py:/app/pipelines/ragflow_pipeline.py:ro
+      - ./carbone/pipelines/carbone_pipeline.py:/app/pipelines/carbone_pipeline.py:ro
     networks:
       - llm-internal
   # oauth2-proxy-dify:

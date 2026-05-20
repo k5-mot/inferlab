@@ -21,9 +21,9 @@
 | `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity                                                      |
 | `docker-compose.inference-vllm.yml`   | litellm, vllm-*                                                                              |
 | `docker-compose.openwebui.yml`        | open-webui, qdrant, open-webui-pipelines, docling-serve, searxng, openai-edge-tts, oauth2-proxy-* |
-| `docker-compose.ragflow.yml`          | ragflow, ragflow-es01, ragflow-mysql, ragflow-minio, ragflow-redis                            |
+| `docker-compose.ragflow.yml`          | ragflow, ragflow-es01, ragflow-mysql, ragflow-minio, ragflow-redis, sync-worker               |
 | `docker-compose.comfyui.yml`          | comfyui                                                                                      |
-| `docker-compose.carbone.yml`          | carbone, carbone-mcp                                                                         |
+| `docker-compose.carbone.yml`          | carbone, carbone-mcp, carbone-gateway                                                        |
 | `docker-compose.hermes-agent.yml`     | hermes-agent                                                                                 |
 | `docker-compose.openclaw.yml`         | openclaw                                                                                     |
 | `docker-compose.dify.yml`             | dify-*                                                                                       |
@@ -46,6 +46,8 @@
 | Hermes Agent Dashboard |    `31009` | profile: hermes-agent    |
 | OpenClaw               |    `31007` | profile: openclaw        |
 | RAGFlow                |    `31008` | profile: ragflow         |
+| Carbone Gateway        |    `31010` | profile: carbone         |
+| Sync Worker            |    `31011` | profile: ragflow         |
 | LiteLLM                |    `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP            |    `51001` | oauth2-proxy 経由        |
 
@@ -86,6 +88,58 @@ RAGFLOW_TTS_BASE_URL=http://openai-edge-tts:5050/v1
 ```
 
 RAGFlow の vision 既定モデルは `gemma3:31b@OpenAI`、TTS 既定モデルは `tts-1@OpenAI` として初期化する。TTS の OpenAI 互換 API は `openai-edge-tts` に向ける。
+
+Phase 1 の BookStack / Seafile 同期は `sync-worker` が担当する。
+RAGFlow で API Key を作成し、BookStack / Seafile の接続情報と一緒に `.env` へ設定する。
+
+```bash
+RAGFLOW_API_KEY=ragflow-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RAGFLOW_CHAT_ID=
+BOOKSTACK_BASE_URL=http://bookstack.example.local
+BOOKSTACK_TOKEN_ID=...
+BOOKSTACK_TOKEN_SECRET=...
+SEAFILE_BASE_URL=http://seafile.example.local
+SEAFILE_API_TOKEN=...
+SEAFILE_LIBRARY_IDS=
+SEAFILE_PATHS=/
+```
+
+同期と検索は HTTP API から実行できる。
+BookStack は `rag_bookstack`、Seafile は `rag_seafile` データセットに投入し、差分判定は `sync-worker-data` の SQLite state で管理する。
+
+```bash
+curl -X POST http://localhost:31011/sync/bookstack
+curl -X POST http://localhost:31011/sync/seafile
+curl -X POST http://localhost:31011/sync/all
+
+curl -X POST http://localhost:31011/search \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"VPNの申請手順は？"}'
+```
+
+Phase 2 の DOCX/PDF 生成は Carbone Gateway が担当する。
+構造化 JSON を Markdown に正規化し、Carbone v5 の `POST /render/template?download=true` で DOCX/PDF に変換する。
+
+```bash
+docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile carbone up -d
+
+curl -X POST http://localhost:31010/v1/reports \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "VPN申請手順",
+    "summary": "社内VPNの申請から承認までの流れ。",
+    "sections": [
+      {"title": "手順", "bullets": ["申請フォームを開く", "所属長承認を依頼する"]}
+    ],
+    "citations": [
+      {"ref": 1, "source_name": "IT手順書", "page_url": "http://bookstack.example.local/books/it/page/vpn"}
+    ],
+    "formats": ["docx", "pdf"]
+  }'
+```
+
+Open WebUI Pipelines には `RAGFlow: ...` と `Carbone: DOCX/PDF Report` が表示される。
+Carbone Pipeline には上記 JSON を貼り付けると、生成された DOCX/PDF のリンクを返す。
 
 Hermes Agent profile を起動すると、gateway に加えて web dashboard も起動する。
 既定では `http://127.0.0.1:31009/` で開ける。安全のため Docker 側で localhost のみに公開している。
