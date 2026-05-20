@@ -46,14 +46,17 @@ services:
         hard: 65535
 
   ollama:
-    image: docker.io/ollama/ollama:0.21.2
+    image: docker.io/ollama/ollama:0.24.0
     container_name: inferlab-ollama
     restart: unless-stopped
     profiles:
       - inference-ollama
     tty: true
     environment:
-      - OLLAMA_HOST=0.0.0.0:11434
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-sk-ollama-api-key}"
+    ports:
+      - 11434:11434
     volumes:
       - ollama-cache:/root/.ollama
     networks:
@@ -71,7 +74,7 @@ services:
       start_period: 10s
 
   ollama-init:
-    image: docker.io/ollama/ollama:0.21.2
+    image: docker.io/ollama/ollama:0.24.0
     container_name: inferlab-ollama-init
     restart: no
     profiles:
@@ -135,7 +138,7 @@ services:
   #     - llm-internal
 
   vllm-ruri-v3-310m:
-    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.21.0
     container_name: inferlab-vllm-ruri-v3-310m
     restart: unless-stopped
     # shm_size: 8gb
@@ -169,7 +172,7 @@ services:
       start_period: 60s
 
   vllm-ruri-v3-reranker-310m:
-    image: docker.io/vllm/vllm-openai-cpu:v0.19.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.21.0
     container_name: inferlab-vllm-ruri-v3-reranker-310m
     restart: unless-stopped
     # shm_size: 8gb

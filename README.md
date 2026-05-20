@@ -146,7 +146,7 @@ docker compose --profile inference --profile media config --services
 
 ```bash
 docker compose \
-  --env-file ./.env \
+  --env-file ./.env.prod \
   --profile common \
   --profile inference-ollama \
   --profile hermes-agent \
@@ -154,7 +154,7 @@ docker compose \
   --profile ragflow \
   down --remove-orphans
 docker compose \
-  --env-file ./.env \
+  --env-file ./.env.prod \
   --profile common \
   --profile inference-ollama \
   --profile hermes-agent \
@@ -162,11 +162,13 @@ docker compose \
   --profile ragflow \
   up -d --no-deps --force-recreate --remove-orphans
 docker compose \
-  --env-file ./.env \
+  --env-file ./.env.prod \
   --profile common \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
   --profile ragflow \
   ps
+
+pip3 download -d lib python-docx "docling-mcp[local]" docling Pillow "markitdown[pptx,docx,xlsx,xls,pdf]" markitdown-ocr markitdown-mcp
 ```

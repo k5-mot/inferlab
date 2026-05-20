@@ -1,5 +1,8 @@
-.claude
+.claude/
+.codex/
+.roo/
 __pycache__
 devcontainer-lock.json
 .env
+.env.prod
 .env.local

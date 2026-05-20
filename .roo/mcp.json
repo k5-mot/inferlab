@@ -1,10 +1,19 @@
 {
     "mcpServers": {
         "docling": {
-            "type": "streamable-http",
-            "url": "http://localhost:50001/mcp",
-            "headers": {
-                "X-API-Key": "sk-docling-master-key"
+            "command": "uvx",
+            "args": [
+                "--no-env-file",
+                "--from=docling-mcp[local]",
+                "docling-mcp-server",
+                "--transport",
+                "stdio"
+            ],
+            "env": {
+                "DOCLING_SERVICE_URL": "http://192.168.3.10:50000",
+                "DOCLING_SERVICE_API_KEY": "sk-docling-master-key",
+                "DOCLING_CONVERSION_MODE": "remote",
+                "DOCLING_FALLBACK_TO_LOCAL": "true"
             }
         }
     }

@@ -174,6 +174,8 @@ services:
       DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+    ports:
+      - 50000:5001
     volumes:
       - docling-data:/data
     networks:
@@ -183,43 +185,43 @@ services:
         soft: 65535
         hard: 65535
 
-  docling-mcp:
-    # image: quay.io/docling-project/docling-serve:v1.18.0
-    # image: ghcr.io/k5-mot/docling-serve-jp:v1.18.0
-    build:
-      context: ./docling-jp
-      dockerfile: Dockerfile
-    container_name: inferlab-docling-mcp
-    restart: unless-stopped
-    profiles:
-      - openwebui
-    environment:
-      DOCLING_SERVE_HOST: 0.0.0.0
-      DOCLING_SERVE_PORT: 5001
-      DOCLING_SERVE_ENABLE_UI: "true"
-      DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
-      DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
-      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
-      DOCLING_SERVE_MAX_SYNC_WAIT: 36000
-      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
-    command:
-      - docling-mcp-server
-      - --transport
-      - "streamable-http"
-      - --port
-      - "8000"
-      - --host
-      - "0.0.0.0"
-    ports:
-      - 50001:8000
-    volumes:
-      - docling-data:/data
-    networks:
-      - llm-internal
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+  # docling-mcp:
+  #   # image: quay.io/docling-project/docling-serve:v1.18.0
+  #   # image: ghcr.io/k5-mot/docling-serve-jp:v1.18.0
+  #   build:
+  #     context: ./docling-jp
+  #     dockerfile: Dockerfile
+  #   container_name: inferlab-docling-mcp
+  #   restart: unless-stopped
+  #   profiles:
+  #     - openwebui
+  #   environment:
+  #     DOCLING_SERVE_HOST: 0.0.0.0
+  #     DOCLING_SERVE_PORT: 5001
+  #     DOCLING_SERVE_ENABLE_UI: "true"
+  #     DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
+  #     DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
+  #     DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
+  #     DOCLING_SERVE_MAX_SYNC_WAIT: 36000
+  #     DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+  #   command:
+  #     - docling-mcp-server
+  #     - --transport
+  #     - "streamable-http"
+  #     - --port
+  #     - "8000"
+  #     - --host
+  #     - "0.0.0.0"
+  #   ports:
+  #     - 50001:8000
+  #   volumes:
+  #     - docling-data:/data
+  #   networks:
+  #     - llm-internal
+  #   ulimits:
+  #     nofile:
+  #       soft: 65535
+  #       hard: 65535
 
   searxng:
     image: docker.io/searxng/searxng:2026.4.13-ee66b070a

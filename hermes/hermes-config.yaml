@@ -3,8 +3,8 @@ model:
   default: "gpt-5.5"
 
 fallback_providers:
-  # - provider: "openrouter"
-  #   model: "openrouter/free"
+  - provider: "openrouter"
+    model: "openrouter/free"
   - provider: "openrouter"
     model: "google/gemma-4-31b-it:free"
   - provider: "custom"
@@ -25,3 +25,9 @@ mcp_servers:
     args: ["-y", "mcp-searxng"]
     env:
       SEARXNG_URL: "http://searxng:8080/"
+
+  docling:
+    url: "http://docling-mcp:8000/mcp"
+    headers: {
+      X-API-Key: "sk-docling-master-key"
+    }
