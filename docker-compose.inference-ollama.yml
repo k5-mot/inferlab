@@ -96,17 +96,18 @@ services:
           echo 'Waiting for Ollama to be ready...';
           sleep 1;
         done; echo 'Ollama is ready. Importing models in parallel...'; (
-          ollama pull gemma4:e4b                   &
-          ollama pull gemma4:31b-cloud             &
-          ollama pull gpt-oss:120b-cloud           &
-          ollama pull minimax-m2.7:cloud           &
-          ollama pull qwen3.5:397b-cloud           &
-          ollama pull glm-5.1:cloud                &
-          ollama pull kimi-k2.6:cloud              &
-          ollama pull deepseek-v4-flash:cloud      &
-          ollama pull deepseek-v4-pro:cloud        &
-          ollama pull gemini-3-flash-preview:cloud &
-          ollama pull qwen3-coder-next:cloud       &
+          ollama pull gemma4:e4b                       &
+          ollama pull gemma4:31b-cloud                 &
+          ollama pull gpt-oss:120b-cloud               &
+          ollama pull minimax-m2.7:cloud               &
+          ollama pull qwen3.5:397b-cloud               &
+          ollama pull glm-5.1:cloud                    &
+          ollama pull kimi-k2.6:cloud                  &
+          ollama pull deepseek-v4-flash:cloud          &
+          ollama pull deepseek-v4-pro:cloud            &
+          ollama pull gemini-3-flash-preview:cloud     &
+          ollama pull qwen3-coder-next:cloud           &
+          ollama pull nomic-embed-text-v2-moe          &
           wait
         ); echo 'All models pulled.'; kill "$$OLLAMA_PID"
   # infinity:
@@ -136,73 +137,73 @@ services:
   #   networks:
   #     - llm-internal
 
-  # vllm-ruri-v3-310m:
-  #   image: docker.io/vllm/vllm-openai-cpu:v0.21.0
-  #   container_name: inferlab-vllm-ruri-v3-310m
-  #   restart: unless-stopped
-  #   # shm_size: 8gb
-  #   profiles:
-  #     - inference-ollama
-  #   command:
-  #     - "cl-nagoya/ruri-v3-310m"
-  #     - --host
-  #     - "0.0.0.0"
-  #     - --port
-  #     - "8000"
-  #     - --convert
-  #     - "embed"
-  #     - --dtype
-  #     - "float32"
-  #     # - --gpu-memory-utilization
-  #     # - "0.05"
-  #     - --served-model-name
-  #     - "ruri-v3:310m"
-  #   volumes:
-  #     - ollama-vllm-cache:/root/.cache
-  #   networks:
-  #     - llm-internal
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 60
-  #     start_period: 60s
+  vllm-ruri-v3-310m:
+    image: docker.io/vllm/vllm-openai-cpu:v0.21.0
+    container_name: inferlab-vllm-ruri-v3-310m
+    restart: unless-stopped
+    # shm_size: 8gb
+    profiles:
+      - inference-ollama
+    command:
+      - "cl-nagoya/ruri-v3-310m"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "embed"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
+      - --served-model-name
+      - "ruri-v3:310m"
+    volumes:
+      - ollama-vllm-cache:/root/.cache
+    networks:
+      - llm-internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
 
-  # vllm-ruri-v3-reranker-310m:
-  #   image: docker.io/vllm/vllm-openai-cpu:v0.21.0
-  #   container_name: inferlab-vllm-ruri-v3-reranker-310m
-  #   restart: unless-stopped
-  #   # shm_size: 8gb
-  #   profiles:
-  #     - inference-ollama
-  #   command:
-  #     - "cl-nagoya/ruri-v3-reranker-310m"
-  #     - --host
-  #     - "0.0.0.0"
-  #     - --port
-  #     - "8000"
-  #     - --convert
-  #     - "classify"
-  #     - --dtype
-  #     - "float32"
-  #     # - --gpu-memory-utilization
-  #     # - "0.05"
-  #     - --served-model-name
-  #     - "ruri-v3-reranker:310m"
-  #   volumes:
-  #     - ollama-vllm-cache:/root/.cache
-  #   networks:
-  #     - llm-internal
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 60
-  #     start_period: 60s
+  vllm-ruri-v3-reranker-310m:
+    image: docker.io/vllm/vllm-openai-cpu:v0.21.0
+    container_name: inferlab-vllm-ruri-v3-reranker-310m
+    restart: unless-stopped
+    # shm_size: 8gb
+    profiles:
+      - inference-ollama
+    command:
+      - "cl-nagoya/ruri-v3-reranker-310m"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "classify"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
+      - --served-model-name
+      - "ruri-v3-reranker:310m"
+    volumes:
+      - ollama-vllm-cache:/root/.cache
+    networks:
+      - llm-internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
   # vllm-qwen3-embedding-06b:
   #   image: docker.io/vllm/vllm-openai-cpu:v0.19.1
   #   container_name: inferlab-vllm-qwen3-embedding-06b

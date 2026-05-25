@@ -66,17 +66,22 @@ model_list:
       model: ollama_chat/qwen3-coder-next:cloud
       api_base: http://ollama:11434
 
+  - model_name: nomic-embed-text-v2-moe
+    litellm_params:
+      model: ollama/nomic-embed-text-v2-moe
+      api_base: http://ollama:11434
+
   # vLLM
   - model_name: ruri-v3:310m
     litellm_params:
-      model: openai/ruri-v3:310m
+      model: hosted_vllm/ruri-v3:310m
       api_base: http://vllm-ruri-v3-310m:8000/v1
       api_key: EMPTY
       encoding_format: float
 
   - model_name: ruri-v3-reranker:310m
     litellm_params:
-      model: cohere/ruri-v3-reranker:310m
+      model: hosted_vllm/ruri-v3-reranker:310m
       api_base: http://vllm-ruri-v3-reranker-310m:8000
       api_key: EMPTY
       encoding_format: float
