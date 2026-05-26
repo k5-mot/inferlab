@@ -57,7 +57,7 @@ CARBONE_GATEWAY_PUBLIC_URL=http://localhost:31010
 新規追加した sync-worker と carbone-gateway をビルドします。
 
 ```bash
-docker compose --profile ragflow --profile carbone build sync-worker carbone-gateway
+docker compose --profile ragflow --profile seafile --profile carbone build sync-worker carbone-gateway
 ```
 
 `Image inferlab-sync-worker Built` と `Image inferlab-carbone-gateway Built` が表示されれば OK です。
@@ -67,13 +67,13 @@ docker compose --profile ragflow --profile carbone build sync-worker carbone-gat
 Phase 1 から Phase 2 までをまとめて起動します。
 
 ```bash
-docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile carbone up -d
+docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile seafile --profile carbone up -d
 ```
 
 起動状態を確認します。
 
 ```bash
-docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile carbone ps
+docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile seafile --profile carbone ps
 ```
 
 最低限、以下が `Up` になっていることを確認します。
@@ -307,13 +307,13 @@ Carbone Pipeline を選び、以下のような JSON を送信します。
 `RAGFLOW_API_KEY is not configured` が出る場合:
 
 ```bash
-docker compose --profile ragflow exec sync-worker env | grep RAGFLOW
+docker compose --profile ragflow --profile seafile exec sync-worker env | grep RAGFLOW
 ```
 
 `.env` の `RAGFLOW_API_KEY` が空でないことを確認し、必要なら再起動します。
 
 ```bash
-docker compose --profile ragflow up -d --force-recreate sync-worker
+docker compose --profile ragflow --profile seafile up -d --force-recreate sync-worker
 ```
 
 BookStack 同期が 400 になる場合:

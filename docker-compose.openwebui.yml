@@ -249,6 +249,8 @@ services:
       REQUIRE_API_KEY: "True"
       REMOVE_FILTER: "True"
       EXPAND_API: "True"
+    profiles:
+      - openwebui
     # ports:
     #   - "5050:5050"
     networks:

@@ -21,7 +21,8 @@
 | `docker-compose.inference-ollama.yml` | litellm, ollama, ollama-init, inifinity                                                      |
 | `docker-compose.inference-vllm.yml`   | litellm, vllm-*                                                                              |
 | `docker-compose.openwebui.yml`        | open-webui, qdrant, open-webui-pipelines, docling-serve, searxng, openai-edge-tts, oauth2-proxy-* |
-| `docker-compose.ragflow.yml`          | ragflow, ragflow-es01, ragflow-mysql, ragflow-minio, ragflow-redis, sync-worker               |
+| `docker-compose.ragflow.yml`          | ragflow, ragflow-es01, ragflow-mysql, ragflow-minio, ragflow-redis                            |
+| `docker-compose.seafile.yml`          | sync-worker                                                                                   |
 | `docker-compose.comfyui.yml`          | comfyui                                                                                      |
 | `docker-compose.carbone.yml`          | carbone, carbone-mcp, carbone-gateway                                                        |
 | `docker-compose.hermes-agent.yml`     | hermes-agent                                                                                 |
@@ -47,7 +48,7 @@
 | OpenClaw               |    `31007` | profile: openclaw        |
 | RAGFlow                |    `31008` | profile: ragflow         |
 | Carbone Gateway        |    `31010` | profile: carbone         |
-| Sync Worker            |    `31011` | profile: ragflow         |
+| Sync Worker            |    `31011` | profile: ragflow/seafile |
 | LiteLLM                |    `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP            |    `51001` | oauth2-proxy 経由        |
 
@@ -74,7 +75,7 @@ docker compose --profile hermes-agent --profile openclaw up -d
 RAGFlow を Open WebUI のバックエンドとして使う場合は、Open WebUI と RAGFlow を同時に起動する。
 
 ```bash
-docker compose --profile inference-ollama --profile openwebui --profile ragflow up -d
+docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile seafile up -d
 ```
 
 RAGFlow の初期設定は `http://localhost:31008/` で行う。モデルプロバイダは既定で LiteLLM (`http://litellm:4000/v1`) を向くようにしている。RAGFlow 側で Chat または Agent を作成し、API Key と ID を `.env` に設定すると、Open WebUI のモデル一覧に `RAGFlow: Chat: <label>` または `RAGFlow: Agent: <label>` として表示される。

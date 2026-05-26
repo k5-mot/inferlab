@@ -1,0 +1,39 @@
+services:
+  sync-worker:
+    build:
+      context: ./sync-worker
+      dockerfile: Dockerfile
+    container_name: inferlab-sync-worker
+    restart: unless-stopped
+    profiles:
+      - seafile
+    environment:
+      SYNC_WORKER_DATA_DIR: /data
+      RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://ragflow:9380}
+      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+      RAGFLOW_CHAT_ID: ${RAGFLOW_CHAT_ID:-}
+      RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
+      RAGFLOW_EMBEDDING_MODEL: ${RAGFLOW_EMBEDDING_MODEL:-ruri-v3:310m}
+      RAGFLOW_RERANK_MODEL: ${RAGFLOW_RERANK_MODEL:-ruri-v3-reranker:310m}
+      RAGFLOW_RERANK_FACTORY: ${RAGFLOW_RERANK_FACTORY:-OpenAI-API-Compatible}
+      BOOKSTACK_BASE_URL: ${BOOKSTACK_BASE_URL:-}
+      BOOKSTACK_TOKEN_ID: ${BOOKSTACK_TOKEN_ID:-}
+      BOOKSTACK_TOKEN_SECRET: ${BOOKSTACK_TOKEN_SECRET:-}
+      BOOKSTACK_DATASET_NAME: ${BOOKSTACK_DATASET_NAME:-rag_bookstack}
+      SEAFILE_BASE_URL: ${SEAFILE_BASE_URL:-}
+      SEAFILE_API_TOKEN: ${SEAFILE_API_TOKEN:-}
+      SEAFILE_LIBRARY_IDS: ${SEAFILE_LIBRARY_IDS:-}
+      SEAFILE_PATHS: ${SEAFILE_PATHS:-/}
+      SEAFILE_DATASET_NAME: ${SEAFILE_DATASET_NAME:-rag_seafile}
+    ports:
+      - "${SYNC_WORKER_HOST_PORT:-31011}:8080"
+    volumes:
+      - sync-worker-data:/data
+    networks:
+      - llm-internal
+
+volumes:
+  sync-worker-data:
+
+networks:
+  llm-internal:

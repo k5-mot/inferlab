@@ -5,6 +5,7 @@ include:
   - ./docker-compose.inference-ollama.yml
   - ./docker-compose.openwebui.yml
   - ./docker-compose.ragflow.yml
+  - ./docker-compose.seafile.yml
   - ./docker-compose.comfyui.yml
   - ./docker-compose.carbone.yml
   - ./docker-compose.hermes-agent.yml
