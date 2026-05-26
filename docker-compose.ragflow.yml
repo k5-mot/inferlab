@@ -79,8 +79,13 @@ services:
       # - ${RAGFLOW_GO_ADMIN_PORT:-9383}:9383
     volumes:
       - ragflow-logs:/ragflow/logs
-      - ./ragflow/tiktoken-cache:/ragflow/.cache/tiktoken:ro
       - ./ragflow/service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template:ro
+      # RAGFlow v0.25.2 sets TIKTOKEN_CACHE_DIR to /ragflow. tiktoken uses sha1(URL) as the cache filename.
+      # 1. mkdir -p ragflow
+      # 2. curl -fsSL https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken \
+      #     -o ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+      # 3. sha256sum ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+      - ./ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4:/ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4:ro
     networks:
       - llm-public
       - llm-internal
@@ -201,4 +206,4 @@ volumes:
 
 networks:
   llm-public:
-  llm-internal:
+  llm-internal: # internal: true

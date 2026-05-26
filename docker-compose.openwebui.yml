@@ -131,8 +131,8 @@ services:
       # IMAGE_EDIT_ENGINE: comfyui
       # COMFYUI_BASE_URL: http://comfyui:8188
       ### For Open WebUI Pipelines
-      PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-      PIPELINES_URLS: http://open-webui-pipelines:9099
+      # PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+      # PIPELINES_URLS: http://open-webui-pipelines:9099
     ports:
       - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
     volumes:
@@ -151,8 +151,8 @@ services:
         condition: service_started
       searxng:
         condition: service_started
-      open-webui-pipelines:
-        condition: service_started
+      # open-webui-pipelines:
+      #   condition: service_started
     ulimits:
       nofile:
         soft: 65535
@@ -271,7 +271,6 @@ services:
     #   - 6333:6333
     networks:
       - llm-internal
-
   # chroma:
   #   image: docker.io/chromadb/chroma:1.5.8
   #   container_name: inferlab-chroma
@@ -287,27 +286,28 @@ services:
   #   networks:
   #     - llm-internal
 
-  open-webui-pipelines:
-    image: ghcr.io/open-webui/pipelines:main
-    container_name: inferlab-open-webui-pipelines
-    restart: unless-stopped
-    profiles:
-      - openwebui
-    environment:
-      PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-      RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://ragflow:9380}
-      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
-      RAGFLOW_CHAT_IDS: ${RAGFLOW_CHAT_IDS:-}
-      RAGFLOW_AGENT_IDS: ${RAGFLOW_AGENT_IDS:-}
-      RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
-      CARBONE_GATEWAY_URL: ${CARBONE_GATEWAY_URL:-http://carbone-gateway:8080}
-      CARBONE_TIMEOUT_SECONDS: ${CARBONE_TIMEOUT_SECONDS:-300}
-    volumes:
-      - open-webui-pipelines-data:/app/pipelines
-      - ./ragflow/pipelines/ragflow_pipeline.py:/app/pipelines/ragflow_pipeline.py:ro
-      - ./carbone/pipelines/carbone_pipeline.py:/app/pipelines/carbone_pipeline.py:ro
-    networks:
-      - llm-internal
+  # open-webui-pipelines:
+  #   image: ghcr.io/open-webui/pipelines:main
+  #   container_name: inferlab-open-webui-pipelines
+  #   restart: unless-stopped
+  #   profiles:
+  #     - openwebui
+  #   environment:
+  #     PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
+  #     RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://ragflow:9380}
+  #     RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+  #     RAGFLOW_CHAT_IDS: ${RAGFLOW_CHAT_IDS:-}
+  #     RAGFLOW_AGENT_IDS: ${RAGFLOW_AGENT_IDS:-}
+  #     RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
+  #     CARBONE_GATEWAY_URL: ${CARBONE_GATEWAY_URL:-http://carbone-gateway:8080}
+  #     CARBONE_TIMEOUT_SECONDS: ${CARBONE_TIMEOUT_SECONDS:-300}
+  #   volumes:
+  #     - open-webui-pipelines-data:/app/pipelines
+  #     # - ./ragflow/pipelines/ragflow_pipeline.py:/app/pipelines/ragflow_pipeline.py:ro
+  #     # - ./carbone/pipelines/carbone_pipeline.py:/app/pipelines/carbone_pipeline.py:ro
+  #   networks:
+  #     - llm-internal
+
   # oauth2-proxy-dify:
   #   <<: *oauth2-proxy-base
   #   container_name: inferlab-oauth2-proxy-dify
@@ -404,13 +404,12 @@ services:
   #     - "${CARBONE_MCP_HOST_PORT:-51001}:4180"
 
 volumes:
-  open-webui-data: # chroma-data:
-
+  open-webui-data:
   qdrant-storage:
   qdrant-snapshots:
-  open-webui-pipelines-data:
   docling-data:
-
+    # open-webui-pipelines-data:
+    # chroma-data:
 networks:
   llm-public:
   llm-internal:

@@ -78,6 +78,20 @@ RAGFlow を Open WebUI のバックエンドとして使う場合は、Open WebU
 docker compose --profile inference-ollama --profile openwebui --profile ragflow --profile seafile up -d
 ```
 
+RAGFlow をオフライン環境で起動する前に、tiktoken の `cl100k_base` をオンライン環境で取得しておく。
+RAGFlow v0.25.2 は `TIKTOKEN_CACHE_DIR` を `/ragflow` に上書きするため、Compose では tiktoken のキャッシュファイルを `/ragflow` 直下へ bind mount している。
+ファイル名は tiktoken が使う `sha1("https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken")` の値に合わせる。
+
+```bash
+mkdir -p ragflow
+curl -fsSL \
+  https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken \
+  -o ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+sha256sum ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+```
+
+期待する SHA256 は `223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7`。
+
 RAGFlow の初期設定は `http://localhost:31008/` で行う。モデルプロバイダは既定で LiteLLM (`http://litellm:4000/v1`) を向くようにしている。RAGFlow 側で Chat または Agent を作成し、API Key と ID を `.env` に設定すると、Open WebUI のモデル一覧に `RAGFlow: Chat: <label>` または `RAGFlow: Agent: <label>` として表示される。
 
 ```bash

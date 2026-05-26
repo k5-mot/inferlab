@@ -30,25 +30,21 @@ redis:
   host: '${REDIS_HOST:-ragflow-redis}:6379'
 task_executor:
   message_queue_type: 'redis'
-user_default_llm:
-  factory: 'OpenAI-Compatible'
-  base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
-  api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
-  default_models:
-    chat_model:
-      name: '${RAGFLOW_CHAT_MODEL:-gemma4:31b}'
-      factory: 'OpenAI-Compatible'
-      base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
-      api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
-    embedding_model:
-      name: '${RAGFLOW_EMBEDDING_MODEL:-ruri-v3:310m}'
-      factory: 'OpenAI-Compatible'
-      base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
-      api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
-    rerank_model:
-      name: '${RAGFLOW_RERANK_MODEL:-ruri-v3-reranker:310m}'
-      factory: 'OpenAI-Compatible'
-      base_url: '${RAGFLOW_VISION_BASE_URL:-http://litellm:4000/v1}'
-      api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
-    asr_model: ''
-    image2text_model: ''
+# user_default_llm:
+#   base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
+#   api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
+#   default_models:
+#     chat_model:
+#       name: '${RAGFLOW_CHAT_MODEL:-gemma4:31b}'
+#       base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
+#       api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
+#     embedding_model:
+#       name: '${RAGFLOW_EMBEDDING_MODEL:-ruri-v3:310m}'
+#       base_url: '${RAGFLOW_OPENAI_BASE_URL:-http://litellm:4000/v1}'
+#       api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
+#     rerank_model:
+#       name: '${RAGFLOW_RERANK_MODEL:-ruri-v3-reranker:310m}'
+#       base_url: '${RAGFLOW_VISION_BASE_URL:-http://litellm:4000/v1}'
+#       api_key: '${RAGFLOW_OPENAI_API_KEY:-sk-litellm-master-key}'
+#     asr_model: ''
+#     image2text_model: ''
