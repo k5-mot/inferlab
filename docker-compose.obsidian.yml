@@ -4,7 +4,7 @@ services:
     container_name: couchdb
     environment:
       - COUCHDB_USER=${COUCHDB_USER:-obsidian}
-      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-change-me-obsidian-db-password}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-sk-obsidian-db-key}
     volumes:
       - couchdb_data:/opt/couchdb/data
       - ./couchdb/local.ini:/opt/couchdb/etc/local.ini
