@@ -24,7 +24,7 @@ sudo docker ps | grep inferlab-keycloak
 
 次の URL を開きます。
 
-- `http://192.168.3.10:30000/admin/master/console/`
+- `http://192.168.1.100:30000/admin/master/console/`
 
 ブートストラップ管理者（`master` レルム）でログインします。
 
@@ -51,10 +51,10 @@ Keycloak でクライアント設定を開きます。
 - `Standard flow`: ON
 - `Redirect URIs` に次を含める:
   - `http://localhost:31001/oauth/oidc/callback`
-  - `http://192.168.3.10:31001/oauth/oidc/callback`
+  - `http://192.168.1.100:31001/oauth/oidc/callback`
 - `Web origins` に次を含める:
   - `http://localhost:31001`
-  - `http://192.168.3.10:31001`
+  - `http://192.168.1.100:31001`
 
 ## 4. inferlab レルムに初回ログイン用ユーザーを作成する
 
@@ -74,9 +74,9 @@ Keycloak でクライアント設定を開きます。
 
 compose 設定では、Open WebUI のブラウザフロー用に公開側の Keycloak URL を使用します。
 
-- `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
-- `OPENID_REDIRECT_URI=http://192.168.3.10:31001/oauth/oidc/callback`
-- `WEBUI_URL=http://192.168.3.10:31001`
+- `OPENID_PROVIDER_URL=http://192.168.1.100:30000/realms/inferlab/.well-known/openid-configuration`
+- `OPENID_REDIRECT_URI=http://192.168.1.100:31001/oauth/oidc/callback`
+- `WEBUI_URL=http://192.168.1.100:31001`
 
 コンテナ設定の変更を反映します。
 
@@ -90,10 +90,10 @@ sudo docker compose \
 
 ## 6. ログイン動作を確認する
 
-1. `http://192.168.3.10:31001/auth?redirect=%2F` を開く
+1. `http://192.168.1.100:31001/auth?redirect=%2F` を開く
 2. `Continue with Keycloak` をクリックする
 3. リダイレクト先が次の URL で始まることを確認する
-   - `http://192.168.3.10:30000/realms/inferlab/protocol/openid-connect/auth`
+   - `http://192.168.1.100:30000/realms/inferlab/protocol/openid-connect/auth`
 4. 手順 4 で作成したユーザーでログインする
 
 ## 7. トラブルシューティング
@@ -102,7 +102,7 @@ sudo docker compose \
 
 Keycloak のホスト名とアクセス元ホストの整合性を確認します。
 
-- Keycloak と Open WebUI は同じホスト/IP（`192.168.3.10`）でアクセスする
+- Keycloak と Open WebUI は同じホスト/IP（`192.168.1.100`）でアクセスする
 - 同じブラウザセッションで `localhost` と LAN IP を混在させない
 
 ### B. リダイレクト先が `http://keycloak:8080/...` になる
@@ -111,7 +111,7 @@ Keycloak のホスト名とアクセス元ホストの整合性を確認しま�
 
 対応: Open WebUI が次を使用していることを確認します。
 
-- `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
+- `OPENID_PROVIDER_URL=http://192.168.1.100:30000/realms/inferlab/.well-known/openid-configuration`
 
 ### C. `/oauth/oidc/login` が `Internal Server Error` になる
 
@@ -119,13 +119,13 @@ Open WebUI のログで、`.well-known/openid-configuration` の取得が 404 �
 
 例:
 
-- `http://192.168.3.10:30000/realms/open-webui/.well-known/openid-configuration`
+- `http://192.168.1.100:30000/realms/open-webui/.well-known/openid-configuration`
 
 原因: `OPENID_PROVIDER_URL` のレルム名が誤っています。
 
 対応: Open WebUI の `OPENID_PROVIDER_URL` を `inferlab` レルムに合わせます。
 
-- `OPENID_PROVIDER_URL=http://192.168.3.10:30000/realms/inferlab/.well-known/openid-configuration`
+- `OPENID_PROVIDER_URL=http://192.168.1.100:30000/realms/inferlab/.well-known/openid-configuration`
 
 変更後は Open WebUI コンテナを再作成します。
 
@@ -192,7 +192,7 @@ Open WebUI 側のユーザーロールが `pending` になっています。
 
 ### H. 音声モードで `メディアデバイスへのアクセス時に権限が拒否されました`
 
-Open WebUI を `http://192.168.3.10:31001` のような LAN IP の HTTP URL で開いている場合、ブラウザがマイクアクセスを拒否します。
+Open WebUI を `http://192.168.1.100:31001` のような LAN IP の HTTP URL で開いている場合、ブラウザがマイクアクセスを拒否します。
 マイクやカメラを使う Web API は、原則として HTTPS または `localhost` などの安全なコンテキストでのみ許可されます。
 
 同じホスト上のブラウザから使う場合は、`localhost` に寄せるのが最短です。

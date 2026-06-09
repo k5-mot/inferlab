@@ -16,13 +16,13 @@
         "bind": "lan",
         "auth": {
             "mode": "token",
-            "token": "ocw_BajXSquJ7wKrAc7Z6gxKXUjp"
+            "token": "${OPENCLAW_GATEWAY_TOKEN}"
         },
         "controlUi": {
             "allowedOrigins": [
                 "http://localhost:31007",
                 "http://127.0.0.1:31007",
-                "http://192.168.3.10:31007"
+                "http://192.168.1.100:31007"
             ],
             "dangerouslyDisableDeviceAuth": true
         }

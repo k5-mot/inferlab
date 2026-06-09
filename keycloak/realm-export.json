@@ -32,14 +32,14 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://192.168.3.10:31001/",
+            "rootUrl": "http://192.168.1.100:31001/",
             "redirectUris": [
                 "http://localhost:31001/oauth/oidc/callback",
-                "http://192.168.3.10:31001/oauth/oidc/callback"
+                "http://192.168.1.100:31001/oauth/oidc/callback"
             ],
             "webOrigins": [
-                "http://192.168.3.10:31001",
-                "http://localhost:31001"
+                "http://localhost:31001",
+                "http://192.168.1.100:31001"
             ],
             "protocolMappers": [
                 {

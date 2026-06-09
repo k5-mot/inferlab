@@ -18,7 +18,7 @@ def ns(value):
 
 def test_channel_links_are_channel_only_and_deduplicated(monkeypatch):
     report = load_report_module()
-    monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "http://192.168.3.10:31001")
+    monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "http://192.168.1.100:31001")
 
     links = report._channel_links(
         [
@@ -27,7 +27,7 @@ def test_channel_links_are_channel_only_and_deduplicated(monkeypatch):
         ]
     )
 
-    expected = "http://192.168.3.10:31001/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360"
+    expected = "http://192.168.1.100:31001/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360"
     assert links == f"[#report]({expected})"
     assert "message" not in links
 

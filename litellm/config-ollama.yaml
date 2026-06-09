@@ -71,6 +71,33 @@ model_list:
       model: ollama/nomic-embed-text-v2-moe
       api_base: http://ollama:11434
 
+  # Openrouter
+  - model_name: free-router
+    litellm_params:
+      model: openrouter/openrouter/free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: free-router[1m]
+    litellm_params:
+      model: openrouter/openrouter/free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: free-router[200k]
+    litellm_params:
+      model: openrouter/openrouter/free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: free-router[32k]
+    litellm_params:
+      model: openrouter/openrouter/free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # Google AI Studio
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-04-17
+      api_key: os.environ/GEMINI_API_KEY
+
   # vLLM
   - model_name: ruri-v3:310m
     litellm_params:

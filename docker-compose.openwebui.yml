@@ -37,7 +37,7 @@ services:
       - openwebui
     environment:
       ### General
-      WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}
+      WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.1.100:31001}
       WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-}
       ENABLE_NOTES: "true"
       ENABLE_CALENDAR: "true"
@@ -50,8 +50,8 @@ services:
       DEFAULT_USER_ROLE: "user"
       OAUTH_CLIENT_ID: "open-webui"
       OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
-      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://192.168.3.10:30000}/realms/inferlab/.well-known/openid-configuration
-      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.3.10:31001}/oauth/oidc/callback
+      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://192.168.1.100:30000}/realms/inferlab/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.1.100:31001}/oauth/oidc/callback
       OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak
@@ -124,7 +124,10 @@ services:
       AUDIO_TTS_OPENAI_API_KEY: "openai-edge-tts-api-secret-key"
       # AUDIO_TTS_MODEL: model_q8f16
       AUDIO_TTS_VOICE: "ja-JP-NanamiNeural"
-      # AUDIO_TTS_OPENAI_API_KEY: ${KOKORO_WEB_API_KEY:-kokoro-secret-key}
+      # AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
+      # AUDIO_TTS_OPENAI_API_KEY: "sk-1234"
+      # AUDIO_TTS_MODEL: "voicevox-v1"
+      # AUDIO_TTS_VOICE: "1"
       ### For ComfyUI (Image Generation and Editing)
       # ENABLE_IMAGE_GENERATION: "true"
       # IMAGE_GENERATION_ENGINE: comfyui
@@ -160,7 +163,7 @@ services:
 
   docling:
     # image: quay.io/docling-project/docling-serve:v1.18.0
-    image: ghcr.io/k5-mot/docling-serve-jp:v1.18.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.21.0
     container_name: inferlab-docling
     restart: unless-stopped
     profiles:
@@ -184,44 +187,6 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-
-  # docling-mcp:
-  #   # image: quay.io/docling-project/docling-serve:v1.18.0
-  #   # image: ghcr.io/k5-mot/docling-serve-jp:v1.18.0
-  #   build:
-  #     context: ./docling-jp
-  #     dockerfile: Dockerfile
-  #   container_name: inferlab-docling-mcp
-  #   restart: unless-stopped
-  #   profiles:
-  #     - openwebui
-  #   environment:
-  #     DOCLING_SERVE_HOST: 0.0.0.0
-  #     DOCLING_SERVE_PORT: 5001
-  #     DOCLING_SERVE_ENABLE_UI: "true"
-  #     DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
-  #     DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
-  #     DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
-  #     DOCLING_SERVE_MAX_SYNC_WAIT: 36000
-  #     DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
-  #   command:
-  #     - docling-mcp-server
-  #     - --transport
-  #     - "streamable-http"
-  #     - --port
-  #     - "8000"
-  #     - --host
-  #     - "0.0.0.0"
-  #   ports:
-  #     - 50001:8000
-  #   volumes:
-  #     - docling-data:/data
-  #   networks:
-  #     - llm-internal
-  #   ulimits:
-  #     nofile:
-  #       soft: 65535
-  #       hard: 65535
 
   searxng:
     image: docker.io/searxng/searxng:2026.4.13-ee66b070a
@@ -255,6 +220,48 @@ services:
     #   - "5050:5050"
     networks:
       - llm-internal
+
+  voicevox_engine:
+    image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
+    container_name: inferlab-voicevox
+    restart: unless-stopped
+    profiles:
+      # - openwebui
+      - voicevox
+    ports:
+      # - 127.0.0.1:50021:50021
+      - 50021:50021
+    networks:
+      - llm-internal
+    # Health monitoring
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:50021/docs" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  voicevox-openai-tts:
+    image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2
+    container_name: inferlab-voicevox-openai-tts
+    restart: unless-stopped
+    profiles:
+      # - openwebui
+      - voicevox
+    environment:
+      - VOICEVOX_ENGINE_URL=http://voicevox_engine:50021
+    depends_on:
+      voicevox_engine:
+        condition: service_healthy
+    ports:
+      # - 127.0.0.1:50021:50021
+      - 50022:8000
+    networks:
+      - llm-internal
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8000/docs" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   qdrant:
     image: docker.io/qdrant/qdrant:v1.17.1
