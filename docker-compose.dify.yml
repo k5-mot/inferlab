@@ -1,30 +1,9 @@
-x-dify-service-env: &dify-service-env
-  CONSOLE_API_URL: ${DIFY_CONSOLE_API_URL:-http://localhost:31002/console/api}
-  CONSOLE_WEB_URL: ${DIFY_CONSOLE_WEB_URL:-http://localhost:31002}
-  SERVICE_API_URL: ${DIFY_SERVICE_API_URL:-http://localhost:31002/api}
-  TRIGGER_URL: ${DIFY_TRIGGER_URL:-http://localhost:31002}
-  APP_API_URL: ${DIFY_APP_API_URL:-http://localhost:31002/api}
-  APP_WEB_URL: ${DIFY_APP_WEB_URL:-http://localhost:31002}
-  FILES_URL: ${DIFY_FILES_URL:-http://localhost:31002/files}
-  INTERNAL_FILES_URL: http://dify-api:5001/files
-  ENDPOINT_URL_TEMPLATE: ${DIFY_ENDPOINT_URL_TEMPLATE:-http://localhost:31002/e/{hook_id}}
-  SECRET_KEY: ${DIFY_SECRET_KEY:-worklab-alfa-dify-secret-key}
-  DB_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
-  REDIS_PASSWORD: ${DIFY_REDIS_PASSWORD:-difyai123456}
-  CELERY_BROKER_URL: redis://:${DIFY_REDIS_PASSWORD:-difyai123456}@dify-redis:6379/1
-  WEAVIATE_API_KEY: ${DIFY_WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
-  CODE_EXECUTION_API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
-  SANDBOX_API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
-  PLUGIN_DAEMON_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYT6owG+71oLerGzA7GXCgOT++6ovaezWAjpCjf+Sjc3ZtU+qUEi}
-  PLUGIN_DIFY_INNER_API_KEY: ${DIFY_PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
-
 services:
-  dify-init-permissions:
-    container_name: worklab-alfa-llm-dify-init-permissions
-    restart: "no"
+  # Init container to fix permissions
+  init_permissions:
+    image: docker.io/library/busybox:latest
     profiles:
       - dify
-    image: busybox:1.37.0
     command:
       - sh
       - -c
@@ -38,349 +17,357 @@ services:
         chown -R 1001:1001 /app/api/storage && touch "$${FLAG_FILE}"
         echo "Permissions initialized. Exiting."
     volumes:
-      - dify-app-storage:/app/api/storage
-    networks:
-      - llm-internal
+      - dify_storage:/app/api/storage
+    restart: "no"
 
-  dify-api:
-    container_name: worklab-alfa-llm-dify-api
-    restart: unless-stopped
+  # API service
+  api:
+    image: docker.io/langgenius/dify-api:1.14.2
     profiles:
       - dify
-    image: docker.io/langgenius/dify-api:1.10.1
-    env_file:
-      - ./dify/dify.env
     environment:
-      <<: *dify-service-env
       MODE: api
+      # SENTRY_DSN: ${API_SENTRY_DSN:-}
+      # SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
+      # SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
+      PLUGIN_REMOTE_INSTALL_HOST: ${EXPOSE_PLUGIN_DEBUGGING_HOST:-localhost}
+      PLUGIN_REMOTE_INSTALL_PORT: ${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}
+      PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
+      PLUGIN_DAEMON_TIMEOUT: ${PLUGIN_DAEMON_TIMEOUT:-600.0}
+      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-change-me-plugin-inner-api-key}
     depends_on:
-      dify-init-permissions:
+      init_permissions:
         condition: service_completed_successfully
-      dify-db-postgres:
+      db_postgres:
         condition: service_healthy
-      dify-redis:
-        condition: service_healthy
-      dify-sandbox:
-        condition: service_healthy
-      dify-plugin-daemon:
-        condition: service_started
-      dify-weaviate:
-        condition: service_healthy
-      dify-ssrf-proxy:
+        required: false
+      redis:
         condition: service_started
     volumes:
-      - dify-app-storage:/app/api/storage
+      # Mount the storage directory to the container, for storing user files.
+      - dify_storage:/app/api/storage
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5001/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
-      - llm-internal
-      - llm-dify-ssrf
+      - ssrf_proxy_network
+      - default
 
-  dify-worker:
-    container_name: worklab-alfa-llm-dify-worker
-    restart: unless-stopped
+  # worker service
+  # The Celery worker for processing all queues (dataset, workflow, mail, etc.)
+  worker:
+    image: docker.io/langgenius/dify-api:1.14.2
     profiles:
       - dify
-    image: docker.io/langgenius/dify-api:1.10.1
-    env_file:
-      - ./dify/dify.env
     environment:
-      <<: *dify-service-env
       MODE: worker
+      PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
+      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-change-me-plugin-inner-api-key}
     depends_on:
-      dify-init-permissions:
+      init_permissions:
         condition: service_completed_successfully
-      dify-db-postgres:
+      db_postgres:
         condition: service_healthy
-      dify-redis:
-        condition: service_healthy
-      dify-sandbox:
-        condition: service_healthy
-      dify-plugin-daemon:
-        condition: service_started
-      dify-weaviate:
-        condition: service_healthy
-      dify-ssrf-proxy:
+        required: false
+      redis:
         condition: service_started
     volumes:
-      - dify-app-storage:/app/api/storage
+      # Mount the storage directory to the container, for storing user files.
+      - dify_storage:/app/api/storage
+    healthcheck:
+      test: [ "CMD-SHELL", "celery -A celery_healthcheck.celery inspect ping" ]
+      interval: ${COMPOSE_WORKER_HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${COMPOSE_WORKER_HEALTHCHECK_TIMEOUT:-30s}
+      retries: 3
+      start_period: 60s
+      disable: ${COMPOSE_WORKER_HEALTHCHECK_DISABLED:-true}
     networks:
-      - llm-internal
-      - llm-dify-ssrf
+      - ssrf_proxy_network
+      - default
 
-  dify-worker-beat:
-    container_name: worklab-alfa-llm-dify-worker-beat
-    restart: unless-stopped
+  # worker_beat service
+  # Celery beat for scheduling periodic tasks.
+  worker_beat:
+    image: docker.io/langgenius/dify-api:1.14.2
     profiles:
       - dify
-    image: docker.io/langgenius/dify-api:1.10.1
-    env_file:
-      - ./dify/dify.env
     environment:
-      <<: *dify-service-env
       MODE: beat
     depends_on:
-      dify-init-permissions:
+      init_permissions:
         condition: service_completed_successfully
-      dify-db-postgres:
+      db_postgres:
         condition: service_healthy
-      dify-redis:
-        condition: service_healthy
-      dify-sandbox:
-        condition: service_healthy
-      dify-plugin-daemon:
+        required: false
+      redis:
         condition: service_started
-      dify-weaviate:
-        condition: service_healthy
-      dify-ssrf-proxy:
-        condition: service_started
-    networks:
-      - llm-internal
-      - llm-dify-ssrf
-
-  dify-web:
-    container_name: worklab-alfa-llm-dify-web
-    restart: unless-stopped
-    profiles:
-      - dify
-    image: docker.io/langgenius/dify-web:1.10.1
-    env_file:
-      - ./dify/dify.env
-    environment:
-      <<: *dify-service-env
-    depends_on:
-      dify-api:
-        condition: service_started
-    networks:
-      - llm-internal
-
-  dify-plugin-daemon:
-    container_name: worklab-alfa-llm-dify-plugin-daemon
-    restart: unless-stopped
-    profiles:
-      - dify
-    image: docker.io/langgenius/dify-plugin-daemon:0.4.1-local
-    env_file:
-      - ./dify/dify.env
-    environment:
-      <<: *dify-service-env
-      DB_DATABASE: dify_plugin
-      SERVER_PORT: 5002
-      SERVER_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYT6owG+71oLerGzA7GXCgOT++6ovaezWAjpCjf+Sjc3ZtU+qUEi}
-      DIFY_INNER_API_URL: http://dify-api:5001
-      DIFY_INNER_API_KEY: ${DIFY_PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
-      PLUGIN_REMOTE_INSTALLING_HOST: 0.0.0.0
-      PLUGIN_REMOTE_INSTALLING_PORT: 5003
-      PLUGIN_WORKING_PATH: /app/storage/cwd
-      PLUGIN_STORAGE_TYPE: local
-      PLUGIN_STORAGE_LOCAL_ROOT: /app/storage
-      PLUGIN_INSTALLED_PATH: plugin
-      PLUGIN_PACKAGE_CACHE_PATH: plugin_packages
-      PLUGIN_MEDIA_CACHE_PATH: assets
-    depends_on:
-      dify-db-postgres:
-        condition: service_healthy
-      dify-redis:
-        condition: service_healthy
-    volumes:
-      - dify-plugin-storage:/app/storage
-    networks:
-      - llm-internal
-
-  dify-sandbox:
-    container_name: worklab-alfa-llm-dify-sandbox
-    restart: unless-stopped
-    profiles:
-      - dify
-    image: docker.io/langgenius/dify-sandbox:0.2.12
-    environment:
-      API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox}
-      GIN_MODE: release
-      WORKER_TIMEOUT: 15
-      ENABLE_NETWORK: "true"
-      HTTP_PROXY: http://dify-ssrf-proxy:3128
-      HTTPS_PROXY: http://dify-ssrf-proxy:3128
-      SANDBOX_PORT: 8194
-    volumes:
-      - dify-sandbox-dependencies:/dependencies
-      - dify-sandbox-conf:/conf
     healthcheck:
-      test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:8194/health
-      interval: 5s
-      timeout: 5s
-      retries: 20
+      test: [ "CMD-SHELL", "celery -A celery_healthcheck.celery inspect ping" ]
+      interval: ${COMPOSE_WORKER_HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${COMPOSE_WORKER_HEALTHCHECK_TIMEOUT:-30s}
+      retries: 3
+      start_period: 60s
+      disable: ${COMPOSE_WORKER_HEALTHCHECK_DISABLED:-true}
     networks:
-      - llm-dify-ssrf
+      - ssrf_proxy_network
+      - default
 
-  dify-db-postgres:
-    container_name: worklab-alfa-llm-dify-db-postgres
-    restart: unless-stopped
+  # Frontend web application.
+  web:
+    image: docker.io/langgenius/dify-web:1.14.2
     profiles:
       - dify
-    image: docker.io/postgres:15-alpine
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
-      POSTGRES_DB: dify
-      PGDATA: /var/lib/postgresql/data/pgdata
+      CONSOLE_API_URL: ${CONSOLE_API_URL:-}
+      SERVER_CONSOLE_API_URL: ${SERVER_CONSOLE_API_URL:-http://api:5001}
+      APP_API_URL: ${APP_API_URL:-}
+      AMPLITUDE_API_KEY: ${AMPLITUDE_API_KEY:-}
+      NEXT_PUBLIC_COOKIE_DOMAIN: ${NEXT_PUBLIC_COOKIE_DOMAIN:-}
+      NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-ws://localhost}
+      SENTRY_DSN: ${WEB_SENTRY_DSN:-}
+      NEXT_TELEMETRY_DISABLED: ${NEXT_TELEMETRY_DISABLED:-0}
+      EXPERIMENTAL_ENABLE_VINEXT: ${EXPERIMENTAL_ENABLE_VINEXT:-false}
+      TEXT_GENERATION_TIMEOUT_MS: ${TEXT_GENERATION_TIMEOUT_MS:-60000}
+      CSP_WHITELIST: ${CSP_WHITELIST:-}
+      ALLOW_EMBED: ${ALLOW_EMBED:-false}
+      ALLOW_INLINE_STYLES: ${ALLOW_INLINE_STYLES:-false}
+      ALLOW_UNSAFE_DATA_SCHEME: ${ALLOW_UNSAFE_DATA_SCHEME:-false}
+      MARKETPLACE_API_URL: ${MARKETPLACE_API_URL:-https://marketplace.dify.ai}
+      MARKETPLACE_URL: ${MARKETPLACE_URL:-https://marketplace.dify.ai}
+      TOP_K_MAX_VALUE: ${TOP_K_MAX_VALUE:-10}
+      INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH: ${INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH:-4000}
+      LOOP_NODE_MAX_COUNT: ${LOOP_NODE_MAX_COUNT:-100}
+      MAX_TOOLS_NUM: ${MAX_TOOLS_NUM:-10}
+      MAX_PARALLEL_LIMIT: ${MAX_PARALLEL_LIMIT:-10}
+      MAX_ITERATIONS_NUM: ${MAX_ITERATIONS_NUM:-99}
+      MAX_TREE_DEPTH: ${MAX_TREE_DEPTH:-50}
+      ENABLE_WEBSITE_JINAREADER: ${ENABLE_WEBSITE_JINAREADER:-true}
+      ENABLE_WEBSITE_FIRECRAWL: ${ENABLE_WEBSITE_FIRECRAWL:-true}
+      ENABLE_WEBSITE_WATERCRAWL: ${ENABLE_WEBSITE_WATERCRAWL:-true}
+
+  # The PostgreSQL database.
+  db_postgres:
+    image: docker.io/library/postgres:15-alpine
+    profiles:
+      - dify
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-difyai123456}
+      POSTGRES_DB: ${DB_DATABASE:-dify}
+      PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
     command: >
-      postgres -c 'max_connections=100'
-               -c 'shared_buffers=128MB'
-               -c 'work_mem=4MB'
-               -c 'maintenance_work_mem=64MB'
-               -c 'effective_cache_size=4096MB'
-               -c 'statement_timeout=0'
-               -c 'idle_in_transaction_session_timeout=0'
+      postgres -c 'max_connections=${POSTGRES_MAX_CONNECTIONS:-100}'
+               -c 'shared_buffers=${POSTGRES_SHARED_BUFFERS:-128MB}'
+               -c 'work_mem=${POSTGRES_WORK_MEM:-4MB}'
+               -c 'maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}'
+               -c 'effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-4096MB}'
+               -c 'statement_timeout=${POSTGRES_STATEMENT_TIMEOUT:-0}'
+               -c 'idle_in_transaction_session_timeout=${POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT:-0}'
     volumes:
-      - dify-postgres-data:/var/lib/postgresql/data
-      - ./dify/postgres/init-databases.sql:/docker-entrypoint-initdb.d/001-init-databases.sql:ro
+      - db_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - -h
-        - localhost
-        - -U
-        - postgres
-        - -d
-        - dify
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    networks:
-      - llm-internal
+      test: [ "CMD", "pg_isready", "-h", "db_postgres", "-U", "${DB_USERNAME:-postgres}", "-d", "${DB_DATABASE:-dify}" ]
+      interval: 1s
+      timeout: 3s
+      retries: 60
 
-  dify-redis:
-    container_name: worklab-alfa-llm-dify-redis
-    restart: unless-stopped
+  # The redis cache.
+  redis:
+    image: docker.io/library/redis:6-alpine
     profiles:
       - dify
-    image: docker.io/redis:6-alpine
+    restart: always
     environment:
-      REDISCLI_AUTH: ${DIFY_REDIS_PASSWORD:-difyai123456}
-    command:
-      - redis-server
-      - --requirepass
-      - ${DIFY_REDIS_PASSWORD:-difyai123456}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-difyai123456}
     volumes:
-      - dify-redis-data:/data
+      # Mount the redis data directory to the container.
+      - redis_data:/data
+    # Set the redis password when startup redis server.
+    command: redis-server --requirepass ${REDIS_PASSWORD:-difyai123456}
     healthcheck:
-      test:
-        - CMD-SHELL
-        - redis-cli -a "$${REDISCLI_AUTH}" ping | grep -q PONG
-      interval: 5s
-      timeout: 5s
-      retries: 20
-    networks:
-      - llm-internal
+      test: [ "CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-difyai123456} ping | grep -q PONG" ]
 
-  dify-weaviate:
-    container_name: worklab-alfa-llm-dify-weaviate
-    restart: unless-stopped
+  # The DifySandbox
+  sandbox:
+    image: docker.io/langgenius/dify-sandbox:0.2.15
     profiles:
       - dify
-    image: docker.io/semitechnologies/weaviate:1.27.0
+    restart: always
     environment:
-      PERSISTENCE_DATA_PATH: /var/lib/weaviate
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
-      DEFAULT_VECTORIZER_MODULE: none
-      CLUSTER_HOSTNAME: node1
-      AUTHENTICATION_APIKEY_ENABLED: "true"
-      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${DIFY_WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
-      AUTHENTICATION_APIKEY_USERS: hello@dify.ai
-      AUTHORIZATION_ADMINLIST_ENABLED: "true"
-      AUTHORIZATION_ADMINLIST_USERS: hello@dify.ai
-      DISABLE_TELEMETRY: "false"
+      # The DifySandbox configurations
+      # Make sure you are changing this key for your deployment with a strong key.
+      # You can generate a strong key using `openssl rand -base64 42`.
+      API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}
+      GIN_MODE: ${SANDBOX_GIN_MODE:-release}
+      WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
+      ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
+      HTTP_PROXY: ${SANDBOX_HTTP_PROXY:-http://ssrf_proxy:3128}
+      HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://ssrf_proxy:3128}
+      SANDBOX_PORT: ${SANDBOX_PORT:-8194}
+      PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
     volumes:
-      - dify-weaviate-data:/var/lib/weaviate
+      - sandbox_dependencies:/dependencies
+      - sandbox_conf:/conf
     healthcheck:
-      test:
-        - CMD
-        - wget
-        - -qO-
-        - http://localhost:8080/v1/.well-known/ready
-      interval: 5s
-      timeout: 5s
-      retries: 20
+      test: [ "CMD", "curl", "-f", "http://localhost:8194/health" ]
     networks:
-      - llm-internal
+      - ssrf_proxy_network
 
-  dify-ssrf-proxy:
-    container_name: worklab-alfa-llm-dify-ssrf-proxy
-    restart: unless-stopped
+  # plugin daemon
+  plugin_daemon:
+    image: docker.io/langgenius/dify-plugin-daemon:0.6.1-local
     profiles:
       - dify
-    image: ubuntu/squid:5.2-22.04_beta
-    entrypoint:
-      - sh
-      - -c
-      - cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh
+    restart: always
+    networks:
+      - ssrf_proxy_network
+      - default
     environment:
-      HTTP_PORT: 3128
-      COREDUMP_DIR: /var/spool/squid
-      REVERSE_PROXY_PORT: 8194
-      SANDBOX_HOST: dify-sandbox
-      SANDBOX_PORT: 8194
+      DB_DATABASE: ${DB_PLUGIN_DATABASE:-dify_plugin}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disable}
+      SERVER_PORT: ${PLUGIN_DAEMON_PORT:-5002}
+      SERVER_KEY: ${PLUGIN_DAEMON_KEY:-change-me-plugin-daemon-key}
+      MAX_PLUGIN_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
+      PPROF_ENABLED: ${PLUGIN_PPROF_ENABLED:-false}
+      DIFY_INNER_API_URL: ${PLUGIN_DIFY_INNER_API_URL:-http://api:5001}
+      DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY:-change-me-plugin-inner-api-key}
+      PLUGIN_REMOTE_INSTALLING_HOST: ${PLUGIN_DEBUGGING_HOST:-0.0.0.0}
+      PLUGIN_REMOTE_INSTALLING_PORT: ${PLUGIN_DEBUGGING_PORT:-5003}
+      PLUGIN_WORKING_PATH: ${PLUGIN_WORKING_PATH:-/app/storage/cwd}
+      FORCE_VERIFYING_SIGNATURE: ${FORCE_VERIFYING_SIGNATURE:-true}
+      PYTHON_ENV_INIT_TIMEOUT: ${PLUGIN_PYTHON_ENV_INIT_TIMEOUT:-120}
+      PLUGIN_MAX_EXECUTION_TIMEOUT: ${PLUGIN_MAX_EXECUTION_TIMEOUT:-600}
+      PLUGIN_STDIO_BUFFER_SIZE: ${PLUGIN_STDIO_BUFFER_SIZE:-1024}
+      PLUGIN_STDIO_MAX_BUFFER_SIZE: ${PLUGIN_STDIO_MAX_BUFFER_SIZE:-5242880}
+      PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
+      PLUGIN_STORAGE_TYPE: ${PLUGIN_STORAGE_TYPE:-local}
+      PLUGIN_STORAGE_LOCAL_ROOT: ${PLUGIN_STORAGE_LOCAL_ROOT:-/app/storage}
+      PLUGIN_INSTALLED_PATH: ${PLUGIN_INSTALLED_PATH:-plugin}
+      PLUGIN_PACKAGE_CACHE_PATH: ${PLUGIN_PACKAGE_CACHE_PATH:-plugin_packages}
+      PLUGIN_MEDIA_CACHE_PATH: ${PLUGIN_MEDIA_CACHE_PATH:-assets}
+      PLUGIN_STORAGE_OSS_BUCKET: ${PLUGIN_STORAGE_OSS_BUCKET:-}
+    ports:
+      - "${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:${PLUGIN_DEBUGGING_PORT:-5003}"
     volumes:
-      - ./dify/ssrf_proxy/squid.conf.template:/etc/squid/squid.conf.template:ro
-      - ./dify/ssrf_proxy/docker-entrypoint.sh:/docker-entrypoint-mount.sh:ro
-    networks:
-      - llm-internal
-      - llm-dify-ssrf
-
-  dify:
-    container_name: worklab-alfa-llm-dify
-    restart: unless-stopped
-    profiles:
-      - dify
-    image: nginx:1.29.1
+      - plugin_daemon_storage:/app/storage
     depends_on:
-      dify-api:
-        condition: service_started
-      dify-web:
-        condition: service_started
-      dify-plugin-daemon:
-        condition: service_started
-    entrypoint:
-      - sh
-      - -c
-      - cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh
-    environment:
-      NGINX_SERVER_NAME: _
-      NGINX_HTTPS_ENABLED: "false"
-      NGINX_SSL_PORT: 443
-      NGINX_PORT: 80
-      NGINX_SSL_CERT_FILENAME: dify.crt
-      NGINX_SSL_CERT_KEY_FILENAME: dify.key
-      NGINX_SSL_PROTOCOLS: TLSv1.2 TLSv1.3
-      NGINX_WORKER_PROCESSES: auto
-      NGINX_CLIENT_MAX_BODY_SIZE: 100M
-      NGINX_KEEPALIVE_TIMEOUT: 65
-      NGINX_PROXY_READ_TIMEOUT: 3600s
-      NGINX_PROXY_SEND_TIMEOUT: 3600s
-      NGINX_ENABLE_CERTBOT_CHALLENGE: "false"
-      CERTBOT_DOMAIN: ""
-    volumes:
-      - ./dify/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
-      - ./dify/nginx/proxy.conf.template:/etc/nginx/proxy.conf.template:ro
-      - ./dify/nginx/https.conf.template:/etc/nginx/https.conf.template:ro
-      - ./dify/nginx/conf.d:/etc/nginx/conf.d
-      - ./dify/nginx/docker-entrypoint.sh:/docker-entrypoint-mount.sh:ro
-    networks:
-      - llm-internal
+      db_postgres:
+        condition: service_healthy
+        required: false
 
-volumes:
-  dify-app-storage:
-  dify-postgres-data:
-  dify-redis-data:
-  dify-plugin-storage:
-  dify-sandbox-dependencies:
-  dify-sandbox-conf:
-  dify-weaviate-data:
+  # ssrf_proxy server
+  # for more information, please refer to
+  # https://docs.dify.ai/learn-more/faq/install-faq#18-why-is-ssrf-proxy-needed%3F
+  ssrf_proxy:
+    image: docker.io/ubuntu/squid:latest
+    profiles:
+      - dify
+    restart: always
+    volumes:
+      - ./dify/ssrf_proxy/squid.conf.template:/etc/squid/squid.conf.template
+      - ./dify/ssrf_proxy/docker-entrypoint.sh:/docker-entrypoint-mount.sh
+    entrypoint: [ "sh", "-c", "cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh" ]
+    environment:
+      # pls clearly modify the squid env vars to fit your network environment.
+      HTTP_PORT: ${SSRF_HTTP_PORT:-3128}
+      COREDUMP_DIR: ${SSRF_COREDUMP_DIR:-/var/spool/squid}
+      REVERSE_PROXY_PORT: ${SSRF_REVERSE_PROXY_PORT:-8194}
+      SANDBOX_HOST: ${SSRF_SANDBOX_HOST:-sandbox}
+      SANDBOX_PORT: ${SANDBOX_PORT:-8194}
+    networks:
+      - ssrf_proxy_network
+      - default
+
+  # The nginx reverse proxy.
+  # used for reverse proxying the API service and Web service.
+  nginx:
+    image: docker.io/library/nginx:latest
+    profiles:
+      - dify
+    restart: always
+    volumes:
+      - ./dify/nginx/proxy.conf.template:/etc/nginx/proxy.conf.template
+      - ./dify/nginx/nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ./dify/nginx/https.conf.template:/etc/nginx/https.conf.template
+      - ./dify/nginx/conf.d:/etc/nginx/conf.d
+      - ./dify/nginx/docker-entrypoint.sh:/docker-entrypoint-mount.sh
+      - nginx_ssl_conf:/etc/ssl # cert dir (legacy)
+      - nginx_certbot_conf:/etc/letsencrypt
+      - nginx_certbot_www:/var/www/html
+      # - ./volumes/certbot/conf/live:/etc/letsencrypt/live # cert dir (with certbot container)
+      # - ./volumes/certbot/conf:/etc/letsencrypt
+      # - ./volumes/certbot/www:/var/www/html
+    entrypoint: [ "sh", "-c", "cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh" ]
+    environment:
+      NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-_}
+      NGINX_HTTPS_ENABLED: ${NGINX_HTTPS_ENABLED:-false}
+      NGINX_SSL_PORT: ${NGINX_SSL_PORT:-443}
+      NGINX_PORT: ${NGINX_PORT:-80}
+      # You're required to add your own SSL certificates/keys to the `./nginx/ssl` directory
+      # and modify the env vars below in .env if HTTPS_ENABLED is true.
+      NGINX_SSL_CERT_FILENAME: ${NGINX_SSL_CERT_FILENAME:-dify.crt}
+      NGINX_SSL_CERT_KEY_FILENAME: ${NGINX_SSL_CERT_KEY_FILENAME:-dify.key}
+      NGINX_SSL_PROTOCOLS: ${NGINX_SSL_PROTOCOLS:-TLSv1.2 TLSv1.3}
+      NGINX_WORKER_PROCESSES: ${NGINX_WORKER_PROCESSES:-auto}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-100M}
+      NGINX_KEEPALIVE_TIMEOUT: ${NGINX_KEEPALIVE_TIMEOUT:-65}
+      NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT:-3600s}
+      NGINX_PROXY_SEND_TIMEOUT: ${NGINX_PROXY_SEND_TIMEOUT:-3600s}
+      NGINX_ENABLE_CERTBOT_CHALLENGE: ${NGINX_ENABLE_CERTBOT_CHALLENGE:-false}
+      NGINX_SOCKET_IO_UPSTREAM: ${NGINX_SOCKET_IO_UPSTREAM:-api_websocket:5001}
+      CERTBOT_DOMAIN: ${CERTBOT_DOMAIN:-}
+    depends_on:
+      - api
+      - web
+    ports:
+      - "${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}"
+      - "${EXPOSE_NGINX_SSL_PORT:-443}:${NGINX_SSL_PORT:-443}"
+
+  # The Weaviate vector store.
+  weaviate:
+    image: docker.io/semitechnologies/weaviate:1.27.0
+    profiles:
+      - dify
+    restart: always
+    volumes:
+      # Mount the Weaviate data directory to the con tainer.
+      - weaviate_data:/var/lib/weaviate
+    environment:
+      # The Weaviate configurations
+      # You can refer to the [Weaviate](https://weaviate.io/developers/weaviate/config-refs/env-vars) documentation for more information.
+      PERSISTENCE_DATA_PATH: ${WEAVIATE_PERSISTENCE_DATA_PATH:-/var/lib/weaviate}
+      QUERY_DEFAULTS_LIMIT: ${WEAVIATE_QUERY_DEFAULTS_LIMIT:-25}
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: ${WEAVIATE_AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED:-false}
+      DEFAULT_VECTORIZER_MODULE: ${WEAVIATE_DEFAULT_VECTORIZER_MODULE:-none}
+      CLUSTER_HOSTNAME: ${WEAVIATE_CLUSTER_HOSTNAME:-node1}
+      AUTHENTICATION_APIKEY_ENABLED: ${WEAVIATE_AUTHENTICATION_APIKEY_ENABLED:-true}
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_AUTHENTICATION_APIKEY_ALLOWED_KEYS:-change-me-weaviate-api-key}
+      AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
+      AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
+      AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
+      DISABLE_TELEMETRY: ${WEAVIATE_DISABLE_TELEMETRY:-false}
+      ENABLE_TOKENIZER_GSE: ${WEAVIATE_ENABLE_TOKENIZER_GSE:-false}
+      ENABLE_TOKENIZER_KAGOME_JA: ${WEAVIATE_ENABLE_TOKENIZER_KAGOME_JA:-false}
+      ENABLE_TOKENIZER_KAGOME_KR: ${WEAVIATE_ENABLE_TOKENIZER_KAGOME_KR:-false}
 
 networks:
-  llm-internal:
-  llm-dify-ssrf:
+  ssrf_proxy_network:
+    driver: bridge
+    internal: true
+
+volumes:
+  dify_storage:
+  db_postgres_data:
+  redis_data:
+  sandbox_dependencies:
+  sandbox_conf:
+  plugin_daemon_storage:
+  nginx_ssl_conf:
+  nginx_certbot_conf:
+  nginx_certbot_www:
+  weaviate_data:
