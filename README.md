@@ -220,7 +220,8 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
-  --profile ragflow \
+  --profile cloudflare \
+  --profile obsidian \
   down --remove-orphans
 docker compose \
   --env-file ./.env.prod \
@@ -228,7 +229,8 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
-  --profile ragflow \
+  --profile cloudflare \
+  --profile obsidian \
   up -d --no-deps --force-recreate --remove-orphans
 docker compose \
   --env-file ./.env.prod \
@@ -236,7 +238,8 @@ docker compose \
   --profile inference-ollama \
   --profile hermes-agent \
   --profile openwebui \
-  --profile ragflow \
+  --profile cloudflare \
+  --profile obsidian \
   ps
 
 pip3 download -d lib python-docx "docling-mcp[local]" docling Pillow "markitdown[pptx,docx,xlsx,xls,pdf]" markitdown-ocr markitdown-mcp

@@ -2,6 +2,8 @@ services:
   couchdb:
     image: docker.io/library/couchdb:latest
     container_name: couchdb
+    profiles:
+      - obsidian
     environment:
       - COUCHDB_USER=${COUCHDB_USER:-obsidian}
       - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-sk-obsidian-db-key}

@@ -3,6 +3,8 @@ services:
     image: docker.io/cloudflare/cloudflared:latest
     container_name: cloudflare
     restart: unless-stopped
+    profiles:
+      - cloudflare
     command:
       - tunnel
       - --no-autoupdate
