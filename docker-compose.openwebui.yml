@@ -166,6 +166,9 @@ services:
     image: ghcr.io/k5-mot/docling-serve-jp:v1.21.0
     container_name: inferlab-docling
     restart: unless-stopped
+    mem_limit: ${DOCLING_MEM_LIMIT:-8g}
+    memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
+    pids_limit: 512
     profiles:
       - openwebui
     environment:
@@ -177,6 +180,10 @@ services:
       DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: ${DOCLING_SERVE_ENG_LOC_NUM_WORKERS:-1}
+      DOCLING_SERVE_OPTIONS_CACHE_SIZE: ${DOCLING_SERVE_OPTIONS_CACHE_SIZE:-1}
+      DOCLING_SERVE_QUEUE_MAX_SIZE: ${DOCLING_SERVE_QUEUE_MAX_SIZE:-2}
+      OMP_NUM_THREADS: ${DOCLING_OMP_NUM_THREADS:-2}
     ports:
       - 50000:5001
     volumes:

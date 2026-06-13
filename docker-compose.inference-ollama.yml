@@ -86,6 +86,7 @@ services:
     environment:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=127.0.0.1:11434
+      - OLLAMA_INIT_MODELS=${OLLAMA_INIT_MODELS:-gemma4:e4b gemma4:31b-cloud gpt-oss:120b-cloud minimax-m2.7:cloud qwen3.5:397b-cloud glm-5.1:cloud kimi-k2.6:cloud deepseek-v4-flash:cloud deepseek-v4-pro:cloud gemini-3-flash-preview:cloud qwen3-coder-next:cloud nomic-embed-text-v2-moe}
     volumes:
       - ollama-cache:/root/.ollama
     networks:
@@ -98,21 +99,12 @@ services:
         ollama serve & OLLAMA_PID=$$!; until ollama list > /dev/null 2>&1; do
           echo 'Waiting for Ollama to be ready...';
           sleep 1;
-        done; echo 'Ollama is ready. Importing models in parallel...'; (
-          ollama pull gemma4:e4b                       &
-          ollama pull gemma4:31b-cloud                 &
-          ollama pull gpt-oss:120b-cloud               &
-          ollama pull minimax-m2.7:cloud               &
-          ollama pull qwen3.5:397b-cloud               &
-          ollama pull glm-5.1:cloud                    &
-          ollama pull kimi-k2.6:cloud                  &
-          ollama pull deepseek-v4-flash:cloud          &
-          ollama pull deepseek-v4-pro:cloud            &
-          ollama pull gemini-3-flash-preview:cloud     &
-          ollama pull qwen3-coder-next:cloud           &
-          ollama pull nomic-embed-text-v2-moe          &
-          wait
-        ); echo 'All models pulled.'; kill "$$OLLAMA_PID"
+        done; echo 'Ollama is ready. Importing models sequentially...';
+        for model in $${OLLAMA_INIT_MODELS}; do
+          echo "Pulling $$model...";
+          ollama pull "$$model";
+        done;
+        echo 'All models pulled.'; kill "$$OLLAMA_PID"
 
   vllm-embedding:
     image: docker.io/vllm/vllm-openai-cpu:v0.22.1
