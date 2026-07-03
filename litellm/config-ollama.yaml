@@ -98,20 +98,35 @@ model_list:
       model: gemini/gemini-2.5-flash-preview-04-17
       api_key: os.environ/GEMINI_API_KEY
 
-  # vLLM
+  # Text Embedding Inference (TEI)
   - model_name: ruri-v3:310m
     litellm_params:
-      model: hosted_vllm/ruri-v3:310m
-      api_base: http://vllm-ruri-v3-310m:8000/v1
+      model: huggingface/cl-nagoya/ruri-v3-310m
+      api_base: http://tei-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
 
   - model_name: ruri-v3-reranker:310m
     litellm_params:
-      model: hosted_vllm/ruri-v3-reranker:310m
-      api_base: http://vllm-ruri-v3-reranker-310m:8000
+      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+      api_base: http://tei-reranking:8000/v1
       api_key: EMPTY
       encoding_format: float
+
+  # vLLM
+  # - model_name: ruri-v3:310m
+  #   litellm_params:
+  #     model: hosted_vllm/ruri-v3:310m
+  #     api_base: http://vllm-ruri-v3-310m:8000/v1
+  #     api_key: EMPTY
+  #     encoding_format: float
+
+  # - model_name: ruri-v3-reranker:310m
+  #   litellm_params:
+  #     model: hosted_vllm/ruri-v3-reranker:310m
+  #     api_base: http://vllm-ruri-v3-reranker-310m:8000
+  #     api_key: EMPTY
+  #     encoding_format: float
 
   # - model_name: qwen3-embedding:0.6b
   #   litellm_params:
