@@ -194,6 +194,12 @@ services:
       nofile:
         soft: 65535
         hard: 65535
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:5001/readyz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   searxng:
     image: docker.io/searxng/searxng:2026.4.13-ee66b070a
@@ -207,6 +213,15 @@ services:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
       - llm-internal
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        # - "curl -s -H \"Authorization: Bearer sk-searxng-secret-key\" http://127.0.0.1:8080/healthz"
+        - "python -c \"import urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer sk-searxng-secret-key'}); print(urllib.request.urlopen(req).read().decode())\""
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   openai-edge-tts:
     image: docker.io/travisvn/openai-edge-tts:latest
@@ -227,6 +242,16 @@ services:
     #   - "5050:5050"
     networks:
       - llm-internal
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - python -c "import urllib.request; req=urllib.request.Request('http://127.0.0.1:5050/v1/models', headers={'Authorization':'Bearer openai-edge-tts-api-secret-key'}); print(urllib.request.urlopen(req).read().decode())"
+        # - "curl -s -H \"Authorization: Bearer openai-edge-tts-api-secret-key\" http://127.0.0.1:5050/v1/models"
+        # - "python -c \"import urllib.request; token=os.environ.get('SEARXNG_API_KEY',''); urllib.request.urlopen('http://127.0.0.1:8080/')\""
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   voicevox_engine:
     image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
@@ -285,6 +310,12 @@ services:
     #   - 6333:6333
     networks:
       - llm-internal
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
   # chroma:
   #   image: docker.io/chromadb/chroma:1.5.8
   #   container_name: inferlab-chroma
