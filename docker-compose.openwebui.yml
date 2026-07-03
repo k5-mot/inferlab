@@ -30,7 +30,7 @@ x-oauth2-proxy-base: &oauth2-proxy-base
 
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.9.5
+    image: ghcr.io/open-webui/open-webui:0.10.2
     container_name: inferlab-open-webui
     restart: unless-stopped
     profiles:
@@ -163,7 +163,7 @@ services:
 
   docling:
     # image: quay.io/docling-project/docling-serve:v1.18.0
-    image: ghcr.io/k5-mot/docling-serve-jp:v1.21.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.26.0
     container_name: inferlab-docling
     restart: unless-stopped
     mem_limit: ${DOCLING_MEM_LIMIT:-8g}
@@ -202,7 +202,7 @@ services:
       start_period: 60s
 
   searxng:
-    image: docker.io/searxng/searxng:2026.4.13-ee66b070a
+    image: docker.io/searxng/searxng:2026.7.3-80c9806de
     container_name: inferlab-searxng
     restart: unless-stopped
     profiles:
@@ -273,7 +273,7 @@ services:
       retries: 3
 
   voicevox-openai-tts:
-    image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2
+    image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0
     container_name: inferlab-voicevox-openai-tts
     restart: unless-stopped
     profiles:
@@ -296,7 +296,7 @@ services:
       retries: 3
 
   qdrant:
-    image: docker.io/qdrant/qdrant:v1.17.1
+    image: docker.io/qdrant/qdrant:v1.18.2
     container_name: inferlab-qdrant
     restart: unless-stopped
     profiles:

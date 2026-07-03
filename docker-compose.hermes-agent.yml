@@ -1,6 +1,6 @@
 services:
   hermes-agent-init:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.4.30}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
     container_name: inferlab-hermes-agent-init
     restart: no
     profiles:
@@ -31,7 +31,7 @@ services:
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
 
   hermes-agent:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.5.16}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
     container_name: inferlab-hermes-agent
     restart: unless-stopped
     profiles:
@@ -85,7 +85,7 @@ services:
         condition: service_completed_successfully
 
   hermes-agent-dashboard:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.5.16}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
     container_name: inferlab-hermes-agent-dashboard
     restart: unless-stopped
     profiles:

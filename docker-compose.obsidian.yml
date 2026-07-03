@@ -1,6 +1,6 @@
 services:
   couchdb:
-    image: docker.io/library/couchdb:latest
+    image: docker.io/library/couchdb:3.5.2.1
     container_name: couchdb
     profiles:
       - obsidian

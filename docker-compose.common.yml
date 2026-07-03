@@ -1,6 +1,6 @@
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.6.1
+    image: quay.io/keycloak/keycloak:26.6.4
     container_name: inferlab-keycloak
     restart: unless-stopped
     profiles:

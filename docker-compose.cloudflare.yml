@@ -1,6 +1,6 @@
 services:
   cloudflare:
-    image: docker.io/cloudflare/cloudflared:latest
+    image: docker.io/cloudflare/cloudflared:2026.6.0
     container_name: cloudflare
     restart: unless-stopped
     profiles:
