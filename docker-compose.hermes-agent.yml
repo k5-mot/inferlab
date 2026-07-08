@@ -17,6 +17,31 @@ services:
         cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
         cp -rfv /opt/config/skills/*          /opt/data/skills
         npm install --prefix /opt/data rss-mcp --silent
+        export PYTHONPATH="/opt/data/langfuse-python-packages$${PYTHONPATH:+:$$PYTHONPATH}"
+        if ! python - <<'PY' >/dev/null 2>&1
+        import importlib.metadata as md
+        from langfuse import Langfuse, propagate_attributes
+
+        expected = {
+            "certifi": "2026.5.20",
+            "packaging": "26.0",
+            "requests": "2.33.0",
+        }
+        for package, version in expected.items():
+            if md.version(package) != version:
+                raise SystemExit(1)
+        PY
+        then
+          python -m ensurepip --upgrade
+          python -m pip install --no-cache-dir --upgrade --target /opt/data/langfuse-python-packages \
+            "$${HERMES_LANGFUSE_SDK_PACKAGE:-langfuse}" \
+            certifi==2026.5.20 \
+            packaging==26.0 \
+            requests==2.33.0
+        fi
+        python - <<'PY'
+        from langfuse import Langfuse, propagate_attributes
+        PY
         chown -R 10000:10000 /opt/data || true
     volumes:
       - hermes-agent-data:/opt/data
@@ -29,6 +54,7 @@ services:
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
+      HERMES_LANGFUSE_SDK_PACKAGE: ${HERMES_LANGFUSE_SDK_PACKAGE:-langfuse}
 
   hermes-agent:
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
@@ -45,6 +71,7 @@ services:
       API_SERVER_HOST: "0.0.0.0"
       API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
       API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
+      PYTHONPATH: /opt/data/langfuse-python-packages
       GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
       GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
       REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
@@ -61,9 +88,12 @@ services:
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
-      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse-web:3000}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -102,11 +132,18 @@ services:
       HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-admin}
       HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
       HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
+      PYTHONPATH: /opt/data/langfuse-python-packages
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
     ports:
       - 31009:9119
     volumes:

@@ -19,12 +19,9 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-langfuse-project-public-key}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-langfuse-project-secret-key}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
-      # LANGFUSE_OTEL_HOST: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000/api/public/otel}
-      # LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse-web:3000}
-      # LANGFUSE_BASE_URL: ${LANGFUSE_HOST:-http://langfuse-web:3000}
     ports:
       - "${LITELLM_HOST_PORT:-40000}:4000"
     volumes:

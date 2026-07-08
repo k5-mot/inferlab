@@ -23,6 +23,9 @@ discord:
 #   basic_auth:
 #     username: "admin"
 #     password_hash: "scrypt$16384$8$1$bxEtJFvT1IWWyHc5h1viCg==$NYYGppPzzgqS8NG5AXmOkltyOARpfH1l6IuddeoSpxQ="
+plugins:
+  enabled:
+    - observability/langfuse
 
 mcp_servers:
   searxng:
