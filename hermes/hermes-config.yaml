@@ -19,6 +19,11 @@ fallback_providers:
 discord:
   require_mention: true
 
+# dashboard:
+#   basic_auth:
+#     username: "admin"
+#     password_hash: "scrypt$16384$8$1$bxEtJFvT1IWWyHc5h1viCg==$NYYGppPzzgqS8NG5AXmOkltyOARpfH1l6IuddeoSpxQ="
+
 mcp_servers:
   searxng:
     command: "npx"

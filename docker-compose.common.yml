@@ -1,7 +1,7 @@
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.4
-    container_name: inferlab-keycloak
+    container_name: keycloak
     restart: unless-stopped
     profiles:
       - common
@@ -10,16 +10,16 @@ services:
       - --http-port=8080
       - --import-realm
     depends_on:
-      postgres-keycloak:
+      keycloak-postgres:
         condition: service_healthy
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_DB: postgres
-      KC_DB_URL_HOST: postgres-keycloak
+      KC_DB_URL_HOST: keycloak-postgres
       KC_DB_URL_DATABASE: ${KEYCLOAK_POSTGRES_DB:-keycloak}
-      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER:-keycloak}
-      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak_password}
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-http://192.168.1.100:30000}
       KC_HOSTNAME_ADMIN: ${KEYCLOAK_HOSTNAME_ADMIN:-http://192.168.1.100:30000}
@@ -40,19 +40,19 @@ services:
       retries: 5
       start_period: 60s
 
-  postgres-keycloak:
+  keycloak-postgres:
     image: docker.io/library/postgres:18.3
-    container_name: inferlab-postgres-keycloak
+    container_name: keycloak-postgres
     restart: unless-stopped
     profiles:
       - common
     environment:
       POSTGRES_DB: ${KEYCLOAK_POSTGRES_DB:-keycloak}
-      POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER:-keycloak}
-      POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak}
+      POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak_password}
       PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - postgres-keycloak-data:/var/lib/postgresql
+      - keycloak-postgres-data:/var/lib/postgresql
     networks:
       - llm-internal
     healthcheck:
@@ -65,7 +65,7 @@ services:
       start_period: 10s
 
 volumes:
-  postgres-keycloak-data:
+  keycloak-postgres-data:
 
 networks:
   llm-public:

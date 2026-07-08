@@ -3,8 +3,8 @@ services:
   # https://hub.docker.com/hardened-images/catalog/dhi/litellm
   # https://docs.litellm.ai/blog/vllm-embeddings-incident
   litellm:
-    image: docker.io/litellm/litellm:v1.89.6
-    container_name: inferlab-litellm
+    image: docker.io/litellm/litellm:v1.91.0
+    container_name: litellm
     restart: unless-stopped
     profiles:
       - inference-ollama
@@ -50,7 +50,7 @@ services:
 
   ollama:
     image: docker.io/ollama/ollama:0.31.1
-    container_name: inferlab-ollama
+    container_name: ollama
     restart: unless-stopped
     profiles:
       - inference-ollama
@@ -78,7 +78,7 @@ services:
 
   ollama-init:
     image: docker.io/ollama/ollama:0.31.1
-    container_name: inferlab-ollama-init
+    container_name: ollama-init
     restart: no
     profiles:
       - inference-ollama
@@ -106,7 +106,7 @@ services:
 
   tei-embedding:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: inferlab-tei-embedding
+    container_name: tei-embedding
     restart: unless-stopped
     profiles:
       - inference-ollama
@@ -142,7 +142,7 @@ services:
 
   tei-reranking:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: inferlab-tei-reranking
+    container_name: tei-reranking
     restart: unless-stopped
     profiles:
       - inference-ollama

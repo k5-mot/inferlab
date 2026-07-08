@@ -1,7 +1,7 @@
 services:
   hermes-agent-init:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
-    container_name: inferlab-hermes-agent-init
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    container_name: hermes-agent-init
     restart: no
     profiles:
       - hermes-agent
@@ -31,8 +31,8 @@ services:
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
 
   hermes-agent:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
-    container_name: inferlab-hermes-agent
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    container_name: hermes-agent
     restart: unless-stopped
     profiles:
       - hermes-agent
@@ -85,8 +85,8 @@ services:
         condition: service_completed_successfully
 
   hermes-agent-dashboard:
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.1}
-    container_name: inferlab-hermes-agent-dashboard
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    container_name: hermes-agent-dashboard
     restart: unless-stopped
     profiles:
       - hermes-agent
@@ -97,9 +97,11 @@ services:
       - --port
       - "9119"
       - --no-open
-      - --insecure
     environment:
       GATEWAY_HEALTH_URL: http://hermes-agent:8642
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-admin}
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}

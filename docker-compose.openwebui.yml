@@ -31,18 +31,20 @@ x-oauth2-proxy-base: &oauth2-proxy-base
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:0.10.2
-    container_name: inferlab-open-webui
+    container_name: open-webui
     restart: unless-stopped
     profiles:
       - openwebui
     environment:
       ### General
       WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.1.100:31001}
-      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-}
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-sk-open-webui-secret-key}
       ENABLE_NOTES: "true"
+      ENABLE_AUTOMATIONS: "true"
       ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"
       ENABLE_API_KEYS: "true"
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
       API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
       ### For Keycloak
       ENABLE_SIGNUP: "false"
@@ -70,8 +72,8 @@ services:
       RAG_OPENAI_API_BASE_URL: http://litellm:4000
       RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       RAG_TEXT_SPLITTER: token
-      CHUNK_SIZE: 800
-      CHUNK_OVERLAP: 120
+      CHUNK_SIZE: 1500
+      CHUNK_OVERLAP: 150
       ### For Reranking model on LiteLLM
       ENABLE_RAG_HYBRID_SEARCH: "true"
       RAG_RERANKING_ENGINE: "external"
@@ -91,8 +93,7 @@ services:
           "ocr_engine": "tesseract_cli",
           "ocr_preset": "tesseract",
           "ocr_lang": ["jpn", "jpn_vert", "eng"],
-          "do_picture_description": true,
-          "generate_picture_images": true
+          "do_picture_description": true
         }
       # "picture_description_custom_config": "{\"picture_area_threshold\": 0.01, \"batch_size\": 1, \"scale\": 2.0, \"engine_options\": {\"engine_type\": \"api\", \"url\": \"http://litellm:4000/v1/chat/completions\", \"headers\": {\"Authorization\": \"Bearer sk-litellm-master-key\"}, \"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}, \"timeout\": 90, \"concurrency\": 1}, \"model_spec\": {\"name\": \"gemma4:31b\", \"default_repo_id\": \"gemma4:31b\", \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"response_format\": \"plaintext\", \"api_overrides\": {\"api\": {\"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}}}}, \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"generation_config\": {\"temperature\": 0.0, \"max_tokens\": 1024}}"
       # DOCLING_PARAMS: >-
@@ -164,7 +165,7 @@ services:
   docling:
     # image: quay.io/docling-project/docling-serve:v1.18.0
     image: ghcr.io/k5-mot/docling-serve-jp:v1.26.0
-    container_name: inferlab-docling
+    container_name: docling
     restart: unless-stopped
     mem_limit: ${DOCLING_MEM_LIMIT:-8g}
     memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
@@ -203,7 +204,7 @@ services:
 
   searxng:
     image: docker.io/searxng/searxng:2026.7.3-80c9806de
-    container_name: inferlab-searxng
+    container_name: searxng
     restart: unless-stopped
     profiles:
       - openwebui
@@ -225,7 +226,7 @@ services:
 
   openai-edge-tts:
     image: docker.io/travisvn/openai-edge-tts:latest
-    container_name: inferlab-openai-edge-tts
+    container_name: openai-edge-tts
     restart: unless-stopped
     environment:
       API_KEY: "openai-edge-tts-api-secret-key"
@@ -255,7 +256,7 @@ services:
 
   voicevox_engine:
     image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
-    container_name: inferlab-voicevox
+    container_name: voicevox_engine
     restart: unless-stopped
     profiles:
       # - openwebui
@@ -297,7 +298,7 @@ services:
 
   qdrant:
     image: docker.io/qdrant/qdrant:v1.18.2
-    container_name: inferlab-qdrant
+    container_name: qdrant
     restart: unless-stopped
     profiles:
       - openwebui
@@ -316,21 +317,31 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-  # chroma:
-  #   image: docker.io/chromadb/chroma:1.5.8
-  #   container_name: inferlab-chroma
+  # oikb:
+  #   image: ghcr.io/open-webui/oikb:0.3.6
   #   restart: unless-stopped
+  #   container_name: oikb
+  #   command: daemon
   #   profiles:
   #     - openwebui
   #   environment:
-  #     IS_PERSISTENT: "TRUE"
-  #     ALLOW_RESET: "TRUE"
-  #     PERSIST_DIRECTORY: /data
+  #     OPEN_WEBUI_URL: "http://open-webui:8080"
+  #     OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+  #     OIKB_API_KEY: ${OIKB_API_KEY:-}
+  #     LOG_FORMAT: "json"
+  #   ports:
+  #     - "8080:8080"
   #   volumes:
-  #     - chroma-data:/data
+  #     - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
   #   networks:
+  #     - llm-public
   #     - llm-internal
-
+  #   depends_on:
+  #     - open-webui
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
+  #     interval: 30s
+  #     timeout: 5s
   # open-webui-pipelines:
   #   image: ghcr.io/open-webui/pipelines:main
   #   container_name: inferlab-open-webui-pipelines
@@ -352,101 +363,6 @@ services:
   #     # - ./carbone/pipelines/carbone_pipeline.py:/app/pipelines/carbone_pipeline.py:ro
   #   networks:
   #     - llm-internal
-
-  # oauth2-proxy-dify:
-  #   <<: *oauth2-proxy-base
-  #   container_name: inferlab-oauth2-proxy-dify
-  #   profiles:
-  #     - openwebui
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_started
-  #     dify:
-  #       condition: service_started
-  #   environment:
-  #     <<: *oauth2-proxy-env
-  #     OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_DIFY_CLIENT_ID:-dify}
-  #     OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_DIFY_CLIENT_SECRET:-worklab-dify-client-secret}
-  #     OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_DIFY_REDIRECT_URL:-http://localhost:31002/oauth2/callback}
-  #     OAUTH2_PROXY_UPSTREAMS: http://dify:80/
-  #   ports:
-  #     - "${DIFY_HOST_PORT:-31002}:4180"
-
-  # oauth2-proxy-deepwiki:
-  #   <<: *oauth2-proxy-base
-  #   container_name: inferlab-oauth2-proxy-deepwiki
-  #   profiles:
-  #     - openwebui
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_started
-  #     deepwiki-open:
-  #       condition: service_started
-  #   environment:
-  #     <<: *oauth2-proxy-env
-  #     OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_ID:-deepwiki-open}
-  #     OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_DEEPWIKI_CLIENT_SECRET:-worklab-deepwiki-client-secret}
-  #     OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_DEEPWIKI_REDIRECT_URL:-http://localhost:31003/oauth2/callback}
-  #     OAUTH2_PROXY_UPSTREAMS: http://deepwiki-open:8001/
-  #   ports:
-  #     - "${DEEPWIKI_HOST_PORT:-31003}:4180"
-
-  # oauth2-proxy-paperless:
-  #   <<: *oauth2-proxy-base
-  #   container_name: inferlab-oauth2-proxy-paperless
-  #   profiles:
-  #     - openwebui
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_started
-  #     paperless-ngx:
-  #       condition: service_started
-  #   environment:
-  #     <<: *oauth2-proxy-env
-  #     OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_PAPERLESS_CLIENT_ID:-paperless-ngx}
-  #     OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_PAPERLESS_CLIENT_SECRET:-worklab-paperless-client-secret}
-  #     OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_PAPERLESS_REDIRECT_URL:-http://localhost:31004/oauth2/callback}
-  #     OAUTH2_PROXY_UPSTREAMS: http://paperless-ngx:8000/
-  #   ports:
-  #     - "${PAPERLESS_HOST_PORT:-31004}:4180"
-
-  # oauth2-proxy-carbone:
-  #   <<: *oauth2-proxy-base
-  #   container_name: inferlab-oauth2-proxy-carbone
-  #   profiles:
-  #     - openwebui
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_started
-  #     carbone:
-  #       condition: service_started
-  #   environment:
-  #     <<: *oauth2-proxy-env
-  #     OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CARBONE_CLIENT_ID:-carbone}
-  #     OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CARBONE_CLIENT_SECRET:-worklab-carbone-client-secret}
-  #     OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_CARBONE_REDIRECT_URL:-http://localhost:31005/oauth2/callback}
-  #     OAUTH2_PROXY_UPSTREAMS: http://carbone:4000/
-  #   ports:
-  #     - "${CARBONE_HOST_PORT:-31005}:4180"
-
-  # oauth2-proxy-carbone-mcp:
-  #   <<: *oauth2-proxy-base
-  #   container_name: inferlab-oauth2-proxy-carbone-mcp
-  #   profiles:
-  #     - openwebui
-  #   depends_on:
-  #     keycloak:
-  #       condition: service_started
-  #     carbone-mcp:
-  #       condition: service_started
-  #   environment:
-  #     <<: *oauth2-proxy-env
-  #     OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CARBONE_MCP_CLIENT_ID:-carbone-mcp}
-  #     OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CARBONE_MCP_CLIENT_SECRET:-worklab-carbone-mcp-client-secret}
-  #     OAUTH2_PROXY_REDIRECT_URL: ${OAUTH2_PROXY_CARBONE_MCP_REDIRECT_URL:-http://localhost:51001/oauth2/callback}
-  #     OAUTH2_PROXY_UPSTREAMS: http://carbone-mcp:3000/
-  #   ports:
-  #     - "${CARBONE_MCP_HOST_PORT:-51001}:4180"
 
 volumes:
   open-webui-data:
