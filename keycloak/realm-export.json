@@ -64,16 +64,19 @@
             "protocol": "openid-connect",
             "publicClient": false,
             "clientAuthenticatorType": "client-secret",
-            "secret": "worklab-langfuse-client-secret",
+            "secret": "sk-langfuse-secret-key",
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
             "redirectUris": [
                 "http://localhost:30001/api/auth/callback/keycloak",
-                "http://localhost:30001/*"
+                "http://localhost:30001/*",
+                "http://192.168.1.100:30001/api/auth/callback/keycloak",
+                "http://192.168.1.100:30001/*"
             ],
             "webOrigins": [
-                "http://localhost:30001"
+                "http://localhost:30001",
+                "http://192.168.1.100:30001"
             ],
             "protocolMappers": [
                 {
