@@ -58,14 +58,10 @@ services:
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak
       ### For LLM on LiteLLM
-      OLLAMA_BASE_URL: http://ollama:11434
-      # OPENAI_API_BASE_URL: http://litellm:4000/v1
-      # OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
-      OPENAI_API_BASE_URLS: "https://openrouter.ai/api/v1;http://hermes-agent:8642/v1"
-      # OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      # OPENAI_API_KEYS: "sk-litellm-master-key;hermes-agent-secret-key"
-      OPENAI_API_KEYS: "${OPENROUTER_API_KEY:-};hermes-agent-secret-key"
-      DEFAULT_MODELS: "gemma4:31b"
+      # OLLAMA_BASE_URL: http://ollama:11434
+      OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
+      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
+      DEFAULT_MODELS: "gemma4:31b-cloud"
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
       RAG_EMBEDDING_MODEL: "ruri-v3:310m"

@@ -1,7 +1,12 @@
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
-
+  session_id_header_name: X-OpenWebUI-Chat-Id
+  user_header_mappings:
+    - header_name: X-OpenWebUI-User-Id
+      litellm_user_role: internal_user
+    - header_name: X-OpenWebUI-User-Email
+      litellm_user_role: customer
 
 model_list:
 
@@ -97,6 +102,16 @@ model_list:
     litellm_params:
       model: gemini/gemini-2.5-flash-preview-04-17
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      input_cost_per_token: 0.0000003    # $0.30 / 1M tokens
+      output_cost_per_token: 0.0000025   # $2.50 / 1M tokens
+
+  # Hermes-Agent
+  # - model_name: hermes-agent
+  #   litellm_params:
+  #     model: openai/hermes-agent
+  #     api_base: http://hermes-agent:8642/v1
+  #     api_key: hermes-agent-secret-key
 
   # Text Embedding Inference (TEI)
   - model_name: ruri-v3:310m
@@ -113,81 +128,15 @@ model_list:
       api_key: EMPTY
       encoding_format: float
 
-  # vLLM
-  # - model_name: ruri-v3:310m
-  #   litellm_params:
-  #     model: hosted_vllm/ruri-v3:310m
-  #     api_base: http://vllm-ruri-v3-310m:8000/v1
-  #     api_key: EMPTY
-  #     encoding_format: float
-
-  # - model_name: ruri-v3-reranker:310m
-  #   litellm_params:
-  #     model: hosted_vllm/ruri-v3-reranker:310m
-  #     api_base: http://vllm-ruri-v3-reranker-310m:8000
-  #     api_key: EMPTY
-  #     encoding_format: float
-
-  # - model_name: qwen3-embedding:0.6b
-  #   litellm_params:
-  #     model: openai/qwen3-embedding:0.6b
-  #     api_base: http://vllm-qwen3-embedding-06b:8000/v1
-  #     api_key: EMPTY
-  #     encoding_format: float
-
-  # - model_name: qwen3-reranker:0.6b
-  #   litellm_params:
-  #     model: openai/qwen3-reranker:0.6b
-  #     api_base: http://vllm-qwen3-reranker-06b:8000/v1
-  #     api_key: EMPTY
-  #     encoding_format: float
-
-  # Infinity
-  # - model_name: ruri-v3:310m
-  #   litellm_params:
-  #     model: infinity/cl-nagoya/ruri-v3-310m
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: ruri-v3-reranker:310m
-  #   litellm_params:
-  #     model: infinity/cl-nagoya/ruri-v3-reranker-310m
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: harrier-oss-v1:0.6b
-  #   litellm_params:
-  #     model: infinity/microsoft/harrier-oss-v1-0.6b
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: E2Rank:0.6B
-  #   litellm_params:
-  #     model: infinity/Alibaba-NLP/E2Rank-0.6B
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: gte-multilingual-reranker-base:0.3b
-  #   litellm_params:
-  #     model: infinity/Alibaba-NLP/gte-multilingual-reranker-base
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: Qwen3-Embedding:0.6B
-  #   litellm_params:
-  #     model: infinity/Qwen/Qwen3-Embedding-0.6B
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-  # - model_name: Qwen3-Reranker:0.6B
-  #   litellm_params:
-  #     model: infinity/Qwen/Qwen3-Reranker-0.6B
-  #     api_base: http://infinity:4000
-  #     # raw_scores: True
-
-
 litellm_settings:
-#   callbacks:
-#     - langfuse_otel
+  callbacks:
+    - langfuse_otel
+  extra_spend_tag_headers:
+    - "x-openwebui-user-id"
+    - "x-openwebui-user-email"
+  langfuse_default_tags:
+    - "cache_hit"
+    - "user_api_key_user_id"
+    - "user_api_key_team_alias"
   drop_params: true
   request_timeout: 600
