@@ -14,5 +14,6 @@ include:
   - ./docker-compose.langfuse.yml
   - ./docker-compose.paperless.yml
   - ./docker-compose.deepwiki.yml
+  - ./docker-compose.nextcloud.yml
   - ./docker-compose.cloudflare.yml
   - ./docker-compose.obsidian.yml

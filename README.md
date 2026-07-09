@@ -31,6 +31,7 @@
 | `docker-compose.langfuse.yml`         | langfuse, postgres-langfuse, clickhouse, redis-langfuse                                      |
 | `docker-compose.paperless.yml`        | paperless-*                                                                                  |
 | `docker-compose.deepwiki.yml`         | deepwiki-open                                                                                |
+| `docker-compose.nextcloud.yml`        | nextcloud, nextcloud-mariadb, nextcloud-redis, oikb                                          |
 
 ## 3. 外部公開ポート
 
@@ -49,6 +50,8 @@
 | RAGFlow                |    `31008` | profile: ragflow         |
 | Carbone Gateway        |    `31010` | profile: carbone         |
 | Sync Worker            |    `31011` | profile: ragflow/seafile |
+| Nextcloud              |    `31012` | profile: nextcloud       |
+| OIKB daemon            |    `31013` | Nextcloud -> Open WebUI  |
 | LiteLLM                |    `40000` | 外部向け OpenAI 互換 API |
 | Carbone MCP            |    `51001` | oauth2-proxy 経由        |
 

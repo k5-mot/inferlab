@@ -95,6 +95,44 @@
             ]
         },
         {
+            "clientId": "nextcloud",
+            "name": "Nextcloud",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "nextcloud-oauth-client-secret-key",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://192.168.1.100:31012/",
+            "redirectUris": [
+                "http://localhost:31012/apps/user_oidc/code",
+                "http://127.0.0.1:31012/apps/user_oidc/code",
+                "http://192.168.1.100:31012/apps/user_oidc/code"
+            ],
+            "webOrigins": [
+                "http://localhost:31012",
+                "http://127.0.0.1:31012",
+                "http://192.168.1.100:31012"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
             "clientId": "dify",
             "name": "Dify",
             "enabled": true,

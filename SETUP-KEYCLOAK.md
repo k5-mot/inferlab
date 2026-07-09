@@ -40,7 +40,7 @@ sudo docker ps | grep inferlab-keycloak
 
 対象レルムは `inferlab` です。
 
-Keycloak でクライアント設定を開きます。
+Keycloak で Open WebUI のクライアント設定を開きます。
 
 - レルム: `inferlab`
 - クライアント: `open-webui`
@@ -55,6 +55,24 @@ Keycloak でクライアント設定を開きます。
 - `Web origins` に次を含める:
   - `http://localhost:31001`
   - `http://192.168.1.100:31001`
+
+Nextcloud profile を使う場合は、Nextcloud のクライアント設定も確認します。
+
+- レルム: `inferlab`
+- クライアント: `nextcloud`
+
+必要な設定値:
+
+- `Client authentication`: ON (confidential client)
+- `Standard flow`: ON
+- `Redirect URIs` に次を含める:
+  - `http://localhost:31012/apps/user_oidc/code`
+  - `http://127.0.0.1:31012/apps/user_oidc/code`
+  - `http://192.168.1.100:31012/apps/user_oidc/code`
+- `Web origins` に次を含める:
+  - `http://localhost:31012`
+  - `http://127.0.0.1:31012`
+  - `http://192.168.1.100:31012`
 
 ## 4. inferlab レルムに初回ログイン用ユーザーを作成する
 
