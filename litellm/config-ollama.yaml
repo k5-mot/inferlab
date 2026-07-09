@@ -116,14 +116,14 @@ model_list:
   # Text Embedding Inference (TEI)
   - model_name: ruri-v3:310m
     litellm_params:
-      model: huggingface/cl-nagoya/ruri-v3-310m
+      model: openai/cl-nagoya/ruri-v3-310m
       api_base: http://tei-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
 
   - model_name: ruri-v3-reranker:310m
     litellm_params:
-      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+      model: openai/cl-nagoya/ruri-v3-reranker-310m
       api_base: http://tei-reranking:8000/v1
       api_key: EMPTY
       encoding_format: float
