@@ -184,7 +184,7 @@ OpenClaw は公式 Docker 手順に合わせ、config/workspace を named volume
 docker compose --profile openclaw run --rm openclaw-permissions
 docker compose --profile openclaw run --rm openclaw-init
 docker compose --profile openclaw run --rm --no-deps --entrypoint node openclaw-gateway \
-  dist/index.js config set --batch-json '[{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:31007","http://127.0.0.1:31007","http://192.168.1.100:31007"]}]'
+  dist/index.js config set --batch-json "[{\"path\":\"gateway.mode\",\"value\":\"local\"},{\"path\":\"gateway.bind\",\"value\":\"lan\"},{\"path\":\"gateway.controlUi.allowedOrigins\",\"value\":[\"http://localhost:31007\",\"http://127.0.0.1:31007\",\"http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31007\"]}]"
 docker compose --profile openclaw up -d openclaw-gateway
 ```
 
@@ -204,7 +204,7 @@ docker compose --profile openclaw run --rm --no-deps --entrypoint node openclaw-
 ```
 
 OpenClaw の永続データは `inferlab_openclaw-config` と `inferlab_openclaw-workspace` に保存する。
-Control UI は `http://127.0.0.1:31007/` または `http://192.168.1.100:31007/` を開き、`./openclaw/openclaw.json` の `gateway.auth.token` か `OPENCLAW_GATEWAY_TOKEN` の値を入力する。
+Control UI は `http://127.0.0.1:31007/` または `http://${PUBLIC_HOST}:31007/` を開き、`./openclaw/openclaw.json` の `gateway.auth.token` か `OPENCLAW_GATEWAY_TOKEN` の値を入力する。
 詳細は公式 Docker docs を参照する: https://docs.openclaw.ai/install/docker
 
 ## 5. 検証

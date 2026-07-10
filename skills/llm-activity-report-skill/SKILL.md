@@ -18,7 +18,7 @@ Open WebUIの指定期間内の全チャネル投稿、全ユーザーチャッ�
 2. `scripts/report.py` を使う場合は、返却JSONの `summary_input.channel_messages[*].content`、`summary_input.chat_messages[*].content`、`summary_input.knowledge` を読み、Skill呼び出し元のAgentがLLMとして総合的に要約する。Python内ではLLMを呼び出さない。
 3. チャネル投稿とチャット投稿の本文をどちらも要約対象に含める。ただし、チャットは個人情報を含みやすいため、チャットIDやチャットURLはレポート本文に出さない。
 4. URLを張る場合はチャネルURLだけを使う。メッセージ単位のURL、チャットURL、チャットIDは出力しない。
-5. チャネルリンクは表示名を `#<チャネル名>`、リンク先を `OPEN_WEBUI_PUBLIC_URL/channels/<channel_id>` 形式にする。例: `[#report](http://192.168.1.100:31001/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360)`
+5. チャネルリンクは表示名を `#<チャネル名>`、リンク先を `OPEN_WEBUI_PUBLIC_URL/channels/<channel_id>` 形式にする。例: `[#report](http://webui.example/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360)`
 6. 同じ項目の `🔗 URL` には同じリンクを重複して並べない。
 7. 人間とAIの投稿を区別せず、どちらも活動内容として扱う。
 8. 必要に応じてスレッド返信や添付ファイル内容も確認する。

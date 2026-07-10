@@ -37,7 +37,7 @@ services:
       - openwebui
     environment:
       ### General
-      WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.1.100:31001}
+      WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31001}
       WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-sk-open-webui-secret-key}
       ENABLE_NOTES: "true"
       ENABLE_AUTOMATIONS: "true"
@@ -52,8 +52,8 @@ services:
       DEFAULT_USER_ROLE: "user"
       OAUTH_CLIENT_ID: "open-webui"
       OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
-      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://192.168.1.100:30000}/realms/inferlab/.well-known/openid-configuration
-      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://192.168.1.100:31001}/oauth/oidc/callback
+      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30000}/realms/inferlab/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31001}/oauth/oidc/callback
       OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak

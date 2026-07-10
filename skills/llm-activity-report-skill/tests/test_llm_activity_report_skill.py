@@ -4,6 +4,14 @@ from pathlib import Path
 
 
 def load_report_module():
+    """テスト対象の report モジュールを読み込む。
+
+    Parameters:
+        なし。
+
+    Returns:
+        読み込んだ Python モジュール。
+    """
     path = Path(__file__).resolve().parents[1] / "scripts" / "report.py"
     spec = importlib.util.spec_from_file_location("activity_report_module_test", path)
     module = importlib.util.module_from_spec(spec)
@@ -13,12 +21,28 @@ def load_report_module():
 
 
 def ns(value):
+    """日時を Open WebUI 互換のナノ秒タイムスタンプへ変換する。
+
+    Parameters:
+        value: 変換対象の日時。
+
+    Returns:
+        ナノ秒単位の Unix タイムスタンプ。
+    """
     return int(value.timestamp() * 1_000_000_000)
 
 
 def test_channel_links_are_channel_only_and_deduplicated(monkeypatch):
+    """チャネルリンクがチャネル単位で重複排除されることを検証する。
+
+    Parameters:
+        monkeypatch: 環境変数を差し替える pytest fixture。
+
+    Returns:
+        なし。
+    """
     report = load_report_module()
-    monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "http://192.168.1.100:31001")
+    monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "http://webui.example")
 
     links = report._channel_links(
         [
@@ -27,17 +51,35 @@ def test_channel_links_are_channel_only_and_deduplicated(monkeypatch):
         ]
     )
 
-    expected = "http://192.168.1.100:31001/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360"
+    expected = "http://webui.example/channels/2b63b27b-fc60-4b84-bb04-e51d2fced360"
     assert links == f"[#report]({expected})"
     assert "message" not in links
 
 
 def test_generate_activity_report_formats_channel_messages(monkeypatch):
+    """チャネル投稿のレポート表示形式を検証する。
+
+    Parameters:
+        monkeypatch: 依存関数と環境変数を差し替える pytest fixture。
+
+    Returns:
+        なし。
+    """
     report = load_report_module()
     monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "https://webui.example")
     created = datetime(2026, 4, 28, 3, 0, tzinfo=timezone.utc)
 
     def fake_messages(channel, limit=100, include_threads=True):
+        """チャネル投稿 API のテスト用レスポンスを返す。
+
+        Parameters:
+            channel: 取得対象のチャネル名。
+            limit: 取得件数の上限。
+            include_threads: スレッドを含めるかどうか。
+
+        Returns:
+            Open WebUI のチャネル投稿 API に似せた辞書。
+        """
         return {
             "ok": True,
             "channel_id": "ch_report",
@@ -80,6 +122,14 @@ def test_generate_activity_report_formats_channel_messages(monkeypatch):
 
 
 def test_generate_activity_report_collects_all_openwebui_activity(monkeypatch):
+    """Open WebUI 全体の活動が集計されることを検証する。
+
+    Parameters:
+        monkeypatch: 依存関数と環境変数を差し替える pytest fixture。
+
+    Returns:
+        なし。
+    """
     report = load_report_module()
     monkeypatch.setenv("OPEN_WEBUI_PUBLIC_URL", "https://webui.example")
     created = datetime(2026, 4, 28, 3, 0, tzinfo=timezone.utc)

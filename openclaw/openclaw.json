@@ -22,7 +22,7 @@
             "allowedOrigins": [
                 "http://localhost:31007",
                 "http://127.0.0.1:31007",
-                "http://192.168.1.100:31007"
+                "http://${PUBLIC_HOST}:31007"
             ],
             "dangerouslyDisableDeviceAuth": true
         }

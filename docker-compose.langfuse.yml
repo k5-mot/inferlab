@@ -19,7 +19,7 @@ services:
     #   - 127.0.0.1:3030:3030
     environment: &langfuse-worker-env
       HOSTNAME: 0.0.0.0
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://192.168.1.100:30001}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres_user:postgres_password@langfuse-postgres:5432/${POSTGRES_DB:-langfuse_db}} # CHANGEME
       SALT: ${SALT:-mysalt} # CHANGEME
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000} # CHANGEME: generate via `openssl rand -hex 32`
@@ -71,7 +71,7 @@ services:
       # SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
       AUTH_KEYCLOAK_CLIENT_ID: ${LANGFUSE_KEYCLOAK_CLIENT_ID:-langfuse}
       AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_KEYCLOAK_CLIENT_SECRET:-sk-langfuse-secret-key}
-      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER_URL:-http://192.168.1.100:30000/realms/inferlab}
+      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30000/realms/inferlab}
     networks:
       - llm-internal
     healthcheck:

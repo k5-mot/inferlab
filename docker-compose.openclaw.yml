@@ -7,6 +7,7 @@ services:
     restart: no
     user: root
     environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?PUBLIC_HOST must be set}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       LITELLM_API_KEY: ${LITELLM_API_KEY:-${LITELLM_MASTER_KEY:-sk-litellm-master-key}}
     entrypoint:
@@ -35,7 +36,8 @@ services:
         const fs = require("node:fs");
         const { spawnSync } = require("node:child_process");
         const seedPath = "/openclaw-seed/openclaw.json";
-        const cfg = JSON.parse(fs.readFileSync(seedPath, "utf8"));
+        const publicHost = process.env.PUBLIC_HOST;
+        const cfg = JSON.parse(fs.readFileSync(seedPath, "utf8").replaceAll(String.fromCharCode(36) + "{PUBLIC_HOST}", publicHost));
         delete cfg.meta;
         const batch = Object.entries(cfg).map(([path, value]) => ({ path, value }));
         const result = spawnSync(process.execPath, [
@@ -82,6 +84,7 @@ services:
       - "18789"
       - --verbose
     environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?PUBLIC_HOST must be set}
       HOME: /home/node
       TERM: xterm-256color
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-}

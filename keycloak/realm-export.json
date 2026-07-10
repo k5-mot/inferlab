@@ -32,14 +32,14 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://192.168.1.100:31001/",
+            "rootUrl": "http://${PUBLIC_HOST}:31001/",
             "redirectUris": [
                 "http://localhost:31001/oauth/oidc/callback",
-                "http://192.168.1.100:31001/oauth/oidc/callback"
+                "http://${PUBLIC_HOST}:31001/oauth/oidc/callback"
             ],
             "webOrigins": [
                 "http://localhost:31001",
-                "http://192.168.1.100:31001"
+                "http://${PUBLIC_HOST}:31001"
             ],
             "protocolMappers": [
                 {
@@ -71,12 +71,12 @@
             "redirectUris": [
                 "http://localhost:30001/api/auth/callback/keycloak",
                 "http://localhost:30001/*",
-                "http://192.168.1.100:30001/api/auth/callback/keycloak",
-                "http://192.168.1.100:30001/*"
+                "http://${PUBLIC_HOST}:30001/api/auth/callback/keycloak",
+                "http://${PUBLIC_HOST}:30001/*"
             ],
             "webOrigins": [
                 "http://localhost:30001",
-                "http://192.168.1.100:30001"
+                "http://${PUBLIC_HOST}:30001"
             ],
             "protocolMappers": [
                 {
@@ -105,16 +105,16 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://192.168.1.100:31012/",
+            "rootUrl": "http://${PUBLIC_HOST}:31012/",
             "redirectUris": [
                 "http://localhost:31012/apps/user_oidc/code",
                 "http://127.0.0.1:31012/apps/user_oidc/code",
-                "http://192.168.1.100:31012/apps/user_oidc/code"
+                "http://${PUBLIC_HOST}:31012/apps/user_oidc/code"
             ],
             "webOrigins": [
                 "http://localhost:31012",
                 "http://127.0.0.1:31012",
-                "http://192.168.1.100:31012"
+                "http://${PUBLIC_HOST}:31012"
             ],
             "protocolMappers": [
                 {
