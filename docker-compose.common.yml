@@ -5,10 +5,15 @@ services:
     restart: unless-stopped
     profiles:
       - common
+    entrypoint:
+      - /bin/sh
+      - -c
     command:
-      - start-dev
-      - --http-port=8080
-      - --import-realm
+      - >
+        set -eu;
+        mkdir -p /opt/keycloak/data/import;
+        sed "s|\$${PUBLIC_HOST}|$${PUBLIC_HOST}|g" /opt/keycloak/data/import-template/inferlab-realm.json > /opt/keycloak/data/import/inferlab-realm.json;
+        exec /opt/keycloak/bin/kc.sh start-dev --http-port=8080 --import-realm
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -30,7 +35,7 @@ services:
     ports:
       - "${KEYCLOAK_HOST_PORT:-30000}:8080"
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/inferlab-realm.json:ro
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import-template/inferlab-realm.json:ro
     networks:
       - llm-public
       - llm-internal
