@@ -29,16 +29,16 @@ plugins:
 
 mcp_servers:
   searxng:
-    command: "npx"
-    args: ["-y", "mcp-searxng"]
+    command: "/opt/data/node_modules/.bin/mcp-searxng"
+    args: []
     env:
       SEARXNG_URL: "http://searxng:8080/"
 
   docling:
-    command: "uvx"
-    args: ["--from=docling-mcp", "docling-mcp-server", "--transport", "stdio"]
+    command: "/opt/data/docling-mcp-venv/bin/docling-mcp-server"
+    args: ["--transport", "stdio"]
     env:
       DOCLING_SERVICE_URL: "http://docling:5001"
       DOCLING_SERVICE_API_KEY: "sk-docling-serve-api-key"
       DOCLING_CONVERSION_MODE: "remote"
-      DOCLING_FALLBACK_TO_LOCAL: "true"
+      DOCLING_FALLBACK_TO_LOCAL: "false"

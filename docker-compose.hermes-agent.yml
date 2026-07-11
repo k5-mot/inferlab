@@ -16,7 +16,17 @@ services:
         mkdir -p /opt/data/skills
         cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
         cp -rfv /opt/config/skills/*          /opt/data/skills
-        npm install --prefix /opt/data rss-mcp --silent
+        if [ ! -x /opt/data/node_modules/.bin/rss-mcp ]; then
+          npm install --prefix /opt/data rss-mcp --silent
+        fi
+        if [ ! -x /opt/data/node_modules/.bin/mcp-searxng ]; then
+          npm install --prefix /opt/data mcp-searxng --silent
+        fi
+        if [ ! -x /opt/data/docling-mcp-venv/bin/docling-mcp-server ]; then
+          python -m venv /opt/data/docling-mcp-venv
+          /opt/data/docling-mcp-venv/bin/python -m pip install --no-cache-dir --upgrade pip
+          /opt/data/docling-mcp-venv/bin/python -m pip install --no-cache-dir docling-mcp
+        fi
         export PYTHONPATH="/opt/data/langfuse-python-packages$${PYTHONPATH:+:$$PYTHONPATH}"
         if ! python - <<'PY' >/dev/null 2>&1
         import importlib.metadata as md
