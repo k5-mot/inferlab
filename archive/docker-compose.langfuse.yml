@@ -1,5 +1,5 @@
 services:
-
+  # https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
   langfuse-worker:
     image: docker.io/langfuse/langfuse-worker:3.207.0
     container_name: langfuse-worker
@@ -146,7 +146,7 @@ services:
       start_period: 1s
 
   langfuse-minio:
-    image: cgr.dev/chainguard/minio
+    image: cgr.dev/chainguard/minio:0.20260604
     container_name: langfuse-minio
     restart: unless-stopped
     entrypoint: sh
