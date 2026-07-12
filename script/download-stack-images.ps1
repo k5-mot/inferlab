@@ -40,7 +40,7 @@ $Images = @(
 変換対象のコンテナイメージ参照です。
 
 .OUTPUTS
-生成した .tar.gz ファイル名を文字列として返します。
+生成した .tar ファイル名を文字列として返します。
 
 .NOTES
 副作用はありません。
@@ -51,56 +51,7 @@ function Get-ImageArchiveName {
         [string]$Image
     )
 
-    return ($Image -replace "[/:@]", "_") + ".tar.gz"
-}
-
-<#
-.SYNOPSIS
-tar ファイルを gzip 形式へ圧縮します。
-
-.DESCRIPTION
-crane が出力した Docker tarball を gzip で圧縮し、指定された出力パスへ保存します。
-
-.PARAMETER SourcePath
-圧縮元 tar ファイルのパスです。
-
-.PARAMETER DestinationPath
-圧縮後の .tar.gz ファイルのパスです。
-
-.OUTPUTS
-戻り値はありません。
-
-.NOTES
-出力ファイルを作成または上書きします。読み書きに失敗した場合は例外を送出します。
-#>
-function Compress-Tarball {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$SourcePath,
-
-        [Parameter(Mandatory = $true)]
-        [string]$DestinationPath
-    )
-
-    $InputStream = [System.IO.File]::OpenRead($SourcePath)
-    try {
-        $OutputStream = [System.IO.File]::Create($DestinationPath)
-        try {
-            $GzipStream = [System.IO.Compression.GzipStream]::new($OutputStream, [System.IO.Compression.CompressionLevel]::Optimal)
-            try {
-                $InputStream.CopyTo($GzipStream)
-            }
-            finally {
-                $GzipStream.Dispose()
-            }
-        }
-        finally {
-            $OutputStream.Dispose()
-        }
-    }
-    finally {
-        $InputStream.Dispose()
-    }
+    return ($Image -replace "[/:@]", "_") + ".tar"
 }
 
 if (-not (Get-Command crane -ErrorAction SilentlyContinue)) {
@@ -111,7 +62,6 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
 foreach ($Image in $Images) {
     $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)
-    $TemporaryTarPath = $ArchivePath -replace "\.tar\.gz$", ".tar"
 
     if ((Test-Path $ArchivePath) -and -not $Overwrite) {
         Write-Host "Skip $Image"
@@ -119,12 +69,9 @@ foreach ($Image in $Images) {
     }
 
     Write-Host "Download $Image"
-    crane pull --platform $Platform $Image $TemporaryTarPath
+    crane pull --platform $Platform $Image $ArchivePath
 
     if ($LASTEXITCODE -ne 0) {
         throw "ダウンロードに失敗しました: $Image"
     }
-
-    Compress-Tarball -SourcePath $TemporaryTarPath -DestinationPath $ArchivePath
-    Remove-Item $TemporaryTarPath -Force
 }
