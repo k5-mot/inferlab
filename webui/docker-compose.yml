@@ -1,137 +1,40 @@
-x-oauth2-proxy-env: &oauth2-proxy-env
-  OAUTH2_PROXY_PROVIDER: keycloak-oidc
-  OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
-  OAUTH2_PROXY_OIDC_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-http://localhost:30000/realms/inferlab}
-  OAUTH2_PROXY_LOGIN_URL: ${KEYCLOAK_LOGIN_URL:-http://localhost:30000/realms/inferlab/protocol/openid-connect/auth}
-  OAUTH2_PROXY_REDEEM_URL: ${KEYCLOAK_INTERNAL_TOKEN_URL:-http://keycloak:8080/realms/inferlab/protocol/openid-connect/token}
-  OAUTH2_PROXY_OIDC_JWKS_URL: ${KEYCLOAK_INTERNAL_JWKS_URL:-http://keycloak:8080/realms/inferlab/protocol/openid-connect/certs}
-  OAUTH2_PROXY_SCOPE: openid email profile groups
-  OAUTH2_PROXY_EMAIL_DOMAINS: "*"
-  OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
-  OAUTH2_PROXY_REVERSE_PROXY: "true"
-  OAUTH2_PROXY_COOKIE_SECURE: "false"
-  OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:-0123456789abcdef0123456789abcdef}
-  OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
-  OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
-  OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "true"
-  OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
-
-x-oauth2-proxy-base: &oauth2-proxy-base
-  restart: unless-stopped
-  image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
-  depends_on:
-    keycloak:
-      condition: service_started
-  environment:
-    <<: *oauth2-proxy-env
-  networks:
-    - llm-public
-    - llm-internal
-
 services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:0.10.2-slim
     container_name: open-webui
     restart: unless-stopped
     profiles:
-      - openwebui
+      - webui
     environment:
-      ### General
       WEBUI_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31001}
       WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-sk-open-webui-secret-key}
-      ENABLE_NOTES: "true"
-      ENABLE_AUTOMATIONS: "true"
-      ENABLE_CALENDAR: "true"
-      ENABLE_CHANNELS: "true"
       ENABLE_API_KEYS: "true"
-      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
-      API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
-      ### For Keycloak
-      ENABLE_SIGNUP: "false"
-      ENABLE_OAUTH_SIGNUP: "true"
-      DEFAULT_USER_ROLE: "user"
-      OAUTH_CLIENT_ID: "open-webui"
-      OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
-      OPENID_PROVIDER_URL: ${KEYCLOAK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30000}/realms/inferlab/.well-known/openid-configuration
-      OPENID_REDIRECT_URI: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31001}/oauth/oidc/callback
-      OAUTH_SCOPES: openid
-      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
-      OAUTH_PROVIDER_NAME: Keycloak
-      ### For LLM on LiteLLM
-      # OLLAMA_BASE_URL: http://ollama:11434
-      OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
-      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
-      DEFAULT_MODELS: "gemma4:31b-cloud"
-      ### For Embedding model on LiteLLM
+      OPENAI_API_BASE_URLS: http://litellm:4000/v1
+      OPENAI_API_KEYS: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      DEFAULT_MODELS: gemma4:31b
       RAG_EMBEDDING_ENGINE: openai
-      RAG_EMBEDDING_MODEL: "ruri-v3:310m"
+      RAG_EMBEDDING_MODEL: ruri-v3:310m
       RAG_OPENAI_API_BASE_URL: http://litellm:4000
       RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      RAG_TEXT_SPLITTER: token
-      CHUNK_SIZE: 1500
-      CHUNK_OVERLAP: 150
-      ### For Reranking model on LiteLLM
       ENABLE_RAG_HYBRID_SEARCH: "true"
-      RAG_RERANKING_ENGINE: "external"
-      RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000"
+      RAG_RERANKING_ENGINE: external
+      RAG_EXTERNAL_RERANKER_URL: http://litellm:4000
       RAG_EXTERNAL_RERANKER_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      RAG_RERANKING_MODEL: "ruri-v3-reranker:310m"
-      RAG_TOP_K: 12
-      RAG_TOP_K_RERANKER: 6
-      ### For Docling (Content Extraction)
+      RAG_RERANKING_MODEL: ruri-v3-reranker:310m
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
-      DOCLING_API_KEY: "sk-docling-serve-api-key"
-      DOCLING_PARAMS: >-
-        {
-          "do_ocr": true,
-          "force_ocr": false,
-          "ocr_engine": "tesseract_cli",
-          "ocr_preset": "tesseract",
-          "ocr_lang": ["jpn", "jpn_vert", "eng"]
-        }
-      # "picture_description_custom_config": "{\"picture_area_threshold\": 0.01, \"batch_size\": 1, \"scale\": 2.0, \"engine_options\": {\"engine_type\": \"api\", \"url\": \"http://litellm:4000/v1/chat/completions\", \"headers\": {\"Authorization\": \"Bearer sk-litellm-master-key\"}, \"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}, \"timeout\": 90, \"concurrency\": 1}, \"model_spec\": {\"name\": \"gemma4:31b\", \"default_repo_id\": \"gemma4:31b\", \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"response_format\": \"plaintext\", \"api_overrides\": {\"api\": {\"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}}}}, \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"generation_config\": {\"temperature\": 0.0, \"max_tokens\": 1024}}"
-      # DOCLING_PARAMS: >-
-      #   {
-      #     "do_ocr": true,
-      #     "force_ocr": false,
-      #     "ocr_preset": "auto",
-      #     "ocr_custom_config": {
-      #       "kind": "tesseract",
-      #       "lang": ["jpn", "jpn_vert", "eng"],
-      #       "force_full_page_ocr": false,
-      #       "bitmap_area_threshold": 0.30
-      #     },
-      #     "do_picture_description": true,
-      #     "generate_picture_images": true,
-      #     "picture_description_preset": "litellm"
-      #   }
-      ### For Qdrant (Vector DB)
+      DOCLING_API_KEY: sk-docling-serve-api-key
       VECTOR_DB: qdrant
-      QDRANT_API_KEY: "sk-qdrant-api-key"
+      QDRANT_API_KEY: sk-qdrant-api-key
       QDRANT_URI: http://qdrant:6333
-      ### For SearXNG (Web Search)
       ENABLE_WEB_SEARCH: "true"
       WEB_SEARCH_ENGINE: searxng
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
-      ### For Edge-TTS (Text-to-Speech)
       AUDIO_TTS_ENGINE: openai
-      AUDIO_TTS_OPENAI_API_BASE_URL: http://openai-edge-tts:5050/v1
-      AUDIO_TTS_OPENAI_API_KEY: "openai-edge-tts-api-secret-key"
-      # AUDIO_TTS_MODEL: model_q8f16
-      AUDIO_TTS_VOICE: "ja-JP-NanamiNeural"
-      # AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
-      # AUDIO_TTS_OPENAI_API_KEY: "sk-1234"
-      # AUDIO_TTS_MODEL: "voicevox-v1"
-      # AUDIO_TTS_VOICE: "1"
-      ### For ComfyUI (Image Generation and Editing)
-      # ENABLE_IMAGE_GENERATION: "true"
-      # IMAGE_GENERATION_ENGINE: comfyui
-      # IMAGE_EDIT_ENGINE: comfyui
-      # COMFYUI_BASE_URL: http://comfyui:8188
-      ### For Open WebUI Pipelines
-      # PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-      # PIPELINES_URLS: http://open-webui-pipelines:9099
+      AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
+      AUDIO_TTS_OPENAI_API_KEY: sk-voicevox-openai-tts-api-key
+      AUDIO_TTS_MODEL: voicevox-v1
+      AUDIO_TTS_VOICE: "1"
     ports:
       - "${OPEN_WEBUI_HOST_PORT:-31001}:8080"
     volumes:
@@ -142,240 +45,99 @@ services:
     depends_on:
       litellm:
         condition: service_started
-      qdrant:
-        condition: service_started
-      # chroma:
-      #   condition: service_started
       docling:
+        condition: service_started
+      qdrant:
         condition: service_started
       searxng:
         condition: service_started
-      # open-webui-pipelines:
-      #   condition: service_started
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
+      voicevox-openai-tts:
+        condition: service_started
 
   docling:
-    # image: quay.io/docling-project/docling-serve:v1.18.0
     image: ghcr.io/k5-mot/docling-serve-jp:v1.26.0
     container_name: docling
     restart: unless-stopped
-    mem_limit: ${DOCLING_MEM_LIMIT:-8g}
-    memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
-    pids_limit: 512
     profiles:
-      - openwebui
+      - webui
     environment:
       DOCLING_SERVE_HOST: 0.0.0.0
-      DOCLING_SERVE_PORT: 5001
-      DOCLING_SERVE_ENABLE_UI: "true"
-      DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
-      DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
-      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
-      DOCLING_SERVE_MAX_SYNC_WAIT: 36000
-      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
-      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: ${DOCLING_SERVE_ENG_LOC_NUM_WORKERS:-1}
-      DOCLING_SERVE_OPTIONS_CACHE_SIZE: ${DOCLING_SERVE_OPTIONS_CACHE_SIZE:-1}
-      DOCLING_SERVE_QUEUE_MAX_SIZE: ${DOCLING_SERVE_QUEUE_MAX_SIZE:-2}
-      OMP_NUM_THREADS: ${DOCLING_OMP_NUM_THREADS:-2}
+      DOCLING_SERVE_PORT: "5001"
+      DOCLING_SERVE_API_KEY: sk-docling-serve-api-key
     ports:
-      - 50000:5001
+      - "${DOCLING_HOST_PORT:-50000}:5001"
     volumes:
       - docling-data:/data
     networks:
       - llm-internal
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
-    healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:5001/readyz" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
 
   searxng:
     image: docker.io/searxng/searxng:2026.7.11-62a1ab7ed
     container_name: searxng
     restart: unless-stopped
     profiles:
-      - openwebui
-    # ports:
-    #   - 32001:8080
+      - webui
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
       - llm-internal
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        # - "curl -s -H \"Authorization: Bearer sk-searxng-secret-key\" http://127.0.0.1:8080/healthz"
-        - "python -c \"import urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer sk-searxng-secret-key'}); print(urllib.request.urlopen(req).read().decode())\""
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
-  openai-edge-tts:
-    image: docker.io/travisvn/openai-edge-tts:latest
-    container_name: openai-edge-tts
-    restart: unless-stopped
-    environment:
-      API_KEY: "openai-edge-tts-api-secret-key"
-      DEFAULT_VOICE: "ja-JP-NanamiNeural"
-      DEFAULT_RESPONSE_FORMAT: "mp3"
-      DEFAULT_SPEED: 1.0
-      DEFAULT_LANGUAGE: "ja-JP"
-      REQUIRE_API_KEY: "True"
-      REMOVE_FILTER: "True"
-      EXPAND_API: "True"
-    profiles:
-      - openwebui
-    # ports:
-    #   - "5050:5050"
-    networks:
-      - llm-internal
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - python -c "import urllib.request; req=urllib.request.Request('http://127.0.0.1:5050/v1/models', headers={'Authorization':'Bearer openai-edge-tts-api-secret-key'}); print(urllib.request.urlopen(req).read().decode())"
-        # - "curl -s -H \"Authorization: Bearer openai-edge-tts-api-secret-key\" http://127.0.0.1:5050/v1/models"
-        # - "python -c \"import urllib.request; token=os.environ.get('SEARXNG_API_KEY',''); urllib.request.urlopen('http://127.0.0.1:8080/')\""
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   voicevox_engine:
     image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
     container_name: voicevox_engine
     restart: unless-stopped
     profiles:
-      # - openwebui
-      - voicevox
+      - webui
     ports:
-      # - 127.0.0.1:50021:50021
-      - 50021:50021
+      - "${VOICEVOX_ENGINE_HOST_PORT:-50021}:50021"
     networks:
       - llm-internal
-    # Health monitoring
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:50021/docs" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   voicevox-openai-tts:
     image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0
-    container_name: inferlab-voicevox-openai-tts
+    container_name: voicevox-openai-tts
     restart: unless-stopped
     profiles:
-      # - openwebui
-      - voicevox
+      - webui
     environment:
-      - VOICEVOX_ENGINE_URL=http://voicevox_engine:50021
-    depends_on:
-      voicevox_engine:
-        condition: service_healthy
+      VOICEVOX_ENGINE_URL: http://voicevox_engine:50021
+      API_KEY: sk-voicevox-openai-tts-api-key
     ports:
-      # - 127.0.0.1:50021:50021
-      - 50022:8000
+      - "${VOICEVOX_OPENAI_TTS_HOST_PORT:-50022}:8000"
     networks:
       - llm-internal
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8000/docs" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    depends_on:
+      voicevox_engine:
+        condition: service_started
 
   qdrant:
     image: docker.io/qdrant/qdrant:v1.18.2
     container_name: qdrant
     restart: unless-stopped
     profiles:
-      - openwebui
+      - webui
     volumes:
       - qdrant-storage:/qdrant/storage
       - qdrant-snapshots:/qdrant/snapshots
-      # - qdrant-config:/qdrant/config
-      - ./qdrant/config.yaml:/qdrant/config/production.yaml
-    # ports:
-    #   - 6333:6333
+      - ./qdrant/config.yaml:/qdrant/config/production.yaml:ro
     networks:
       - llm-internal
-    healthcheck:
-      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   open-webui-computer:
     image: ghcr.io/open-webui/computer:0.9.4
     container_name: open-webui-computer
     restart: unless-stopped
     profiles:
-      - openwebui
+      - webui
     networks:
       - llm-internal
 
-  # oikb:
-  #   image: ghcr.io/open-webui/oikb:0.3.6
-  #   restart: unless-stopped
-  #   container_name: oikb
-  #   command: daemon
-  #   profiles:
-  #     - openwebui
-  #   environment:
-  #     OPEN_WEBUI_URL: "http://open-webui:8080"
-  #     OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
-  #     OIKB_API_KEY: ${OIKB_API_KEY:-}
-  #     LOG_FORMAT: "json"
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
-  #   networks:
-  #     - llm-public
-  #     - llm-internal
-  #   depends_on:
-  #     - open-webui
-  #   healthcheck:
-  #     test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
-  #     interval: 30s
-  #     timeout: 5s
-  # open-webui-pipelines:
-  #   image: ghcr.io/open-webui/pipelines:main
-  #   container_name: inferlab-open-webui-pipelines
-  #   restart: unless-stopped
-  #   profiles:
-  #     - openwebui
-  #   environment:
-  #     PIPELINES_API_KEY: ${OPEN_WEBUI_PIPELINES_API_KEY:-0p3n-w3bu!}
-  #     RAGFLOW_BASE_URL: ${RAGFLOW_BASE_URL:-http://ragflow:9380}
-  #     RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
-  #     RAGFLOW_CHAT_IDS: ${RAGFLOW_CHAT_IDS:-}
-  #     RAGFLOW_AGENT_IDS: ${RAGFLOW_AGENT_IDS:-}
-  #     RAGFLOW_TIMEOUT_SECONDS: ${RAGFLOW_TIMEOUT_SECONDS:-300}
-  #     CARBONE_GATEWAY_URL: ${CARBONE_GATEWAY_URL:-http://carbone-gateway:8080}
-  #     CARBONE_TIMEOUT_SECONDS: ${CARBONE_TIMEOUT_SECONDS:-300}
-  #   volumes:
-  #     - open-webui-pipelines-data:/app/pipelines
-  #     # - ./ragflow/pipelines/ragflow_pipeline.py:/app/pipelines/ragflow_pipeline.py:ro
-  #     # - ./carbone/pipelines/carbone_pipeline.py:/app/pipelines/carbone_pipeline.py:ro
-  #   networks:
-  #     - llm-internal
-
 volumes:
   open-webui-data:
+  docling-data:
   qdrant-storage:
   qdrant-snapshots:
-  docling-data:
-    # open-webui-pipelines-data:
-    # chroma-data:
+
 networks:
   llm-public:
   llm-internal:

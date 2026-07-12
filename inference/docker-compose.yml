@@ -1,13 +1,10 @@
 services:
-  # https://hub.docker.com/r/litellm/litellm
-  # https://hub.docker.com/hardened-images/catalog/dhi/litellm
-  # https://docs.litellm.ai/blog/vllm-embeddings-incident
   litellm:
     image: docker.io/litellm/litellm:1.92.0
     container_name: litellm
     restart: unless-stopped
     profiles:
-      - inference-ollama
+      - inference
     command:
       - --config
       - /app/config.yaml
@@ -29,86 +26,30 @@ services:
     networks:
       - llm-public
       - llm-internal
-      # depends_on:
-      # ollama:
-      #   condition: service_healthy
-      # vllm-embedding:
-      #   condition: service_healthy
-      # vllm-reranking:
-      #   condition: service_healthy
-      # ulimits:
-      #   nofile:
-      #     soft: 65535
-      #     hard: 65535
-    healthcheck:
-      test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
 
   ollama:
     image: docker.io/ollama/ollama:0.31.2
     container_name: ollama
     restart: unless-stopped
     profiles:
-      - inference-ollama
+      - inference
     tty: true
     environment:
       OLLAMA_HOST: "0.0.0.0:11434"
-      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-sk-ollama-api-key}"
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-sk-ollama-api-key}
     ports:
-      - 11434:11434
+      - "${OLLAMA_HOST_PORT:-11434}:11434"
     volumes:
       - ollama-cache:/root/.ollama
     networks:
       - llm-internal
-    depends_on:
-      ollama-init:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - OLLAMA_HOST=127.0.0.1:11434 ollama list > /dev/null 2>&1
-      interval: 30s
-      timeout: 10s
-      retries: 20
-      start_period: 30s
-
-  ollama-init:
-    image: docker.io/ollama/ollama:0.31.2
-    container_name: ollama-init
-    restart: no
-    profiles:
-      - inference-ollama
-    tty: true
-    environment:
-      - OLLAMA_KEEP_ALIVE=24h
-      - OLLAMA_HOST=127.0.0.1:11434
-      - OLLAMA_INIT_MODELS=${OLLAMA_INIT_MODELS:-gemma4:e4b gemma4:31b-cloud gpt-oss:120b-cloud minimax-m2.7:cloud qwen3.5:397b-cloud glm-5.1:cloud kimi-k2.6:cloud deepseek-v4-flash:cloud deepseek-v4-pro:cloud gemini-3-flash-preview:cloud qwen3-coder-next:cloud nomic-embed-text-v2-moe}
-    volumes:
-      - ollama-cache:/root/.ollama
-    networks:
-      - llm-internal
-    entrypoint:
-      - /bin/sh
-      - -lc
-    command:
-      - >-
-        ollama serve & OLLAMA_PID=$$!; until ollama list > /dev/null 2>&1; do
-          echo 'Waiting for Ollama to be ready...';
-          sleep 1;
-        done; echo 'Ollama is ready. Importing models sequentially...'; for model in $${OLLAMA_INIT_MODELS}; do
-          echo "Pulling $$model...";
-          ollama pull "$$model";
-        done; echo 'All models pulled.'; kill "$$OLLAMA_PID"
 
   tei-embedding:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+    image: ghcr.io/huggingface/text-embeddings-inference:1.9.3
     container_name: tei-embedding
     restart: unless-stopped
     profiles:
-      - inference-ollama
+      - inference
     command:
       - --model-id
       - cl-nagoya/ruri-v3-310m
@@ -118,33 +59,17 @@ services:
       - "8000"
       - --pooling
       - mean
-      - --max-batch-tokens
-      - "512"
-      - --max-client-batch-size
-      - "4"
-      - --max-concurrent-requests
-      - "16"
-      - --tokenization-workers
-      - "2"
     volumes:
       - tei-cache:/data
     networks:
       - llm-internal
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "curl -s http://127.0.0.1:8000/health"
-      interval: 30s
-      timeout: 10s
-      retries: 60
-      start_period: 60s
 
   tei-reranking:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+    image: ghcr.io/huggingface/text-embeddings-inference:1.9.3
     container_name: tei-reranking
     restart: unless-stopped
     profiles:
-      - inference-ollama
+      - inference
     command:
       - --model-id
       - cl-nagoya/ruri-v3-reranker-310m
@@ -154,95 +79,13 @@ services:
       - "8000"
       - --pooling
       - mean
-      - --max-batch-tokens
-      - "512"
-      - --max-client-batch-size
-      - "4"
-      - --max-concurrent-requests
-      - "16"
-      - --tokenization-workers
-      - "2"
     volumes:
       - tei-cache:/data
     networks:
       - llm-internal
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "curl -s http://127.0.0.1:8000/health"
-      interval: 30s
-      timeout: 10s
-      retries: 60
-      start_period: 60s
-  # vllm-embedding:
-  #   image: docker.io/vllm/vllm-openai-cpu:v0.22.1
-  #   container_name: inferlab-vllm-embedding
-  #   restart: unless-stopped
-  #   profiles:
-  #     - inference-ollama
-  #   command:
-  #     - "cl-nagoya/ruri-v3-310m"
-  #     - --host
-  #     - "0.0.0.0"
-  #     - --port
-  #     - "8000"
-  #     - --convert
-  #     - "embed"
-  #     - --dtype
-  #     - "float32"
-  #     - --gpu-memory-utilization
-  #     - "0.05"
-  #     - --served-model-name
-  #     - "ruri-v3:310m"
-  #   volumes:
-  #     - vllm-cache:/root/.cache
-  #   networks:
-  #     - llm-internal
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 60
-  #     start_period: 60s
-
-  # vllm-reranking:
-  #   image: docker.io/vllm/vllm-openai-cpu:v0.22.1
-  #   container_name: inferlab-vllm-reranking
-  #   restart: unless-stopped
-  #   profiles:
-  #     - inference-ollama
-  #   command:
-  #     - "cl-nagoya/ruri-v3-reranker-310m"
-  #     - --host
-  #     - "0.0.0.0"
-  #     - --port
-  #     - "8000"
-  #     - --convert
-  #     - "classify"
-  #     - --dtype
-  #     - "float32"
-  #     - --gpu-memory-utilization
-  #     - "0.05"
-  #     - --served-model-name
-  #     - "ruri-v3-reranker:310m"
-  #   volumes:
-  #     - vllm-cache:/root/.cache
-  #   networks:
-  #     - llm-internal
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 60
-  #     start_period: 60s
 
 volumes:
   ollama-cache:
-  vllm-cache:
   tei-cache:
 
 networks:
