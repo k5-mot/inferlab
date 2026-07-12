@@ -1,0 +1,79 @@
+model_list:
+  - model_name: gemma-4-31b-it
+    litellm_params:
+      model: openai/gemma-4-31b-it
+      api_base: http://vllm-gemma4-31b:8000/v1
+      # api_key: EMPTY
+      api_key: os.environ/VLLM_API_KEY
+    model_info:
+      # max_input_tokens: 32768
+      max_input_tokens: 28672
+      # max_output_tokens: 8192
+      max_output_tokens: 4096
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+
+  - model_name: qwen3-swallow-32b
+    litellm_params:
+      model: openai/qwen3-swallow-32b
+      api_base: http://vllm-qwen3-swallow-32b:8000/v1
+      api_key: EMPTY
+
+  - model_name: qwen3-coder-30b
+    litellm_params:
+      model: openai/qwen3-coder-30b
+      api_base: http://vllm-qwen3-coder-30b:8000/v1
+      api_key: EMPTY
+
+  - model_name: harrier-06b
+    litellm_params:
+      model: openai/harrier-06b
+      api_base: http://vllm-harrier-06b:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  - model_name: harrier-27b
+    litellm_params:
+      model: openai/harrier-27b
+      api_base: http://vllm-harrier-27b:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  - model_name: ruri-v3-310m
+    litellm_params:
+      model: openai/ruri-v3-310m
+      api_base: http://vllm-ruri-v3-310m:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  - model_name: qwen3-reranker-06b
+    litellm_params:
+      model: openai/qwen3-reranker-06b
+      api_base: http://vllm-qwen3-reranker-06b:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  - model_name: qwen3-reranker-8b
+    litellm_params:
+      model: openai/qwen3-reranker-8b
+      api_base: http://vllm-qwen3-reranker-8b:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  - model_name: ruri-v3-reranker-310m
+    litellm_params:
+      model: openai/ruri-v3-reranker-310m
+      api_base: http://vllm-ruri-v3-reranker-310m:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+litellm_settings:
+  callbacks:
+    - langfuse_otel
+  drop_params: true
+  request_timeout: 600
+
+
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

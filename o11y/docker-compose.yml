@@ -1,0 +1,230 @@
+services:
+  # https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3.212.0
+    container_name: langfuse-worker
+    restart: unless-stopped
+    profiles:
+      - langfuse
+    depends_on: &langfuse-depends-on
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+    # ports:
+    #   - 127.0.0.1:3030:3030
+    environment: &langfuse-worker-env
+      HOSTNAME: 0.0.0.0
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30001}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres_user:postgres_password@langfuse-postgres:5432/${POSTGRES_DB:-langfuse_db}} # CHANGEME
+      SALT: ${SALT:-mysalt} # CHANGEME
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000} # CHANGEME: generate via `openssl rand -hex 32`
+      TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: ${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-langfuse_chdb}
+      CLICKHOUSE_MIGRATION_URL: ${CLICKHOUSE_MIGRATION_URL:-clickhouse://langfuse-clickhouse:9000/${CLICKHOUSE_DB:-langfuse_chdb}}
+      CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://langfuse-clickhouse:8123/${CLICKHOUSE_DB:-langfuse_chdb}}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse_user}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse_password} # CHANGEME
+      CLICKHOUSE_CLUSTER_ENABLED: ${CLICKHOUSE_CLUSTER_ENABLED:-false}
+      LANGFUSE_USE_AZURE_BLOB: ${LANGFUSE_USE_AZURE_BLOB:-false}
+      LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE: ${LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE:-false}
+      # LANGFUSE_OCI_AUTH_TYPE: ${LANGFUSE_OCI_AUTH_TYPE:-workload_identity}
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: ${LANGFUSE_S3_EVENT_UPLOAD_REGION:-auto}
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-minio_user}}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:-miniosecret} # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: ${LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT:-http://langfuse-minio:9000}
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE:-true}
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: ${LANGFUSE_S3_EVENT_UPLOAD_PREFIX:-events/}
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: ${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:-langfuse-bucket}
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: ${LANGFUSE_S3_MEDIA_UPLOAD_REGION:-auto}
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-minio_user}}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY:-miniosecret} # CHANGEME
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT:-http://langfuse-minio:9000}
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE:-true}
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: ${LANGFUSE_S3_MEDIA_UPLOAD_PREFIX:-media/}
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: ${LANGFUSE_S3_BATCH_EXPORT_ENABLED:-false}
+      LANGFUSE_S3_BATCH_EXPORT_BUCKET: ${LANGFUSE_S3_BATCH_EXPORT_BUCKET:-langfuse-bucket}
+      LANGFUSE_S3_BATCH_EXPORT_PREFIX: ${LANGFUSE_S3_BATCH_EXPORT_PREFIX:-exports/}
+      LANGFUSE_S3_BATCH_EXPORT_REGION: ${LANGFUSE_S3_BATCH_EXPORT_REGION:-auto}
+      LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: ${LANGFUSE_S3_BATCH_EXPORT_ENDPOINT:-http://langfuse-minio:9000}
+      LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT: ${LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT:-http://langfuse-minio:9090}
+      LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: ${LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-minio_user}}
+      LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY: ${LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY:-miniosecret} # CHANGEME
+      LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: ${LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE:-true}
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: ${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS: ${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
+      REDIS_HOST: ${REDIS_HOST:-langfuse-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_AUTH: ${REDIS_AUTH:-sk-langfuse-redis-secret-key} # CHANGEME
+      LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK: ${LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK:-false}
+      REDIS_TLS_ENABLED: ${REDIS_TLS_ENABLED:-false}
+      # REDIS_TLS_CA: ${REDIS_TLS_CA:-/certs/ca.crt}
+      # REDIS_TLS_CERT: ${REDIS_TLS_CERT:-/certs/redis.crt}
+      # REDIS_TLS_KEY: ${REDIS_TLS_KEY:-/certs/redis.key}
+      # EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      # SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
+      AUTH_KEYCLOAK_CLIENT_ID: ${LANGFUSE_KEYCLOAK_CLIENT_ID:-langfuse}
+      AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_KEYCLOAK_CLIENT_SECRET:-sk-langfuse-secret-key}
+      AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30000/realms/inferlab}
+    networks:
+      - llm-internal
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3030/api/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3.212.0
+    container_name: langfuse-web
+    restart: unless-stopped
+    profiles:
+      - langfuse
+    depends_on: *langfuse-depends-on
+    environment:
+      <<: *langfuse-worker-env
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-mysecret} # CHANGEME
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-org0}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-org0}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-prg0}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-prg0}
+      LANGFUSE_INIT_PROJECT_RETENTION: ${LANGFUSE_INIT_PROJECT_RETENTION:-30}
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-admin@langfuse.com}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-admin}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-password123} # CHANGEME
+      LANGFUSE_DEFAULT_ORG_ID: ${LANGFUSE_DEFAULT_ORG_ID:-org0}
+      LANGFUSE_DEFAULT_ORG_ROLE: ${LANGFUSE_DEFAULT_ORG_ROLE:-OWNER} # OWNER/ADMIN/MEMBER/VIEWER
+      LANGFUSE_DEFAULT_PROJECT_ID: ${LANGFUSE_DEFAULT_PROJECT_ID:-prg0}
+      LANGFUSE_DEFAULT_PROJECT_ROLE: ${LANGFUSE_DEFAULT_PROJECT_ROLE:-OWNER}
+    ports:
+      # - 3000:3000
+      - "${LANGFUSE_HOST_PORT:-30001}:3000"
+    networks:
+      - llm-public
+      - llm-internal
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3000/api/public/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  langfuse-clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:25.8.28.1
+    container_name: langfuse-clickhouse
+    restart: unless-stopped
+    user: "101:101"
+    profiles:
+      - langfuse
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-langfuse_chdb}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse_user}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse_password} # CHANGEME
+    # ports:
+    #   - 127.0.0.1:8123:8123
+    #   - 127.0.0.1:9000:9000
+    networks:
+      - llm-internal
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+
+  langfuse-minio:
+    image: cgr.dev/chainguard/minio:0.20260604
+    container_name: langfuse-minio
+    restart: unless-stopped
+    entrypoint: sh
+    # create the Langfuse bucket before starting the service
+    command: -c 'mkdir -p /data/${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket} && minio server --address ":9000" --console-address ":9001" /data'
+    profiles:
+      - langfuse
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_user}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret} # CHANGEME
+    # ports:
+    #   - 9090:9000
+    #   - 127.0.0.1:9091:9001
+    networks:
+      - llm-internal
+    volumes:
+      - langfuse_minio_data:/data
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 1s
+
+  langfuse-redis:
+    image: docker.io/library/redis:8.8.0-trixie
+    container_name: langfuse-redis
+    restart: unless-stopped
+    profiles:
+      - langfuse
+    # CHANGEME: row below to secure redis password
+    command: >
+      --requirepass ${REDIS_AUTH:-sk-langfuse-redis-secret-key} --maxmemory-policy noeviction
+    environment:
+      REDIS_AUTH: ${REDIS_AUTH:-sk-langfuse-redis-secret-key}
+    # ports:
+    #   - 127.0.0.1:6379:6379
+    networks:
+      - llm-internal
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$${REDIS_AUTH}\" ping | grep -q PONG" ]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+
+  langfuse-postgres:
+    image: docker.io/library/postgres:18.4-trixie
+    container_name: langfuse-postgres
+    restart: unless-stopped
+    profiles:
+      - langfuse
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password} # CHANGEME
+      POSTGRES_DB: ${POSTGRES_DB:-langfuse_db}
+      TZ: UTC
+      PGTZ: UTC
+    # ports:
+    #   - 127.0.0.1:5432:5432
+    networks:
+      - llm-internal
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  langfuse_clickhouse_data:
+  langfuse_clickhouse_logs:
+  langfuse_minio_data:
+  langfuse_redis_data:
+  langfuse_postgres_data:
+
+networks:
+  llm-public:
+  llm-internal:

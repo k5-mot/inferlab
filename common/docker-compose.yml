@@ -1,0 +1,5 @@
+include:
+  - ./docker-compose.keycloak.yml
+  - ./docker-compose.cloudflare.yml
+  - ./docker-compose.obsidian.yml
+  - ./docker-compose.homepage.yml

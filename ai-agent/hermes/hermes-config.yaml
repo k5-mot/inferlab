@@ -1,0 +1,44 @@
+model:
+  provider: "openai-codex"
+  default: "gpt-5.5"
+
+fallback_providers:
+  - provider: "openrouter"
+    model: "openrouter/free"
+  - provider: "openrouter"
+    model: "google/gemma-4-31b-it:free"
+  - provider: "custom"
+    model: "gemma4:31b-cloud"
+    base_url: "http://ollama:11434/v1"
+    api_mode: "chat_completions"
+  - provider: "custom"
+    model: "gemma4:e4b"
+    base_url: "http://ollama:11434/v1"
+    api_mode: "chat_completions"
+
+discord:
+  require_mention: true
+
+# dashboard:
+#   basic_auth:
+#     username: "admin"
+#     password_hash: "scrypt$16384$8$1$bxEtJFvT1IWWyHc5h1viCg==$NYYGppPzzgqS8NG5AXmOkltyOARpfH1l6IuddeoSpxQ="
+plugins:
+  enabled:
+    - observability/langfuse
+
+mcp_servers:
+  searxng:
+    command: "/opt/data/node_modules/.bin/mcp-searxng"
+    args: []
+    env:
+      SEARXNG_URL: "http://searxng:8080/"
+
+  docling:
+    command: "/opt/data/docling-mcp-venv/bin/docling-mcp-server"
+    args: ["--transport", "stdio"]
+    env:
+      DOCLING_SERVICE_URL: "http://docling:5001"
+      DOCLING_SERVICE_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_CONVERSION_MODE: "remote"
+      DOCLING_FALLBACK_TO_LOCAL: "false"

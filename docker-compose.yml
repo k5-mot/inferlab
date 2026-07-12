@@ -1,0 +1,9 @@
+name: ${STACK_NAME:-inferlab}
+
+include:
+  - ./common/docker-compose.yml
+  - ./inference/docker-compose.yml
+  - ./webui/docker-compose.yml
+  - ./storage/docker-compose.yml
+  - ./ai-agent/docker-compose.yml
+  - ./o11y/docker-compose.yml

@@ -1,0 +1,26 @@
+services:
+  couchdb:
+    image: docker.io/library/couchdb:3.5.2.1
+    container_name: couchdb
+    profiles:
+      - obsidian
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-obsidian}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-sk-obsidian-db-key}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - ./couchdb/local.ini:/opt/couchdb/etc/local.ini
+    ports:
+      - 5984:5984
+    restart: always
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -s -u $${COUCHDB_USER}:$${COUCHDB_PASSWORD} http://127.0.0.1:5984/_up"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  couchdb_data:
