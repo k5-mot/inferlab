@@ -33,6 +33,7 @@
     - https://github.com/nextcloud/docker#base-version---apache
     - MariaDB (docker.io/library/mariadb:12.3.2-noble)
     - Redis (docker.io/library/redis:8.8.0-trixie)
+  - OIKB (ghcr.io/open-webui/oikb:0.3.6)
 - `ai-agent/docker-compose.yml`
   - Hermes-Agent (docker.io/nousresearch/hermes-agent:v2026.7.7.2)
 - `o11y/docker-compose.yml`

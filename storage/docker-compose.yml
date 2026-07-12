@@ -67,6 +67,39 @@ services:
     networks:
       - llm-internal
 
+  oikb:
+    image: ghcr.io/open-webui/oikb:0.3.6
+    container_name: oikb
+    restart: unless-stopped
+    profiles:
+      - storage
+    command:
+      - daemon
+      - --config
+      - /app/.oikb.yaml
+    environment:
+      OPEN_WEBUI_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+      OIKB_API_KEY: ${OIKB_API_KEY:-}
+      LOG_FORMAT: ${OIKB_LOG_FORMAT:-json}
+      NEXTCLOUD_URL: ${OIKB_NEXTCLOUD_URL:-http://nextcloud}
+      NEXTCLOUD_USER: ${OIKB_NEXTCLOUD_USER:-${NEXTCLOUD_ADMIN_USER:-admin}}
+      NEXTCLOUD_PASSWORD: ${OIKB_NEXTCLOUD_PASSWORD:-${NEXTCLOUD_ADMIN_PASSWORD:-admin}}
+      NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-replace-with-openwebui-kb-id}
+      OIKB_NEXTCLOUD_SOURCE: ${OIKB_NEXTCLOUD_SOURCE:-/nextcloud/data/admin/files/Documents}
+      OIKB_NEXTCLOUD_INTERVAL: ${OIKB_NEXTCLOUD_INTERVAL:-1h}
+    ports:
+      - "${OIKB_HOST_PORT:-31013}:8080"
+    volumes:
+      - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
+      - nextcloud:/nextcloud:ro
+    networks:
+      - llm-public
+      - llm-internal
+    depends_on:
+      nextcloud:
+        condition: service_started
+
 volumes:
   nextcloud:
   nextcloud-mariadb:
