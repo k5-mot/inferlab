@@ -1,6 +1,6 @@
 services:
   bookstack:
-    image: lscr.io/linuxserver/bookstack:latest
+    image: lscr.io/linuxserver/bookstack:26.05.2
     container_name: bookstack
     restart: unless-stopped
     profiles:
@@ -26,7 +26,7 @@ services:
         condition: service_started
 
   bookstack-mariadb:
-    image: lscr.io/linuxserver/mariadb:latest
+    image: lscr.io/linuxserver/mariadb:11.4.12
     container_name: bookstack-mariadb
     restart: unless-stopped
     profiles:

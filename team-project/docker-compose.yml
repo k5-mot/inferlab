@@ -1,6 +1,6 @@
 services:
   plane-web:
-    image: makeplane/plane-frontend:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-frontend:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-web
     restart: unless-stopped
     profiles:
@@ -14,7 +14,7 @@ services:
         condition: service_started
 
   plane-space:
-    image: makeplane/plane-space:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-space:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-space
     restart: unless-stopped
     profiles:
@@ -26,7 +26,7 @@ services:
         condition: service_started
 
   plane-admin:
-    image: makeplane/plane-admin:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-admin:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-admin
     restart: unless-stopped
     profiles:
@@ -38,7 +38,7 @@ services:
         condition: service_started
 
   plane-api:
-    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-api
     restart: unless-stopped
     profiles:
@@ -81,7 +81,7 @@ services:
         condition: service_started
 
   plane-worker:
-    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-worker
     restart: unless-stopped
     profiles:
@@ -110,7 +110,7 @@ services:
         condition: service_started
 
   plane-beat-worker:
-    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-beat-worker
     restart: unless-stopped
     profiles:
@@ -138,7 +138,7 @@ services:
         condition: service_started
 
   plane-migrator:
-    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-migrator
     restart: "no"
     profiles:
@@ -163,7 +163,7 @@ services:
         condition: service_started
 
   plane-live:
-    image: makeplane/plane-live:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-live:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-live
     restart: unless-stopped
     profiles:
@@ -172,7 +172,7 @@ services:
       - internalnw
 
   plane-proxy:
-    image: makeplane/plane-proxy:${PLANE_IMAGE_TAG:-stable}
+    image: makeplane/plane-proxy:${PLANE_IMAGE_TAG:-v1.3.1}
     container_name: plane-proxy
     restart: unless-stopped
     profiles:
@@ -241,7 +241,7 @@ services:
       - internalnw
 
   plane-minio:
-    image: docker.io/minio/minio:latest
+    image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: plane-minio
     restart: unless-stopped
     profiles:

@@ -65,7 +65,7 @@ services:
       - internalnw
 
   zulip-memcached:
-    image: docker.io/library/memcached:alpine
+    image: docker.io/library/memcached:1.6.45-alpine
     container_name: zulip-memcached
     restart: unless-stopped
     profiles:
@@ -100,7 +100,7 @@ services:
       - internalnw
 
   zulip-redis:
-    image: docker.io/library/redis:alpine
+    image: docker.io/library/redis:8.8.0-alpine
     container_name: zulip-redis
     restart: unless-stopped
     profiles:
