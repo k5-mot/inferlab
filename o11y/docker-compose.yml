@@ -73,7 +73,7 @@ services:
       AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_KEYCLOAK_CLIENT_SECRET:-sk-langfuse-secret-key}
       AUTH_KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:30000/realms/inferlab}
     networks:
-      - llm-internal
+      - internalnw
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3030/api/health" ]
       interval: 5s
@@ -109,8 +109,7 @@ services:
       # - 3000:3000
       - "${LANGFUSE_HOST_PORT:-30001}:3000"
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3000/api/public/health" ]
       interval: 5s
@@ -133,7 +132,7 @@ services:
     #   - 127.0.0.1:8123:8123
     #   - 127.0.0.1:9000:9000
     networks:
-      - llm-internal
+      - internalnw
     volumes:
       - langfuse_clickhouse_data:/var/lib/clickhouse
       - langfuse_clickhouse_logs:/var/log/clickhouse-server
@@ -161,7 +160,7 @@ services:
     #   - 9090:9000
     #   - 127.0.0.1:9091:9001
     networks:
-      - llm-internal
+      - internalnw
     volumes:
       - langfuse_minio_data:/data
     healthcheck:
@@ -185,7 +184,7 @@ services:
     # ports:
     #   - 127.0.0.1:6379:6379
     networks:
-      - llm-internal
+      - internalnw
     volumes:
       - langfuse_redis_data:/data
     healthcheck:
@@ -214,7 +213,7 @@ services:
     # ports:
     #   - 127.0.0.1:5432:5432
     networks:
-      - llm-internal
+      - internalnw
     volumes:
       - langfuse_postgres_data:/var/lib/postgresql/data
 
@@ -226,5 +225,4 @@ volumes:
   langfuse_postgres_data:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

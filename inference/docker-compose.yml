@@ -24,8 +24,7 @@ services:
     volumes:
       - ./litellm/config-ollama.yaml:/app/config.yaml:ro
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
 
   ollama:
     image: docker.io/ollama/ollama:0.31.2
@@ -42,7 +41,7 @@ services:
     volumes:
       - ollama-cache:/root/.ollama
     networks:
-      - llm-internal
+      - internalnw
 
   tei-embedding:
     image: ghcr.io/huggingface/text-embeddings-inference:1.9.3
@@ -62,7 +61,7 @@ services:
     volumes:
       - tei-cache:/data
     networks:
-      - llm-internal
+      - internalnw
 
   tei-reranking:
     image: ghcr.io/huggingface/text-embeddings-inference:1.9.3
@@ -82,12 +81,11 @@ services:
     volumes:
       - tei-cache:/data
     networks:
-      - llm-internal
+      - internalnw
 
 volumes:
   ollama-cache:
   tei-cache:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

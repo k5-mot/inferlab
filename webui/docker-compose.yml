@@ -40,8 +40,7 @@ services:
     volumes:
       - open-webui-data:/app/backend/data
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
     depends_on:
       litellm:
         condition: service_started
@@ -69,7 +68,7 @@ services:
     volumes:
       - docling-data:/data
     networks:
-      - llm-internal
+      - internalnw
 
   searxng:
     image: docker.io/searxng/searxng:2026.7.11-62a1ab7ed
@@ -80,7 +79,7 @@ services:
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
-      - llm-internal
+      - internalnw
 
   voicevox_engine:
     image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
@@ -91,7 +90,7 @@ services:
     ports:
       - "${VOICEVOX_ENGINE_HOST_PORT:-50021}:50021"
     networks:
-      - llm-internal
+      - internalnw
 
   voicevox-openai-tts:
     image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0
@@ -105,7 +104,7 @@ services:
     ports:
       - "${VOICEVOX_OPENAI_TTS_HOST_PORT:-50022}:8000"
     networks:
-      - llm-internal
+      - internalnw
     depends_on:
       voicevox_engine:
         condition: service_started
@@ -121,7 +120,7 @@ services:
       - qdrant-snapshots:/qdrant/snapshots
       - ./qdrant/config.yaml:/qdrant/config/production.yaml:ro
     networks:
-      - llm-internal
+      - internalnw
 
   open-webui-computer:
     image: ghcr.io/open-webui/computer:0.9.4
@@ -130,7 +129,7 @@ services:
     profiles:
       - webui
     networks:
-      - llm-internal
+      - internalnw
 
 volumes:
   open-webui-data:
@@ -139,5 +138,4 @@ volumes:
   qdrant-snapshots:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

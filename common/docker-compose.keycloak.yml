@@ -37,8 +37,7 @@ services:
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import-template/inferlab-realm.json:ro
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
     healthcheck:
       test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3" ]
       interval: 30s
@@ -60,7 +59,7 @@ services:
     volumes:
       - keycloak-postgres-data:/var/lib/postgresql
     networks:
-      - llm-internal
+      - internalnw
     healthcheck:
       test:
         - CMD-SHELL
@@ -74,5 +73,4 @@ volumes:
   keycloak-postgres-data:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

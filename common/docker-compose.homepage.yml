@@ -12,12 +12,10 @@ services:
     volumes:
       - homepage-config:/app/config
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
 
 volumes:
   homepage-config:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

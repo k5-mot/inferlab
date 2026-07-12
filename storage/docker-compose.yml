@@ -30,8 +30,7 @@ services:
       - ./nextcloud/hooks/post-installation:/docker-entrypoint-hooks.d/post-installation:ro
       - ./nextcloud/hooks/before-starting:/docker-entrypoint-hooks.d/before-starting:ro
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
 
   nextcloud-mariadb:
     image: docker.io/library/mariadb:12.3.2-noble
@@ -48,7 +47,7 @@ services:
     volumes:
       - nextcloud-mariadb:/var/lib/mysql
     networks:
-      - llm-internal
+      - internalnw
     healthcheck:
       test:
         - CMD-SHELL
@@ -65,7 +64,7 @@ services:
     profiles:
       - storage
     networks:
-      - llm-internal
+      - internalnw
 
   oikb:
     image: ghcr.io/open-webui/oikb:0.3.6
@@ -94,8 +93,7 @@ services:
       - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
       - nextcloud:/nextcloud:ro
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
     depends_on:
       nextcloud:
         condition: service_started
@@ -105,5 +103,4 @@ volumes:
   nextcloud-mariadb:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

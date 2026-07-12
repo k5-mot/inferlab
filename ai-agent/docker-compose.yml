@@ -24,12 +24,10 @@ services:
     volumes:
       - hermes-agent-data:/opt/data
     networks:
-      - llm-public
-      - llm-internal
+      - internalnw
 
 volumes:
   hermes-agent-data:
 
 networks:
-  llm-public:
-  llm-internal:
+  internalnw:

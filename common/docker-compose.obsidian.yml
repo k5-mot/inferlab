@@ -12,6 +12,8 @@ services:
       - ./couchdb/local.ini:/opt/couchdb/etc/local.ini
     ports:
       - 5984:5984
+    networks:
+      - internalnw
     restart: always
     healthcheck:
       test:
@@ -24,3 +26,6 @@ services:
 
 volumes:
   couchdb_data:
+
+networks:
+  internalnw:
