@@ -26,7 +26,24 @@ $Images = @(
     "docker.io/langfuse/langfuse-worker:3.212.0",
     "docker.io/langfuse/langfuse:3.212.0",
     "docker.io/clickhouse/clickhouse-server:25.8.28.1",
-    "cgr.dev/chainguard/minio:0.20260604"
+    "cgr.dev/chainguard/minio:0.20260604",
+    "makeplane/plane-frontend:stable",
+    "makeplane/plane-space:stable",
+    "makeplane/plane-admin:stable",
+    "makeplane/plane-backend:stable",
+    "makeplane/plane-live:stable",
+    "makeplane/plane-proxy:stable",
+    "docker.io/library/postgres:15.7-alpine",
+    "docker.io/valkey/valkey:7.2.11-alpine",
+    "docker.io/library/rabbitmq:3.13.6-management-alpine",
+    "docker.io/minio/minio:latest",
+    "ghcr.io/zulip/zulip-server:12.1-0",
+    "zulip/zulip-postgresql:14",
+    "docker.io/library/memcached:alpine",
+    "docker.io/library/rabbitmq:4.1",
+    "docker.io/library/redis:alpine",
+    "lscr.io/linuxserver/bookstack:latest",
+    "lscr.io/linuxserver/mariadb:latest"
 )
 
 <#

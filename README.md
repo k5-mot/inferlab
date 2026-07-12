@@ -52,3 +52,18 @@
   - PostgreSQL
     - 候補1： docker.io/library/postgres:18.4-trixie
     - 候補2： docker.io/library/postgres:17.10-trixie
+- `team-project/docker-compose.yml`
+  - Plane (makeplane/plane-*:stable)
+  - PostgreSQL (docker.io/library/postgres:15.7-alpine)
+  - Valkey (docker.io/valkey/valkey:7.2.11-alpine)
+  - RabbitMQ (docker.io/library/rabbitmq:3.13.6-management-alpine)
+  - MinIO (docker.io/minio/minio:latest)
+- `team-chat/docker-compose.yml`
+  - Zulip (ghcr.io/zulip/zulip-server:12.1-0)
+  - PostgreSQL (zulip/zulip-postgresql:14)
+  - Memcached (docker.io/library/memcached:alpine)
+  - RabbitMQ (docker.io/library/rabbitmq:4.1)
+  - Redis (docker.io/library/redis:alpine)
+- `team-wiki/docker-compose.yml`
+  - BookStack (lscr.io/linuxserver/bookstack:latest)
+  - MariaDB (lscr.io/linuxserver/mariadb:latest)

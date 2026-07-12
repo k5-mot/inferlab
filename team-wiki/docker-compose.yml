@@ -1,0 +1,52 @@
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:latest
+    container_name: bookstack
+    restart: unless-stopped
+    profiles:
+      - team-wiki
+    environment:
+      PUID: ${BOOKSTACK_PUID:-1000}
+      PGID: ${BOOKSTACK_PGID:-1000}
+      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
+      APP_URL: ${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32003}
+      DB_HOST: bookstack-mariadb
+      DB_PORT: "3306"
+      DB_USERNAME: ${BOOKSTACK_DB_USER:-bookstack}
+      DB_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
+      DB_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
+    ports:
+      - "${BOOKSTACK_HOST_PORT:-32003}:80"
+    volumes:
+      - bookstack-config:/config
+    networks:
+      - internalnw
+    depends_on:
+      bookstack-mariadb:
+        condition: service_started
+
+  bookstack-mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: bookstack-mariadb
+    restart: unless-stopped
+    profiles:
+      - team-wiki
+    environment:
+      PUID: ${BOOKSTACK_PUID:-1000}
+      PGID: ${BOOKSTACK_PGID:-1000}
+      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
+      MYSQL_ROOT_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD:-bookstack_root_password}
+      MYSQL_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
+      MYSQL_USER: ${BOOKSTACK_DB_USER:-bookstack}
+      MYSQL_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
+    volumes:
+      - bookstack-mariadb-config:/config
+    networks:
+      - internalnw
+
+volumes:
+  bookstack-config:
+  bookstack-mariadb-config:
+
+networks:
+  internalnw:

@@ -7,3 +7,6 @@ include:
   - ./storage/docker-compose.yml
   - ./ai-agent/docker-compose.yml
   - ./o11y/docker-compose.yml
+  - ./team-project/docker-compose.yml
+  - ./team-chat/docker-compose.yml
+  - ./team-wiki/docker-compose.yml
