@@ -49,20 +49,35 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
     - MariaDB (docker.io/library/mariadb:12.3.2-noble)
     - Redis (docker.io/library/redis:8.8.0-trixie)
   - OIKB (ghcr.io/open-webui/oikb:0.3.6)
-- 【TODO】 `13-automation/docker-compose.yml`
-  - Dify関連コンテナ
+- `13-automation/docker-compose.yml`
+  - Dify-API (docker.io/langgenius/dify-api:1.16.0-rc1)
+    - https://github.com/langgenius/dify/blob/main/docker/docker-compose.yaml
+    - 最小構成ではない：init_permissions / worker_beat / ssrf_proxy / nginx が不足、weaviate は qdrant で代替
+  - Dify-Worker (docker.io/langgenius/dify-api:1.16.0-rc1)
+  - Dify-Web (docker.io/langgenius/dify-web:1.16.0-rc1)
+  - Dify-Plugin-Daemon (docker.io/langgenius/dify-plugin-daemon:0.6.3-local)
+  - Dify-Sandbox (docker.io/langgenius/dify-sandbox:0.2.15)
+  - Dify-Agent-Backend (docker.io/langgenius/dify-agent-backend:1.16.0-rc1)
+  - Dify-Agent-Local-Sandbox (docker.io/langgenius/dify-agent-local-sandbox:1.16.0-rc1)
+  - PostgreSQL (docker.io/library/postgres:15-alpine)
+  - Redis (docker.io/library/redis:8.8.0-alpine)
+  - qdrant (docker.io/qdrant/qdrant:v1.18.2)
+  - OAuth2 Proxy (quay.io/oauth2-proxy/oauth2-proxy:v7.13.0)
 - 【TODO】 `20-team-chat/docker-compose.yml`
   - Zulip (ghcr.io/zulip/zulip-server:12.1-0)
   - PostgreSQL (zulip/zulip-postgresql:14)
   - Memcached (docker.io/library/memcached:1.6.45-alpine)
   - RabbitMQ (docker.io/library/rabbitmq:4.1)
   - Redis (docker.io/library/redis:8.8.0-alpine)
-- 【TODO】 `21-team-project/docker-compose.yml`
+- `21-team-project/docker-compose.yml`
   - Plane (makeplane/plane-*:v1.3.1)
+    - https://github.com/makeplane/plane/blob/preview/docker-compose.yml
+    - 最小構成の必須サービスは揃っている
   - PostgreSQL (docker.io/library/postgres:15.7-alpine)
   - Valkey (docker.io/valkey/valkey:7.2.11-alpine)
   - RabbitMQ (docker.io/library/rabbitmq:3.13.6-management-alpine)
   - MinIO (docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z)
+  - OAuth2 Proxy (quay.io/oauth2-proxy/oauth2-proxy:v7.13.0)
 - 【TODO】 `22-team-wiki/docker-compose.yml`
   - BookStack (lscr.io/linuxserver/bookstack:26.05.2)
   - MariaDB (lscr.io/linuxserver/mariadb:11.4.12)
