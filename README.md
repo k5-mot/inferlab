@@ -1,18 +1,40 @@
 # inferlab
 
+## Usage
+
+```bash
+sudo docker compose --env-file .env --profile common --profile infra --profile inference --profile webui --profile storage --profile llmops up -d --remove-orphans
+```
+
 ## Services
 
-- `inference/docker-compose.yml`
+- `00-common/docker-compose.yml`
+  - Keycloak (quay.io/keycloak/keycloak:26.7.0)
+    - https://www.keycloak.org/server/containers
+    - PostgreSQL (docker.io/library/postgres:18.4-trixie)
+  - Homepage (ghcr.io/gethomepage/homepage:v1.13.2)
+- `01-infra/docker-compose.yml`
+  - Cloudflare (docker.io/cloudflare/cloudflared:2026.7.1)
+  - CouchDB for Obsidian (docker.io/library/couchdb:3.5.2.1)
+- `10-inference/docker-compose.yml`
   - LiteLLM (docker.io/litellm/litellm:1.92.0)
-    - Ollama
-    - OpenRouter
-    - Google AI Studio
+    - Ollama (https://ollama.com/search?c=cloud)
+    - OpenRouter (https://openrouter.ai/openrouter/free)
+      - nvidia/nemotron-3-ultra-550b-a55b:free
+      - google/gemma-4-31b-it:free
+      - openrouter/free
+    - Google AI Studio (https://aistudio.google.com/)
+      - gemini-3.5-flash
+      - gemma-4-31b-it
+      - gemini-embedding-2
   - Ollama (docker.io/ollama/ollama:0.31.2)
-    - Gemma4:31B
+    - glm-5.2:cloud
+    - gemma4:31b-cloud
   - HuggingFace Text Embeddings Inference (ghcr.io/huggingface/text-embeddings-inference:1.9.3)
     - https://huggingface.co/cl-nagoya/ruri-v3-310m
     - https://huggingface.co/cl-nagoya/ruri-v3-reranker-310m
-- `webui/docker-compose.yml`
+  - Hermes-Agent (docker.io/nousresearch/hermes-agent:v2026.7.7.2)
+- `11-webui/docker-compose.yml`
   - Open-WebUI (ghcr.io/open-webui/open-webui:0.10.2-slim)
     - 候補1： ghcr.io/k5-mot/docling-serve-jp:v1.26.0
     - 候補2： quay.io/docling-project/docling-serve:v1.26.0
@@ -21,28 +43,37 @@
   - voicevox-openai-tts (ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0)
   - qdrant (docker.io/qdrant/qdrant:v1.18.2)
   - Open-WebUI-Computer (ghcr.io/open-webui/computer:0.9.4)
-- `common/docker-compose.yml`
-  - Keycloak (quay.io/keycloak/keycloak:26.7.0)
-    - https://www.keycloak.org/server/containers
-    - PostgreSQL (docker.io/library/postgres:18.4-trixie)
-  - Homepage (ghcr.io/gethomepage/homepage:v1.13.2)
-  - Cloudflare (docker.io/cloudflare/cloudflared:2026.7.1)
-  - CouchDB for Obsidian (docker.io/library/couchdb:3.5.2.1)
-- `storage/docker-compose.yml`
+- `12-storage/docker-compose.yml`
   - Nextcloud (docker.io/library/nextcloud:34.0.1-apache)
     - https://github.com/nextcloud/docker#base-version---apache
     - MariaDB (docker.io/library/mariadb:12.3.2-noble)
     - Redis (docker.io/library/redis:8.8.0-trixie)
   - OIKB (ghcr.io/open-webui/oikb:0.3.6)
-- `ai-agent/docker-compose.yml`
-  - Hermes-Agent (docker.io/nousresearch/hermes-agent:v2026.7.7.2)
-- `o11y/docker-compose.yml`
+- 【TODO】 `13-automation/docker-compose.yml`
+  - Dify関連コンテナ
+- 【TODO】 `20-team-chat/docker-compose.yml`
+  - Zulip (ghcr.io/zulip/zulip-server:12.1-0)
+  - PostgreSQL (zulip/zulip-postgresql:14)
+  - Memcached (docker.io/library/memcached:1.6.45-alpine)
+  - RabbitMQ (docker.io/library/rabbitmq:4.1)
+  - Redis (docker.io/library/redis:8.8.0-alpine)
+- 【TODO】 `21-team-project/docker-compose.yml`
+  - Plane (makeplane/plane-*:v1.3.1)
+  - PostgreSQL (docker.io/library/postgres:15.7-alpine)
+  - Valkey (docker.io/valkey/valkey:7.2.11-alpine)
+  - RabbitMQ (docker.io/library/rabbitmq:3.13.6-management-alpine)
+  - MinIO (docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z)
+- 【TODO】 `22-team-wiki/docker-compose.yml`
+  - BookStack (lscr.io/linuxserver/bookstack:26.05.2)
+  - MariaDB (lscr.io/linuxserver/mariadb:11.4.12)
+- `51-llmops/docker-compose.yml`
   - https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
   - Langfuse-Worker (docker.io/langfuse/langfuse-worker:3.212.0)
   - Langfuse (docker.io/langfuse/langfuse:3.212.0)
   - ClickHouse (docker.io/clickhouse/clickhouse-server:25.8.28.1)
   - MinIO
     - 候補1： cgr.dev/chainguard/minio:0.20260604
+    - 候補1： cgr.dev/chainguard/minio:latest
     - 候補2： docker.io/pgsty/minio:RELEASE.2026-06-18T00-00-00Z
     - 候補3： ghcr.io/seaweedfs/seaweedfs:4.39.0
     - 候補4： docker.io/chrislusf/seaweedfs:4.39
@@ -52,18 +83,3 @@
   - PostgreSQL
     - 候補1： docker.io/library/postgres:18.4-trixie
     - 候補2： docker.io/library/postgres:17.10-trixie
-- `team-project/docker-compose.yml`
-  - Plane (makeplane/plane-*:v1.3.1)
-  - PostgreSQL (docker.io/library/postgres:15.7-alpine)
-  - Valkey (docker.io/valkey/valkey:7.2.11-alpine)
-  - RabbitMQ (docker.io/library/rabbitmq:3.13.6-management-alpine)
-  - MinIO (docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z)
-- `team-chat/docker-compose.yml`
-  - Zulip (ghcr.io/zulip/zulip-server:12.1-0)
-  - PostgreSQL (zulip/zulip-postgresql:14)
-  - Memcached (docker.io/library/memcached:1.6.45-alpine)
-  - RabbitMQ (docker.io/library/rabbitmq:4.1)
-  - Redis (docker.io/library/redis:8.8.0-alpine)
-- `team-wiki/docker-compose.yml`
-  - BookStack (lscr.io/linuxserver/bookstack:26.05.2)
-  - MariaDB (lscr.io/linuxserver/mariadb:11.4.12)

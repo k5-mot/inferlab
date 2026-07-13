@@ -1,0 +1,183 @@
+#
+# 参考資料:
+# - LiteLLM
+#   - https://docs.litellm.ai/docs/simple_proxy
+# - vLLM
+#   - https://huggingface.co/Qwen/Qwen3.6-27B-FP8
+#   - https://www.keycloak.org/server/supported-configurations
+#
+
+services:
+  litellm:
+    image: docker.io/litellm/litellm:v1.91.0
+    container_name: ${STACK_NAME:-inferlab}-litellm
+    restart: unless-stopped
+    profiles:
+      - inference
+    command:
+      - --config
+      - /app/config.yaml
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "4000"
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_OTEL_HOST: http://langfuse-web:3000
+    ports:
+      - 31000:4000
+    volumes:
+      - ./litellm/config-litellm.yaml:/app/config.yaml:ro
+    networks:
+      - internal-nw
+    depends_on:
+      ollama:
+        condition: service_healthy
+      vllm-foundation:
+        condition: service_healthy
+      vllm-embedding:
+        condition: service_healthy
+      vllm-reranking:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  vllm-foundation:
+    image: docker.io/vllm/vllm-openai:v0.22.1
+    container_name: ${STACK_NAME:-inferlab}-vllm-foundation
+    restart: unless-stopped
+    profiles:
+      - inference
+    command:
+      - "Qwen/Qwen3.6-27B-FP8"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --dtype
+      - "auto"
+      - --kv-cache-dtype
+      - "fp8"
+      - --max-model-len
+      - "32768"
+      - --max-num-batched-tokens
+      - "4096"
+      - --max-num-seqs
+      - "2"
+      # - --tensor-parallel-size
+      # - "2"
+      - --gpu-memory-utilization
+      - "0.90"
+      # - --chat-template
+      # - "chat_template.jinja"
+      - --enable-auto-tool-choice
+      - --enable-prefix-caching
+      - --tool-call-parser
+      - "qwen3_coder"
+      - --reasoning-parser
+      - "qwen3"
+      - --served-model-name
+      - "Qwen3.6-27B-FP8:27B"
+    volumes:
+      - vllm-cache:/root/.cache
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+  vllm-embedding:
+    image: docker.io/vllm/vllm-openai-cpu:v0.22.1
+    container_name: ${STACK_NAME:-inferlab}-vllm-embedding
+    restart: unless-stopped
+    profiles:
+      - inference
+    command:
+      - "cl-nagoya/ruri-v3-310m"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "embed"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
+      - --served-model-name
+      - "ruri-v3:310m"
+    volumes:
+      - vllm-cache:/root/.cache
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+
+  vllm-reranking:
+    image: docker.io/vllm/vllm-openai-cpu:v0.22.1
+    container_name: ${STACK_NAME:-inferlab}-vllm-reranking
+    restart: unless-stopped
+    profiles:
+      - inference
+    command:
+      - "cl-nagoya/ruri-v3-reranker-310m"
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --convert
+      - "classify"
+      - --dtype
+      - "float32"
+      - --gpu-memory-utilization
+      - "0.05"
+      - --served-model-name
+      - "ruri-v3-reranker:310m"
+    volumes:
+      - vllm-cache:/root/.cache
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+
+volumes:
+  vllm-cache:
+
+networks:
+  internal-nw:

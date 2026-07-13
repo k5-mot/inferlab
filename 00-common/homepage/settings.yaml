@@ -1,0 +1,27 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+
+# providers:
+#   openweathermap: openweathermapapikey
+#   weatherapi: weatherapiapikey
+
+layout:
+  - 00-common:
+      style: row
+      columns: 4
+  - 01-infra:
+      style: row
+      columns: 4
+  - 10-inference:
+      style: row
+      columns: 4
+  - 11-webui:
+      style: row
+      columns: 4
+  - 12-storage:
+      style: row
+      columns: 4
+  - 51-llmops:
+      style: row
+      columns: 4

@@ -1,0 +1,269 @@
+services:
+  plane-web:
+    image: makeplane/plane-frontend:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-web
+    restart: unless-stopped
+    profiles:
+      - team-project
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${PLANE_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32001}
+    networks:
+      - internalnw
+    depends_on:
+      plane-api:
+        condition: service_started
+
+  plane-space:
+    image: makeplane/plane-space:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-space
+    restart: unless-stopped
+    profiles:
+      - team-project
+    networks:
+      - internalnw
+    depends_on:
+      plane-api:
+        condition: service_started
+
+  plane-admin:
+    image: makeplane/plane-admin:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-admin
+    restart: unless-stopped
+    profiles:
+      - team-project
+    networks:
+      - internalnw
+    depends_on:
+      plane-api:
+        condition: service_started
+
+  plane-api:
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-api
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - ./bin/docker-entrypoint-api.sh
+    environment:
+      WEB_URL: ${PLANE_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32001}
+      DEBUG: "0"
+      DJANGO_SETTINGS_MODULE: plane.settings.production
+      SECRET_KEY: ${PLANE_SECRET_KEY:-sk-plane-secret-key}
+      POSTGRES_USER: ${PLANE_POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${PLANE_POSTGRES_PASSWORD:-plane_password}
+      POSTGRES_DB: ${PLANE_POSTGRES_DB:-plane}
+      POSTGRES_HOST: plane-postgres
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: plane-redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: plane-rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${PLANE_RABBITMQ_USER:-plane}
+      RABBITMQ_PASSWORD: ${PLANE_RABBITMQ_PASSWORD:-plane_password}
+      RABBITMQ_VHOST: ${PLANE_RABBITMQ_VHOST:-plane}
+      USE_MINIO: "1"
+      AWS_ACCESS_KEY_ID: ${PLANE_MINIO_ROOT_USER:-plane}
+      AWS_SECRET_ACCESS_KEY: ${PLANE_MINIO_ROOT_PASSWORD:-plane_password}
+      AWS_S3_ENDPOINT_URL: http://plane-minio:9000
+      AWS_S3_BUCKET_NAME: ${PLANE_S3_BUCKET_NAME:-uploads}
+      FILE_SIZE_LIMIT: ${PLANE_FILE_SIZE_LIMIT:-5242880}
+    networks:
+      - internalnw
+    depends_on:
+      plane-postgres:
+        condition: service_started
+      plane-redis:
+        condition: service_started
+      plane-rabbitmq:
+        condition: service_started
+      plane-minio:
+        condition: service_started
+
+  plane-worker:
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-worker
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - ./bin/docker-entrypoint-worker.sh
+    environment:
+      WEB_URL: ${PLANE_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32001}
+      SECRET_KEY: ${PLANE_SECRET_KEY:-sk-plane-secret-key}
+      POSTGRES_USER: ${PLANE_POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${PLANE_POSTGRES_PASSWORD:-plane_password}
+      POSTGRES_DB: ${PLANE_POSTGRES_DB:-plane}
+      POSTGRES_HOST: plane-postgres
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: plane-redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: plane-rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${PLANE_RABBITMQ_USER:-plane}
+      RABBITMQ_PASSWORD: ${PLANE_RABBITMQ_PASSWORD:-plane_password}
+      RABBITMQ_VHOST: ${PLANE_RABBITMQ_VHOST:-plane}
+    networks:
+      - internalnw
+    depends_on:
+      plane-api:
+        condition: service_started
+
+  plane-beat-worker:
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-beat-worker
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - ./bin/docker-entrypoint-beat.sh
+    environment:
+      SECRET_KEY: ${PLANE_SECRET_KEY:-sk-plane-secret-key}
+      POSTGRES_USER: ${PLANE_POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${PLANE_POSTGRES_PASSWORD:-plane_password}
+      POSTGRES_DB: ${PLANE_POSTGRES_DB:-plane}
+      POSTGRES_HOST: plane-postgres
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: plane-redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: plane-rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: ${PLANE_RABBITMQ_USER:-plane}
+      RABBITMQ_PASSWORD: ${PLANE_RABBITMQ_PASSWORD:-plane_password}
+      RABBITMQ_VHOST: ${PLANE_RABBITMQ_VHOST:-plane}
+    networks:
+      - internalnw
+    depends_on:
+      plane-api:
+        condition: service_started
+
+  plane-migrator:
+    image: makeplane/plane-backend:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-migrator
+    restart: "no"
+    profiles:
+      - team-project
+    command:
+      - ./bin/docker-entrypoint-migrator.sh
+    environment:
+      SECRET_KEY: ${PLANE_SECRET_KEY:-sk-plane-secret-key}
+      POSTGRES_USER: ${PLANE_POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${PLANE_POSTGRES_PASSWORD:-plane_password}
+      POSTGRES_DB: ${PLANE_POSTGRES_DB:-plane}
+      POSTGRES_HOST: plane-postgres
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: plane-redis
+      REDIS_PORT: "6379"
+    networks:
+      - internalnw
+    depends_on:
+      plane-postgres:
+        condition: service_started
+      plane-redis:
+        condition: service_started
+
+  plane-live:
+    image: makeplane/plane-live:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-live
+    restart: unless-stopped
+    profiles:
+      - team-project
+    networks:
+      - internalnw
+
+  plane-proxy:
+    image: makeplane/plane-proxy:${PLANE_IMAGE_TAG:-v1.3.1}
+    container_name: plane-proxy
+    restart: unless-stopped
+    profiles:
+      - team-project
+    environment:
+      FILE_SIZE_LIMIT: ${PLANE_FILE_SIZE_LIMIT:-5242880}
+      BUCKET_NAME: ${PLANE_S3_BUCKET_NAME:-uploads}
+    ports:
+      - "${PLANE_HOST_PORT:-32001}:80"
+    networks:
+      - internalnw
+    depends_on:
+      plane-web:
+        condition: service_started
+      plane-api:
+        condition: service_started
+      plane-space:
+        condition: service_started
+      plane-admin:
+        condition: service_started
+
+  plane-postgres:
+    image: docker.io/library/postgres:15.7-alpine
+    container_name: plane-postgres
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - postgres
+      - -c
+      - max_connections=1000
+    environment:
+      POSTGRES_USER: ${PLANE_POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${PLANE_POSTGRES_PASSWORD:-plane_password}
+      POSTGRES_DB: ${PLANE_POSTGRES_DB:-plane}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - plane-postgres-data:/var/lib/postgresql/data
+    networks:
+      - internalnw
+
+  plane-redis:
+    image: docker.io/valkey/valkey:7.2.11-alpine
+    container_name: plane-redis
+    restart: unless-stopped
+    profiles:
+      - team-project
+    volumes:
+      - plane-redis-data:/data
+    networks:
+      - internalnw
+
+  plane-rabbitmq:
+    image: docker.io/library/rabbitmq:3.13.6-management-alpine
+    container_name: plane-rabbitmq
+    restart: unless-stopped
+    profiles:
+      - team-project
+    environment:
+      RABBITMQ_DEFAULT_USER: ${PLANE_RABBITMQ_USER:-plane}
+      RABBITMQ_DEFAULT_PASS: ${PLANE_RABBITMQ_PASSWORD:-plane_password}
+      RABBITMQ_DEFAULT_VHOST: ${PLANE_RABBITMQ_VHOST:-plane}
+    volumes:
+      - plane-rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - internalnw
+
+  plane-minio:
+    image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: plane-minio
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - server
+      - /export
+      - --console-address
+      - ":9090"
+    environment:
+      MINIO_ROOT_USER: ${PLANE_MINIO_ROOT_USER:-plane}
+      MINIO_ROOT_PASSWORD: ${PLANE_MINIO_ROOT_PASSWORD:-plane_password}
+    volumes:
+      - plane-uploads:/export
+    networks:
+      - internalnw
+
+volumes:
+  plane-postgres-data:
+  plane-redis-data:
+  plane-rabbitmq-data:
+  plane-uploads:
+
+networks:
+  internal-nw:

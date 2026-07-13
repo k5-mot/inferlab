@@ -1,0 +1,136 @@
+{
+    "realm": "${STACK_NAME:-inferlab}",
+    "enabled": true,
+    "displayName": "${STACK_NAME:-inferlab}",
+    "registrationAllowed": false,
+    "resetPasswordAllowed": true,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "groups": [
+        {
+            "name": "admins",
+            "path": "/admins"
+        },
+        {
+            "name": "builders",
+            "path": "/builders"
+        },
+        {
+            "name": "users",
+            "path": "/users"
+        }
+    ],
+    "clients": [
+        {
+            "clientId": "open-webui",
+            "name": "Open WebUI",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:31100/",
+            "redirectUris": [
+                "http://localhost:31100/oauth/oidc/callback",
+                "http://${PUBLIC_HOST}:31100/oauth/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:31100",
+                "http://${PUBLIC_HOST}:31100"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "langfuse",
+            "name": "Langfuse",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "sk-langfuse-oidc-client-secret-key",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "redirectUris": [
+                "http://localhost:35100/api/auth/callback/keycloak",
+                "http://localhost:35100/*",
+                "http://${PUBLIC_HOST}:35100/api/auth/callback/keycloak",
+                "http://${PUBLIC_HOST}:35100/*"
+            ],
+            "webOrigins": [
+                "http://localhost:35100",
+                "http://${PUBLIC_HOST}:35100"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "nextcloud",
+            "name": "Nextcloud",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "nextcloud-oauth-client-secret-key",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:31012/",
+            "redirectUris": [
+                "http://localhost:31012/apps/user_oidc/code",
+                "http://127.0.0.1:31012/apps/user_oidc/code",
+                "http://${PUBLIC_HOST}:31012/apps/user_oidc/code"
+            ],
+            "webOrigins": [
+                "http://localhost:31012",
+                "http://127.0.0.1:31012",
+                "http://${PUBLIC_HOST}:31012"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        }
+    ]
+}

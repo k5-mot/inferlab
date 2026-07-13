@@ -1,0 +1,14 @@
+defaults:
+  interval: 1h
+  concurrency: 4
+  filter:
+    max-size: 50mb
+
+sources:
+  - name: nextcloud-documents
+    source: "nextcloud:/Documents"
+    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    filter:
+      exclude:
+        - "**/.DS_Store"
+        - "**/Thumbs.db"

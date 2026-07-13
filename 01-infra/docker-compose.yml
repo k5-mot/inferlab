@@ -1,0 +1,63 @@
+services:
+  cloudflare:
+    image: docker.io/cloudflare/cloudflared:2026.6.0
+    container_name: ${STACK_NAME:-inferlab}-cloudflare
+    restart: unless-stopped
+    profiles:
+      - infra
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 127.0.0.1:20241
+      - --protocol
+      - http2
+      - run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:20241", "ready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=01-infra
+      - homepage.name=Cloudflare
+      - homepage.icon=cloudflare.png
+      - homepage.description=Outband_connection
+
+  couchdb:
+    image: docker.io/library/couchdb:3.5.2.1
+    container_name: ${STACK_NAME:-inferlab}-couchdb
+    restart: unless-stopped
+    profiles:
+      - infra
+    ports:
+      - 30100:5984
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-couchdb_user}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-couchdb_password}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - ./couchdb/local.ini:/opt/couchdb/etc/local.ini
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -sf -u "$$COUCHDB_USER:$$COUCHDB_PASSWORD" http://127.0.0.1:5984/_up
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=01-infra
+      - homepage.name=CouchDB
+      - homepage.icon=couchdb.png
+      - homepage.description=Database_for_Obsidian
+
+volumes:
+  couchdb_data:

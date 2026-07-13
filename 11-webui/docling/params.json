@@ -1,0 +1,11 @@
+{
+    "do_ocr": true,
+    "force_ocr": false,
+    "ocr_engine": "tesseract_cli",
+    "ocr_preset": "tesseract",
+    "ocr_lang": [
+        "jpn",
+        "jpn_vert",
+        "eng"
+    ]
+}
