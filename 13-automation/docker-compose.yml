@@ -57,13 +57,14 @@ services:
       OPENDAL_SCHEME: fs
       OPENDAL_FS_ROOT: storage
       VECTOR_STORE: qdrant
-      QDRANT_URL: http://qdrant:6333
+      QDRANT_URL: http://dify-qdrant:6333
       CODE_EXECUTION_ENDPOINT: http://dify-sandbox:8194
       CODE_EXECUTION_API_KEY: dify-sandbox-key
       CODE_EXECUTION_SSL_VERIFY: "true"
       PLUGIN_DAEMON_URL: http://dify-plugin-daemon:5002
       PLUGIN_DIFY_INNER_API_KEY: sk-dify-plugin-inner-api-key
       INNER_API_KEY_FOR_PLUGIN: sk-dify-plugin-inner-api-key
+      AGENT_BACKEND_BASE_URL: http://dify-agent-backend:5050
       MARKETPLACE_ENABLED: "true"
       MARKETPLACE_API_URL: https://marketplace.dify.ai
       MARKETPLACE_URL: https://marketplace.dify.ai
@@ -78,10 +79,14 @@ services:
         condition: service_healthy
       dify-redis:
         condition: service_healthy
+      dify-qdrant:
+        condition: service_healthy
       dify-sandbox:
         condition: service_healthy
       dify-plugin-daemon:
         condition: service_healthy
+      dify-agent-backend:
+        condition: service_started
     healthcheck:
       test:
         - CMD-SHELL
@@ -110,8 +115,20 @@ services:
     networks:
       - internal-nw
     depends_on:
-      dify-api:
+      dify-init-permissions:
+        condition: service_completed_successfully
+      dify-postgres:
         condition: service_healthy
+      dify-redis:
+        condition: service_healthy
+      dify-qdrant:
+        condition: service_healthy
+      dify-sandbox:
+        condition: service_healthy
+      dify-plugin-daemon:
+        condition: service_healthy
+      dify-agent-backend:
+        condition: service_started
     healthcheck:
       test:
         - CMD-SHELL
@@ -279,6 +296,64 @@ services:
       - homepage.icon=sh-dify
       - homepage.description=Automation
 
+  dify-local-sandbox:
+    image: docker.io/langgenius/dify-agent-local-sandbox:1.16.0-rc1
+    container_name: ${STACK_NAME:-inferlab}-dify-local-sandbox
+    restart: unless-stopped
+    profiles:
+      - automation
+    environment:
+      SHELLCTL_AUTH_TOKEN: sk-dify-agent-shellctl-token
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -f http://127.0.0.1:5004/healthz
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=13-automation
+      - homepage.name=Dify-Local-Sandbox
+      - homepage.icon=sh-dify
+      - homepage.description=Automation
+
+  dify-agent-backend:
+    image: docker.io/langgenius/dify-agent-backend:1.16.0-rc1
+    container_name: ${STACK_NAME:-inferlab}-dify-agent-backend
+    restart: unless-stopped
+    profiles:
+      - automation
+    environment:
+      DIFY_AGENT_REDIS_URL: redis://:dify_redis_password@dify-redis:6379/2
+      DIFY_AGENT_REDIS_PREFIX: dify-agent
+      DIFY_AGENT_PLUGIN_DAEMON_URL: http://dify-plugin-daemon:5002
+      DIFY_AGENT_PLUGIN_DAEMON_API_KEY: sk-dify-plugin-daemon-key
+      DIFY_AGENT_INNER_API_URL: http://dify-api:5001
+      DIFY_AGENT_INNER_API_KEY: sk-dify-plugin-inner-api-key
+      DIFY_AGENT_SHELLCTL_ENTRYPOINT: http://dify-local-sandbox:5004
+      DIFY_AGENT_SHELLCTL_AUTH_TOKEN: sk-dify-agent-shellctl-token
+      DIFY_AGENT_STUB_API_BASE_URL: http://dify-agent-backend:5050/agent-stub
+      DIFY_AGENT_SERVER_SECRET_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY
+      DIFY_AGENT_SHUTDOWN_GRACE_SECONDS: 30
+      DIFY_AGENT_RUN_RETENTION_SECONDS: 259200
+    networks:
+      - internal-nw
+    depends_on:
+      dify-redis:
+        condition: service_healthy
+      dify-plugin-daemon:
+        condition: service_healthy
+      dify-local-sandbox:
+        condition: service_healthy
+    labels:
+      - homepage.group=13-automation
+      - homepage.name=Dify-Agent-Backend
+      - homepage.icon=sh-dify
+      - homepage.description=Automation
+
   dify-ssrf-proxy:
     image: docker.io/ubuntu/squid:latest
     container_name: ${STACK_NAME:-inferlab}-dify-ssrf-proxy
@@ -356,6 +431,32 @@ services:
       - homepage.icon=redis.png
       - homepage.description=Inmemory_Database
 
+  dify-qdrant:
+    image: docker.io/qdrant/qdrant:v1.18.2
+    container_name: ${STACK_NAME:-inferlab}-dify-qdrant
+    restart: unless-stopped
+    profiles:
+      - automation
+    volumes:
+      - dify-qdrant-storage:/qdrant/storage
+      - dify-qdrant-snapshots:/qdrant/snapshots
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          bash -c "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q 'HTTP/1.1 200' <&3"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - homepage.group=13-automation
+      - homepage.name=Dify-Qdrant
+      - homepage.icon=qdrant.png
+      - homepage.description=Vector_DB
+
   dify-nginx:
     image: docker.io/library/nginx:latest
     container_name: ${STACK_NAME:-inferlab}-dify-nginx
@@ -397,6 +498,8 @@ volumes:
   dify-sandbox-conf:
   dify-postgres-data:
   dify-redis-data:
+  dify-qdrant-storage:
+  dify-qdrant-snapshots:
 
 networks:
   internal-nw:
