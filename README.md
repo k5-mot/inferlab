@@ -50,19 +50,20 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
     - Redis (docker.io/library/redis:8.8.0-trixie)
   - OIKB (ghcr.io/open-webui/oikb:0.3.6)
 - `13-automation/docker-compose.yml`
-  - Dify-API (docker.io/langgenius/dify-api:1.16.0-rc1)
+  - dify
     - https://github.com/langgenius/dify/blob/main/docker/docker-compose.yaml
-    - 最小構成ではない：init_permissions / worker_beat / ssrf_proxy / nginx が不足、weaviate は qdrant で代替
-  - Dify-Worker (docker.io/langgenius/dify-api:1.16.0-rc1)
-  - Dify-Web (docker.io/langgenius/dify-web:1.16.0-rc1)
-  - Dify-Plugin-Daemon (docker.io/langgenius/dify-plugin-daemon:0.6.3-local)
-  - Dify-Sandbox (docker.io/langgenius/dify-sandbox:0.2.15)
-  - Dify-Agent-Backend (docker.io/langgenius/dify-agent-backend:1.16.0-rc1)
-  - Dify-Agent-Local-Sandbox (docker.io/langgenius/dify-agent-local-sandbox:1.16.0-rc1)
-  - PostgreSQL (docker.io/library/postgres:15-alpine)
-  - Redis (docker.io/library/redis:8.8.0-alpine)
-  - qdrant (docker.io/qdrant/qdrant:v1.18.2)
-  - OAuth2 Proxy (quay.io/oauth2-proxy/oauth2-proxy:v7.13.0)
+    - dify-init-permissions (docker.io/library/busybox:latest)
+    - dify-api (docker.io/langgenius/dify-api:1.16.0-rc1)
+    - dify-worker (docker.io/langgenius/dify-api:1.16.0-rc1)
+    - dify-worker-beat (docker.io/langgenius/dify-api:1.16.0-rc1)
+    - dify-web (docker.io/langgenius/dify-web:1.16.0-rc1)
+    - dify-postgres (docker.io/library/postgres:15-alpine)
+    - dify-redis (docker.io/library/redis:8.8.0-alpine)
+    - dify-sandbox (docker.io/langgenius/dify-sandbox:0.2.15)
+    - dify-plugin-daemon (docker.io/langgenius/dify-plugin-daemon:0.6.3-local)
+    - dify-ssrf-proxy (docker.io/ubuntu/squid:latest)
+    - dify-nginx (docker.io/library/nginx:latest)
+    - qdrant (既存: docker.io/qdrant/qdrant:v1.18.2)
 - 【TODO】 `20-team-chat/docker-compose.yml`
   - Zulip (ghcr.io/zulip/zulip-server:12.1-0)
   - PostgreSQL (zulip/zulip-postgresql:14)
@@ -70,14 +71,21 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
   - RabbitMQ (docker.io/library/rabbitmq:4.1)
   - Redis (docker.io/library/redis:8.8.0-alpine)
 - `21-team-project/docker-compose.yml`
-  - Plane (makeplane/plane-*:v1.3.1)
+  - plane
     - https://github.com/makeplane/plane/blob/preview/docker-compose.yml
-    - 最小構成の必須サービスは揃っている
-  - PostgreSQL (docker.io/library/postgres:15.7-alpine)
-  - Valkey (docker.io/valkey/valkey:7.2.11-alpine)
-  - RabbitMQ (docker.io/library/rabbitmq:3.13.6-management-alpine)
-  - MinIO (docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z)
-  - OAuth2 Proxy (quay.io/oauth2-proxy/oauth2-proxy:v7.13.0)
+    - plane-web (docker.io/makeplane/plane-frontend:v1.3.1)
+    - plane-admin (docker.io/makeplane/plane-admin:v1.3.1)
+    - plane-space (docker.io/makeplane/plane-space:v1.3.1)
+    - plane-api (docker.io/makeplane/plane-backend:v1.3.1)
+    - plane-worker (docker.io/makeplane/plane-backend:v1.3.1)
+    - plane-beat-worker (docker.io/makeplane/plane-backend:v1.3.1)
+    - plane-migrator (docker.io/makeplane/plane-backend:v1.3.1)
+    - plane-live (docker.io/makeplane/plane-live:v1.3.1)
+    - plane-postgres (docker.io/library/postgres:15.7-alpine)
+    - plane-redis (docker.io/valkey/valkey:7.2.11-alpine)
+    - plane-rabbitmq (docker.io/library/rabbitmq:3.13.6-management-alpine)
+    - plane-minio (docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z)
+    - plane-proxy (docker.io/makeplane/plane-proxy:v1.3.1)
 - 【TODO】 `22-team-wiki/docker-compose.yml`
   - BookStack (lscr.io/linuxserver/bookstack:26.05.2)
   - MariaDB (lscr.io/linuxserver/mariadb:11.4.12)
