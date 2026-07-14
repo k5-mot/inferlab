@@ -64,7 +64,7 @@
             "protocol": "openid-connect",
             "publicClient": false,
             "clientAuthenticatorType": "client-secret",
-            "secret": "sk-langfuse-oidc-client-secret-key",
+            "secret": "${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}",
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,

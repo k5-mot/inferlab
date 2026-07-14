@@ -53,6 +53,8 @@ services:
       # 初期管理者.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # OIDCクライアント.
+      LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
       # TLS終端設定.
       KC_HTTP_ENABLED: "true"
       # KC_PROXY_HEADERS: xforwarded

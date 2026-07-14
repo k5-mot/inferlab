@@ -72,7 +72,7 @@ services:
       # EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
       # SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
       AUTH_KEYCLOAK_CLIENT_ID: langfuse
-      AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_KEYCLOAK_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
+      AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
       AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:30001/realms/inferlab
     networks:
       - internal-nw
