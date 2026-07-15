@@ -12,8 +12,8 @@
             "path": "/admins"
         },
         {
-            "name": "builders",
-            "path": "/builders"
+            "name": "guests",
+            "path": "/guests"
         },
         {
             "name": "users",
@@ -50,6 +50,8 @@
                     "config": {
                         "claim.name": "groups",
                         "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
                         "id.token.claim": "true",
                         "access.token.claim": "true",
                         "userinfo.token.claim": "true"
@@ -87,6 +89,8 @@
                     "config": {
                         "claim.name": "groups",
                         "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
                         "id.token.claim": "true",
                         "access.token.claim": "true",
                         "userinfo.token.claim": "true"
@@ -125,6 +129,8 @@
                     "config": {
                         "claim.name": "groups",
                         "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
                         "id.token.claim": "true",
                         "access.token.claim": "true",
                         "userinfo.token.claim": "true"
