@@ -327,6 +327,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       - hermes-agent-data:/opt/data
+      - ./hermes/sitecustomize.py:/opt/data/langfuse-python-packages/sitecustomize.py:ro
     networks:
       - internal-nw
     extra_hosts:
@@ -381,6 +382,7 @@ services:
       - 31001:9119
     volumes:
       - hermes-agent-data:/opt/data
+      - ./hermes/sitecustomize.py:/opt/data/langfuse-python-packages/sitecustomize.py:ro
     networks:
       - internal-nw
     healthcheck:
