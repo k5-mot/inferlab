@@ -1,5 +1,17 @@
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
 services:
   cloudflare:
+    <<: *external-dns-stabilizer
     image: docker.io/cloudflare/cloudflared:2026.6.0
     container_name: ${STACK_NAME:-inferlab}-cloudflare
     restart: unless-stopped
