@@ -24,14 +24,14 @@ services:
       NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 ${PUBLIC_HOST} nextcloud"
       NEXTCLOUD_DATA_DIR: /var/www/html/data
       NEXTCLOUD_INIT_HTACCESS: "true"
-      OVERWRITECLIURL: http://${PUBLIC_HOST}:31012
+      OVERWRITECLIURL: http://${PUBLIC_HOST}:31200
       PHP_MEMORY_LIMIT: 1024M
       PHP_UPLOAD_LIMIT: 2G
       APACHE_BODY_LIMIT: 0
       NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
       NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
-      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30000/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
       NEXTCLOUD_OIDC_SCOPE: "openid profile email"
       NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
       NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name

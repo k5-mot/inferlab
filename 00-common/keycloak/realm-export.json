@@ -105,20 +105,20 @@
             "protocol": "openid-connect",
             "publicClient": false,
             "clientAuthenticatorType": "client-secret",
-            "secret": "nextcloud-oauth-client-secret-key",
+            "secret": "${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}",
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://${PUBLIC_HOST}:31012/",
+            "rootUrl": "http://${PUBLIC_HOST}:31200/",
             "redirectUris": [
-                "http://localhost:31012/apps/user_oidc/code",
-                "http://127.0.0.1:31012/apps/user_oidc/code",
-                "http://${PUBLIC_HOST}:31012/apps/user_oidc/code"
+                "http://localhost:31200/apps/user_oidc/code",
+                "http://127.0.0.1:31200/apps/user_oidc/code",
+                "http://${PUBLIC_HOST}:31200/apps/user_oidc/code"
             ],
             "webOrigins": [
-                "http://localhost:31012",
-                "http://127.0.0.1:31012",
-                "http://${PUBLIC_HOST}:31012"
+                "http://localhost:31200",
+                "http://127.0.0.1:31200",
+                "http://${PUBLIC_HOST}:31200"
             ],
             "protocolMappers": [
                 {
