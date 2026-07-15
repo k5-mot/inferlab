@@ -8,6 +8,17 @@
 #   - https://huggingface.co/docs/text-embeddings-inference/quick_tour
 #
 
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
 services:
   litellm:
     image: docker.io/litellm/litellm:v1.91.0
@@ -203,6 +214,7 @@ services:
       - homepage.description=Embedding_Inference_Engine
 
   hermes-agent-init:
+    <<: *external-dns-stabilizer
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent-init
     restart: no
@@ -271,6 +283,7 @@ services:
       HERMES_LANGFUSE_SDK_PACKAGE: ${HERMES_LANGFUSE_SDK_PACKAGE:-langfuse}
 
   hermes-agent:
+    <<: *external-dns-stabilizer
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent
     restart: unless-stopped
