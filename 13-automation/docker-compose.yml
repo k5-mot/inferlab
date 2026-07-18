@@ -78,8 +78,8 @@ services:
       INNER_API_KEY_FOR_PLUGIN: sk-dify-plugin-inner-api-key
       AGENT_BACKEND_BASE_URL: http://dify-agent-backend:5050
       MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: ""
-      MARKETPLACE_URL: ""
+      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_URL: "https://marketplace.dify.ai"
       CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
@@ -126,8 +126,8 @@ services:
       <<: *dify-api-env
       MODE: worker
       MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: ""
-      MARKETPLACE_URL: ""
+      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_URL: "https://marketplace.dify.ai"
       CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
@@ -174,8 +174,8 @@ services:
       <<: *dify-api-env
       MODE: beat
       MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: ""
-      MARKETPLACE_URL: ""
+      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_URL: "https://marketplace.dify.ai"
       CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
@@ -191,7 +191,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - celery -A celery_healthcheck.celery inspect ping
+        - python -c "import sys; cmd = open('/proc/1/cmdline', 'rb').read().replace(b'\0', b' '); sys.exit(0 if b'celery' in cmd and b'beat' in cmd else 1)"
       interval: 30s
       timeout: 30s
       retries: 5
@@ -215,8 +215,8 @@ services:
       SERVER_CONSOLE_API_URL: http://dify-api:5001
       APP_API_URL: http://${PUBLIC_HOST}:31300
       NEXT_PUBLIC_SOCKET_URL: ws://${PUBLIC_HOST}:31300
-      MARKETPLACE_API_URL: ""
-      MARKETPLACE_URL: ""
+      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_URL: "https://marketplace.dify.ai"
       NEXT_TELEMETRY_DISABLED: "1"
     networks:
       - internal-nw
@@ -252,6 +252,9 @@ services:
       DB_PASSWORD: dify_password
       DB_DATABASE: dify_plugin
       DB_SSL_MODE: disable
+      REDIS_HOST: dify-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: dify_redis_password
       SERVER_PORT: 5002
       SERVER_KEY: sk-dify-plugin-daemon-key
       DIFY_INNER_API_URL: http://dify-api:5001
@@ -278,7 +281,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - wget --no-verbose --tries=1 --spider http://127.0.0.1:5002/health || exit 1
+        - curl -fsS http://127.0.0.1:5002/health/check >/dev/null
       interval: 30s
       timeout: 5s
       retries: 10
