@@ -23,7 +23,7 @@ services:
       OIDC_DISPLAY_NAME_CLAIMS: name
       OIDC_CLIENT_ID: bookstack
       OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
-      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}/realms/${STACK_NAME:-inferlab}}
+      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}}
       OIDC_ISSUER_DISCOVER: true
       OIDC_END_SESSION_ENDPOINT: false
       OIDC_USER_TO_GROUPS: true

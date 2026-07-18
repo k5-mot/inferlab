@@ -103,7 +103,7 @@ services:
       - start
     environment:
       # ホスト名設定.
-      KC_HOSTNAME: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}
+      KC_HOSTNAME: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
       # DB接続.
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
@@ -115,11 +115,11 @@ services:
       # HTTPS終端設定.
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
-      JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-128K}
+      JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
       # ヘルスチェックエンドポイントの有効化.
       KC_HEALTH_ENABLED: "true"
     ports:
-      - ${KEYCLOAK_HTTPS_HOST_PORT:-30443}:8443
+      - ${KEYCLOAK_HTTPS_HOST_PORT:-30002}:8443
     volumes:
       - ./keycloak/certs:/opt/keycloak/certs:ro
     networks:
@@ -143,7 +143,7 @@ services:
     labels:
       - homepage.group=00-common
       - homepage.name=Keycloak HTTPS
-      - homepage.href=https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}
+      - homepage.href=https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
       - homepage.description=HTTPS issuer for OIDC clients
 
   keycloak-postgres:
