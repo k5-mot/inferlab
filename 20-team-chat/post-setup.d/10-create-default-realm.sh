@@ -17,6 +17,7 @@ su zulip -c "/home/zulip/deployments/current/manage.py shell" <<'PY'
 import os
 
 from django.core.management import call_command
+from zerver.actions.realm_settings import do_set_realm_property
 from zerver.models import Realm, UserProfile
 
 realm_id = os.environ.get("ZULIP_AUTO_CREATE_REALM_ID", "")
@@ -58,4 +59,8 @@ else:
         realm_id=realm_id,
         automated=True,
     )
+
+realm = Realm.objects.get(string_id=realm_id)
+if realm.invite_required:
+    do_set_realm_property(realm, "invite_required", False, acting_user=None)
 PY
