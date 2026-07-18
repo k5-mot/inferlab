@@ -21,6 +21,7 @@ services:
       SETTING_MEMCACHED_LOCATION: zulip-memcached:11211
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
+      SETTING_OPEN_REALM_CREATION: ${ZULIP_OPEN_REALM_CREATION:-True}
       SECRETS_email_password: ${ZULIP_EMAIL_PASSWORD:-123456789}
       SECRETS_rabbitmq_password: ${ZULIP_RABBITMQ_PASSWORD:-zulip_password}
       SECRETS_postgres_password: ${ZULIP_POSTGRES_PASSWORD:-zulip_password}

@@ -23,17 +23,20 @@ services:
       OIDC_DISPLAY_NAME_CLAIMS: name
       OIDC_CLIENT_ID: bookstack
       OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
-      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}}
+      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}/realms/${STACK_NAME:-inferlab}}
       OIDC_ISSUER_DISCOVER: true
       OIDC_END_SESSION_ENDPOINT: false
       OIDC_USER_TO_GROUPS: true
       OIDC_GROUPS_CLAIM: groups
-      OIDC_ADDITIONAL_SCOPES: groups
       OIDC_REMOVE_FROM_GROUPS: false
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     ports:
       - "${BOOKSTACK_HOST_PORT:-32003}:80"
     volumes:
       - bookstack-config:/config
+      - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
+      - ./custom-cont-init.d:/custom-cont-init.d:ro
     networks:
       - internal-nw
     depends_on:

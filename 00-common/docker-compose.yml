@@ -80,10 +80,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - |
-          exec 3<>/dev/tcp/127.0.0.1/9000
-          echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
-          cat <&3 | grep -q '"status": "UP"'
+        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
       interval: 5s
       timeout: 5s
       retries: 10
@@ -95,6 +92,58 @@ services:
       - homepage.name=Keycloak
       - homepage.href=http://${PUBLIC_HOST}:30001
       - homepage.description=Identity and Access Management
+
+  keycloak-https:
+    image: quay.io/keycloak/keycloak:26.7.0
+    container_name: ${STACK_NAME:-inferlab}-keycloak-https
+    restart: unless-stopped
+    profiles:
+      - common
+    command:
+      - start
+    environment:
+      # ホスト名設定.
+      KC_HOSTNAME: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}
+      # DB接続.
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: keycloak_password
+      # 初期管理者.
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # HTTPS終端設定.
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
+      # ヘルスチェックエンドポイントの有効化.
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - ${KEYCLOAK_HTTPS_HOST_PORT:-30443}:8443
+    volumes:
+      - ./keycloak/certs:/opt/keycloak/certs:ro
+    networks:
+      - internal-nw
+      - keycloak-nw
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8443'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    label_file:
+      - ./homepage/icon-labels/${AIRGAP:-false}/keycloak.labels
+    labels:
+      - homepage.group=00-common
+      - homepage.name=Keycloak HTTPS
+      - homepage.href=https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30443}
+      - homepage.description=HTTPS issuer for OIDC clients
 
   keycloak-postgres:
     image: docker.io/library/postgres:18.4-trixie
