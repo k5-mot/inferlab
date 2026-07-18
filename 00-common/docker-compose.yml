@@ -12,7 +12,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-homepage
     restart: unless-stopped
     ports:
-      - 30002:3000
+      - 30000:3000
     volumes:
       - ./homepage:/app/config # Make sure your local config directory exists
       - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
@@ -20,31 +20,11 @@ services:
       - internal-nw
     environment:
       # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
-      HOMEPAGE_ALLOWED_HOSTS: "gethomepage.dev,$PUBLIC_HOST:30002"
+      HOMEPAGE_ALLOWED_HOSTS: "gethomepage.dev,$PUBLIC_HOST:30000"
     labels:
       - homepage.group=00-common
       - homepage.name=Homepage
       - homepage.icon=homepage.png
-      - homepage.href=http://${PUBLIC_HOST}:30003
-      - homepage.description=Dashboard
-
-  homer:
-    image: docker.io/b4bz/homer:v26.4.2
-    container_name: ${STACK_NAME:-inferlab}-homer
-    restart: unless-stopped
-    user: 1000:1000 # default
-    ports:
-      - 30000:8080
-    volumes:
-      - ./homer:/www/assets # Make sure your local config directory exists
-    networks:
-      - internal-nw
-    environment:
-      - INIT_ASSETS=1 # default, requires the config directory to be writable for the container user (see user option)
-    labels:
-      - homepage.group=00-common
-      - homepage.name=Homer
-      - homepage.icon=homer.png
       - homepage.href=http://${PUBLIC_HOST}:30000
       - homepage.description=Dashboard
 
