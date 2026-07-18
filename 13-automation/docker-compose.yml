@@ -428,7 +428,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-SSRF-Proxy
-      - homepage.description="Forward proxy"
+      - homepage.description=Forward proxy
 
   dify-postgres:
     image: docker.io/library/postgres:15-alpine
