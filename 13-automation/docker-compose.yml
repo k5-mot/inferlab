@@ -74,6 +74,7 @@ services:
       CODE_EXECUTION_API_KEY: dify-sandbox-key
       CODE_EXECUTION_SSL_VERIFY: "true"
       PLUGIN_DAEMON_URL: http://dify-plugin-daemon:5002
+      PLUGIN_DAEMON_KEY: sk-dify-plugin-daemon-key
       PLUGIN_DIFY_INNER_API_KEY: sk-dify-plugin-inner-api-key
       INNER_API_KEY_FOR_PLUGIN: sk-dify-plugin-inner-api-key
       AGENT_BACKEND_BASE_URL: http://dify-agent-backend:5050
@@ -387,6 +388,14 @@ services:
         condition: service_healthy
       dify-local-sandbox:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import socket; s = socket.create_connection(('127.0.0.1', 5050), timeout=3); s.close()"
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     label_file:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
@@ -406,6 +415,14 @@ services:
       COREDUMP_DIR: /var/spool/squid
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - squid -k check >/dev/null 2>&1
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     label_file:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/squid.labels
     labels:
