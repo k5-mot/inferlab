@@ -40,13 +40,26 @@ case "$COMMAND" in
       docker compose --profile "$profile" down "$@"
     done
     ;;
+  exec | logs | ps)
+    for profile in "${PROFILES[@]}"; do
+        profile_args+=(--profile "$profile")
+    done
+    docker compose "${profile_args[@]}" "$COMMAND" "$@"
+    ;;
   *)
     echo "Usage: $0 {up|down} [docker compose options...]"
     echo
     echo "Examples:"
     echo "  $0 up"
-    echo "  $0 up --build"
+    echo "  $0 up -d --build --force-recreate --remove-orphans"
     echo "  $0 down"
+    echo "  $0 down --remove-orphans"
+    echo "  $0 exec -it <service> bash"
+    echo "  $0 logs"
+    echo "  $0 logs -f <service>"
+    echo "  $0 logs --tail=100 <service>"
+    echo "  $0 ps"
+    echo "  $0 ps --all"
     exit 1
     ;;
 esac
