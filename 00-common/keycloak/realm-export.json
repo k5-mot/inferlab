@@ -217,6 +217,46 @@
                     }
                 }
             ]
+        },
+        {
+            "clientId": "zulip",
+            "name": "Zulip",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "https://${PUBLIC_HOST}:32000/",
+            "redirectUris": [
+                "https://localhost:32000/complete/oidc/",
+                "https://127.0.0.1:32000/complete/oidc/",
+                "https://${PUBLIC_HOST}:32000/complete/oidc/"
+            ],
+            "webOrigins": [
+                "https://localhost:32000",
+                "https://127.0.0.1:32000",
+                "https://${PUBLIC_HOST}:32000"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
         }
     ]
 }

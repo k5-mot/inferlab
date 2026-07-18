@@ -18,6 +18,7 @@ services:
       SETTING_REMOTE_POSTGRES_PORT: "5432"
       CONFIG_postgresql__database_user: zulip
       CONFIG_postgresql__database_name: zulip
+      CONFIG_http_proxy__allow_addresses: ${PUBLIC_HOST}
       SETTING_MEMCACHED_LOCATION: zulip-memcached:11211
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
@@ -34,7 +35,21 @@ services:
       SECRETS_memcached_password: ${ZULIP_MEMCACHED_PASSWORD:-zulip_password}
       SECRETS_redis_password: ${ZULIP_REDIS_PASSWORD:-zulip_password}
       SECRETS_secret_key: ${ZULIP_SECRET_KEY:-sk-zulip-secret-key}
-      ZULIP_AUTH_BACKENDS: EmailAuthBackend
+      SECRETS_social_auth_oidc_secret: ${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}
+      REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+      ZULIP_AUTH_BACKENDS: EmailAuthBackend,GenericOpenIdConnectBackend
+      ZULIP_CUSTOM_SETTINGS: |
+        SOCIAL_AUTH_OIDC_ENABLED_IDPS = {
+            "keycloak": {
+                "oidc_url": "https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}",
+                "display_name": "Keycloak",
+                "display_icon": None,
+                "client_id": "zulip",
+                "secret": get_secret("social_auth_oidc_secret"),
+                "auto_signup": True,
+            },
+        }
+        SOCIAL_AUTH_OIDC_FULL_NAME_VALIDATED = True
     ports:
       - "${ZULIP_HTTP_HOST_PORT:-32002}:80"
       - "${ZULIP_HTTPS_HOST_PORT:-32000}:443"
@@ -42,6 +57,7 @@ services:
     volumes:
       - zulip-data:/data
       - ./post-setup.d:/data/post-setup.d:ro
+      - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
     ulimits:
       nofile:
         soft: 1000000

@@ -6,6 +6,7 @@ nextcloud_oidc_client_secret="${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-
 langfuse_oidc_client_secret="${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}"
 leantime_oidc_client_secret="${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}"
 bookstack_oidc_client_secret="${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}"
+zulip_oidc_client_secret="${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}"
 
 mkdir -p /opt/keycloak/data/import
 sed \
@@ -15,6 +16,7 @@ sed \
   -e "s|\${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}|${langfuse_oidc_client_secret}|g" \
   -e "s|\${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}|${leantime_oidc_client_secret}|g" \
   -e "s|\${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}|${bookstack_oidc_client_secret}|g" \
+  -e "s|\${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}|${zulip_oidc_client_secret}|g" \
   /opt/keycloak/data/import-template/inferlab-realm.json \
   > "/opt/keycloak/data/import/${realm_name}-realm.json"
 
