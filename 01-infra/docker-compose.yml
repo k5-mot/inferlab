@@ -35,10 +35,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/cloudflare.labels
     labels:
       - homepage.group=01-infra
       - homepage.name=Cloudflare
-      - homepage.icon=cloudflare.png
       - homepage.description=Outband_connection
 
   couchdb:
@@ -65,10 +66,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/couchdb.labels
     labels:
       - homepage.group=01-infra
       - homepage.name=CouchDB
-      - homepage.icon=couchdb.png
       - homepage.description=Database_for_Obsidian
 
 volumes:

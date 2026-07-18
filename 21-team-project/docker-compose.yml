@@ -20,10 +20,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-space:
@@ -45,10 +46,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-admin:
@@ -70,10 +72,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-api:
@@ -129,10 +132,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-worker:
@@ -157,10 +161,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-beat-worker:
@@ -185,10 +190,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-migrator:
@@ -215,10 +221,11 @@ services:
       timeout: 5s
       retries: 1
       start_period: 5s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-live:
@@ -237,10 +244,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.description=Vector_Database
 
   plane-proxy:
@@ -275,10 +283,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane
-      - homepage.icon=plane.png
       - homepage.href=http://${PUBLIC_HOST}:32001
       - homepage.description=Vector_Database
 
@@ -309,10 +318,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-Postgres
-      - homepage.icon=postgres.png
       - homepage.description=Database
 
   plane-redis:
@@ -334,10 +344,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 5s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-Redis
-      - homepage.icon=redis.png
       - homepage.description=Database
 
   plane-rabbitmq:
@@ -364,10 +375,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/rabbitmq.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-RabbitMQ
-      - homepage.icon=rabbitmq.png
       - homepage.description=Database
 
   plane-minio:
@@ -399,10 +411,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/minio.labels
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-MinIO
-      - homepage.icon=minio.png
       - homepage.description=Database
 
 volumes:

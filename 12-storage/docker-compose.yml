@@ -55,10 +55,11 @@ services:
       timeout: 10s
       retries: 10
       start_period: 90s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/nextcloud.labels
     labels:
       - homepage.group=12-storage
       - homepage.name=Nextcloud
-      - homepage.icon=nextcloud.png
       - homepage.href=http://${PUBLIC_HOST}:31200/apps/files/files
       - homepage.description=Cloud_Storage
 
@@ -86,10 +87,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
     labels:
       - homepage.group=12-storage
       - homepage.name=Nextcloud-MariaDB
-      - homepage.icon=mariadb.png
       - homepage.description=Database
 
   nextcloud-redis:
@@ -106,10 +108,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
       - homepage.group=12-storage
       - homepage.name=Nextcloud-Redis
-      - homepage.icon=redis.png
       - homepage.description=Inmemory_Database
 
   oikb:
@@ -146,10 +149,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
       - homepage.group=12-storage
       - homepage.name=Open-WebUI-Knowledge-Bases
-      - homepage.icon=open-webui.png
       - homepage.href=http://${PUBLIC_HOST}:31201
       - homepage.description=Knowledge_Bases_for_Open_WebUI
 

@@ -108,10 +108,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-API
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-worker:
@@ -155,10 +156,11 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Worker
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-worker-beat:
@@ -194,10 +196,11 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Worker-Beat
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-web:
@@ -228,10 +231,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Web
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-plugin-daemon:
@@ -279,10 +283,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Plugin
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-sandbox:
@@ -316,10 +321,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Sandbox
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-local-sandbox:
@@ -341,10 +347,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Local-Sandbox
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-agent-backend:
@@ -376,10 +383,11 @@ services:
         condition: service_healthy
       dify-local-sandbox:
         condition: service_healthy
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Agent-Backend
-      - homepage.icon=sh-dify
       - homepage.description=Automation
 
   dify-ssrf-proxy:
@@ -394,10 +402,11 @@ services:
       COREDUMP_DIR: /var/spool/squid
     networks:
       - internal-nw
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/squid.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-SSRF-Proxy
-      - homepage.icon=squid.png
       - homepage.description=Proxy
 
   dify-postgres:
@@ -424,10 +433,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Postgres
-      - homepage.icon=postgres.png
       - homepage.description=Database
 
   dify-redis:
@@ -454,10 +464,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 5s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Redis
-      - homepage.icon=redis.png
       - homepage.description=Inmemory_Database
 
   dify-qdrant:
@@ -483,10 +494,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/qdrant.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Qdrant
-      - homepage.icon=qdrant.png
       - homepage.description=Vector_DB
 
   dify-nginx:
@@ -516,10 +528,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify
-      - homepage.icon=sh-dify
       - homepage.href=http://${PUBLIC_HOST}:31300
       - homepage.description=Automation
 

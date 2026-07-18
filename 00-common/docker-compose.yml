@@ -15,16 +15,18 @@ services:
       - 30000:3000
     volumes:
       - ./homepage:/app/config # Make sure your local config directory exists
+      - ./homepage/icons:/app/public/icons:ro # AirGap環境で外部アイコン取得を避けるためローカル配信する
       - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
     networks:
       - internal-nw
     environment:
       # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
       HOMEPAGE_ALLOWED_HOSTS: "gethomepage.dev,$PUBLIC_HOST:30000"
+    label_file:
+      - ./homepage/icon-labels/${AIRGAP:-false}/homepage.labels
     labels:
       - homepage.group=00-common
       - homepage.name=Homepage
-      - homepage.icon=homepage.png
       - homepage.href=http://${PUBLIC_HOST}:30000
       - homepage.description=Dashboard
 
@@ -83,10 +85,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ./homepage/icon-labels/${AIRGAP:-false}/keycloak.labels
     labels:
       - homepage.group=00-common
       - homepage.name=Keycloak
-      - homepage.icon=keycloak.png
       - homepage.href=http://${PUBLIC_HOST}:30001
       - homepage.description=Identity and Access Management
 
@@ -113,10 +116,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ./homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
       - homepage.group=00-common
       - homepage.name=Keycloak-Postgres
-      - homepage.icon=postgres.png
       - homepage.description=Relational database
 
 volumes:

@@ -82,10 +82,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Worker
-      - homepage.icon=sh-langfuse
       - homepage.description=LLMOps
 
   langfuse-web:
@@ -122,10 +123,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse
-      - homepage.icon=sh-langfuse
       - homepage.href=http://${PUBLIC_HOST}:35100
       - homepage.description=LLMOps
 
@@ -151,10 +153,11 @@ services:
       timeout: 5s
       retries: 10
       start_period: 1s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/clickhouse.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-ClickHouse
-      - homepage.icon=clickhouse.png
       - homepage.description=OLAP_DBMS
 
   langfuse-minio:
@@ -180,10 +183,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 1s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/minio.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-MinIO
-      - homepage.icon=minio.png
       - homepage.description=Object_Storage
 
   langfuse-redis:
@@ -207,10 +211,11 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Redis
-      - homepage.icon=redis.png
       - homepage.description=Inmemory_Database
 
   langfuse-postgres:
@@ -236,10 +241,11 @@ services:
     volumes:
       # - langfuse_postgres_data:/var/lib/postgresql/data
       - langfuse_postgres_data:/var/lib/postgresql
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Postgres
-      - homepage.icon=postgres.png
       - homepage.description=Database
 
 volumes:

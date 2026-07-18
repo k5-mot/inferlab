@@ -131,10 +131,11 @@ services:
       nofile:
         soft: 65535
         hard: 65535
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=Open-WebUI
-      - homepage.icon=open-webui.png
       - homepage.href=http://${PUBLIC_HOST}:31100
       - homepage.description=AI_Chat
 
@@ -180,10 +181,11 @@ services:
     mem_limit: ${DOCLING_MEM_LIMIT:-8g}
     memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
     pids_limit: 512
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/docling.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=docling-serve
-      - homepage.icon=docling.png
       - homepage.href=http://${PUBLIC_HOST}:31101/ui
       - homepage.description=Document_Converter
 
@@ -208,10 +210,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/searxng.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=SearXNG
-      - homepage.icon=searxng.png
       - homepage.href=http://${PUBLIC_HOST}:31102
       - homepage.description=Search_engine
 
@@ -228,10 +231,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=VOICEVOX-Engine
-      - homepage.icon=mdi-account-voice
       - homepage.description=Text_to_Speech_Engine
 
   voicevox-openai-tts:
@@ -253,10 +257,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=VOICEVOX-API
-      - homepage.icon=mdi-account-voice
       - homepage.description=Text_to_Speech_API
 
   qdrant:
@@ -280,10 +285,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/qdrant.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=Qdrant
-      - homepage.icon=qdrant.png
       - homepage.description=Vector_DB
 
 volumes:

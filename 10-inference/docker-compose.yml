@@ -64,11 +64,11 @@ services:
       nofile:
         soft: 65535
         hard: 65535
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/litellm.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=LiteLLM
-      # - homepage.icon=litellm.png
-      - homepage.icon=litlellm.png
       - homepage.href=http://${PUBLIC_HOST}:31000/ui
       - homepage.description=LLM_Proxy
 
@@ -98,10 +98,11 @@ services:
       timeout: 10s
       retries: 20
       start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/ollama.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=Ollama
-      - homepage.icon=ollama.png
       - homepage.description=Inference_Engine
 
   ollama-init:
@@ -172,10 +173,11 @@ services:
       timeout: 10s
       retries: 60
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=TEI_Embedding
-      - homepage.icon=hugging-face.png
       - homepage.description=Embedding_Inference_Engine
 
   tei-reranking:
@@ -216,10 +218,11 @@ services:
       timeout: 10s
       retries: 60
       start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=TEI_Reranking
-      - homepage.icon=hugging-face.png
       - homepage.description=Embedding_Inference_Engine
 
   hermes-agent-init:
@@ -350,10 +353,11 @@ services:
     depends_on:
       hermes-agent-init:
         condition: service_completed_successfully
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
-      - homepage.icon=hermes-icon
       - homepage.description=AI_Agent
 
   hermes-agent-dashboard:
@@ -404,10 +408,11 @@ services:
     depends_on:
       hermes-agent:
         condition: service_healthy
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
     labels:
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
-      - homepage.icon=hermes-icon
       - homepage.href=http://${PUBLIC_HOST}:31001
       - homepage.description=AI_Agent
 
