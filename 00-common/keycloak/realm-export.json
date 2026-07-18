@@ -137,6 +137,46 @@
                     }
                 }
             ]
+        },
+        {
+            "clientId": "leantime",
+            "name": "Leantime",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:32001/",
+            "redirectUris": [
+                "http://localhost:32001/oidc/callback",
+                "http://127.0.0.1:32001/oidc/callback",
+                "http://${PUBLIC_HOST}:32001/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:32001",
+                "http://127.0.0.1:32001",
+                "http://${PUBLIC_HOST}:32001"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
         }
     ]
 }

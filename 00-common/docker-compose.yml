@@ -59,6 +59,7 @@ services:
       # OIDCクライアント.
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
       LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
+      LEANTIME_OIDC_CLIENT_SECRET: ${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}
       # TLS終端設定.
       KC_HTTP_ENABLED: "true"
       # KC_PROXY_HEADERS: xforwarded
