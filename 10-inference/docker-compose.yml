@@ -227,7 +227,7 @@ services:
 
   hermes-agent-init:
     <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent-init
     restart: no
     profiles:
@@ -241,9 +241,7 @@ services:
     command:
       - |
         set -eu
-        mkdir -p /opt/data/skills
         cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
-        cp -rfv /opt/config/skills/*          /opt/data/skills
         if [ ! -x /opt/data/node_modules/.bin/rss-mcp ]; then
           npm install --prefix /opt/data rss-mcp --silent
         fi
@@ -285,7 +283,6 @@ services:
       - hermes-agent-data:/opt/data
       - ./hermes/hermes-config.yaml:/opt/config/config.yaml
       - ~/.codex:/opt/config/.codex:ro
-      - ./skills:/opt/config/skills:ro
     environment:
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
@@ -296,7 +293,7 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -339,7 +336,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     volumes:
       - hermes-agent-data:/opt/data
-      - ./hermes/sitecustomize.py:/opt/data/langfuse-python-packages/sitecustomize.py:ro
+      - ./skills:/opt/inferlab/skills:ro
     networks:
       - internal-nw
     extra_hosts:
@@ -362,7 +359,7 @@ services:
 
   hermes-agent-dashboard:
     <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
+    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent-dashboard
     restart: unless-stopped
     profiles:
@@ -396,7 +393,7 @@ services:
       - 31001:9119
     volumes:
       - hermes-agent-data:/opt/data
-      - ./hermes/sitecustomize.py:/opt/data/langfuse-python-packages/sitecustomize.py:ro
+      - ./skills:/opt/inferlab/skills:ro
     networks:
       - internal-nw
     healthcheck:

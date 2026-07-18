@@ -23,6 +23,10 @@ plugins:
   enabled:
     - observability/langfuse
 
+skills:
+  external_dirs:
+    - /opt/inferlab/skills
+
 mcp_servers:
   searxng:
     command: "/opt/data/node_modules/.bin/mcp-searxng"

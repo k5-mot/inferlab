@@ -33,7 +33,7 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
   - HuggingFace Text Embeddings Inference (ghcr.io/huggingface/text-embeddings-inference:1.9.3)
     - https://huggingface.co/cl-nagoya/ruri-v3-310m
     - https://huggingface.co/cl-nagoya/ruri-v3-reranker-310m
-  - Hermes-Agent (docker.io/nousresearch/hermes-agent:v2026.7.7.2)
+  - Hermes-Agent (docker.io/nousresearch/hermes-agent:main)
 - `11-webui/docker-compose.yml`
   - Open-WebUI (ghcr.io/open-webui/open-webui:0.10.2-slim)
     - 候補1： ghcr.io/k5-mot/docling-serve-jp:v1.26.0
