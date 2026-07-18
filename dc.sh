@@ -40,6 +40,18 @@ case "$COMMAND" in
       docker compose --profile "$profile" down "$@"
     done
     ;;
+  up-full)
+    for profile in "${PROFILES[@]}"; do
+        profile_args+=(--profile "$profile")
+    done
+    docker compose "${profile_args[@]}" up -d "$@"
+    ;;
+  down-full)
+    for profile in "${PROFILES[@]}"; do
+        profile_args+=(--profile "$profile")
+    done
+    docker compose "${profile_args[@]}" down "$@"
+    ;;
   exec | logs | ps)
     for profile in "${PROFILES[@]}"; do
         profile_args+=(--profile "$profile")
