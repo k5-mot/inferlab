@@ -177,6 +177,46 @@
                     }
                 }
             ]
+        },
+        {
+            "clientId": "bookstack",
+            "name": "BookStack",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:32003/",
+            "redirectUris": [
+                "http://localhost:32003/oidc/callback",
+                "http://127.0.0.1:32003/oidc/callback",
+                "http://${PUBLIC_HOST}:32003/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:32003",
+                "http://127.0.0.1:32003",
+                "http://${PUBLIC_HOST}:32003"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
         }
     ]
 }

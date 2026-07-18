@@ -17,6 +17,19 @@ services:
       DB_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
       DB_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
       QUEUE_CONNECTION: database
+      AUTH_METHOD: oidc
+      AUTH_AUTO_INITIATE: false
+      OIDC_NAME: Keycloak
+      OIDC_DISPLAY_NAME_CLAIMS: name
+      OIDC_CLIENT_ID: bookstack
+      OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
+      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}}
+      OIDC_ISSUER_DISCOVER: true
+      OIDC_END_SESSION_ENDPOINT: false
+      OIDC_USER_TO_GROUPS: true
+      OIDC_GROUPS_CLAIM: groups
+      OIDC_ADDITIONAL_SCOPES: groups
+      OIDC_REMOVE_FROM_GROUPS: false
     ports:
       - "${BOOKSTACK_HOST_PORT:-32003}:80"
     volumes:
@@ -39,6 +52,7 @@ services:
       - homepage.name=BookStack
       - homepage.href=http://${PUBLIC_HOST}:32003
       - homepage.description=Team documentation wiki
+      - homepage.icon=bookstack.png
 
   bookstack-mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.12

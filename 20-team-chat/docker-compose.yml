@@ -6,8 +6,8 @@ services:
     profiles:
       - team-chat
     environment:
-      SSL_CERTIFICATE_GENERATION: self-signed
-      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}}
+      CERTIFICATES: self-signed
+      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32443}}
       SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
       SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
       SETTING_EMAIL_HOST_USER: ${ZULIP_EMAIL_HOST_USER:-noreply@example.com}
@@ -16,8 +16,8 @@ services:
       SETTING_EMAIL_USE_TLS: ${ZULIP_EMAIL_USE_TLS:-True}
       SETTING_REMOTE_POSTGRES_HOST: zulip-postgres
       SETTING_REMOTE_POSTGRES_PORT: "5432"
-      SETTING_REMOTE_POSTGRES_USER: zulip
-      SETTING_REMOTE_POSTGRES_DATABASE: zulip
+      CONFIG_postgresql__database_user: zulip
+      CONFIG_postgresql__database_name: zulip
       SETTING_MEMCACHED_LOCATION: zulip-memcached:11211
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
@@ -52,8 +52,9 @@ services:
     labels:
       - homepage.group=20-team-chat
       - homepage.name=Zulip
-      - homepage.href=http://${PUBLIC_HOST}:32002
+      - homepage.href=https://${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32443}}/new/
       - homepage.description=Team chat platform
+      - homepage.icon=zulip.png
 
   zulip-postgres:
     image: zulip/zulip-postgresql:14
@@ -108,7 +109,7 @@ services:
       - homepage.group=20-team-chat
       - homepage.name=Zulip-Memcached
       - homepage.description=In-memory cache
-
+      - homepage.icon=sh-memcached
   zulip-rabbitmq:
     image: docker.io/library/rabbitmq:4.2
     container_name: ${STACK_NAME:-inferlab}-zulip-rabbitmq
