@@ -1,0 +1,7 @@
+# Hermes の実行時データは bind mount 先に生成されるため、設定だけを管理対象にする。
+*
+!.gitignore
+!config.yaml
+!*.md
+!prompts/
+!prompts/**

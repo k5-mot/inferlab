@@ -225,72 +225,6 @@ services:
       - homepage.name=TEI_Reranking
       - homepage.description=Embedding inference engine
 
-  hermes-agent-init:
-    <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
-    container_name: ${STACK_NAME:-inferlab}-hermes-agent-init
-    restart: no
-    profiles:
-      - inference
-      - hermes-agent
-    entrypoint:
-      - /bin/sh
-      - -c
-        # cp -rv  /opt/config/.codex/auth.json  /opt/data/auth.json
-        # cp -rfv /opt/config/.codex/           /opt/data
-    command:
-      - |
-        set -eu
-        cp -rv  /opt/config/config.yaml       /opt/data/config.yaml
-        if [ ! -x /opt/data/node_modules/.bin/rss-mcp ]; then
-          npm install --prefix /opt/data rss-mcp --silent
-        fi
-        if [ ! -x /opt/data/node_modules/.bin/mcp-searxng ]; then
-          npm install --prefix /opt/data mcp-searxng --silent
-        fi
-        if [ ! -x /opt/data/docling-mcp-venv/bin/docling-mcp-server ]; then
-          python -m venv /opt/data/docling-mcp-venv
-          /opt/data/docling-mcp-venv/bin/python -m pip install --no-cache-dir --upgrade pip
-          /opt/data/docling-mcp-venv/bin/python -m pip install --no-cache-dir docling-mcp
-        fi
-        export PYTHONPATH="/opt/data/langfuse-python-packages$${PYTHONPATH:+:$$PYTHONPATH}"
-        if ! python - <<'PY' >/dev/null 2>&1
-        import importlib.metadata as md
-        from langfuse import Langfuse, propagate_attributes
-
-        expected = {
-            "certifi": "2026.5.20",
-            "packaging": "26.0",
-            "requests": "2.33.0",
-        }
-        for package, version in expected.items():
-            if md.version(package) != version:
-                raise SystemExit(1)
-        PY
-        then
-          python -m ensurepip --upgrade
-          python -m pip install --no-cache-dir --upgrade --target /opt/data/langfuse-python-packages \
-            "$${HERMES_LANGFUSE_SDK_PACKAGE:-langfuse}" \
-            certifi==2026.5.20 \
-            packaging==26.0 \
-            requests==2.33.0
-        fi
-        python - <<'PY'
-        from langfuse import Langfuse, propagate_attributes
-        PY
-        chown -R 10000:10000 /opt/data || true
-    volumes:
-      - hermes-agent-data:/opt/data
-      - ./hermes/hermes-config.yaml:/opt/config/config.yaml
-      - ~/.codex:/opt/config/.codex:ro
-    environment:
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
-      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
-      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
-      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
-      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
-      HERMES_LANGFUSE_SDK_PACKAGE: ${HERMES_LANGFUSE_SDK_PACKAGE:-langfuse}
-
   hermes-agent:
     <<: *external-dns-stabilizer
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
@@ -328,15 +262,20 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
-      HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
-      HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      SEARXNG_URL: "http://searxng:8080/"
+      SEARXNG_SECRET_KEY: "sk-searxng-secret-key"
+      DOCLING_SERVER_URL: http://docling:5001
+      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      # HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      # HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      # HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CODEX_HOME: /opt/config/.codex
     volumes:
-      - hermes-agent-data:/opt/data
-      - ./skills:/opt/inferlab/skills:ro
+      - ./hermes:/opt/data
+      - ~/.codex:/opt/config/.codex:ro
     networks:
       - internal-nw
     extra_hosts:
@@ -347,9 +286,6 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
-    depends_on:
-      hermes-agent-init:
-        condition: service_completed_successfully
     label_file:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
     labels:
@@ -386,14 +322,13 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
-      HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
-      HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      # HERMES_LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      # HERMES_LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      # HERMES_LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
     ports:
       - 31001:9119
     volumes:
-      - hermes-agent-data:/opt/data
-      - ./skills:/opt/inferlab/skills:ro
+      - ./hermes:/opt/data
     networks:
       - internal-nw
     healthcheck:
@@ -416,7 +351,6 @@ services:
 volumes:
   ollama-cache:
   tei-cache:
-  hermes-agent-data:
 
 networks:
   internal-nw:
