@@ -21,6 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 
 services:
   litellm:
+    <<: *external-dns-stabilizer
     image: docker.io/litellm/litellm:v1.91.0
     container_name: ${STACK_NAME:-inferlab}-litellm
     restart: unless-stopped
@@ -72,6 +73,7 @@ services:
       - homepage.description=LLM_Proxy
 
   ollama:
+    <<: *external-dns-stabilizer
     image: docker.io/ollama/ollama:0.31.1
     container_name: ${STACK_NAME:-inferlab}-ollama
     restart: unless-stopped
@@ -103,6 +105,7 @@ services:
       - homepage.description=Inference_Engine
 
   ollama-init:
+    <<: *external-dns-stabilizer
     image: docker.io/ollama/ollama:0.31.1
     container_name: ${STACK_NAME:-inferlab}-ollama-init
     restart: no
@@ -132,6 +135,7 @@ services:
         done; echo 'All models pulled.'; kill "$$OLLAMA_PID"
 
   tei-embedding:
+    <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
     container_name: ${STACK_NAME:-inferlab}-tei-embedding
     restart: unless-stopped
@@ -173,6 +177,7 @@ services:
       - homepage.description=Embedding_Inference_Engine
 
   tei-reranking:
+    <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
     container_name: ${STACK_NAME:-inferlab}-tei-reranking
     restart: unless-stopped
@@ -348,6 +353,7 @@ services:
       - homepage.description=AI_Agent
 
   hermes-agent-dashboard:
+    <<: *external-dns-stabilizer
     image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.7.2}
     container_name: ${STACK_NAME:-inferlab}-hermes-agent-dashboard
     restart: unless-stopped

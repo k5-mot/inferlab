@@ -1,3 +1,14 @@
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
 services:
   dify-init-permissions:
     image: docker.io/library/busybox:latest
@@ -23,6 +34,7 @@ services:
       - internal-nw
 
   dify-api:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-api
     restart: unless-stopped
@@ -102,6 +114,7 @@ services:
       - homepage.description=Automation
 
   dify-worker:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-worker
     restart: unless-stopped
@@ -144,6 +157,7 @@ services:
       - homepage.description=Automation
 
   dify-worker-beat:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-worker-beat
     restart: unless-stopped
@@ -178,6 +192,7 @@ services:
       - homepage.description=Automation
 
   dify-web:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-web:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-web
     restart: unless-stopped
@@ -211,6 +226,7 @@ services:
       - homepage.description=Automation
 
   dify-plugin-daemon:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-plugin-daemon:0.6.3-local
     container_name: ${STACK_NAME:-inferlab}-dify-plugin-daemon
     restart: unless-stopped
@@ -261,6 +277,7 @@ services:
       - homepage.description=Automation
 
   dify-sandbox:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-sandbox:0.2.15
     container_name: ${STACK_NAME:-inferlab}-dify-sandbox
     restart: unless-stopped
@@ -297,6 +314,7 @@ services:
       - homepage.description=Automation
 
   dify-local-sandbox:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-local-sandbox:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-local-sandbox
     restart: unless-stopped
@@ -321,6 +339,7 @@ services:
       - homepage.description=Automation
 
   dify-agent-backend:
+    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-backend:1.16.0-rc1
     container_name: ${STACK_NAME:-inferlab}-dify-agent-backend
     restart: unless-stopped
@@ -355,6 +374,7 @@ services:
       - homepage.description=Automation
 
   dify-ssrf-proxy:
+    <<: *external-dns-stabilizer
     image: docker.io/ubuntu/squid:latest
     container_name: ${STACK_NAME:-inferlab}-dify-ssrf-proxy
     restart: unless-stopped
@@ -432,11 +452,14 @@ services:
       - homepage.description=Inmemory_Database
 
   dify-qdrant:
+    <<: *external-dns-stabilizer
     image: docker.io/qdrant/qdrant:v1.18.2
     container_name: ${STACK_NAME:-inferlab}-dify-qdrant
     restart: unless-stopped
     profiles:
       - automation
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
     volumes:
       - dify-qdrant-storage:/qdrant/storage
       - dify-qdrant-snapshots:/qdrant/snapshots
