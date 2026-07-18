@@ -1,0 +1,14 @@
+model:
+  provider: gemini
+  default: google/gemma-4-31b-it
+
+agent:
+  max_turns: 50
+  reasoning_effort: medium
+
+display:
+  show_reasoning: false
+
+onboarding:
+  seen:
+    profile_build_offered: true

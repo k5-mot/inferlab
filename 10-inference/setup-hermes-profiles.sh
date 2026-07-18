@@ -19,6 +19,8 @@
 set -euo pipefail
 
 CONTAINER="${STACK_NAME:-inferlab}-hermes-agent"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROFILE_TEMPLATE_DIR="${SCRIPT_DIR}/hermes-agent/profiles"
 
 # プロファイル名とAPIサーバーポートの対応(必要に応じて変更)
 PROFILES=(alfa bravo charlie)
@@ -36,6 +38,25 @@ wait_healthy() {
   done
   echo "ERROR: ${CONTAINER} が healthy になりません(status=${status})。" >&2
   exit 1
+}
+
+# copy_profile_template は Git 管理された profile テンプレートをコンテナ内へ同期する。
+# 引数: profile 名。
+# 戻り値: テンプレートのコピーに成功すれば 0 を返す。
+copy_profile_template() {
+  local profile="$1"
+  local template_dir="${PROFILE_TEMPLATE_DIR}/${profile}"
+  local profile_dir="/opt/data/profiles/${profile}"
+
+  if [ ! -d "${template_dir}" ]; then
+    echo "    template not found, skip"
+    return 0
+  fi
+
+  echo "==> [${profile}] profile template を同期"
+  docker exec "${CONTAINER}" mkdir -p "${profile_dir}"
+  docker cp "${template_dir}/config.yaml" "${CONTAINER}:${profile_dir}/config.yaml"
+  docker cp "${template_dir}/SOUL.md" "${CONTAINER}:${profile_dir}/SOUL.md"
 }
 
 echo "==> target container: ${CONTAINER}"
@@ -78,6 +99,8 @@ for i in "${!PROFILES[@]}"; do
       fi
     done
   "
+
+  copy_profile_template "${profile}"
 done
 
 # -----------------------------------------------------------------------------

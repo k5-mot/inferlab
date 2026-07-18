@@ -1,0 +1,14 @@
+model:
+  provider: openai-codex
+  default: gpt-5.5
+
+agent:
+  max_turns: 80
+  reasoning_effort: high
+
+display:
+  show_reasoning: false
+
+onboarding:
+  seen:
+    profile_build_offered: true

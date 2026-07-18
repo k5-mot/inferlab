@@ -1,0 +1,14 @@
+model:
+  provider: openrouter
+  default: openrouter/free
+
+agent:
+  max_turns: 40
+  reasoning_effort: low
+
+display:
+  show_reasoning: false
+
+onboarding:
+  seen:
+    profile_build_offered: true
