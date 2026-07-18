@@ -8,20 +8,26 @@
 
 layout:
   - 00-common:
+      icon: /icons/dashboard.svg
       style: row
       columns: 4
   - 01-infra:
+      icon: /icons/secure-tunnel.svg
       style: row
       columns: 4
   - 10-inference:
+      icon: /icons/inference-engine.svg
       style: row
       columns: 4
   - 11-webui:
+      icon: /icons/web-ui.svg
       style: row
       columns: 4
   - 12-storage:
+      icon: /icons/file-storage.svg
       style: row
       columns: 4
   - 51-llmops:
+      icon: /icons/observability.svg
       style: row
       columns: 4
