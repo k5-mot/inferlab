@@ -1,8 +1,10 @@
 .claude/
 .codex/
+.agents/
 .roo/
 __pycache__
 devcontainer-lock.json
 .env
 .env.prod
 .env.local
+skills-lock.json
