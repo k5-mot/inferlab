@@ -19,6 +19,9 @@ services:
       - webui
     environment:
       ### General
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ANONYMIZED_TELEMETRY: "false"
       WEBUI_URL: http://${PUBLIC_HOST}:31100
       WEBUI_SECRET_KEY: sk-open-webui-secret-key
       ENABLE_NOTES: "true"
@@ -144,6 +147,8 @@ services:
     profiles:
       - webui
     environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      GRADIO_ANALYTICS_ENABLED: "false"
       DOCLING_SERVE_HOST: 0.0.0.0
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"

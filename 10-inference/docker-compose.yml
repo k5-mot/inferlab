@@ -158,6 +158,8 @@ services:
       - "16"
       - --tokenization-workers
       - "2"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
     volumes:
       - tei-cache:/data
     networks:
@@ -200,6 +202,8 @@ services:
       - "16"
       - --tokenization-workers
       - "2"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
     volumes:
       - tei-cache:/data
     networks:

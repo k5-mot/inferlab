@@ -90,6 +90,8 @@ services:
       - "qwen3"
       - --served-model-name
       - "Qwen3.6-27B-FP8:27B"
+    environment:
+      VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
     networks:
@@ -130,6 +132,9 @@ services:
       - "0.05"
       - --served-model-name
       - "ruri-v3:310m"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
     networks:
@@ -163,6 +168,9 @@ services:
       - "0.05"
       - --served-model-name
       - "ruri-v3-reranker:310m"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
     networks:

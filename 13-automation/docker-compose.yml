@@ -77,9 +77,10 @@ services:
       PLUGIN_DIFY_INNER_API_KEY: sk-dify-plugin-inner-api-key
       INNER_API_KEY_FOR_PLUGIN: sk-dify-plugin-inner-api-key
       AGENT_BACKEND_BASE_URL: http://dify-agent-backend:5050
-      MARKETPLACE_ENABLED: "true"
-      MARKETPLACE_API_URL: https://marketplace.dify.ai
-      MARKETPLACE_URL: https://marketplace.dify.ai
+      MARKETPLACE_ENABLED: "false"
+      MARKETPLACE_API_URL: ""
+      MARKETPLACE_URL: ""
+      CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
     networks:
@@ -123,6 +124,10 @@ services:
     environment:
       <<: *dify-api-env
       MODE: worker
+      MARKETPLACE_ENABLED: "false"
+      MARKETPLACE_API_URL: ""
+      MARKETPLACE_URL: ""
+      CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
     networks:
@@ -166,6 +171,10 @@ services:
     environment:
       <<: *dify-api-env
       MODE: beat
+      MARKETPLACE_ENABLED: "false"
+      MARKETPLACE_API_URL: ""
+      MARKETPLACE_URL: ""
+      CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     volumes:
       - dify-storage:/app/api/storage
     networks:
@@ -203,8 +212,8 @@ services:
       SERVER_CONSOLE_API_URL: http://dify-api:5001
       APP_API_URL: http://${PUBLIC_HOST}:31300
       NEXT_PUBLIC_SOCKET_URL: ws://${PUBLIC_HOST}:31300
-      MARKETPLACE_API_URL: https://marketplace.dify.ai
-      MARKETPLACE_URL: https://marketplace.dify.ai
+      MARKETPLACE_API_URL: ""
+      MARKETPLACE_URL: ""
       NEXT_TELEMETRY_DISABLED: "1"
     networks:
       - internal-nw
@@ -252,7 +261,7 @@ services:
       PLUGIN_PACKAGE_CACHE_PATH: plugin_packages
       PLUGIN_MEDIA_CACHE_PATH: assets
       FORCE_VERIFYING_SIGNATURE: "true"
-      MARKETPLACE_ENABLED: "true"
+      MARKETPLACE_ENABLED: "false"
     volumes:
       - dify-plugin-daemon:/app/storage
     networks:

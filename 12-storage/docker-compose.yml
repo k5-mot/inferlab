@@ -46,7 +46,7 @@ services:
     volumes:
       - nextcloud:/var/www/html
       - ./nextcloud/hooks/post-installation:/docker-entrypoint-hooks.d/post-installation:ro
-      - ./nextcloud/hooks/before-starting:/docker-entrypoint-hooks.d/before-starting:ro
+      - ./nextcloud-hooks/before-starting:/docker-entrypoint-hooks.d/before-starting:ro
     networks:
       - internal-nw
     healthcheck:
