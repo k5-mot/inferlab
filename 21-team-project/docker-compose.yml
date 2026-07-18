@@ -15,7 +15,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 || exit 1
       interval: 30s
       timeout: 5s
       retries: 10
@@ -41,7 +41,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - node -e "fetch('http://127.0.0.1:3000/spaces/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 10
@@ -67,7 +67,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/god-mode/ || exit 1
       interval: 30s
       timeout: 5s
       retries: 10
@@ -92,6 +92,7 @@ services:
       DEBUG: "0"
       DJANGO_SETTINGS_MODULE: plane.settings.production
       SECRET_KEY: sk-plane-secret-key
+      GUNICORN_WORKERS: 2
       POSTGRES_USER: plane
       POSTGRES_PASSWORD: plane_password
       POSTGRES_DB: plane
@@ -111,6 +112,15 @@ services:
       AWS_S3_ENDPOINT_URL: http://plane-minio:9000
       AWS_S3_BUCKET_NAME: uploads
       FILE_SIZE_LIMIT: 5242880
+      APP_BASE_URL: http://${PUBLIC_HOST}:32001
+      APP_BASE_PATH: ""
+      ADMIN_BASE_URL: http://${PUBLIC_HOST}:32001
+      ADMIN_BASE_PATH: /god-mode
+      SPACE_BASE_URL: http://${PUBLIC_HOST}:32001
+      SPACE_BASE_PATH: /spaces
+      LIVE_BASE_URL: http://${PUBLIC_HOST}:32001
+      LIVE_BASE_PATH: /live
+      LIVE_SERVER_SECRET_KEY: sk-plane-live-secret-key
     networks:
       - internal-nw
     depends_on:
@@ -234,6 +244,16 @@ services:
     restart: unless-stopped
     profiles:
       - team-project
+    environment:
+      PORT: 3000
+      API_BASE_URL: http://plane-api:8000
+      WEB_BASE_URL: http://${PUBLIC_HOST}:32001
+      LIVE_BASE_URL: http://${PUBLIC_HOST}:32001
+      LIVE_BASE_PATH: /live
+      LIVE_SERVER_SECRET_KEY: sk-plane-live-secret-key
+      REDIS_HOST: plane-redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://plane-redis:6379/0
     networks:
       - internal-nw
     healthcheck:
@@ -260,6 +280,9 @@ services:
     environment:
       FILE_SIZE_LIMIT: 5242880
       BUCKET_NAME: uploads
+      SITE_ADDRESS: :80
+    volumes:
+      - ./plane-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
     ports:
       - 32001:80
     networks:
