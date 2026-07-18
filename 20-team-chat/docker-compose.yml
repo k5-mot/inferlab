@@ -7,7 +7,7 @@ services:
       - team-chat
     environment:
       CERTIFICATES: self-signed
-      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32443}}
+      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32000}}
       SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
       SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
       SETTING_EMAIL_HOST_USER: ${ZULIP_EMAIL_HOST_USER:-noreply@example.com}
@@ -22,6 +22,12 @@ services:
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
       SETTING_OPEN_REALM_CREATION: ${ZULIP_OPEN_REALM_CREATION:-True}
+      SETTING_FAKE_EMAIL_DOMAIN: ${ZULIP_FAKE_EMAIL_DOMAIN:-zulip.local}
+      ZULIP_AUTO_CREATE_REALM_ID: ${ZULIP_AUTO_CREATE_REALM_ID:-}
+      ZULIP_AUTO_CREATE_REALM_NAME: ${ZULIP_AUTO_CREATE_REALM_NAME:-InferLab}
+      ZULIP_AUTO_CREATE_ADMIN_EMAIL: ${ZULIP_AUTO_CREATE_ADMIN_EMAIL:-admin@example.com}
+      ZULIP_AUTO_CREATE_ADMIN_NAME: ${ZULIP_AUTO_CREATE_ADMIN_NAME:-InferLab Admin}
+      ZULIP_AUTO_CREATE_ADMIN_PASSWORD: ${ZULIP_AUTO_CREATE_ADMIN_PASSWORD:-}
       SECRETS_email_password: ${ZULIP_EMAIL_PASSWORD:-123456789}
       SECRETS_rabbitmq_password: ${ZULIP_RABBITMQ_PASSWORD:-zulip_password}
       SECRETS_postgres_password: ${ZULIP_POSTGRES_PASSWORD:-zulip_password}
@@ -31,10 +37,11 @@ services:
       ZULIP_AUTH_BACKENDS: EmailAuthBackend
     ports:
       - "${ZULIP_HTTP_HOST_PORT:-32002}:80"
-      - "${ZULIP_HTTPS_HOST_PORT:-32443}:443"
+      - "${ZULIP_HTTPS_HOST_PORT:-32000}:443"
       - "${ZULIP_SMTP_HOST_PORT:-32025}:25"
     volumes:
       - zulip-data:/data
+      - ./post-setup.d:/data/post-setup.d:ro
     ulimits:
       nofile:
         soft: 1000000
@@ -53,7 +60,7 @@ services:
     labels:
       - homepage.group=20-team-chat
       - homepage.name=Zulip
-      - homepage.href=https://${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32443}}/new/
+      - homepage.href=https://${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32000}}/
       - homepage.description=Team chat platform
       - homepage.icon=zulip.png
 

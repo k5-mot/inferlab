@@ -115,6 +115,7 @@ services:
       # HTTPS終端設定.
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
+      JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-128K}
       # ヘルスチェックエンドポイントの有効化.
       KC_HEALTH_ENABLED: "true"
     ports:

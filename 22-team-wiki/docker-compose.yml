@@ -9,7 +9,7 @@ services:
       PUID: ${BOOKSTACK_PUID:-1000}
       PGID: ${BOOKSTACK_PGID:-1000}
       TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
-      APP_URL: ${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32003}
+      APP_URL: ${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32200}
       APP_KEY: ${BOOKSTACK_APP_KEY:-base64:8Xpuu6D/PftKO7GAZWORsKIw1rveODqBcEyU8HKaxCA=}
       DB_HOST: bookstack-mariadb
       DB_PORT: "3306"
@@ -32,7 +32,7 @@ services:
       SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
       CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     ports:
-      - "${BOOKSTACK_HOST_PORT:-32003}:80"
+      - "${BOOKSTACK_HOST_PORT:-32200}:80"
     volumes:
       - bookstack-config:/config
       - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
@@ -53,7 +53,7 @@ services:
     labels:
       - homepage.group=22-team-wiki
       - homepage.name=BookStack
-      - homepage.href=http://${PUBLIC_HOST}:32003
+      - homepage.href=http://${PUBLIC_HOST}:32200
       - homepage.description=Team documentation wiki
       - homepage.icon=bookstack.png
 
