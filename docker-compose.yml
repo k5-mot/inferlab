@@ -7,9 +7,9 @@ include:
   - ./11-webui/docker-compose.yml
   - ./12-storage/docker-compose.yml
   - ./13-automation/docker-compose.yml
-  # - ./20-team-chat/docker-compose.yml
+  - ./20-team-chat/docker-compose.yml
   - ./21-team-project/docker-compose.yml
-  # - ./22-team-wiki/docker-compose.yml
+  - ./22-team-wiki/docker-compose.yml
   - ./51-llmops/docker-compose.yml
 
 networks:

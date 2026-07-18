@@ -1,15 +1,23 @@
 services:
   zulip:
     image: ghcr.io/zulip/zulip-server:12.1-0
-    container_name: zulip
+    container_name: ${STACK_NAME:-inferlab}-zulip
     restart: unless-stopped
     profiles:
       - team-chat
     environment:
-      DB_HOST: zulip-postgres
-      DB_HOST_PORT: "5432"
-      DB_USER: zulip
       SSL_CERTIFICATE_GENERATION: self-signed
+      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}}
+      SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
+      SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
+      SETTING_EMAIL_HOST_USER: ${ZULIP_EMAIL_HOST_USER:-noreply@example.com}
+      SETTING_EMAIL_PORT: ${ZULIP_EMAIL_PORT:-587}
+      SETTING_EMAIL_USE_SSL: ${ZULIP_EMAIL_USE_SSL:-False}
+      SETTING_EMAIL_USE_TLS: ${ZULIP_EMAIL_USE_TLS:-True}
+      SETTING_REMOTE_POSTGRES_HOST: zulip-postgres
+      SETTING_REMOTE_POSTGRES_PORT: "5432"
+      SETTING_REMOTE_POSTGRES_USER: zulip
+      SETTING_REMOTE_POSTGRES_DATABASE: zulip
       SETTING_MEMCACHED_LOCATION: zulip-memcached:11211
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
@@ -19,13 +27,6 @@ services:
       SECRETS_memcached_password: ${ZULIP_MEMCACHED_PASSWORD:-zulip_password}
       SECRETS_redis_password: ${ZULIP_REDIS_PASSWORD:-zulip_password}
       SECRETS_secret_key: ${ZULIP_SECRET_KEY:-sk-zulip-secret-key}
-      SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-localhost.localdomain}
-      SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
-      SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
-      SETTING_EMAIL_HOST_USER: ${ZULIP_EMAIL_HOST_USER:-noreply@example.com}
-      SETTING_EMAIL_PORT: ${ZULIP_EMAIL_PORT:-587}
-      SETTING_EMAIL_USE_SSL: ${ZULIP_EMAIL_USE_SSL:-False}
-      SETTING_EMAIL_USE_TLS: ${ZULIP_EMAIL_USE_TLS:-True}
       ZULIP_AUTH_BACKENDS: EmailAuthBackend
     ports:
       - "${ZULIP_HTTP_HOST_PORT:-32002}:80"
@@ -38,20 +39,25 @@ services:
         soft: 1000000
         hard: 1048576
     networks:
-      - internalnw
+      - internal-nw
     depends_on:
       zulip-postgres:
-        condition: service_started
+        condition: service_healthy
       zulip-memcached:
         condition: service_started
       zulip-rabbitmq:
-        condition: service_started
+        condition: service_healthy
       zulip-redis:
-        condition: service_started
+        condition: service_healthy
+    labels:
+      - homepage.group=20-team-chat
+      - homepage.name=Zulip
+      - homepage.href=http://${PUBLIC_HOST}:32002
+      - homepage.description=Team chat platform
 
   zulip-postgres:
     image: zulip/zulip-postgresql:14
-    container_name: zulip-postgres
+    container_name: ${STACK_NAME:-inferlab}-zulip-postgres
     restart: unless-stopped
     profiles:
       - team-chat
@@ -62,11 +68,25 @@ services:
     volumes:
       - zulip-postgres-data:/var/lib/postgresql/data
     networks:
-      - internalnw
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U zulip -d zulip
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+    labels:
+      - homepage.group=20-team-chat
+      - homepage.name=Zulip-Postgres
+      - homepage.description=Relational database
 
   zulip-memcached:
     image: docker.io/library/memcached:1.6.45-alpine
-    container_name: zulip-memcached
+    container_name: ${STACK_NAME:-inferlab}-zulip-memcached
     restart: unless-stopped
     profiles:
       - team-chat
@@ -83,11 +103,15 @@ services:
       MEMCACHED_SASL_PWDB: /home/memcache/memcached-sasl-db
       MEMCACHED_PASSWORD: ${ZULIP_MEMCACHED_PASSWORD:-zulip_password}
     networks:
-      - internalnw
+      - internal-nw
+    labels:
+      - homepage.group=20-team-chat
+      - homepage.name=Zulip-Memcached
+      - homepage.description=In-memory cache
 
   zulip-rabbitmq:
-    image: docker.io/library/rabbitmq:4.1
-    container_name: zulip-rabbitmq
+    image: docker.io/library/rabbitmq:4.2
+    container_name: ${STACK_NAME:-inferlab}-zulip-rabbitmq
     restart: unless-stopped
     profiles:
       - team-chat
@@ -97,11 +121,27 @@ services:
     volumes:
       - zulip-rabbitmq-data:/var/lib/rabbitmq
     networks:
-      - internalnw
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - rabbitmq-diagnostics
+        - -q
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/rabbitmq.labels
+    labels:
+      - homepage.group=20-team-chat
+      - homepage.name=Zulip-RabbitMQ
+      - homepage.description=Reliable message broker
 
   zulip-redis:
     image: docker.io/library/redis:8.8.0-alpine
-    container_name: zulip-redis
+    container_name: ${STACK_NAME:-inferlab}-zulip-redis
     restart: unless-stopped
     profiles:
       - team-chat
@@ -116,7 +156,21 @@ services:
     volumes:
       - zulip-redis-data:/data
     networks:
-      - internalnw
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+    labels:
+      - homepage.group=20-team-chat
+      - homepage.name=Zulip-Redis
+      - homepage.description=In-memory data store
 
 volumes:
   zulip-data:
