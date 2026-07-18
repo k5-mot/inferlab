@@ -1,5 +1,9 @@
 @charset "UTF-8";
 
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+/* Catppuccin theme for Homer */
+
 #app.theme-default.dark {
   --catppuccin-base: #303446;
   --catppuccin-surface0: #414559;
@@ -29,8 +33,12 @@
   --link-hover: var(--catppuccin-green);
 }
 
+/* Header */
+
+/* Comment the following section out if you want no header image. Also, set --highlight-primary to var(--catppuccin-surface0). */
+
 #app.theme-default.dark #bighead {
-  background-image: url('../assets/images/backgrounds/romb.png');
+  /* background-image: url('/assets/themes/catppuccin/images/backgrounds/romb.png'); */
   background-size: cover;
   background-position: center;
 }
@@ -79,6 +87,8 @@
   outline: none;
 }
 
+/* Message */
+
 #app.theme-default.dark .message-header {
   color: var(--catppuccin-text);
   background-color: var(--catppuccin-surface0);
@@ -118,6 +128,8 @@
   color: var(--catppuccin-red);
 }
 
+/* Cards */
+
 #app.theme-default.dark .tag {
   background-color: var(--catppuccin-pink);
   color: var(--catppuccin-text-dark);
@@ -145,14 +157,17 @@
   background-color: var(--catppuccin-surface1);
 }
 
+/* Footer */
 #app.theme-default.dark .footer {
   color: var(--catppuccin-text);
 }
 
+/* Adds spacing to the bottom of cards */
 body #app .card-content {
   margin-bottom: 0.55rem;
 }
 
+/* Custom font using Fira Code */
 body #bighead .navbar a {
   font-family: 'Fira Code', monospace;
 }
