@@ -336,7 +336,7 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
     labels:
       - homepage.group=10-inference
-      - homepage.name=Hermes-Agent
+      - homepage.name=Hermes-Agent-Dashboard
       - homepage.href=http://${PUBLIC_HOST}:31001
       - homepage.description=AI agent dashboard
 
