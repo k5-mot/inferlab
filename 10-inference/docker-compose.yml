@@ -227,7 +227,8 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
+    image: docker.io/nousresearch/hermes-agent:main
+    # image: docker.io/nousresearch/hermes-agent:v2026.7.7.2
     container_name: ${STACK_NAME:-inferlab}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -238,13 +239,22 @@ services:
       - run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
+      ### OpenAI-Compatible API
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: "0.0.0.0"
-      API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
+      # API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
       API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
       GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
       GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
       REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
+      ### Web Dashboard
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-admin}
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
+      ### Open-WebUI
       OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
       OPEN_WEBUI_PUBLIC_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:31001}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
@@ -253,24 +263,36 @@ services:
       OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
       OPEN_WEBUI_CHATS_ALL_DB_PATH: ${OPEN_WEBUI_CHATS_ALL_DB_PATH:-/api/v1/chats/all/db}
       OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
+      ### Discord
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
+      ### Langfuse
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
       SEARXNG_SECRET_KEY: "sk-searxng-secret-key"
+      ### docling-serve
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
+      ### Model providers
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CODEX_HOME: /opt/config/.codex
+    ports:
+      - 31001:9119
+      # - 8643:8643 # alfa
+      # - 8644:8644 # bravo
+      # - 8645:8645 # charlie
     volumes:
       - hermes-data:/opt/data
+      - ./hermes-agent/hermes-config.yaml:/root/.hermes/config.yaml:ro
       - ~/.codex:/opt/config/.codex:ro
     networks:
       - internal-nw
@@ -288,57 +310,7 @@ services:
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
       - homepage.description=AI agent
-
-  hermes-agent-dashboard:
-    <<: *external-dns-stabilizer
-    image: ${HERMES_AGENT_IMAGE:-docker.io/nousresearch/hermes-agent:main}
-    container_name: ${STACK_NAME:-inferlab}-hermes-agent-dashboard
-    restart: unless-stopped
-    profiles:
-      - inference
-      - hermes-agent
-    command:
-      - dashboard
-      - --host
-      - "0.0.0.0"
-      - --port
-      - "9119"
-      - --no-open
-    environment:
-      GATEWAY_HEALTH_URL: http://hermes-agent:8642
-      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-admin}
-      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
-      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
-      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
-      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
-      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
-      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
-    ports:
-      - 31001:9119
-    volumes:
-      - hermes-data:/opt/data
-    networks:
-      - internal-nw
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:9119/health >/dev/null || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    depends_on:
-      hermes-agent:
-        condition: service_healthy
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
-    labels:
-      - homepage.group=10-inference
-      - homepage.name=Hermes-Agent-Dashboard
       - homepage.href=http://${PUBLIC_HOST}:31001
-      - homepage.description=AI agent dashboard
 
 volumes:
   ollama-cache:
