@@ -61,7 +61,7 @@ services:
       - homepage.group=12-storage
       - homepage.name=Nextcloud
       - homepage.href=http://${PUBLIC_HOST}:31200/apps/files/files
-      - homepage.description=Cloud_Storage
+      - homepage.description=Cloud storage platform
 
   nextcloud-mariadb:
     image: docker.io/library/mariadb:12.3.2-noble
@@ -92,7 +92,7 @@ services:
     labels:
       - homepage.group=12-storage
       - homepage.name=Nextcloud-MariaDB
-      - homepage.description=Database
+      - homepage.description=MySQL-compatible relational database
 
   nextcloud-redis:
     # image: docker.io/library/redis:8.8.0-alpine
@@ -113,7 +113,7 @@ services:
     labels:
       - homepage.group=12-storage
       - homepage.name=Nextcloud-Redis
-      - homepage.description=Inmemory_Database
+      - homepage.description=Inmemory key-value NoSQL database
 
   oikb:
     image: ghcr.io/open-webui/oikb:0.3.6
@@ -155,7 +155,7 @@ services:
       - homepage.group=12-storage
       - homepage.name=Open-WebUI-Knowledge-Bases
       - homepage.href=http://${PUBLIC_HOST}:31201
-      - homepage.description=Knowledge_Bases_for_Open_WebUI
+      - homepage.description=Knowledge bases for Open-WebUI
 
 volumes:
   nextcloud:

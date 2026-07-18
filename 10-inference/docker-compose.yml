@@ -70,7 +70,7 @@ services:
       - homepage.group=10-inference
       - homepage.name=LiteLLM
       - homepage.href=http://${PUBLIC_HOST}:31000/ui
-      - homepage.description=LLM_Proxy
+      - homepage.description=LLM proxy
 
   ollama:
     <<: *external-dns-stabilizer
@@ -103,7 +103,7 @@ services:
     labels:
       - homepage.group=10-inference
       - homepage.name=Ollama
-      - homepage.description=Inference_Engine
+      - homepage.description=Inference engine
 
   ollama-init:
     <<: *external-dns-stabilizer
@@ -178,7 +178,7 @@ services:
     labels:
       - homepage.group=10-inference
       - homepage.name=TEI_Embedding
-      - homepage.description=Embedding_Inference_Engine
+      - homepage.description=Embedding inference engine
 
   tei-reranking:
     <<: *external-dns-stabilizer
@@ -223,7 +223,7 @@ services:
     labels:
       - homepage.group=10-inference
       - homepage.name=TEI_Reranking
-      - homepage.description=Embedding_Inference_Engine
+      - homepage.description=Embedding inference engine
 
   hermes-agent-init:
     <<: *external-dns-stabilizer
@@ -358,7 +358,7 @@ services:
     labels:
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
-      - homepage.description=AI_Agent
+      - homepage.description=AI agent
 
   hermes-agent-dashboard:
     <<: *external-dns-stabilizer
@@ -414,7 +414,7 @@ services:
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
       - homepage.href=http://${PUBLIC_HOST}:31001
-      - homepage.description=AI_Agent
+      - homepage.description=AI agent dashboard
 
 volumes:
   ollama-cache:

@@ -137,7 +137,7 @@ services:
       - homepage.group=11-webui
       - homepage.name=Open-WebUI
       - homepage.href=http://${PUBLIC_HOST}:31100
-      - homepage.description=AI_Chat
+      - homepage.description=AI chat platform
 
   docling:
     <<: *external-dns-stabilizer
@@ -187,7 +187,7 @@ services:
       - homepage.group=11-webui
       - homepage.name=docling-serve
       - homepage.href=http://${PUBLIC_HOST}:31101/ui
-      - homepage.description=Document_Converter
+      - homepage.description=Document processing engine
 
   searxng:
     <<: *external-dns-stabilizer
@@ -216,7 +216,7 @@ services:
       - homepage.group=11-webui
       - homepage.name=SearXNG
       - homepage.href=http://${PUBLIC_HOST}:31102
-      - homepage.description=Search_engine
+      - homepage.description=Metasearch engine
 
   voicevox_engine:
     image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
@@ -236,7 +236,7 @@ services:
     labels:
       - homepage.group=11-webui
       - homepage.name=VOICEVOX-Engine
-      - homepage.description=Text_to_Speech_Engine
+      - homepage.description=Text-to-Speech Engine
 
   voicevox-openai-tts:
     <<: *external-dns-stabilizer
@@ -262,7 +262,7 @@ services:
     labels:
       - homepage.group=11-webui
       - homepage.name=VOICEVOX-API
-      - homepage.description=Text_to_Speech_API
+      - homepage.description=Text-to-Speech API
 
   qdrant:
     <<: *external-dns-stabilizer
@@ -290,7 +290,7 @@ services:
     labels:
       - homepage.group=11-webui
       - homepage.name=Qdrant
-      - homepage.description=Vector_DB
+      - homepage.description=Vector search database
 
 volumes:
   open-webui-data:

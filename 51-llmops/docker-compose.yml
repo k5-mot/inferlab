@@ -87,7 +87,7 @@ services:
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Worker
-      - homepage.description=LLMOps
+      - homepage.description=LLMOps platform
 
   langfuse-web:
     image: docker.io/langfuse/langfuse:3.212.0
@@ -129,7 +129,7 @@ services:
       - homepage.group=51-llmops
       - homepage.name=Langfuse
       - homepage.href=http://${PUBLIC_HOST}:35100
-      - homepage.description=LLMOps
+      - homepage.description=LLMOps platform
 
   langfuse-clickhouse:
     image: docker.io/clickhouse/clickhouse-server:25.8.28.1
@@ -158,7 +158,7 @@ services:
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-ClickHouse
-      - homepage.description=OLAP_DBMS
+      - homepage.description=Columnar analytics database
 
   langfuse-minio:
     image: cgr.dev/chainguard/minio:latest
@@ -188,7 +188,7 @@ services:
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-MinIO
-      - homepage.description=Object_Storage
+      - homepage.description=S3-compatible object storage
 
   langfuse-redis:
     # image: docker.io/library/redis:7.4.9-bookworm
@@ -216,7 +216,7 @@ services:
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Redis
-      - homepage.description=Inmemory_Database
+      - homepage.description=Inmemory key-value NoSQL database
 
   langfuse-postgres:
     # image: docker.io/library/postgres:17.10-trixie
@@ -246,7 +246,7 @@ services:
     labels:
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Postgres
-      - homepage.description=Database
+      - homepage.description=Relational database
 
 volumes:
   langfuse_clickhouse_data:

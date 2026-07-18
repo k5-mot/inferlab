@@ -113,7 +113,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-API
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-worker:
     <<: *external-dns-stabilizer
@@ -161,7 +161,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Worker
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-worker-beat:
     <<: *external-dns-stabilizer
@@ -201,7 +201,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Worker-Beat
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-web:
     <<: *external-dns-stabilizer
@@ -236,7 +236,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Web
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-plugin-daemon:
     <<: *external-dns-stabilizer
@@ -288,7 +288,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Plugin
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-sandbox:
     <<: *external-dns-stabilizer
@@ -326,7 +326,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Sandbox
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-local-sandbox:
     <<: *external-dns-stabilizer
@@ -352,7 +352,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Local-Sandbox
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-agent-backend:
     <<: *external-dns-stabilizer
@@ -388,7 +388,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Agent-Backend
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
   dify-ssrf-proxy:
     <<: *external-dns-stabilizer
@@ -407,7 +407,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-SSRF-Proxy
-      - homepage.description=Proxy
+      - homepage.description="Forward proxy"
 
   dify-postgres:
     image: docker.io/library/postgres:15-alpine
@@ -438,7 +438,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Postgres
-      - homepage.description=Database
+      - homepage.description=Relational database
 
   dify-redis:
     image: docker.io/library/redis:8.8.0-alpine
@@ -469,7 +469,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Redis
-      - homepage.description=Inmemory_Database
+      - homepage.description=Inmemory key-value NoSQL database
 
   dify-qdrant:
     <<: *external-dns-stabilizer
@@ -499,7 +499,7 @@ services:
     labels:
       - homepage.group=13-automation
       - homepage.name=Dify-Qdrant
-      - homepage.description=Vector_DB
+      - homepage.description=Vector search database
 
   dify-nginx:
     image: docker.io/library/nginx:latest
@@ -534,7 +534,7 @@ services:
       - homepage.group=13-automation
       - homepage.name=Dify
       - homepage.href=http://${PUBLIC_HOST}:31300
-      - homepage.description=Automation
+      - homepage.description=AI workflow platform
 
 volumes:
   dify-storage:

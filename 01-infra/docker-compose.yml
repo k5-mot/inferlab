@@ -40,7 +40,7 @@ services:
     labels:
       - homepage.group=01-infra
       - homepage.name=Cloudflare
-      - homepage.description=Outband_connection
+      - homepage.description=Secure outband tunnel
 
   couchdb:
     image: docker.io/library/couchdb:3.5.2.1
@@ -71,7 +71,7 @@ services:
     labels:
       - homepage.group=01-infra
       - homepage.name=CouchDB
-      - homepage.description=Database_for_Obsidian
+      - homepage.description=Document NoSQL database for Obsidian
 
 volumes:
   couchdb_data:

@@ -24,8 +24,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Web
+      - homepage.description=Project management tool
 
   plane-space:
     image: docker.io/makeplane/plane-space:v1.3.1
@@ -50,8 +50,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Space
+      - homepage.description=Project management tool
 
   plane-admin:
     image: docker.io/makeplane/plane-admin:v1.3.1
@@ -76,8 +76,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Admin
+      - homepage.description=Project management tool
 
   plane-api:
     image: docker.io/makeplane/plane-backend:v1.3.1
@@ -136,8 +136,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-API
+      - homepage.description=Project management tool
 
   plane-worker:
     image: docker.io/makeplane/plane-backend:v1.3.1
@@ -165,8 +165,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Worker
+      - homepage.description=Project management tool
 
   plane-beat-worker:
     image: docker.io/makeplane/plane-backend:v1.3.1
@@ -194,8 +194,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Beat-Worker
+      - homepage.description=Project management tool
 
   plane-migrator:
     image: docker.io/makeplane/plane-backend:v1.3.1
@@ -225,8 +225,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Migrator
+      - homepage.description=Project management tool
 
   plane-live:
     image: docker.io/makeplane/plane-live:v1.3.1
@@ -248,8 +248,8 @@ services:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
       - homepage.group=21-team-project
-      - homepage.name=Plane
-      - homepage.description=Vector_Database
+      - homepage.name=Plane-Live
+      - homepage.description=Project management tool
 
   plane-proxy:
     image: docker.io/makeplane/plane-proxy:v1.3.1
@@ -289,7 +289,7 @@ services:
       - homepage.group=21-team-project
       - homepage.name=Plane
       - homepage.href=http://${PUBLIC_HOST}:32001
-      - homepage.description=Vector_Database
+      - homepage.description=Project management tool
 
   plane-postgres:
     image: docker.io/library/postgres:15.7-alpine
@@ -323,7 +323,7 @@ services:
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-Postgres
-      - homepage.description=Database
+      - homepage.description=Relational database
 
   plane-redis:
     image: docker.io/valkey/valkey:7.2.11-alpine
@@ -349,7 +349,7 @@ services:
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-Redis
-      - homepage.description=Database
+      - homepage.description=Inmemory key-value NoSQL database
 
   plane-rabbitmq:
     image: docker.io/library/rabbitmq:3.13.6-management-alpine
@@ -380,7 +380,7 @@ services:
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-RabbitMQ
-      - homepage.description=Database
+      - homepage.description=Reliable multi-protocol message broker
 
   plane-minio:
     image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
@@ -416,7 +416,7 @@ services:
     labels:
       - homepage.group=21-team-project
       - homepage.name=Plane-MinIO
-      - homepage.description=Database
+      - homepage.description=S3-compatible object storage
 
 volumes:
   plane-postgres-data:
