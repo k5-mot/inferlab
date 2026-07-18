@@ -1,6 +1,6 @@
 services:
   leantime:
-    image: docker.io/leantime/leantime:${LEAN_VERSION:-latest}
+    image: docker.io/leantime/leantime:${LEAN_VERSION:-3.9.8}
     container_name: ${STACK_NAME:-inferlab}-leantime
     restart: unless-stopped
     profiles:
@@ -28,7 +28,8 @@ services:
       LEAN_SESSION_PASSWORD: ${LEANTIME_SESSION_PASSWORD:-sk-leantime-session-password-change-me}
       LEAN_SESSION_EXPIRATION: 28800
       LEAN_SESSION_SECURE: false
-      LEAN_OIDC_ENABLE: ${LEANTIME_OIDC_ENABLE:-false}
+      LEAN_OIDC_ENABLE: ${LEANTIME_OIDC_ENABLE:-true}
+      # LEAN_OIDC_ENABLE: ${LEANTIME_OIDC_ENABLE:-false}
       LEAN_OIDC_CLIENT_ID: ${LEANTIME_OIDC_CLIENT_ID:-leantime}
       LEAN_OIDC_CLIENT_SECRET: ${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}
       LEAN_OIDC_PROVIDER_URL: ${LEANTIME_OIDC_PROVIDER_URL:-http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}}
@@ -59,9 +60,10 @@ services:
       - homepage.name=Leantime
       - homepage.href=http://${PUBLIC_HOST}:32001
       - homepage.description=Project management tool
+      - homepage.icon=leantime.png
 
   leantime-db:
-    image: docker.io/library/mysql:8.4
+    image: docker.io/library/mysql:8.4.10
     container_name: ${STACK_NAME:-inferlab}-leantime-db
     restart: unless-stopped
     profiles:
@@ -90,6 +92,7 @@ services:
       - homepage.group=21-team-project
       - homepage.name=Leantime-MySQL
       - homepage.description=Relational database
+      - homepage.icon=mysql.png
 
 volumes:
   leantime-db-data:
