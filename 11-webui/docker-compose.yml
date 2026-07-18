@@ -46,10 +46,38 @@ services:
       ### For LLM on LiteLLM
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
       OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
-      DEFAULT_MODELS: "deepseek/deepseek-v4-flash:cloud"
+      DEFAULT_MODELS: "ollama/google/gemma4:31b-cloud"
+      OPENAI_API_CONFIGS: >-
+        {
+          "2": {
+            "enable": true,
+            "auth_type": "bearer",
+            "headers": {
+              "X-OpenWebUI-Chat-Id": "{{CHAT_ID}}",
+              "X-OpenWebUI-Message-Id": "{{MESSAGE_ID}}",
+              "X-OpenWebUI-User-Message-Id": "{{USER_MESSAGE_ID}}",
+              "X-OpenWebUI-User-Message-Parent-Id": "{{USER_MESSAGE_PARENT_ID}}",
+              "X-OpenWebUI-Task": "{{TASK}}"
+            }
+          }
+        }
+      ### Open-Terminal
+      TERMINAL_SERVER_CONNECTIONS: >-
+        [
+          {
+            "id": "open-terminal",
+            "url": "http://open-terminal:8000",
+            "key": "sk-open-terminal-api-key",
+            "name": "Open-Terminal",
+            "auth_type": "bearer",
+            "config": {
+              "access_grants": []
+            }
+          }
+        ]
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
-      RAG_EMBEDDING_MODEL: "cl-nagoya/ruri-v3:310m"
+      RAG_EMBEDDING_MODEL: "huggingface/cl-nagoya/ruri-v3:310m"
       RAG_OPENAI_API_BASE_URL: http://litellm:4000
       RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       RAG_EMBEDDING_BATCH_SIZE: "4"
@@ -62,7 +90,7 @@ services:
       RAG_RERANKING_ENGINE: "external"
       RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000"
       RAG_EXTERNAL_RERANKER_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      RAG_RERANKING_MODEL: "cl-nagoya/ruri-v3-reranker:310m"
+      RAG_RERANKING_MODEL: "huggingface/cl-nagoya/ruri-v3-reranker:310m"
       RAG_TOP_K: 12
       RAG_TOP_K_RERANKER: 6
       ### For Docling (Content Extraction)
@@ -105,7 +133,7 @@ services:
       AUDIO_TTS_ENGINE: openai
       AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
       AUDIO_TTS_OPENAI_API_KEY: "EMPTY"
-      AUDIO_TTS_MODEL: "voicevox-v1"
+      AUDIO_TTS_MODEL: "voicevox/voicevox-tts"
       AUDIO_TTS_VOICE: "3"
     entrypoint:
       - bash
@@ -138,6 +166,46 @@ services:
       - homepage.name=Open-WebUI
       - homepage.href=http://${PUBLIC_HOST}:31100
       - homepage.description=AI chat platform
+
+  # https://github.com/open-webui/open-terminal
+  # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
+  open-terminal:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/open-webui/open-terminal:0.11.33
+    container_name: ${STACK_NAME:-inferlab}-open-terminal
+    restart: unless-stopped
+    profiles:
+      - webui
+    environment:
+      OPEN_TERMINAL_PACKAGES: "cowsay figlet"
+      OPEN_TERMINAL_PIP_PACKAGES: "httpx polars"
+      OPEN_TERMINAL_NPM_PACKAGES: "typescript tsx"
+      OPEN_TERMINAL_MULTI_USER: "true"
+      OPEN_TERMINAL_API_KEY: "sk-open-terminal-api-key"
+      NPM_CONFIG_PREFIX: /home/user/.npm-global
+      PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    ports:
+      - 31103:8000
+    volumes:
+      - open-terminal-data:/home/user
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/files/list"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
+    labels:
+      - homepage.group=11-webui
+      - homepage.name=Open-Terminal
+      - homepage.href=http://${PUBLIC_HOST}:31103/docs
+      - homepage.description=Terminal support tool
 
   docling:
     <<: *external-dns-stabilizer
@@ -294,6 +362,7 @@ services:
 
 volumes:
   open-webui-data:
+  open-terminal-data:
   docling-data:
   qdrant-storage:
   qdrant-snapshots:

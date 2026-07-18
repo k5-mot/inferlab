@@ -42,7 +42,7 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
   - voicevox_engine (docker.io/voicevox/voicevox_engine:cpu-0.25.2)
   - voicevox-openai-tts (ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0)
   - qdrant (docker.io/qdrant/qdrant:v1.18.2)
-  - Open-WebUI-Computer (ghcr.io/open-webui/computer:0.9.4)
+  - Open-Terminal (ghcr.io/open-webui/open-terminal:0.11.33)
 - `12-storage/docker-compose.yml`
   - Nextcloud (docker.io/library/nextcloud:34.0.1-apache)
     - https://github.com/nextcloud/docker#base-version---apache
