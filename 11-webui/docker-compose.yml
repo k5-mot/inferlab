@@ -44,8 +44,8 @@ services:
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak
       ### For LLM on LiteLLM
-      OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
-      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
+      OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1;http://hermes-agent:8643/v1;http://hermes-agent:8644/v1;http://hermes-agent:8645/v1"
+      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key;hermes-agent-secret-key;hermes-agent-secret-key;hermes-agent-secret-key"
       DEFAULT_MODELS: "ollama/google/gemma4:31b-cloud"
       OPENAI_API_CONFIGS: >-
         {
