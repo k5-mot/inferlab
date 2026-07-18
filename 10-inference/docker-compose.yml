@@ -270,7 +270,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       CODEX_HOME: /opt/config/.codex
     volumes:
-      - ./hermes:/opt/data
+      - hermes-data:/opt/data
       - ~/.codex:/opt/config/.codex:ro
     networks:
       - internal-nw
@@ -320,7 +320,7 @@ services:
     ports:
       - 31001:9119
     volumes:
-      - ./hermes:/opt/data
+      - hermes-data:/opt/data
     networks:
       - internal-nw
     healthcheck:
@@ -343,6 +343,7 @@ services:
 volumes:
   ollama-cache:
   tei-cache:
+  hermes-data:
 
 networks:
   internal-nw:
