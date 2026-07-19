@@ -1,4 +1,7 @@
 {
+    "to_formats": [
+        "md"
+    ],
     "do_ocr": true,
     "force_ocr": false,
     "ocr_preset": "tesseract",
@@ -7,7 +10,9 @@
         "jpn_vert",
         "eng"
     ],
+    "document_timeout": 180,
     "do_picture_description": true,
+    "picture_description_area_threshold": 0.1,
     "picture_description_custom_config": {
         "engine_options": {
             "engine_type": "api",
@@ -16,7 +21,7 @@
                 "Authorization": "Bearer sk-litellm-master-key"
             },
             "params": {},
-            "timeout": 300,
+            "timeout": 120,
             "concurrency": 1
         },
         "model_spec": {
@@ -28,7 +33,7 @@
                 "api",
                 "api_openai"
             ],
-            "max_new_tokens": 1024,
+            "max_new_tokens": 256,
             "temperature": 0.0
         }
     }
