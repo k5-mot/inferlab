@@ -138,12 +138,14 @@ services:
     entrypoint:
       - bash
       - -c
+      # TODO: OpenWebUI 本体で Channels の AI 返信保存が修正されたら、起動時パッチ実行を削除する。
       - python /run/patches/open-webui-channel-stream-drain.py && export DOCLING_PARAMS="$(cat /run/config/docling_params.json)" && exec bash start.sh
     ports:
       - 31100:8080
     volumes:
       - open-webui-data:/app/backend/data
       - ./docling/params.json:/run/config/docling_params.json:ro
+      # TODO: 上記の起動時パッチを削除するときに、このマウントも一緒に削除する。
       - ./patches/open-webui-channel-stream-drain.py:/run/patches/open-webui-channel-stream-drain.py:ro
     networks:
       - internal-nw

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """OpenWebUI の Channels 応答ストリームと本文抽出のパッチを適用する。"""
 
+# TODO: OpenWebUI 本体で Channels の StreamingResponse 消費と output 形式の本文保存が修正されたら、この暫定パッチを削除する。
+
 from __future__ import annotations
 
 import os
