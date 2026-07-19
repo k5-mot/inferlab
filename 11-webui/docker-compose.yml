@@ -78,7 +78,7 @@ services:
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
       RAG_EMBEDDING_MODEL: "huggingface/cl-nagoya/ruri-v3:310m"
-      RAG_OPENAI_API_BASE_URL: http://litellm:4000
+      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
       RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       RAG_EMBEDDING_BATCH_SIZE: "4"
       RAG_EMBEDDING_CONCURRENT_REQUESTS: "2"
