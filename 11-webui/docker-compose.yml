@@ -344,6 +344,12 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: 8g
+    memswap_limit: 9g
     label_file:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/qdrant.labels
     labels:
