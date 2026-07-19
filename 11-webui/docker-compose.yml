@@ -138,12 +138,13 @@ services:
     entrypoint:
       - bash
       - -c
-      - export DOCLING_PARAMS="$(cat /run/config/docling_params.json)" && exec bash start.sh
+      - python /run/patches/open-webui-channel-stream-drain.py && export DOCLING_PARAMS="$(cat /run/config/docling_params.json)" && exec bash start.sh
     ports:
       - 31100:8080
     volumes:
       - open-webui-data:/app/backend/data
       - ./docling/params.json:/run/config/docling_params.json:ro
+      - ./patches/open-webui-channel-stream-drain.py:/run/patches/open-webui-channel-stream-drain.py:ro
     networks:
       - internal-nw
     depends_on:
