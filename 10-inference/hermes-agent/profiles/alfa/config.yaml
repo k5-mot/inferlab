@@ -1,6 +1,7 @@
 model:
-  provider: openai-codex
-  default: gpt-5.5
+  provider: custom
+  default: gpt-oss:20b-cloud
+  base_url: http://ollama:11434/v1
 
 agent:
   max_turns: 80

@@ -1,6 +1,7 @@
 model:
-  provider: openrouter
-  default: openrouter/free
+  provider: custom
+  default: nemotron-3-nano:30b-cloud
+  base_url: http://ollama:11434/v1
 
 agent:
   max_turns: 40

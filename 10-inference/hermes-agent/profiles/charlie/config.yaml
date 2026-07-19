@@ -1,6 +1,7 @@
 model:
-  provider: gemini
-  default: google/gemma-4-31b-it
+  provider: custom
+  default: gemma4:31b-cloud
+  base_url: http://ollama:11434/v1
 
 agent:
   max_turns: 50
