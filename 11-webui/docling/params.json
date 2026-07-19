@@ -1,11 +1,35 @@
 {
     "do_ocr": true,
     "force_ocr": false,
-    "ocr_engine": "tesseract_cli",
     "ocr_preset": "tesseract",
     "ocr_lang": [
         "jpn",
         "jpn_vert",
         "eng"
-    ]
+    ],
+    "do_picture_description": true,
+    "picture_description_custom_config": {
+        "engine_options": {
+            "engine_type": "api",
+            "url": "http://litellm:4000/v1/chat/completions",
+            "headers": {
+                "Authorization": "Bearer sk-litellm-master-key"
+            },
+            "params": {},
+            "timeout": 60,
+            "concurrency": 1
+        },
+        "model_spec": {
+            "name": "ollama/google/gemma4:31b-cloud",
+            "default_repo_id": "ollama/google/gemma4:31b-cloud",
+            "prompt": "この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。",
+            "response_format": "markdown",
+            "supported_engines": [
+                "api",
+                "api_openai"
+            ],
+            "max_new_tokens": 1024,
+            "temperature": 0.0
+        }
+    }
 }

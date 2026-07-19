@@ -94,33 +94,11 @@ services:
       RAG_TOP_K: 12
       RAG_TOP_K_RERANKER: 6
       ### For Docling (Content Extraction)
+      # https://github.com/docling-project/docling/blob/main/docling/datamodel/vlm_engine_options.py
+      # https://github.com/docling-project/docling/blob/main/docling/datamodel/stage_model_specs.py
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
-      # DOCLING_PARAMS: >-
-      #   {
-      #     "do_ocr": true,
-      #     "force_ocr": false,
-      #     "ocr_engine": "tesseract_cli",
-      #     "ocr_preset": "tesseract",
-      #     "ocr_lang": ["jpn", "jpn_vert", "eng"]
-      #   }
-      # "picture_description_custom_config": "{\"picture_area_threshold\": 0.01, \"batch_size\": 1, \"scale\": 2.0, \"engine_options\": {\"engine_type\": \"api\", \"url\": \"http://litellm:4000/v1/chat/completions\", \"headers\": {\"Authorization\": \"Bearer sk-litellm-master-key\"}, \"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}, \"timeout\": 90, \"concurrency\": 1}, \"model_spec\": {\"name\": \"gemma4:31b\", \"default_repo_id\": \"gemma4:31b\", \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"response_format\": \"plaintext\", \"api_overrides\": {\"api\": {\"params\": {\"model\": \"gemma4:31b\", \"temperature\": 0.0, \"max_tokens\": 1024}}}}, \"prompt\": \"この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。\", \"generation_config\": {\"temperature\": 0.0, \"max_tokens\": 1024}}"
-      # DOCLING_PARAMS: >-
-      #   {
-      #     "do_ocr": true,
-      #     "force_ocr": false,
-      #     "ocr_preset": "auto",
-      #     "ocr_custom_config": {
-      #       "kind": "tesseract",
-      #       "lang": ["jpn", "jpn_vert", "eng"],
-      #       "force_full_page_ocr": false,
-      #       "bitmap_area_threshold": 0.30
-      #     },
-      #     "do_picture_description": true,
-      #     "generate_picture_images": true,
-      #     "picture_description_preset": "litellm"
-      #   }
       ### For Qdrant (Vector DB)
       VECTOR_DB: qdrant
       QDRANT_API_KEY: "sk-qdrant-api-key"
@@ -139,7 +117,16 @@ services:
       - bash
       - -c
       # TODO: OpenWebUI 本体で Channels の AI 返信保存が修正されたら、起動時パッチ実行を削除する。
-      - python /run/patches/open-webui-channel-stream-drain.py && export DOCLING_PARAMS="$(cat /run/config/docling_params.json)" && exec bash start.sh
+      # NOTE: DOCLING_PARAMS のトップレベルにネストしたオブジェクトは、OpenWebUI の
+      #       DoclingLoader が requests の data= にそのまま渡すため dict のままでは壊れる
+      #       (dict のキー名だけが multipart フィールドとして送信される)。
+      #       起動時にネストオブジェクトのみ JSON 文字列へ変換して export する。
+      - |
+        set -e
+        python /run/patches/open-webui-channel-stream-drain.py
+        DOCLING_PARAMS="$(python -c 'import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:(json.dumps(v) if isinstance(v,dict) else v) for k,v in d.items()}))' /run/config/docling_params.json)"
+        export DOCLING_PARAMS
+        exec bash start.sh
     ports:
       - 31100:8080
     volumes:
@@ -229,6 +216,7 @@ services:
       DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+      DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG: "true"
       DOCLING_SERVE_ENG_LOC_NUM_WORKERS: 1
       DOCLING_SERVE_OPTIONS_CACHE_SIZE: 1
       DOCLING_SERVE_QUEUE_MAX_SIZE: 1
