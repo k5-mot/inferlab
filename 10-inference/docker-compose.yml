@@ -435,6 +435,8 @@ services:
         set -eu
         exec /init /opt/hermes/docker/main-wrapper.sh gateway run
     environment:
+      HOME: /opt/data
+      HERMES_HOME: /opt/data
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
       API_SERVER_ENABLED: "true"
@@ -475,7 +477,11 @@ services:
       DOCLING_MCP_SERVICE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      # HERMES_HOME: /opt/data
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CODEX_HOME: /opt/data/.codex
       UV_LINK_MODE: copy
       UV_NO_CACHE: "true"
       HERMES_UID: 1000
