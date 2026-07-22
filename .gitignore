@@ -8,14 +8,3 @@ devcontainer-lock.json
 .env.prod
 .env.local
 skills-lock.json
-
-# Hermes Agent runtime state
-10-inference/hermes-agent/hermes-home/
-10-inference/hermes-agent/.hermes/
-10-inference/hermes-agent/data/
-10-inference/hermes-agent/audio_cache/
-10-inference/hermes-agent/voice-memos/
-
-# Keep shareable examples trackable
-!10-inference/hermes-agent/hermes-config.example.yaml
-!10-inference/hermes-agent/SOUL.example.md
