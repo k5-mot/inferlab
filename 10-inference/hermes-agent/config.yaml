@@ -12,6 +12,13 @@ custom_providers:
   - name: litellm
     base_url: http://litellm:4000/v1
     key_env: LITELLM_MASTER_KEY
+    extra_headers:
+      x-litellm-disable-callbacks: langfuse_otel,langfuse
+    extra_body:
+      no-log: true
+      metadata:
+        caller: hermes-agent
+        litellm_langfuse_disabled: true
     models:
       - google/gemma4:31b
       - openai/gpt-oss:20b
