@@ -3,7 +3,7 @@
 ## Usage
 
 ```bash
-sudo docker compose --env-file .env --profile common --profile infra --profile inference --profile webui --profile storage --profile llmops up -d --remove-orphans
+sudo docker compose --env-file .env --profile common --profile infra --profile inference --profile webui --profile storage --profile developer --profile llmops up -d --remove-orphans
 ```
 
 ## Services
@@ -91,6 +91,11 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
 - 【TODO】 `22-team-wiki/docker-compose.yml`
   - BookStack (lscr.io/linuxserver/bookstack:26.05.2)
   - MariaDB (lscr.io/linuxserver/mariadb:11.4.12)
+- `30-developer/docker-compose.yml`
+  - Pulp (docker.io/pulp/pulp-minimal:stable)
+    - カスタム image で pulp-npm、pulp-hugging-face、Keycloak 連携用 python-social-auth を追加
+    - PostgreSQL (docker.io/library/postgres:16)
+    - Redis (docker.io/library/redis:8.8.0-alpine)
 - `51-llmops/docker-compose.yml`
   - https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
   - Langfuse-Worker (docker.io/langfuse/langfuse-worker:3.212.0)

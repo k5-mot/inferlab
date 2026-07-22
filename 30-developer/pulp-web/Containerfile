@@ -1,0 +1,25 @@
+ARG PULP_BASE_TAG=stable
+FROM docker.io/pulp/pulp-minimal:${PULP_BASE_TAG} AS builder
+
+USER root
+
+RUN pip install --upgrade \
+      pulp-npm \
+      pulp-hugging-face \
+      -c /constraints.txt && \
+    rm -rf /root/.cache/pip
+
+RUN set -eux; \
+    mkdir -p /etc/nginx/pulp; \
+    for module in pulp_npm pulp_hugging_face; do \
+      snippet="$(python -c "import importlib.util, pathlib; spec = importlib.util.find_spec('${module}'); print(pathlib.Path(spec.origin).parent / 'app' / 'webserver_snippets' / 'nginx.conf')" 2>/dev/null)"; \
+      if [ -f "$snippet" ]; then \
+        ln -sf "$snippet" "/etc/nginx/pulp/${module}.conf"; \
+      fi; \
+    done
+
+FROM docker.io/centos/nginx-116-centos7:1.16
+
+COPY --from=builder /etc/nginx/pulp/*.conf ${NGINX_DEFAULT_CONF_PATH}/
+
+CMD ["nginx", "-g", "daemon off;"]

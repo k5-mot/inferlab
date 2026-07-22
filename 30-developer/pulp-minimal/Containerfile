@@ -1,0 +1,20 @@
+ARG PULP_BASE_TAG=stable
+FROM docker.io/pulp/pulp-minimal:${PULP_BASE_TAG}
+
+USER root
+
+RUN pip install --upgrade \
+      social-auth-core \
+      social-auth-app-django \
+      pulp-npm \
+      pulp-hugging-face \
+      -c /constraints.txt && \
+    rm -rf /root/.cache/pip
+
+USER pulp:pulp
+
+RUN PULP_STATIC_ROOT=/var/lib/operator/static/ \
+    PULP_CONTENT_ORIGIN=localhost \
+    /usr/local/bin/pulpcore-manager collectstatic --clear --noinput --link
+
+USER root:root

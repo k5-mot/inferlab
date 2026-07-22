@@ -53,16 +53,16 @@ Pulp は GPLv2+ の OSS で、公式説明でも free and open-source とされ�
 
 | 用途 | Host port | URL |
 | --- | --- | --- |
-| Pulp Web/API/Content | `30030` | `http://<IP>:30030/` |
+| Pulp Web/API/Content | `33000` | `http://<IP>:33000/` |
 | Keycloak HTTP | `30001` | `http://<IP>:30001/` |
 | Keycloak HTTPS | `30002` | `https://<IP>:30002/` |
 
 IP アドレス運用では、Pulp の base URL と Keycloak redirect URI に同じ IP を使う。
 
 ```text
-PULP_CONTENT_ORIGIN=http://<IP>:30030
-PULP_API_ROOT=http://<IP>:30030/pulp/api/v3/
-Keycloak redirect URI=http://<IP>:30030/*
+PULP_CONTENT_ORIGIN=http://<IP>:33000
+PULP_API_ROOT=http://<IP>:33000/pulp/api/v3/
+Keycloak redirect URI=http://<IP>:33000/*
 ```
 
 HTTPS が必要な場合は、IP Subject Alternative Name を含む証明書を発行する。IP SAN のない証明書を使うと、CLI や browser の OIDC flow で検証エラーが起きる。
@@ -71,7 +71,7 @@ HTTPS が必要な場合は、IP Subject Alternative Name を含む証明書を�
 
 Pulp は Keycloak 連携の公式手順を持つ。構成は次のどちらかにする。
 
-### 方式 A: Pulp の python-social-auth 連携
+### 方式 A: Pulp の python-social-auth 連携 ⇒ 採用
 
 Pulp image に次の Python module を追加する。
 
@@ -97,8 +97,8 @@ Keycloak 側:
 - Realm: `${STACK_NAME:-inferlab}`
 - Client ID: `pulp`
 - Client type: confidential
-- Valid redirect URIs: `http://<IP>:30030/*`
-- Web origins: `http://<IP>:30030`
+- Valid redirect URIs: `http://<IP>:33000/*`
+- Web origins: `http://<IP>:33000`
 - Mapper: `username`, `email`, `groups`, `given name`, `family name`
 - Audience mapper: `pulp`
 
@@ -163,9 +163,9 @@ Keycloak group を Pulp group / role に対応させる。
 Client:
 
 ```bash
-podman login http://<IP>:30030
-podman pull <IP>:30030/container-dockerhub-cache/library/alpine:latest
-podman push <IP>:30030/container-internal/app:latest
+podman login http://<IP>:33000
+podman pull <IP>:33000/container-dockerhub-cache/library/alpine:latest
+podman push <IP>:33000/container-internal/app:latest
 ```
 
 Docker client は HTTP registry を既定で拒否するため、HTTP 運用では各 client に insecure registry 設定が必要になる。可能なら IP SAN 付き HTTPS にする。
@@ -185,8 +185,8 @@ Docker client は HTTP registry を既定で拒否するため、HTTP 運用で�
 Client:
 
 ```bash
-pip install <package> --index-url http://<IP>:30030/pypi/python-pypi-cache/simple/ --trusted-host <IP>
-twine upload --repository-url http://<IP>:30030/pypi/python-internal/ dist/*
+pip install <package> --index-url http://<IP>:33000/pypi/python-pypi-cache/simple/ --trusted-host <IP>
+twine upload --repository-url http://<IP>:33000/pypi/python-internal/ dist/*
 ```
 
 HTTP の場合、pip は `trusted-host` が必要になる。
@@ -206,8 +206,8 @@ HTTP の場合、pip は `trusted-host` が必要になる。
 Client:
 
 ```bash
-npm config set registry http://<IP>:30030/npm/npm-registry-cache/
-npm publish --registry http://<IP>:30030/npm/npm-internal/
+npm config set registry http://<IP>:33000/npm/npm-registry-cache/
+npm publish --registry http://<IP>:33000/npm/npm-internal/
 ```
 
 `pulp_npm` は本番投入前に scoped package、dist-tag、package publish、delete/unpublish の動作を検証する。
@@ -226,7 +226,7 @@ npm publish --registry http://<IP>:30030/npm/npm-internal/
 Client:
 
 ```bash
-HF_ENDPOINT=http://<IP>:30030/huggingface/hf-cache
+HF_ENDPOINT=http://<IP>:33000/huggingface/hf-cache
 huggingface-cli download <repo-id>
 ```
 
@@ -249,7 +249,7 @@ Client:
 ```ini
 [inferlab-rpm]
 name=InferLab RPM
-baseurl=http://<IP>:30030/pulp/content/rpm-internal/
+baseurl=http://<IP>:33000/pulp/content/rpm-internal/
 enabled=1
 gpgcheck=0
 ```
@@ -271,7 +271,7 @@ gpgcheck=0
 Client:
 
 ```text
-deb [trusted=yes] http://<IP>:30030/pulp/content/deb-internal/ stable main
+deb [trusted=yes] http://<IP>:33000/pulp/content/deb-internal/ stable main
 ```
 
 本番では `trusted=yes` を使わず、Release file signing と apt key 配布を行う。
@@ -279,7 +279,7 @@ deb [trusted=yes] http://<IP>:30030/pulp/content/deb-internal/ stable main
 ## 実装メモ
 
 - root の `docker-compose.yml` に `./30-developer/docker-compose.yml` を include する。
-- `.env` に `PULP_HTTP_HOST_PORT=30030` と `PULP_OIDC_CLIENT_SECRET` を追加する。
+- `.env` に `PULP_HTTP_HOST_PORT=33000` と `PULP_OIDC_CLIENT_SECRET` を追加する。
 - npm と Hugging Face plugin を含むカスタム image を作る。
 - Pulp API と content は同一外部 URL に寄せる。IP 運用では redirect と generated URL の不整合を避ける。
 - 管理用 API と upload は Keycloak 認証必須、公開 distribution の content read は未認証にする。

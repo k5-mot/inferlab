@@ -1,0 +1,337 @@
+services:
+  pulp-postgres:
+    image: docker.io/library/postgres:16
+    container_name: ${STACK_NAME:-inferlab}-pulp-postgres
+    restart: unless-stopped
+    profiles:
+      - developer
+    environment:
+      POSTGRES_DB: pulp
+      POSTGRES_USER: pulp
+      POSTGRES_PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - pulp-postgres-data:/var/lib/postgresql/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U pulp -d pulp
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp-PostgreSQL
+      - homepage.description=Relational database
+
+  pulp-redis:
+    image: docker.io/library/redis:8.8.0-alpine
+    container_name: ${STACK_NAME:-inferlab}-pulp-redis
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - sh
+      - -euc
+      - |
+        echo "requirepass '$$REDIS_PASSWORD'" > /etc/redis.conf
+        exec redis-server /etc/redis.conf
+    environment:
+      REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
+    volumes:
+      - pulp-redis-data:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp-Redis
+      - homepage.description=In-memory data store
+
+  pulp-container-token-key:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-container-token-key
+    restart: "no"
+    profiles:
+      - developer
+    command:
+      - sh
+      - -euc
+      - |
+        if [ ! -s /etc/pulp/certs/container_auth_private_key.pem ]; then
+          openssl ecparam -name prime256v1 -genkey -noout -out /etc/pulp/certs/container_auth_private_key.pem
+          openssl ec -in /etc/pulp/certs/container_auth_private_key.pem -pubout -out /etc/pulp/certs/container_auth_public_key.pem
+          chmod 600 /etc/pulp/certs/container_auth_private_key.pem
+          chmod 644 /etc/pulp/certs/container_auth_public_key.pem
+        fi
+    volumes:
+      - pulp-certs:/etc/pulp/certs
+    networks:
+      - internal-nw
+
+  pulp-migration:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-migration
+    restart: "no"
+    profiles:
+      - developer
+    command:
+      - pulpcore-manager
+      - migrate
+      - --noinput
+    environment: &pulp-env
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      PULP_HTTP_HOST_PORT: ${PULP_HTTP_HOST_PORT:-33000}
+      PULP_SECRET_KEY: ${PULP_SECRET_KEY:-sk-pulp-secret-key-change-me}
+      PULP_POSTGRES_PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+      PULP_REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
+      PULP_OIDC_CLIENT_ID: ${PULP_OIDC_CLIENT_ID:-pulp}
+      PULP_OIDC_CLIENT_SECRET: ${PULP_OIDC_CLIENT_SECRET:-sk-pulp-oidc-client-secret-key}
+      PULP_KEYCLOAK_REALM: ${PULP_KEYCLOAK_REALM:-${STACK_NAME:-inferlab}}
+      PULP_KEYCLOAK_PUBLIC_KEY: ${PULP_KEYCLOAK_PUBLIC_KEY:-}
+      PULP_KEYCLOAK_BASE_URL: ${PULP_KEYCLOAK_BASE_URL:-http://${PUBLIC_HOST}:30001}
+    volumes: &pulp-volumes
+      - ./pulp/settings.py:/etc/pulp/settings.py:ro
+      - pulp-certs:/etc/pulp/certs
+      - pulp-data:/var/lib/pulp
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-redis:
+        condition: service_healthy
+      pulp-container-token-key:
+        condition: service_completed_successfully
+
+  pulp-signing-service:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-signing-service
+    restart: "no"
+    profiles:
+      - developer
+    command:
+      - sh
+      - -euc
+      - add_signing_service.sh
+    environment: *pulp-env
+    volumes: *pulp-volumes
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-migration:
+        condition: service_completed_successfully
+
+  pulp-init-admin:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-init-admin
+    restart: "no"
+    profiles:
+      - developer
+    command:
+      - set_init_password.sh
+    environment:
+      <<: *pulp-env
+      PULP_DEFAULT_ADMIN_PASSWORD: ${PULP_DEFAULT_ADMIN_PASSWORD:-pulp_admin_password}
+    volumes: *pulp-volumes
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-migration:
+        condition: service_completed_successfully
+
+  pulp-api:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-api
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - pulp-api
+    user: pulp
+    environment: *pulp-env
+    volumes: *pulp-volumes
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-redis:
+        condition: service_healthy
+      pulp-migration:
+        condition: service_completed_successfully
+      pulp-signing-service:
+        condition: service_completed_successfully
+      pulp-init-admin:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - readyz.py
+        - /pulp/api/v3/status/
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp API
+      - homepage.description=Repository manager API
+
+  pulp-content:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-content
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - pulp-content
+    user: pulp
+    environment: *pulp-env
+    volumes: *pulp-volumes
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-redis:
+        condition: service_healthy
+      pulp-migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - readyz.py
+        - /pulp/content/
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp Content
+      - homepage.description=Repository content service
+
+  pulp-worker:
+    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-minimal
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - pulp-worker
+    user: pulp
+    environment: *pulp-env
+    volumes: *pulp-volumes
+    networks:
+      - internal-nw
+    deploy:
+      replicas: ${PULP_WORKER_REPLICAS:-2}
+    depends_on:
+      pulp-postgres:
+        condition: service_healthy
+      pulp-redis:
+        condition: service_healthy
+      pulp-migration:
+        condition: service_completed_successfully
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp Worker
+      - homepage.description=Repository task worker
+
+  pulp-web:
+    image: ${STACK_NAME:-inferlab}-pulp-web:${PULP_IMAGE_TAG:-custom}
+    build:
+      context: ./pulp-web
+      dockerfile: Containerfile
+      args:
+        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    container_name: ${STACK_NAME:-inferlab}-pulp-web
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - /usr/bin/nginx.sh
+    user: root
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      PULP_HTTP_HOST_PORT: ${PULP_HTTP_HOST_PORT:-33000}
+    ports:
+      - ${PULP_HTTP_HOST_PORT:-33000}:8080
+    volumes:
+      - ./pulp-web/nginx.sh:/usr/bin/nginx.sh:ro
+      - ./pulp-web/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+    networks:
+      - internal-nw
+    depends_on:
+      pulp-api:
+        condition: service_healthy
+      pulp-content:
+        condition: service_healthy
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Pulp
+      - homepage.href=http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/
+      - homepage.description=Repository manager
+
+volumes:
+  pulp-certs:
+  pulp-data:
+  pulp-postgres-data:
+  pulp-redis-data:
+
+networks:
+  internal-nw:
