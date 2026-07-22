@@ -1,12 +1,5 @@
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
-  # user_header_mappings:
-  #   - header_name: X-OpenWebUI-User-Id
-  #     litellm_user_role: internal_user
-  #   - header_name: X-OpenWebUI-User-Email
-  #     litellm_user_role: customer
-  #   - header_name: X-OpenWebUI-Chat-Id
-  #     litellm_user_role: customer
 
 litellm_settings:
   callbacks:
@@ -14,48 +7,90 @@ litellm_settings:
   drop_params: true
   request_timeout: 600
 
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+
 model_list:
   ### Ollama
-  - model_name: ollama/google/gemma4:31b-cloud
+  - model_name: google/gemma4:31b
     litellm_params:
       model: ollama_chat/gemma4:31b-cloud
       api_base: http://ollama:11434
-  - model_name: ollama/openai/gpt-oss:20b-cloud
+    model_info:
+      id: google-gemma4-31b-ollama
+  - model_name: openai/gpt-oss:20b
     litellm_params:
       model: ollama_chat/gpt-oss:20b-cloud
       api_base: http://ollama:11434
-  - model_name: ollama/nvidia/nemotron-3-nano:30b-cloud
+    model_info:
+      id: openai-gpt-oss-20b-ollama
+  - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
       model: ollama_chat/nemotron-3-nano:30b-cloud
       api_base: http://ollama:11434
+    model_info:
+      id: nvidia-nemotron-3-nano-30b-ollama
 
   ### OpenRouter
-  - model_name: openrouter/google/gemma-4-31b-it:free
+  - model_name: google/gemma4:31b
     litellm_params:
       model: openrouter/google/gemma-4-31b-it:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+    model_info:
+      id: google-gemma4-31b-openrouter
+  - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+      model: openrouter/openai/gpt-oss-20b:free
       api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: openrouter/openrouter/free-router
+    model_info:
+      id: openai-gpt-oss-20b-openrouter
+  - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: openrouter/openrouter/free
+      model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      id: nvidia-nemotron-3-nano-30b-openrouter
+  # - model_name: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+  #   litellm_params:
+  #     model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+  #     api_key: os.environ/OPENROUTER_API_KEY
+  # - model_name: openrouter/openrouter/free-router
+  #   litellm_params:
+  #     model: openrouter/openrouter/free
+  #     api_key: os.environ/OPENROUTER_API_KEY
 
   ### Google AI Studio
-  - model_name: google/gemma-4-31b-it
+  - model_name: google/gemma4:31b
     litellm_params:
       model: gemini/gemma-4-31b-it
       api_key: os.environ/GEMINI_API_KEY
-  - model_name: google/gemini-3.5-flash
+    model_info:
+      id: google-gemma4-31b-gemini
+
+  ### OpenAI API（直接）
+  - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: gemini/gemini-3.5-flash
-      api_key: os.environ/GEMINI_API_KEY
-  - model_name: google/gemini-embedding-2
+      model: openai/gpt-oss-20b
+      api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      id: openai-gpt-oss-20b-openai
+
+  ### NVIDIA NIM（直接）
+  - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: gemini/gemini-embedding-2
-      api_key: os.environ/GEMINI_API_KEY
+      model: nvidia_nim/nvidia/nemotron-3-nano-30b-a3b
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+    model_info:
+      id: nvidia-nemotron-3-nano-30b-nim
+  # - model_name: google/gemini-3.5-flash
+  #   litellm_params:
+  #     model: gemini/gemini-3.5-flash
+  #     api_key: os.environ/GEMINI_API_KEY
+  # - model_name: google/gemini-embedding-2
+  #   litellm_params:
+  #     model: gemini/gemini-embedding-2
+  #     api_key: os.environ/GEMINI_API_KEY
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: huggingface/cl-nagoya/ruri-v3:310m

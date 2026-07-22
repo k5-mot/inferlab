@@ -18,18 +18,31 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
   - CouchDB for Obsidian (docker.io/library/couchdb:3.5.2.1)
 - `10-inference/docker-compose.yml`
   - LiteLLM (docker.io/litellm/litellm:1.92.0)
+    - 公開モデル
+      - google/gemma4:31b
+      - openai/gpt-oss:20b
+      - nvidia/nemotron-3-nano:30b
+      - huggingface/cl-nagoya/ruri-v3:310m
+      - huggingface/cl-nagoya/ruri-v3-reranker:310m
+      - voicevox/voicevox-tts
     - Ollama (https://ollama.com/search?c=cloud)
+      - gemma4:31b-cloud
+      - gpt-oss:20b-cloud
+      - nemotron-3-nano:30b-cloud
     - OpenRouter (https://openrouter.ai/openrouter/free)
-      - nvidia/nemotron-3-ultra-550b-a55b:free
       - google/gemma-4-31b-it:free
-      - openrouter/free
+      - openai/gpt-oss-20b:free
+      - nvidia/nemotron-3-nano-30b-a3b:free
     - Google AI Studio (https://aistudio.google.com/)
-      - gemini-3.5-flash
       - gemma-4-31b-it
-      - gemini-embedding-2
+    - OpenAI API
+      - gpt-oss-20b
+    - NVIDIA NIM
+      - nvidia/nemotron-3-nano-30b-a3b
   - Ollama (docker.io/ollama/ollama:0.31.2)
-    - glm-5.2:cloud
     - gemma4:31b-cloud
+    - gpt-oss:20b-cloud
+    - nemotron-3-nano:30b-cloud
   - HuggingFace Text Embeddings Inference (ghcr.io/huggingface/text-embeddings-inference:1.9.3)
     - https://huggingface.co/cl-nagoya/ruri-v3-310m
     - https://huggingface.co/cl-nagoya/ruri-v3-reranker-310m
