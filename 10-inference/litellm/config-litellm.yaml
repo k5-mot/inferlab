@@ -63,21 +63,21 @@ model_list:
   #     api_key: os.environ/GEMINI_API_KEY
 
   ### TEI; HuggingFace Text Embedding Inference
-  - model_name: huggingface/cl-nagoya/ruri-v3:310m
+  - model_name: cl-nagoya/ruri-v3:310m
     litellm_params:
       model: openai/ruri-v3:310m
       api_base: http://tei-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
-  - model_name: huggingface/cl-nagoya/ruri-v3-reranker:310m
+  - model_name: cl-nagoya/ruri-v3-reranker:310m
     litellm_params:
       model: huggingface/cl-nagoya/ruri-v3-reranker-310m
       api_base: http://tei-reranking:8000
       api_key: EMPTY
       encoding_format: float
 
-  # TTS
-  - model_name: voicevox/voicevox-tts
+  ### TTS
+  - model_name: voicevox/tts
     litellm_params:
       model: openai/tts-1
       api_base: http://voicevox-openai-tts:8000/v1

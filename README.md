@@ -22,9 +22,9 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
       - google/gemma4:31b
       - openai/gpt-oss:20b
       - nvidia/nemotron-3-nano:30b
-      - huggingface/cl-nagoya/ruri-v3:310m
-      - huggingface/cl-nagoya/ruri-v3-reranker:310m
-      - voicevox/voicevox-tts
+      - cl-nagoya/ruri-v3:310m
+      - cl-nagoya/ruri-v3-reranker:310m
+      - voicevox/tts
     - Ollama (https://ollama.com/search?c=cloud)
       - gemma4:31b-cloud
       - gpt-oss:20b-cloud
