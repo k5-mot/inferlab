@@ -1,3 +1,10 @@
+#
+# 参考資料
+# - pulp3
+#   - https://pulpproject.org/pulp-oci-images/docs/admin/tutorials/quickstart/#starting-the-container
+#   - https://pulpproject.org/pulp-oci-images/docs/admin/tutorials/quickstart/#podman-or-docker-compose
+#   - https://github.com/pulp/pulp-oci-images/blob/latest/images/compose/compose.yml
+#
 services:
   pulp-postgres:
     image: docker.io/library/postgres:16
