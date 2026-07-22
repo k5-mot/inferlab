@@ -47,9 +47,12 @@ services:
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1;http://hermes-agent:8643/v1;http://hermes-agent:8644/v1;http://hermes-agent:8645/v1"
       OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key;hermes-agent-secret-key;hermes-agent-secret-key;hermes-agent-secret-key"
       DEFAULT_MODELS: "ollama/google/gemma4:31b-cloud"
+      # https://docs.openwebui.com/reference/env-configuration/#custom-forwarded-headers-per-connection
+      # https://docs.litellm.ai/docs/proxy/request_headers#litellm-headers
+      # https://docs.litellm.ai/docs/observability/langfuse_integration#trace--generation-parameters
       OPENAI_API_CONFIGS: >-
         {
-          "2": {
+          "0": {
             "enable": true,
             "auth_type": "bearer",
             "headers": {
@@ -57,7 +60,22 @@ services:
               "X-OpenWebUI-Message-Id": "{{MESSAGE_ID}}",
               "X-OpenWebUI-User-Message-Id": "{{USER_MESSAGE_ID}}",
               "X-OpenWebUI-User-Message-Parent-Id": "{{USER_MESSAGE_PARENT_ID}}",
-              "X-OpenWebUI-Task": "{{TASK}}"
+              "X-OpenWebUI-File-Id": "{{FILE_ID}}",
+              "X-OpenWebUI-File-Name": "{{FILE_NAME}}",
+              "X-OpenWebUI-File-Content-Type": "{{FILE_CONTENT_TYPE}}",
+              "X-OpenWebUI-Task": "{{TASK}}",
+              "X-OpenWebUI-User-Id": "{{USER_ID}}",
+              "X-OpenWebUI-User-Name": "{{USER_NAME}}",
+              "X-OpenWebUI-User-Email": "{{USER_EMAIL}}",
+              "X-OpenWebUI-User-Role": "{{USER_ROLE}}",
+              "X-OpenWebUI-User-Agent": "{{USER_AGENT}}",
+              "langfuse_trace_id": "{{MESSAGE_ID}}",
+              "langfuse_trace_name": "open-webui",
+              "langfuse_session_id": "{{CHAT_ID}}",
+              "langfuse_trace_user_id": "{{USER_ID}}",
+              "langfuse_tags": "[\"open-webui\"]",
+              "langfuse_generation_id": "{{MESSAGE_ID}}",
+              "langfuse_generation_name": "open-webui"
             }
           }
         }

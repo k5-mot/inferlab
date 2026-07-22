@@ -14,6 +14,7 @@ readonly PROFILES=(
   "inference"
   "webui"
   "storage"
+#   "developer"
 #   "automation"
 #   "team-chat"
 #   "team-project"

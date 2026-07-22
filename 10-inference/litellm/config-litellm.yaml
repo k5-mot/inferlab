@@ -1,11 +1,12 @@
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
-  session_id_header_name: X-OpenWebUI-Chat-Id
-  user_header_mappings:
-    - header_name: X-OpenWebUI-User-Id
-      litellm_user_role: internal_user
-    - header_name: X-OpenWebUI-User-Email
-      litellm_user_role: customer
+  # user_header_mappings:
+  #   - header_name: X-OpenWebUI-User-Id
+  #     litellm_user_role: internal_user
+  #   - header_name: X-OpenWebUI-User-Email
+  #     litellm_user_role: customer
+  #   - header_name: X-OpenWebUI-Chat-Id
+  #     litellm_user_role: customer
 
 litellm_settings:
   callbacks:
