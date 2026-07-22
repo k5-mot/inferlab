@@ -45,6 +45,7 @@ verification_evidence.db*
 .bash_logout
 .bashrc
 .cache/
+.clean_shutdown
 .codex_gpt55_autoraise_notice
 .hermes_history
 .local/
