@@ -49,6 +49,8 @@ services:
       OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
       OAUTH_PROVIDER_NAME: Keycloak
+      ### Arena Model
+      ENABLE_EVALUATION_ARENA_MODELS: "false"
       ### For LLM on LiteLLM
       DEFAULT_MODELS: "google/gemma4:31b"
       DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
