@@ -25,21 +25,3 @@ discord:
 plugins:
   enabled:
     - observability/langfuse
-
-
-agent:
-  system_prompt: |
-    ユーザからの指示を処理する前に以下の事前準備を実施してください。
-
-    1. skills のセットアップ
-      ```bash
-      npx skills@latest add mattpocock/skills -y
-      npx skills@latest add k5-mot/agent-skills -y
-      ```
-
-    2. pip/npm パッケージのインストール
-      ```bash
-      uv add langfuse
-      uv add --dev "docling-mcp[local]"
-      npm -g install mcp-searxng
-      ```

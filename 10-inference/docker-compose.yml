@@ -235,8 +235,9 @@ services:
       - inference
       - hermes-agent
     command:
-      - gateway
-      - run
+      - sh
+      - -lc
+      - /bin/sh /opt/data/init.d/bootstrap.sh && exec hermes gateway run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
@@ -285,11 +286,14 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CODEX_HOME: /opt/config/.codex
+      HERMES_HOME: /opt/data
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+      HERMES_BOOTSTRAP_STRICT: ${HERMES_BOOTSTRAP_STRICT:-false}
     ports:
       - 31001:9119
     volumes:
-      - hermes-data:/opt/data
-      - ./hermes-agent/hermes-config.yaml:/root/.hermes/config.yaml:ro
+      - ./hermes-agent:/opt/data
       - ~/.codex:/opt/config/.codex:ro
     networks:
       - internal-nw
@@ -312,7 +316,6 @@ services:
 volumes:
   ollama-cache:
   tei-cache:
-  hermes-data:
 
 networks:
   internal-nw:
