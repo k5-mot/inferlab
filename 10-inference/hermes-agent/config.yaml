@@ -2,12 +2,20 @@ model:
   provider: openai-codex
   default: gpt-5.5
 fallback_providers:
-  - provider: gemini
-    model: google/gemma-4-31b-it
-  - provider: ollama-cloud
-    model: ollama/google/gemma4:31b-cloud
-  - provider: openrouter
-    model: openrouter/free
+  - provider: custom:litellm
+    model: google/gemma4:31b
+  - provider: custom:litellm
+    model: openai/gpt-oss:20b
+  - provider: custom:litellm
+    model: nvidia/nemotron-3-nano:30b
+custom_providers:
+  - name: litellm
+    base_url: http://litellm:4000/v1
+    key_env: LITELLM_MASTER_KEY
+    models:
+      - google/gemma4:31b
+      - openai/gpt-oss:20b
+      - nvidia/nemotron-3-nano:30b
 tts:
   provider: openai
   speed: 1.0
