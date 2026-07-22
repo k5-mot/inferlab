@@ -238,6 +238,8 @@ services:
       - gateway
       - run
     environment:
+      HOME: /opt/data
+      HERMES_HOME: /opt/data/.hermes
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
       API_SERVER_ENABLED: "true"
@@ -284,13 +286,13 @@ services:
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      CODEX_HOME: /opt/config/.codex
+      CODEX_HOME: /opt/data/.codex
     ports:
       - 31001:9119
     volumes:
-      - hermes-data:/opt/data
-      - ./hermes-agent/hermes-config.yaml:/root/.hermes/config.yaml:ro
-      - ~/.codex:/opt/config/.codex:ro
+      - ./hermes-agent/hermes-home:/opt/data/.hermes
+      - ./hermes-agent/hermes-config.yaml:/opt/data/.hermes/config.yaml:ro
+      - ~/.codex:/opt/data/.codex
     networks:
       - internal-nw
     extra_hosts:
@@ -312,7 +314,6 @@ services:
 volumes:
   ollama-cache:
   tei-cache:
-  hermes-data:
 
 networks:
   internal-nw:
