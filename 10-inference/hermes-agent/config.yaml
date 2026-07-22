@@ -1,7 +1,6 @@
 model:
   provider: openai-codex
   default: gpt-5.5
-
 fallback_providers:
   - provider: gemini
     model: google/gemma-4-31b-it
@@ -9,27 +8,24 @@ fallback_providers:
     model: ollama/google/gemma4:31b-cloud
   - provider: openrouter
     model: openrouter/free
-
 tts:
-  provider: "openai"
+  provider: openai
   speed: 1.0
   openai:
-    model: "voicevox/tts"
-    voice: "3"
-    base_url: "http://litellm:4000/v1"
+    model: voicevox/tts
+    voice: '3'
+    base_url: http://litellm:4000/v1
     speed: 1.0
-
 discord:
   require_mention: true
-
 plugins:
   enabled:
     - observability/langfuse
-
 display:
   tool_progress: all
-
 agent:
   verify_on_stop: false
-
 _config_version: 33
+onboarding:
+  seen:
+    profile_build_offered: true
