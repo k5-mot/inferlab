@@ -43,6 +43,7 @@ verification_evidence.db*
 # シェル・ツールのローカル状態
 .bash_logout
 .bashrc
+.cache/
 .codex_gpt55_autoraise_notice
 .hermes_history
 .local/

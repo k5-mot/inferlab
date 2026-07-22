@@ -25,3 +25,11 @@ discord:
 plugins:
   enabled:
     - observability/langfuse
+
+display:
+  tool_progress: all
+
+agent:
+  verify_on_stop: false
+
+_config_version: 33

@@ -237,7 +237,7 @@ services:
     command:
       - sh
       - -lc
-      - /bin/sh /opt/data/init.d/bootstrap.sh && exec hermes gateway run
+      - /bin/sh /opt/data/init.d/bootstrap.sh && exec /opt/hermes/.venv/bin/hermes gateway run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
