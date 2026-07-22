@@ -24,14 +24,20 @@ services:
       ANONYMIZED_TELEMETRY: "false"
       WEBUI_URL: http://${PUBLIC_HOST}:31100
       WEBUI_SECRET_KEY: sk-open-webui-secret-key
-      ENABLE_NOTES: "true"
-      ENABLE_AUTOMATIONS: "true"
+      # ENABLE_TITLE_GENERATION: "false"
       ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"
+      ENABLE_FOLDERS: "true"
+      ENABLE_AUTOMATIONS: "true"
+      ENABLE_NOTES: "true"
       ENABLE_API_KEYS: "true"
       ENABLE_PERSISTENT_CONFIG: "false"
       ENABLE_FORWARD_USER_INFO_HEADERS: "true"
       API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
+      ### Tasks
+      TASK_MODEL: "ollama/google/gemma4:31b-cloud"
+      # ENABLE_CONTEXT_COMPACTION: "true"
+      # ENABLE_FOLLOW_UP_GENERATION: "false"
       ### For Keycloak
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"
