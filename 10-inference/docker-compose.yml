@@ -287,9 +287,6 @@ services:
       CODEX_HOME: /opt/config/.codex
     ports:
       - 31001:9119
-      # - 8643:8643 # alfa
-      # - 8644:8644 # bravo
-      # - 8645:8645 # charlie
     volumes:
       - hermes-data:/opt/data
       - ./hermes-agent/hermes-config.yaml:/root/.hermes/config.yaml:ro
