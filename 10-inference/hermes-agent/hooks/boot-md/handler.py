@@ -1,98 +1,115 @@
-"""ゲートウェイ起動時に BOOT.md のチェックリストを実行する。"""
+"""ゲートウェイ起動時に InferLab の初期化スクリプトを実行する。"""
 
 import logging
+import os
+import subprocess
 import threading
+from pathlib import Path
 
 from hermes_constants import get_hermes_home
 
 logger = logging.getLogger("hooks.boot-md")
 
-BOOT_FILE = get_hermes_home() / "BOOT.md"
+BOOTSTRAP_SCRIPT = Path(__file__).with_name("bootstrap.sh")
+BOOTSTRAP_TIMEOUT_SECONDS = 900
 
 
-def _build_prompt(content: str) -> str:
-    """BOOT.md の内容を一回限りの起動チェック用プロンプトに変換する。
+def _trim_output(output: str | bytes | None) -> str:
+    """ログに残す外部コマンド出力を読みやすい長さに整える。
 
     引数:
-        content: BOOT.md から読み込んだ Markdown 形式の指示。
+        output: subprocess から得た標準出力または標準エラー出力。
 
     戻り値:
-        起動チェック用エージェントに渡すプロンプト文字列。
+        前後の空白を除去し、長すぎる場合は末尾側を残した文字列。
     """
-    return (
-        "You are running a startup boot checklist. Follow the instructions "
-        "below exactly.\n\n"
-        "---\n"
-        f"{content}\n"
-        "---\n\n"
-        "Execute each instruction. Put any user-facing summary in your "
-        "final response — the hook delivers it to the configured channel "
-        "(e.g. Discord or Slack); you do not send messages yourself.\n"
-        "If nothing needs attention and there is nothing to report, reply "
-        "with ONLY: [SILENT]"
-    )
+    if output is None:
+        return ""
+    if isinstance(output, bytes):
+        output = output.decode(errors="replace")
+    trimmed = output.strip()
+    if len(trimmed) <= 4000:
+        return trimmed
+    return trimmed[-4000:]
 
 
-def _run_boot_agent(content: str) -> None:
-    """一回限りのエージェントを起動して BOOT.md のチェックリストを実行する。
+def _run_bootstrap() -> None:
+    """InferLab の初期化スクリプトを一度だけ実行する。
 
     引数:
-        content: BOOT.md から読み込んだ Markdown 形式の指示。
+        なし。
 
     戻り値:
-        None。結果は hook のログに出力される。
+        None。成功時と失敗時の詳細は hook のログに出力される。
 
     副作用:
-        Hermes のエージェントを別スレッドで起動し、指示に応じて外部コマンドを実行する。
+        npm/uv を使ったスキル追加と Python/Node パッケージ導入を実行する。
     """
-    try:
-        from gateway.run import _resolve_gateway_model, _resolve_runtime_agent_kwargs
-        from run_agent import AIAgent
+    if not BOOTSTRAP_SCRIPT.exists():
+        logger.warning("boot-md bootstrap script is missing: %s", BOOTSTRAP_SCRIPT)
+        return
 
-        agent = AIAgent(
-            model=_resolve_gateway_model(),
-            **_resolve_runtime_agent_kwargs(),
-            platform="gateway",
-            quiet_mode=True,
-            skip_context_files=True,
-            skip_memory=True,
-            max_iterations=20,
+    env = os.environ.copy()
+    hermes_home = str(get_hermes_home())
+    env["HERMES_HOME"] = hermes_home
+    env["HOME"] = hermes_home
+    env["PATH"] = f"{hermes_home}/.local/bin:{hermes_home}/bin:{env.get('PATH', '')}"
+    env.setdefault("npm_config_prefix", f"{hermes_home}/.local")
+    env.setdefault("UV_LINK_MODE", "copy")
+
+    try:
+        result = subprocess.run(
+            ["bash", str(BOOTSTRAP_SCRIPT)],
+            cwd=hermes_home,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=BOOTSTRAP_TIMEOUT_SECONDS,
+            check=False,
         )
-        result = agent.run_conversation(_build_prompt(content))
-        response = (result.get("final_response", "") or "").strip()
-        if response.upper() not in {"[SILENT]", "SILENT", "NO_REPLY", "NO REPLY"}:
-            logger.info("boot-md completed: %s", response[:200])
+        stdout = _trim_output(result.stdout)
+        stderr = _trim_output(result.stderr)
+        if result.returncode == 0:
+            if stdout:
+                logger.info("boot-md bootstrap completed: %s", stdout)
+            else:
+                logger.info("boot-md bootstrap completed")
         else:
-            logger.info("boot-md completed (nothing to report)")
+            logger.error(
+                "boot-md bootstrap failed with exit code %s\nstdout:\n%s\nstderr:\n%s",
+                result.returncode,
+                stdout,
+                stderr,
+            )
+    except subprocess.TimeoutExpired as e:
+        logger.error(
+            "boot-md bootstrap timed out after %s seconds\nstdout:\n%s\nstderr:\n%s",
+            BOOTSTRAP_TIMEOUT_SECONDS,
+            _trim_output(e.stdout or ""),
+            _trim_output(e.stderr or ""),
+        )
     except Exception as e:
-        logger.error("boot-md agent failed: %s", e)
+        logger.exception("boot-md bootstrap failed unexpectedly: %s", e)
 
 
 async def handle(event_type: str, context: dict) -> None:
-    """gateway:startup イベントを受け取り、BOOT.md があれば非同期に実行する。
+    """gateway:startup イベントを受け取り、初期化スクリプトを非同期に実行する。
 
     引数:
         event_type: Hermes gateway hook から渡されるイベント名。
         context: Hermes gateway hook から渡されるイベントコンテキスト。
 
     戻り値:
-        None。BOOT.md が存在しない場合や空の場合は何もしない。
+        None。初期化スクリプトが存在しない場合はログに警告を出して終了する。
 
     副作用:
-        BOOT.md の内容を処理する daemon thread を起動する。
+        初期化スクリプトを処理する daemon thread を起動する。
     """
-    if not BOOT_FILE.exists():
-        return
-    content = BOOT_FILE.read_text(encoding="utf-8").strip()
-    if not content:
-        return
+    logger.info("Running boot-md bootstrap for %s", event_type)
 
-    logger.info("Running BOOT.md (%d chars)", len(content))
-
-    # 起動処理を BOOT.md の完了待ちで止めないため、バックグラウンドで実行する。
+    # 起動処理を bootstrap の完了待ちで止めないため、バックグラウンドで実行する。
     thread = threading.Thread(
-        target=_run_boot_agent,
-        args=(content,),
+        target=_run_bootstrap,
         name="boot-md",
         daemon=True,
     )

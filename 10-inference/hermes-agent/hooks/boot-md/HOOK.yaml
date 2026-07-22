@@ -1,4 +1,4 @@
 name: boot-md
-description: Run ~/.hermes/BOOT.md on gateway startup
+description: Run InferLab bootstrap script on gateway startup
 events:
   - gateway:startup
