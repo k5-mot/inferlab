@@ -1,0 +1,22 @@
+# Hermes Agent runtime state
+hermes-home/
+.hermes/
+data/
+audio_cache/
+voice-memos/
+
+# Hermes Agent secrets and local state accidentally placed here
+.env
+.env.*
+auth.json
+state.db
+state.db-*
+sessions/
+memories/
+cron/
+logs/
+
+# Keep shareable examples trackable
+!.env.example
+!hermes-config.example.yaml
+!SOUL.example.md
