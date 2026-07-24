@@ -8,6 +8,8 @@ DOCKER_CONN="${DOCKER_CONN:-docker-enp3s0}"
 LEGACY_DOCKER_CONN="${LEGACY_DOCKER_CONN:-Wired connection 2}"
 EGRESS_SCRIPT="${EGRESS_SCRIPT:-script/inferlab-docker-egress-enp3s0.sh}"
 EGRESS_SERVICE="${EGRESS_SERVICE:-script/inferlab-docker-egress-enp3s0.service}"
+EGRESS_DISPATCHER="${EGRESS_DISPATCHER:-script/inferlab-docker-egress-enp3s0-dispatcher.sh}"
+EGRESS_DISPATCHER_TARGET="${EGRESS_DISPATCHER_TARGET:-/etc/NetworkManager/dispatcher.d/90-inferlab-docker-egress-enp3s0}"
 DOCKER_NETWORK="${DOCKER_NETWORK:-inferlab_internal-nw}"
 KEYCLOAK_NETWORK="${KEYCLOAK_NETWORK:-inferlab_keycloak-nw}"
 TABLE="${TABLE:-103}"
@@ -279,15 +281,23 @@ run_verify() {
 # run_install_service は、egress設定をsystemd oneshot serviceとして永続化する。
 # 引数: なし。
 # 戻り値: 配置と有効化に成功すれば0。
-# 副作用: /usr/local/sbin と /etc/systemd/system にファイルを配置し、systemd unitを有効化する。
+# 副作用: systemd unitとNetworkManager dispatcherを配置し、自動再適用を有効化する。
 run_install_service() {
   require_root
 
+  if [[ ! -f "${EGRESS_DISPATCHER}" ]]; then
+    echo "ERROR: ${EGRESS_DISPATCHER} が見つかりません。" >&2
+    exit 1
+  fi
+
   install -m 0755 "${EGRESS_SCRIPT}" /usr/local/sbin/inferlab-docker-egress-enp3s0.sh
   install -m 0644 "${EGRESS_SERVICE}" /etc/systemd/system/inferlab-docker-egress-enp3s0.service
+  install -m 0755 "${EGRESS_DISPATCHER}" "${EGRESS_DISPATCHER_TARGET}"
   systemctl daemon-reload
-  systemctl enable --now inferlab-docker-egress-enp3s0.service
+  systemctl enable inferlab-docker-egress-enp3s0.service
+  systemctl restart inferlab-docker-egress-enp3s0.service
   systemctl status inferlab-docker-egress-enp3s0.service --no-pager
+  ls -l "${EGRESS_DISPATCHER_TARGET}"
 }
 
 # run_diagnose は、Docker通信が停止する箇所をiptablesカウンタと短時間のpacket captureで調査する。
@@ -362,10 +372,11 @@ run_diagnose() {
 # run_rollback は、Docker egress分離のランタイム設定を削除する。
 # 引数: なし。
 # 戻り値: 削除処理を完了すれば0。
-# 副作用: systemd service、ip rule、table 103、iptables、UFWの追加ルール、docker-enp3s0接続を停止する。
+# 副作用: dispatcher、systemd service、ip rule、table 103、iptables、UFWの追加ルール、docker-enp3s0接続を停止する。
 run_rollback() {
   require_root
 
+  rm -f -- "${EGRESS_DISPATCHER_TARGET}"
   systemctl disable --now inferlab-docker-egress-enp3s0.service 2>/dev/null || true
   ip rule del priority "${HOST_RULE_PRIORITY}" 2>/dev/null || true
   ip rule del priority "${RULE_PRIORITY_BASE}" 2>/dev/null || true

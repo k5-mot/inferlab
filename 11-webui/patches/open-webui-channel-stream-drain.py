@@ -19,6 +19,20 @@ StreamingResponse を読み切り、バックグラウンド処理も実行し�
 OpenWebUI 本体で Channels の StreamingResponse 消費、socket 経由の逐次更新、
 および output 形式の本文保存が修正されたら、このパッチと docker-compose の
 起動時実行・マウントを削除する。
+
+Upstream 状況（2026-07-25 確認）:
+OpenWebUI では https://github.com/open-webui/open-webui/issues/26656 で
+v0.10.2 の Channels 返信が pulsing のまま本文表示されない問題が報告されている。
+https://github.com/open-webui/open-webui/issues/26960 では、Channels の emitter が
+`content` だけを読んでいる一方で処理済みイベントは `output` に本文を入れるため
+空文字列が保存される、という本パッチの本文抽出部分と同じ根本原因が説明された。
+関連 PR として https://github.com/open-webui/open-webui/pull/26720 と
+https://github.com/open-webui/open-webui/pull/27409 が open で、どちらも
+新しい環境変数ではなく OpenWebUI の `socket/main.py` 側を修正する方針である。
+そのため、このスタックが使う v0.10.2 では `ENABLE_CHANNELS`、
+`ENABLE_WEBSOCKET_SUPPORT`、`OPENAI_API_CONFIGS`、Hermes-Agent 側の OpenAI 互換
+API 設定だけでは、Channels emitter の本文抽出先や未消費 StreamingResponse の
+制御を変更できない。
 """
 
 # TODO: OpenWebUI 本体で Channels の StreamingResponse 消費と output 形式の本文保存が修正されたら、この暫定パッチを削除する。
