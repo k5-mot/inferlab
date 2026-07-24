@@ -26,6 +26,7 @@ Usage:
   sudo ./network-enp3s0-egress.sh up
   sudo ./network-enp3s0-egress.sh apply
   sudo ./network-enp3s0-egress.sh verify
+  sudo ./network-enp3s0-egress.sh diagnose
   sudo ./network-enp3s0-egress.sh install-service
   sudo ./network-enp3s0-egress.sh rollback
 
@@ -288,6 +289,75 @@ run_install_service() {
   systemctl status inferlab-docker-egress-enp3s0.service --no-pager
 }
 
+# run_diagnose は、Docker通信が停止する箇所をiptablesカウンタと短時間のpacket captureで調査する。
+# 引数: なし。
+# 戻り値: 診断を最後まで実行できれば0。個別の疎通失敗は診断結果として扱い、終了を継続する。
+# 副作用: 一時ファイルを作成し、診断用Dockerコンテナとtcpdumpを最大25秒間実行する。
+run_diagnose() {
+  require_root
+
+  local docker_br capture_dir bridge_capture egress_capture bridge_pid egress_pid
+  docker_br="$(docker_bridge_name "${DOCKER_NETWORK}")"
+  capture_dir="$(mktemp -d /tmp/inferlab-network-diagnose.XXXXXX)"
+  bridge_capture="${capture_dir}/docker-bridge.log"
+  egress_capture="${capture_dir}/enp3s0.log"
+
+  print_section "diagnostic context"
+  date --iso-8601=seconds
+  ip -4 -br addr show dev "${HOST_DEV}"
+  ip -4 -br addr show dev "${DOCKER_DEV}"
+  ip rule
+  ip route show table "${TABLE}" || true
+  ip neigh show dev "${DOCKER_DEV}"
+  sysctl net.ipv4.ip_forward \
+    net.ipv4.conf.all.rp_filter \
+    "net.ipv4.conf.${DOCKER_DEV}.rp_filter" \
+    "net.ipv4.conf.${docker_br}.rp_filter"
+
+  print_section "firewall before test"
+  iptables -nvL FORWARD --line-numbers
+  iptables -t nat -nvL POSTROUTING --line-numbers
+  iptables -nvL DOCKER-USER --line-numbers || true
+  if command -v ufw >/dev/null 2>&1; then
+    LC_ALL=C ufw status verbose || true
+  fi
+
+  if command -v tcpdump >/dev/null 2>&1; then
+    timeout 25 tcpdump -l -nn -i "${docker_br}" '(host 1.1.1.1 or port 53)' >"${bridge_capture}" 2>&1 &
+    bridge_pid=$!
+    timeout 25 tcpdump -l -nn -i "${DOCKER_DEV}" '(host 1.1.1.1 or port 53)' >"${egress_capture}" 2>&1 &
+    egress_pid=$!
+    sleep 1
+  else
+    bridge_pid=""
+    egress_pid=""
+    echo "WARN: tcpdumpがないためpacket captureを省略します。" >&2
+  fi
+
+  print_section "docker test"
+  docker run --rm --pull never --network "${DOCKER_NETWORK}" curlimages/curl:latest \
+    sh -c 'cat /etc/resolv.conf; curl -4 --max-time 5 https://1.1.1.1/cdn-cgi/trace | head || true; getent ahostsv4 example.com || true'
+
+  if [[ -n "${bridge_pid}" ]]; then
+    wait "${bridge_pid}" || true
+    wait "${egress_pid}" || true
+
+    print_section "docker bridge capture"
+    cat "${bridge_capture}"
+
+    print_section "enp3s0 capture"
+    cat "${egress_capture}"
+  fi
+
+  print_section "firewall after test"
+  iptables -nvL FORWARD --line-numbers
+  iptables -t nat -nvL POSTROUTING --line-numbers
+  iptables -nvL DOCKER-USER --line-numbers || true
+
+  rm -f -- "${bridge_capture}" "${egress_capture}"
+  rmdir -- "${capture_dir}"
+}
+
 # run_rollback は、Docker egress分離のランタイム設定を削除する。
 # 引数: なし。
 # 戻り値: 削除処理を完了すれば0。
@@ -345,6 +415,9 @@ main() {
       ;;
     verify)
       run_verify
+      ;;
+    diagnose)
+      run_diagnose
       ;;
     install-service)
       run_install_service
