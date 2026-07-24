@@ -247,6 +247,9 @@ run_verify() {
   print_section "nat"
   iptables -t nat -S POSTROUTING | grep "${DOCKER_DEV}" || true
 
+  print_section "forward"
+  iptables -S FORWARD | grep "${DOCKER_DEV}" || true
+
   print_section "host connectivity"
   ping -c 3 192.168.1.1
   ping -c 3 1.1.1.1
@@ -293,9 +296,18 @@ run_rollback() {
 
   read -r -a subnet_list <<< "${DOCKER_SUBNETS}"
   for subnet in "${subnet_list[@]}"; do
+    bridge_dev="$(ip -4 route show "${subnet}" | awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
     while iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DOCKER_DEV}" -j MASQUERADE 2>/dev/null; do
       true
     done
+    if [[ -n "${bridge_dev}" ]]; then
+      while iptables -D FORWARD -i "${bridge_dev}" -o "${DOCKER_DEV}" -j ACCEPT 2>/dev/null; do
+        true
+      done
+      while iptables -D FORWARD -i "${DOCKER_DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
+        true
+      done
+    fi
   done
 
   nmcli connection down "${DOCKER_CONN}" || true

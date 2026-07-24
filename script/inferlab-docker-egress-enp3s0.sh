@@ -47,11 +47,27 @@ ip route replace default via "${GATEWAY}" dev "${DEV}" table "${TABLE}"
 read -r -a subnet_list <<< "${DOCKER_SUBNETS}"
 priority="${RULE_PRIORITY_BASE}"
 for subnet in "${subnet_list[@]}"; do
+  bridge_dev="$(ip -4 route show "${subnet}" | awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
+
   ip rule del from "${subnet}" table "${TABLE}" priority "${priority}" 2>/dev/null || true
   ip rule add from "${subnet}" table "${TABLE}" priority "${priority}"
+
   while iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DEV}" -j MASQUERADE 2>/dev/null; do
     true
   done
   iptables -t nat -I POSTROUTING 1 -s "${subnet}" -o "${DEV}" -j MASQUERADE
+
+  if [[ -n "${bridge_dev}" ]]; then
+    # Docker bridgeからenp3s0へ出るforwardをDocker標準チェーンに依存せず明示する。
+    while iptables -D FORWARD -i "${bridge_dev}" -o "${DEV}" -j ACCEPT 2>/dev/null; do
+      true
+    done
+    while iptables -D FORWARD -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
+      true
+    done
+    iptables -I FORWARD 1 -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+    iptables -I FORWARD 1 -i "${bridge_dev}" -o "${DEV}" -j ACCEPT
+  fi
+
   priority=$((priority + 1))
 done
