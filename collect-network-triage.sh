@@ -4,6 +4,9 @@ set -uo pipefail
 
 # 障害時ログの採取範囲と保存先を、環境変数で上書きできるようにする。
 readonly STACK_NAME="${STACK_NAME:-inferlab}"
+readonly GATEWAY_IP="${GATEWAY_IP:-192.168.1.1}"
+readonly PRIMARY_BRIDGE="${PRIMARY_BRIDGE:-bridge0}"
+readonly PRIMARY_NIC="${PRIMARY_NIC:-enp2s0}"
 readonly JOURNAL_LINES="${JOURNAL_LINES:-4000}"
 readonly DOCKER_LOG_LINES="${DOCKER_LOG_LINES:-1200}"
 readonly DOCKER_SINCE="${DOCKER_SINCE:-6h}"
@@ -121,6 +124,9 @@ write_header() {
 - generated_at: $(date --iso-8601=seconds 2>/dev/null || date)
 - hostname: $(hostname 2>/dev/null || true)
 - stack_name: ${STACK_NAME}
+- gateway_ip: ${GATEWAY_IP}
+- primary_bridge: ${PRIMARY_BRIDGE}
+- primary_nic: ${PRIMARY_NIC}
 - journal_lines: ${JOURNAL_LINES}
 - docker_since: ${DOCKER_SINCE}
 - docker_log_lines: ${DOCKER_LOG_LINES}
@@ -128,13 +134,25 @@ write_header() {
 
 ## Codex向け確認ポイント
 
-- 前回bootのログがある場合は、まず \`journal-list-boots\` と \`docker-resolver-errors-previous-boot\` を確認する。
+- 再発中に採取できている場合は、まず \`read-first-gateway-l2-verdict\` と \`gateway-neighbor-priority-snapshot\` を確認する。
+- \`${GATEWAY_IP} dev ${PRIMARY_BRIDGE} FAILED\` があれば、DNSではなくgateway ARP/L2到達不能として扱う。
+- 前回bootのログがある場合は、\`journal-list-boots\` と \`docker-resolver-errors-previous-boot\` を確認する。
 - \`cloudflare-container-logs\` の \`no route to host\` はDNSより下の外向き経路障害を示す。
 - \`docker-resolver-errors-current-boot\` と \`docker-resolver-errors-previous-boot\` で、問い合わせ元IPと対象FQDNを対応づける。
 - \`docker-network-inspect-internal\` で、障害時ログの \`client-addr\` とコンテナ名の対応を確認する。
-- \`host-route-and-neighbor\` で default route と gateway ARP 状態を確認する。
+- \`nic-driver-deep-dive\` で \`${PRIMARY_NIC}\` の driver、firmware、PCI、offload、error counter を確認する。
 
 EOF
+}
+
+# collect_gateway_l2_priority は、再発時に最初に見るべきgateway ARP状態を採取する。
+# 引数: なし。
+# 戻り値: 常に0。
+# 副作用: REPORTとRAW_DIR配下へログを追記・作成する。
+collect_gateway_l2_priority() {
+  run_shell_section "read-first-gateway-l2-verdict" "printf 'gateway_ip=%s\nprimary_bridge=%s\nprimary_nic=%s\n\n' '${GATEWAY_IP}' '${PRIMARY_BRIDGE}' '${PRIMARY_NIC}'; printf '%s\n' '--- gateway neighbor ---'; ip neigh show '${GATEWAY_IP}' || true; printf '\n%s\n' '--- all failed neighbors ---'; ip neigh | grep -E 'FAILED|INCOMPLETE|DELAY|PROBE' || true; printf '\n%s\n' '--- default route ---'; ip route show default || true; printf '\n%s\n' '--- gateway ping ---'; ping -c 3 -W 2 '${GATEWAY_IP}' || true; printf '\n%s\n' '--- external ping ---'; ping -c 3 -W 2 1.1.1.1 || true"
+  run_shell_section "gateway-neighbor-priority-snapshot" "for i in 1 2 3; do printf '\n--- sample %s %s ---\n' \"\$i\" \"\$(date --iso-8601=seconds 2>/dev/null || date)\"; ip neigh show '${GATEWAY_IP}' || true; ip -s link show '${PRIMARY_NIC}' || true; ip -s link show '${PRIMARY_BRIDGE}' || true; sleep 1; done"
+  run_shell_section "gateway-arp-probe" "if command -v arping >/dev/null 2>&1; then arping -c 5 -w 5 -I '${PRIMARY_BRIDGE}' '${GATEWAY_IP}' || arping -c 5 -w 5 -I '${PRIMARY_NIC}' '${GATEWAY_IP}' || true; else printf 'arping not installed\n'; fi"
 }
 
 # collect_host_state は、ホスト側のネットワーク実体を採取する。
@@ -148,13 +166,16 @@ collect_host_state() {
   run_section "ip-addresses" ip addr
   run_section "ip-links" ip link
   run_section "host-route-and-neighbor" bash -lc 'ip route; printf "\n--- ip rule ---\n"; ip rule; printf "\n--- ip neigh ---\n"; ip neigh'
+  run_shell_section "mac-address-comparison" "printf '%s ' '${PRIMARY_NIC}'; cat '/sys/class/net/${PRIMARY_NIC}/address' 2>/dev/null || true; printf '%s ' '${PRIMARY_BRIDGE}'; cat '/sys/class/net/${PRIMARY_BRIDGE}/address' 2>/dev/null || true; printf '\n--- ${PRIMARY_NIC} link details ---\n'; ip -d link show '${PRIMARY_NIC}' || true; printf '\n--- ${PRIMARY_BRIDGE} link details ---\n'; ip -d link show '${PRIMARY_BRIDGE}' || true"
   run_section "bridge-link" bridge link
   run_section "bridge-vlan" bridge vlan
   run_section "bridge-fdb-show" bridge fdb show
+  run_shell_section "bridge-fdb-primary-path" "bridge fdb show brport '${PRIMARY_NIC}' 2>/dev/null || true; printf '\n--- bridge fdb grep gateway mac if known ---\n'; ip neigh show '${GATEWAY_IP}' || true"
   run_section "resolvectl-status" resolvectl status
   run_shell_section "resolv-conf" 'ls -l /etc/resolv.conf; printf "\n"; cat /etc/resolv.conf'
   run_section "networkctl" networkctl
   run_section "nmcli-device" nmcli device
+  run_shell_section "networkmanager-connection-details" "nmcli -f connection,bridge,ethernet connection show '${PRIMARY_BRIDGE}' 2>&1 || true; printf '\n--- ${PRIMARY_NIC} connection candidates ---\n'; nmcli -f connection,bridge,ethernet connection show 2>&1 | sed -n '1,220p' || true"
   run_shell_section "network-config-files" 'for path in /etc/netplan/* /etc/systemd/network/* /etc/NetworkManager/system-connections/* /etc/NetworkManager/conf.d/*; do [ -e "$path" ] || continue; printf "\n--- %s ---\n" "$path"; sed -E "s/(password|psk|key|secret|token)=.*/\1=[REDACTED]/Ig" "$path"; done'
 }
 
@@ -163,12 +184,17 @@ collect_host_state() {
 # 戻り値: 常に0。
 # 副作用: REPORTとRAW_DIR配下へログを追記・作成する。
 collect_runtime_health() {
-  run_section "gateway-ping" ping -c 3 -W 2 192.168.1.1
+  run_section "gateway-ping" ping -c 3 -W 2 "${GATEWAY_IP}"
   run_section "external-ip-ping" ping -c 3 -W 2 1.1.1.1
   run_section "dns-resolution" bash -lc 'getent hosts cloudflare.com; getent hosts discord.com; getent hosts region1.v2.argotunnel.com'
-  run_shell_section "nic-driver-and-stats" 'readlink /sys/class/net/enp2s0/device/driver; printf "\n--- operstate ---\n"; cat /sys/class/net/enp2s0/operstate; printf "\n--- statistics ---\n"; for f in rx_errors tx_errors rx_dropped tx_dropped collisions carrier_changes; do printf "%s=" "$f"; cat "/sys/class/net/enp2s0/statistics/$f" 2>/dev/null || true; done'
-  run_section "ethtool-enp2s0" ethtool enp2s0
-  run_section "ethtool-stats-enp2s0" ethtool -S enp2s0
+  run_shell_section "nic-driver-and-stats" "readlink '/sys/class/net/${PRIMARY_NIC}/device/driver'; printf '\n--- operstate ---\n'; cat '/sys/class/net/${PRIMARY_NIC}/operstate'; printf '\n--- statistics ---\n'; for f in rx_errors tx_errors rx_dropped tx_dropped collisions carrier_changes; do printf '%s=' \"\$f\"; cat '/sys/class/net/${PRIMARY_NIC}/statistics/'\"\$f\" 2>/dev/null || true; done"
+  run_section "ethtool-primary-nic" ethtool "${PRIMARY_NIC}"
+  run_section "ethtool-driver-primary-nic" ethtool -i "${PRIMARY_NIC}"
+  run_section "ethtool-offload-primary-nic" ethtool -k "${PRIMARY_NIC}"
+  run_section "ethtool-eee-primary-nic" ethtool --show-eee "${PRIMARY_NIC}"
+  run_section "ethtool-pause-primary-nic" ethtool --show-pause "${PRIMARY_NIC}"
+  run_section "ethtool-stats-primary-nic" ethtool -S "${PRIMARY_NIC}"
+  run_shell_section "nic-driver-deep-dive" "printf '%s\n' '--- driver symlink ---'; readlink '/sys/class/net/${PRIMARY_NIC}/device/driver' || true; printf '\n%s\n' '--- module symlink ---'; readlink '/sys/class/net/${PRIMARY_NIC}/device/driver/module' || true; printf '\n%s\n' '--- pci modalias ---'; cat '/sys/class/net/${PRIMARY_NIC}/device/modalias' 2>/dev/null || true; printf '\n%s\n' '--- device power control ---'; cat '/sys/class/net/${PRIMARY_NIC}/device/power/control' 2>/dev/null || true; printf '\n%s\n' '--- r8168 module parameters ---'; for path in /sys/module/r8168/parameters/*; do [ -e \"\$path\" ] || continue; printf '%s=' \"\$(basename \"\$path\")\"; cat \"\$path\"; done; printf '\n%s\n' '--- pci device ---'; if command -v lspci >/dev/null 2>&1; then lspci -nnk | grep -A4 -i -E 'ethernet|network|realtek|r816'; else printf 'lspci not installed\n'; fi; printf '\n%s\n' '--- loaded r816 modules ---'; lsmod | grep -E '^r8168|^r8169|realtek' || true; printf '\n%s\n' '--- modinfo r8168 ---'; modinfo r8168 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- modinfo r8169 ---'; modinfo r8169 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- recent nic kernel messages ---'; journalctl -b -k --no-pager | grep -Ei '${PRIMARY_NIC}|r8168|r8169|realtek|NETDEV|watchdog|tx timeout|reset|link is|carrier' | tail -300 || true"
   run_section "conntrack-count" conntrack -C
   run_section "conntrack-stats" conntrack -S
   run_section "conntrack-sysctl" sysctl net.netfilter.nf_conntrack_max net.netfilter.nf_conntrack_count
@@ -209,6 +235,7 @@ collect_docker_state() {
   run_section "hermes-agent-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-hermes-agent"
   run_section "docling-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-docling"
   run_section "open-webui-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-open-webui"
+  run_section "open-terminal-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-open-terminal"
   run_section "ollama-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-ollama"
   run_section "qdrant-container-logs" docker logs --since "${DOCKER_SINCE}" --tail "${DOCKER_LOG_LINES}" "${STACK_NAME}-qdrant"
 }
@@ -226,6 +253,7 @@ write_footer() {
 }
 
 write_header
+collect_gateway_l2_priority
 collect_host_state
 collect_runtime_health
 collect_services
