@@ -180,7 +180,8 @@ run_up() {
   dip="$(docker_dev_ip)"
 
   print_section "addresses"
-  ip -4 -br addr show "${HOST_DEV}" "${DOCKER_DEV}"
+  ip -4 -br addr show dev "${HOST_DEV}"
+  ip -4 -br addr show dev "${DOCKER_DEV}"
 
   if [[ -z "${hip}" || -z "${dip}" ]]; then
     echo "ERROR: ${HOST_DEV} または ${DOCKER_DEV} のIPv4アドレスを取得できません。" >&2
