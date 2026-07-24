@@ -110,10 +110,16 @@
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
             "rootUrl": "http://${PUBLIC_HOST}:31200/",
+            "attributes": {
+                "post.logout.redirect.uris": "+"
+            },
             "redirectUris": [
                 "http://localhost:31200/apps/user_oidc/code",
                 "http://127.0.0.1:31200/apps/user_oidc/code",
-                "http://${PUBLIC_HOST}:31200/apps/user_oidc/code"
+                "http://${PUBLIC_HOST}:31200/apps/user_oidc/code",
+                "http://localhost:31200/login",
+                "http://127.0.0.1:31200/login",
+                "http://${PUBLIC_HOST}:31200/login"
             ],
             "webOrigins": [
                 "http://localhost:31200",

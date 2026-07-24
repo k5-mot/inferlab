@@ -32,6 +32,8 @@ services:
       NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
       NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:31200/login
       NEXTCLOUD_OIDC_SCOPE: "openid profile email"
       NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
       NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
