@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
-"""OpenWebUI の Channels 応答ストリームと本文抽出のパッチを適用する。"""
+"""OpenWebUI の Channels 応答ストリームと本文抽出のパッチを適用する。
+
+このパッチは、OpenWebUI の Channels で AI 返信が画面や DB に反映されない
+不具合を避けるために起動時へ差し込んでいる。通常のチャットでは
+StreamingResponse が HTTP クライアントへ返され、レスポンス本文の反復処理中に
+`chat:completion` イベントが処理される。一方で Channels では実際の配信経路が
+socket であり、HTTP 側へ StreamingResponse を返しても購読中のクライアントが
+その body_iterator を消費しない。そのためストリーム内で発火するメッセージ更新が
+最後まで進まず、生成は完了していても Channels の返信本文が空のまま残る。
+
+この暫定対応では、Channels 向けの応答だけ OpenWebUI 内部で
+StreamingResponse を読み切り、バックグラウンド処理も実行してから成功レスポンスを
+返す。これにより、ストリーム消費に紐づく socket 更新と DB 更新を確実に走らせる。
+あわせて、イベント本文が従来の `content` ではなく OpenAI Responses API 由来の
+`output[].content[].text` 形式で届く場合でも、Channels の message.content へ
+保存できるよう本文抽出を補強する。
+
+OpenWebUI 本体で Channels の StreamingResponse 消費、socket 経由の逐次更新、
+および output 形式の本文保存が修正されたら、このパッチと docker-compose の
+起動時実行・マウントを削除する。
+"""
 
 # TODO: OpenWebUI 本体で Channels の StreamingResponse 消費と output 形式の本文保存が修正されたら、この暫定パッチを削除する。
 
