@@ -46,6 +46,11 @@ ip route replace default via "${GATEWAY}" dev "${DEV}" table "${TABLE}"
 
 read -r -a subnet_list <<< "${DOCKER_SUBNETS}"
 priority="${RULE_PRIORITY_BASE}"
+ufw_active=false
+if command -v ufw >/dev/null 2>&1 && LC_ALL=C ufw status | grep -q '^Status: active$'; then
+  ufw_active=true
+fi
+
 for subnet in "${subnet_list[@]}"; do
   bridge_dev="$(ip -4 route show "${subnet}" | awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
 
@@ -67,6 +72,11 @@ for subnet in "${subnet_list[@]}"; do
     done
     iptables -I FORWARD 1 -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
     iptables -I FORWARD 1 -i "${bridge_dev}" -o "${DEV}" -j ACCEPT
+
+    if [[ "${ufw_active}" == true ]]; then
+      # UFWのforward既定拒否を維持したまま、対象Docker subnetの外向き通信だけを許可する。
+      ufw route allow in on "${bridge_dev}" out on "${DEV}" from "${subnet}" to any
+    fi
   fi
 
   priority=$((priority + 1))

@@ -1,6 +1,6 @@
 [Unit]
 Description=Route inferlab Docker egress via enp3s0
-After=NetworkManager-wait-online.service docker.service
+After=NetworkManager-wait-online.service docker.service ufw.service
 Wants=NetworkManager-wait-online.service
 
 [Service]

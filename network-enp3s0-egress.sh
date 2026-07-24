@@ -205,7 +205,7 @@ run_up() {
 # run_apply は、Docker由来の外向き通信をenp3s0へ流す設定を適用する。
 # 引数: なし。
 # 戻り値: egress設定の適用に成功すれば0。
-# 副作用: sysctl、ip rule、table 103、iptables NATを変更する。
+# 副作用: sysctl、ip rule、table 103、iptables、UFWの転送設定を変更する。
 run_apply() {
   require_root
 
@@ -250,6 +250,13 @@ run_verify() {
   print_section "forward"
   iptables -S FORWARD | grep "${DOCKER_DEV}" || true
 
+  print_section "ufw route"
+  if command -v ufw >/dev/null 2>&1; then
+    LC_ALL=C ufw status | grep -E "^(Status:|.*${DOCKER_DEV}.*)$" || true
+  else
+    echo "ufw is not installed"
+  fi
+
   print_section "host connectivity"
   ping -c 3 192.168.1.1
   ping -c 3 1.1.1.1
@@ -284,7 +291,7 @@ run_install_service() {
 # run_rollback は、Docker egress分離のランタイム設定を削除する。
 # 引数: なし。
 # 戻り値: 削除処理を完了すれば0。
-# 副作用: systemd service、ip rule、table 103、iptables NAT、docker-enp3s0接続を停止する。
+# 副作用: systemd service、ip rule、table 103、iptables、UFWの追加ルール、docker-enp3s0接続を停止する。
 run_rollback() {
   require_root
 
@@ -307,6 +314,9 @@ run_rollback() {
       while iptables -D FORWARD -i "${DOCKER_DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
         true
       done
+      if command -v ufw >/dev/null 2>&1; then
+        ufw --force route delete allow in on "${bridge_dev}" out on "${DOCKER_DEV}" from "${subnet}" to any || true
+      fi
     fi
   done
 
