@@ -1,0 +1,18 @@
+[Unit]
+Description=Route inferlab Docker egress via enp3s0
+After=NetworkManager-wait-online.service docker.service
+Wants=NetworkManager-wait-online.service
+
+[Service]
+Type=oneshot
+Environment=GATEWAY=192.168.1.1
+Environment=TABLE=103
+Environment=DEV=enp3s0
+Environment=HOST_DEV=bridge0
+Environment=RULE_PRIORITY_BASE=10321
+Environment="DOCKER_SUBNETS=172.21.0.0/16 172.22.0.0/16"
+ExecStart=/usr/local/sbin/inferlab-docker-egress-enp3s0.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
