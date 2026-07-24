@@ -324,9 +324,9 @@ run_diagnose() {
   fi
 
   if command -v tcpdump >/dev/null 2>&1; then
-    timeout 25 tcpdump -l -nn -i "${docker_br}" '(host 1.1.1.1 or port 53)' >"${bridge_capture}" 2>&1 &
+    timeout 25 tcpdump -l -nn -i "${docker_br}" '(arp or host 1.1.1.1 or port 53)' >"${bridge_capture}" 2>&1 &
     bridge_pid=$!
-    timeout 25 tcpdump -l -nn -i "${DOCKER_DEV}" '(host 1.1.1.1 or port 53)' >"${egress_capture}" 2>&1 &
+    timeout 25 tcpdump -l -nn -i "${DOCKER_DEV}" '(arp or host 1.1.1.1 or port 53)' >"${egress_capture}" 2>&1 &
     egress_pid=$!
     sleep 1
   else
@@ -337,7 +337,7 @@ run_diagnose() {
 
   print_section "docker test"
   docker run --rm --pull never --network "${DOCKER_NETWORK}" curlimages/curl:latest \
-    sh -c 'cat /etc/resolv.conf; curl -4 --max-time 5 https://1.1.1.1/cdn-cgi/trace | head || true; getent ahostsv4 example.com || true'
+    sh -c 'ip -4 addr; ip route; ip neigh; cat /etc/resolv.conf; curl -4 --max-time 5 https://1.1.1.1/cdn-cgi/trace | head || true; ip neigh; getent ahostsv4 example.com || true; ip neigh'
 
   if [[ -n "${bridge_pid}" ]]; then
     wait "${bridge_pid}" || true
