@@ -31,7 +31,9 @@ priority="${RULE_PRIORITY_BASE}"
 for subnet in "${subnet_list[@]}"; do
   ip rule del from "${subnet}" table "${TABLE}" priority "${priority}" 2>/dev/null || true
   ip rule add from "${subnet}" table "${TABLE}" priority "${priority}"
-  iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DEV}" -j MASQUERADE 2>/dev/null || true
+  while iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DEV}" -j MASQUERADE 2>/dev/null; do
+    true
+  done
   iptables -t nat -I POSTROUTING 1 -s "${subnet}" -o "${DEV}" -j MASQUERADE
   priority=$((priority + 1))
 done
