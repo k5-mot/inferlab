@@ -244,6 +244,7 @@ run_verify() {
     ip route get 1.1.1.1 from "${dip}"
   fi
   ip route get 1.1.1.1 from 172.21.0.10 iif "${docker_br}" || true
+  ip route get 172.21.0.30 from 172.21.0.1 || true
 
   print_section "nat"
   iptables -t nat -S POSTROUTING | grep "${DOCKER_DEV}" || true

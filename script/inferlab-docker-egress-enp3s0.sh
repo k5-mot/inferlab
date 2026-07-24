@@ -53,30 +53,40 @@ fi
 
 for subnet in "${subnet_list[@]}"; do
   bridge_dev="$(ip -4 route show "${subnet}" | awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
+  bridge_src_ip=""
+  if [[ -n "${bridge_dev}" ]]; then
+    bridge_src_ip="$(ip -4 -o addr show dev "${bridge_dev}" scope global | awk 'NR == 1 {split($4, addr, "/"); print addr[1]}')"
+  fi
+
+  if [[ -z "${bridge_dev}" || -z "${bridge_src_ip}" ]]; then
+    echo "ERROR: ${subnet} has no active Docker bridge or gateway IPv4 address" >&2
+    exit 1
+  fi
 
   ip rule del from "${subnet}" table "${TABLE}" priority "${priority}" 2>/dev/null || true
   ip rule add from "${subnet}" table "${TABLE}" priority "${priority}"
+
+  # arp_filterがDocker gatewayへのARP応答を許可できるよう、戻り経路をpolicy tableにも持たせる。
+  ip route replace "${subnet}" dev "${bridge_dev}" src "${bridge_src_ip}" table "${TABLE}"
 
   while iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DEV}" -j MASQUERADE 2>/dev/null; do
     true
   done
   iptables -t nat -I POSTROUTING 1 -s "${subnet}" -o "${DEV}" -j MASQUERADE
 
-  if [[ -n "${bridge_dev}" ]]; then
-    # Docker bridgeからenp3s0へ出るforwardをDocker標準チェーンに依存せず明示する。
-    while iptables -D FORWARD -i "${bridge_dev}" -o "${DEV}" -j ACCEPT 2>/dev/null; do
-      true
-    done
-    while iptables -D FORWARD -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
-      true
-    done
-    iptables -I FORWARD 1 -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-    iptables -I FORWARD 1 -i "${bridge_dev}" -o "${DEV}" -j ACCEPT
+  # Docker bridgeからenp3s0へ出るforwardをDocker標準チェーンに依存せず明示する。
+  while iptables -D FORWARD -i "${bridge_dev}" -o "${DEV}" -j ACCEPT 2>/dev/null; do
+    true
+  done
+  while iptables -D FORWARD -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
+    true
+  done
+  iptables -I FORWARD 1 -i "${DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+  iptables -I FORWARD 1 -i "${bridge_dev}" -o "${DEV}" -j ACCEPT
 
-    if [[ "${ufw_active}" == true ]]; then
-      # UFWのforward既定拒否を維持したまま、対象Docker subnetの外向き通信だけを許可する。
-      ufw route allow in on "${bridge_dev}" out on "${DEV}" from "${subnet}" to any
-    fi
+  if [[ "${ufw_active}" == true ]]; then
+    # UFWのforward既定拒否を維持したまま、対象Docker subnetの外向き通信だけを許可する。
+    ufw route allow in on "${bridge_dev}" out on "${DEV}" from "${subnet}" to any
   fi
 
   priority=$((priority + 1))
