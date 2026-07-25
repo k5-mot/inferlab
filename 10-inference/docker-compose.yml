@@ -139,7 +139,7 @@ services:
     <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
     container_name: ${STACK_NAME:-inferlab}-tei-embedding
-    restart: unless-stopped
+    restart: on-failure:3
     profiles:
       - inference
     command:
@@ -153,14 +153,18 @@ services:
       - mean
       - --max-batch-tokens
       - "512"
+      # - "8192"
+      - --auto-truncate
+      - "true"
       - --max-client-batch-size
-      - "4"
-      - --max-concurrent-requests
-      - "16"
-      - --tokenization-workers
       - "2"
+      - --max-concurrent-requests
+      - "2"
+      - --tokenization-workers
+      - "1"
     environment:
       HF_HUB_DISABLE_TELEMETRY: "1"
+      # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
     networks:
@@ -179,12 +183,15 @@ services:
       - homepage.group=10-inference
       - homepage.name=TEI_Embedding
       - homepage.description=Embedding inference engine
+    mem_limit: 6g
+    memswap_limit: 7g
+    cpus: 4.0
 
   tei-reranking:
     <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
     container_name: ${STACK_NAME:-inferlab}-tei-reranking
-    restart: unless-stopped
+    restart: on-failure:3
     profiles:
       - inference
     command:
@@ -198,14 +205,18 @@ services:
       - mean
       - --max-batch-tokens
       - "512"
+      # - "8192"
+      - --auto-truncate
+      - "true"
       - --max-client-batch-size
-      - "4"
-      - --max-concurrent-requests
-      - "16"
-      - --tokenization-workers
       - "2"
+      - --max-concurrent-requests
+      - "2"
+      - --tokenization-workers
+      - "1"
     environment:
       HF_HUB_DISABLE_TELEMETRY: "1"
+      # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
     networks:
@@ -224,6 +235,9 @@ services:
       - homepage.group=10-inference
       - homepage.name=TEI_Reranking
       - homepage.description=Embedding inference engine
+    mem_limit: 6g
+    memswap_limit: 7g
+    cpus: 4.0
 
   hermes-agent:
     <<: *external-dns-stabilizer
