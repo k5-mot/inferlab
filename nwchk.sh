@@ -3,6 +3,7 @@ set -euo pipefail
 
 HOST_DEV="${HOST_DEV:-bridge0}"
 HOST_NIC="${HOST_NIC:-enp2s0}"
+HOST_CONN="${HOST_CONN:-bridge0}"
 DOCKER_DEV="${DOCKER_DEV:-enp3s0}"
 DOCKER_CONN="${DOCKER_CONN:-docker-enp3s0}"
 LEGACY_DOCKER_CONN="${LEGACY_DOCKER_CONN:-Wired connection 2}"
@@ -44,6 +45,8 @@ Usage:
   sudo ./nwchk.sh [--output-dir DIR] apply
   sudo ./nwchk.sh [--output-dir DIR] verify
   sudo ./nwchk.sh [--output-dir DIR] diagnose
+  sudo ./nwchk.sh [--output-dir DIR] pin-host-mac
+  sudo ./nwchk.sh [--output-dir DIR] unpin-host-mac
   sudo ./nwchk.sh [--output-dir DIR] install-service
   sudo ./nwchk.sh [--output-dir DIR] rollback
 
@@ -63,6 +66,11 @@ Flow:
 Incident:
   1. 再起動前に sudo ./nwchk.sh triage
   2. Dockerだけ疎通しない場合は sudo ./nwchk.sh diagnose
+
+Host bridge MAC:
+  1. sudo ./nwchk.sh pin-host-mac
+  2. ローカルコンソールを確保して sudo reboot
+  3. ./nwchk.sh status
 USAGE
 }
 
@@ -218,6 +226,7 @@ write_triage_header() {
 ## Codex向け確認ポイント
 
 - 最初に \`read-first-gateway-l2-verdict\` と \`gateway-neighbor-priority-snapshot\` を確認する。
+- \`gateway-dual-nic-packet-capture\`の\`verdict\`で、gateway ARP replyが\`${DOCKER_DEV}\`へ誤配送されていないか確認する。
 - \`${GATEWAY_IP} dev ${PRIMARY_BRIDGE} FAILED\` があれば、DNSではなくgateway ARP/L2到達不能として扱う。
 - \`memory-pressure-and-oom\`、\`kernel-oom-current-boot\`、\`docker-resource-state\`で、TEI起動時のOOM、swap枯渇、再起動loopを確認する。
 - \`journal-list-boots\`と前回bootのkernel/network logを使い、再起動で失われたruntime状態と区別する。
@@ -237,7 +246,77 @@ collect_gateway_l2_priority() {
   run_shell_section "read-first-gateway-l2-verdict" "printf 'gateway_ip=%s\nprimary_bridge=%s\nprimary_nic=%s\n\n' '${GATEWAY_IP}' '${PRIMARY_BRIDGE}' '${PRIMARY_NIC}'; printf '%s\n' '--- gateway neighbor ---'; ip neigh show '${GATEWAY_IP}' || true; printf '\n%s\n' '--- all failed neighbors ---'; ip neigh | grep -E 'FAILED|INCOMPLETE|DELAY|PROBE' || true; printf '\n%s\n' '--- default route ---'; ip route show default || true; printf '\n%s\n' '--- gateway ping ---'; ping -c 3 -W 2 '${GATEWAY_IP}' || true; printf '\n%s\n' '--- external ping ---'; ping -c 3 -W 2 1.1.1.1 || true"
   run_shell_section "gateway-neighbor-priority-snapshot" "for i in 1 2 3; do printf '\n--- sample %s %s ---\n' \"\$i\" \"\$(date --iso-8601=seconds 2>/dev/null || date)\"; ip neigh show '${GATEWAY_IP}' || true; ip -s link show '${PRIMARY_NIC}' || true; ip -s link show '${PRIMARY_BRIDGE}' || true; sleep 1; done"
   run_shell_section "gateway-arp-probe" "if command -v arping >/dev/null 2>&1; then arping -c 5 -w 5 -I '${PRIMARY_BRIDGE}' '${GATEWAY_IP}' || arping -c 5 -w 5 -I '${PRIMARY_NIC}' '${GATEWAY_IP}' || true; else printf 'arping not installed\n'; fi"
-  run_shell_section "gateway-packet-capture" "if command -v tcpdump >/dev/null 2>&1; then timeout 15 tcpdump -l -eni '${PRIMARY_NIC}' -vv 'arp or icmp' & capture_pid=\$!; sleep 1; ping -I '${PRIMARY_BRIDGE}' -c 5 -W 2 '${GATEWAY_IP}' || true; wait \"\${capture_pid}\" || true; else printf 'tcpdump not installed\n'; fi"
+  collect_dual_nic_gateway_capture
+}
+
+# collect_dual_nic_gateway_capture は、管理NIC向けARP応答の到着先を両NIC同時captureで判定する。
+# 引数: なし。
+# 戻り値: 採取継続を優先するため常に0。
+# 副作用: 両NICを一時的にpromiscuous modeにし、gatewayへICMP probeを送ってREPORTとRAW_DIRへ記録する。
+collect_dual_nic_gateway_capture() {
+  local command_text
+  command_text="$(cat <<EOF
+if ! command -v tcpdump >/dev/null 2>&1; then
+  printf 'verdict=TCPDUMP_NOT_INSTALLED\n'
+  exit 0
+fi
+
+capture_dir="\$(mktemp -d /tmp/inferlab-gateway-capture.XXXXXX)"
+primary_capture="\${capture_dir}/${PRIMARY_NIC}.log"
+docker_capture="\${capture_dir}/${DOCKER_DEV}.log"
+probe_capture="\${capture_dir}/gateway-probe.log"
+# cleanup は、両NICの一時captureを削除する。
+# 引数: なし。
+# 戻り値: 一時directoryを削除できれば0。
+cleanup() {
+  rm -f -- "\${primary_capture}" "\${docker_capture}" "\${probe_capture}"
+  rmdir -- "\${capture_dir}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+timeout 15 tcpdump -l -eni '${PRIMARY_NIC}' -vv 'arp or (icmp and host ${GATEWAY_IP})' >"\${primary_capture}" 2>&1 &
+primary_pid=\$!
+timeout 15 tcpdump -l -eni '${DOCKER_DEV}' -vv 'arp or (icmp and host ${GATEWAY_IP})' >"\${docker_capture}" 2>&1 &
+docker_pid=\$!
+sleep 1
+ping -I '${PRIMARY_BRIDGE}' -c 5 -W 2 '${GATEWAY_IP}' >"\${probe_capture}" 2>&1 || true
+wait "\${primary_pid}" || true
+wait "\${docker_pid}" || true
+
+primary_requests="\$(grep -Ec 'Request who-has ${GATEWAY_IP} tell' "\${primary_capture}" || true)"
+primary_replies="\$(grep -Ec 'Reply ${GATEWAY_IP} is-at' "\${primary_capture}" || true)"
+docker_requests="\$(grep -Ec 'Request who-has ${GATEWAY_IP} tell' "\${docker_capture}" || true)"
+docker_replies="\$(grep -Ec 'Reply ${GATEWAY_IP} is-at' "\${docker_capture}" || true)"
+
+printf 'primary_nic=%s\n' '${PRIMARY_NIC}'
+printf 'docker_nic=%s\n' '${DOCKER_DEV}'
+printf 'gateway_ip=%s\n' '${GATEWAY_IP}'
+printf 'primary_requests=%s\n' "\${primary_requests}"
+printf 'primary_replies=%s\n' "\${primary_replies}"
+printf 'docker_requests=%s\n' "\${docker_requests}"
+printf 'docker_replies=%s\n' "\${docker_replies}"
+
+if ((primary_replies > 0 && docker_replies > 0)); then
+  printf 'verdict=GATEWAY_ARP_REPLY_SEEN_ON_BOTH_NICS\n'
+elif ((primary_replies > 0)); then
+  printf 'verdict=GATEWAY_ARP_REPLY_SEEN_ON_PRIMARY_NIC\n'
+elif ((docker_replies > 0)); then
+  printf 'verdict=GATEWAY_ARP_REPLY_MISDIRECTED_TO_DOCKER_NIC\n'
+elif ((primary_requests > 0)); then
+  printf 'verdict=NO_GATEWAY_ARP_REPLY_ON_EITHER_NIC\n'
+else
+  printf 'verdict=NO_PRIMARY_GATEWAY_ARP_REQUEST_OBSERVED\n'
+fi
+
+printf '\n--- gateway probe ---\n'
+cat "\${probe_capture}"
+printf '\n--- ${PRIMARY_NIC} capture ---\n'
+cat "\${primary_capture}"
+printf '\n--- ${DOCKER_DEV} capture ---\n'
+cat "\${docker_capture}"
+EOF
+)"
+  run_shell_section "gateway-dual-nic-packet-capture" "${command_text}"
 }
 
 # collect_host_state は、ホスト側のネットワーク実体と永続設定を採取する。
@@ -260,7 +339,7 @@ collect_host_state() {
   run_shell_section "resolv-conf" 'ls -l /etc/resolv.conf; printf "\n"; cat /etc/resolv.conf'
   run_section "networkctl" networkctl
   run_section "nmcli-device" nmcli device
-  run_shell_section "networkmanager-connection-details" "nmcli -f connection,bridge,ethernet connection show '${PRIMARY_BRIDGE}' 2>&1 || true; printf '\n--- ${PRIMARY_NIC} connection candidates ---\n'; nmcli -f connection,bridge,ethernet connection show 2>&1 | sed -n '1,260p' || true"
+  run_shell_section "networkmanager-connection-details" "nmcli -f connection,bridge,802-3-ethernet connection show '${HOST_CONN}' 2>&1 || true; printf '\n--- ${PRIMARY_NIC} connection candidates ---\n'; nmcli -f connection,bridge,802-3-ethernet connection show 2>&1 | sed -n '1,260p' || true"
   run_shell_section "network-config-files" 'for path in /etc/netplan/* /etc/systemd/network/* /etc/NetworkManager/system-connections/* /etc/NetworkManager/conf.d/*; do [ -e "$path" ] || continue; printf "\n--- %s ---\n" "$path"; sed -E "s/(password|psk|key|secret|token)=.*/\1=[REDACTED]/Ig" "$path"; done'
 }
 
@@ -399,6 +478,16 @@ docker_bridge_name() {
 # 引数: なし。
 # 戻り値: 主要コマンドが実行できれば0。権限不足の詳細確認は警告だけ表示する。
 run_status() {
+  local host_nic_mac host_bridge_mac
+  host_nic_mac="$(cat "/sys/class/net/${HOST_NIC}/address" 2>/dev/null || true)"
+  host_bridge_mac="$(cat "/sys/class/net/${HOST_DEV}/address" 2>/dev/null || true)"
+
+  print_section "host bridge MAC"
+  printf '%s physical MAC: %s\n' "${HOST_NIC}" "${host_nic_mac:-unknown}"
+  printf '%s runtime MAC: %s\n' "${HOST_DEV}" "${host_bridge_mac:-unknown}"
+  nmcli --escape no -g bridge.mac-address connection show "${HOST_CONN}" 2>/dev/null \
+    | sed "s/^/${HOST_CONN} configured MAC: /" || true
+
   print_section "link"
   ip -br link
 
@@ -431,6 +520,77 @@ run_status() {
 
   print_section "cloudflare logs"
   docker logs --since 10m --tail 120 inferlab-cloudflare || true
+}
+
+# valid_unicast_mac は、NetworkManagerへ設定可能なunicast MACかを検証する。
+# 引数: $1に検証するMACアドレスを指定する。
+# 戻り値: 形式が正しくunicastなら0、それ以外は1。
+valid_unicast_mac() {
+  local mac="${1,,}"
+  local first_octet
+
+  [[ "${mac}" =~ ^([0-9a-f]{2}:){5}[0-9a-f]{2}$ ]] || return 1
+  [[ "${mac}" != "00:00:00:00:00:00" ]] || return 1
+  first_octet="${mac%%:*}"
+  (( (16#${first_octet} & 1) == 0 ))
+}
+
+# run_pin_host_mac は、bridge0の永続MACを管理NICの物理MACへ固定する。
+# 引数: なし。HOST_CONN、HOST_DEV、HOST_NICを使用する。
+# 戻り値: NetworkManagerプロファイルを更新できれば0。
+# 副作用: 変更前設定をOUTPUT_ROOTへ保存し、NetworkManagerのbridgeプロファイルを変更する。稼働中interfaceは再接続しない。
+run_pin_host_mac() {
+  require_root
+
+  local host_nic_mac runtime_mac backup_file configured_mac
+  if ! connection_exists "${HOST_CONN}"; then
+    echo "ERROR: NetworkManager接続 ${HOST_CONN} が見つかりません。" >&2
+    exit 1
+  fi
+
+  host_nic_mac="$(tr '[:upper:]' '[:lower:]' <"/sys/class/net/${HOST_NIC}/address")"
+  if ! valid_unicast_mac "${host_nic_mac}"; then
+    echo "ERROR: ${HOST_NIC}から有効なunicast MACを取得できません: ${host_nic_mac}" >&2
+    exit 1
+  fi
+
+  mkdir -p "${OUTPUT_ROOT}"
+  backup_file="${OUTPUT_ROOT%/}/${HOST_CONN}-before-mac-pin-${RUN_ID}.log"
+  nmcli connection show "${HOST_CONN}" >"${backup_file}"
+
+  runtime_mac="$(cat "/sys/class/net/${HOST_DEV}/address" 2>/dev/null || true)"
+  print_section "before host bridge MAC pin"
+  printf '%s physical MAC: %s\n' "${HOST_NIC}" "${host_nic_mac}"
+  printf '%s runtime MAC: %s\n' "${HOST_DEV}" "${runtime_mac:-unknown}"
+  printf 'backup: %s\n' "${backup_file}"
+
+  nmcli connection modify "${HOST_CONN}" bridge.mac-address "${host_nic_mac}"
+  configured_mac="$(nmcli --escape no -g bridge.mac-address connection show "${HOST_CONN}")"
+
+  print_section "persistent host bridge MAC"
+  printf '%s configured MAC: %s\n' "${HOST_CONN}" "${configured_mac:-unset}"
+  printf '%s runtime MAC: %s\n' "${HOST_DEV}" "${runtime_mac:-unknown}"
+  printf '設定は永続化済みです。ローカルコンソールを確保して再起動し、./nwchk.sh statusで反映を確認してください。\n'
+}
+
+# run_unpin_host_mac は、bridge0の永続MAC固定を解除する。
+# 引数: なし。HOST_CONNを使用する。
+# 戻り値: NetworkManagerプロファイルを更新できれば0。
+# 副作用: NetworkManagerのbridge MAC設定を既定値へ戻す。稼働中interfaceは再接続しない。
+run_unpin_host_mac() {
+  require_root
+
+  if ! connection_exists "${HOST_CONN}"; then
+    echo "ERROR: NetworkManager接続 ${HOST_CONN} が見つかりません。" >&2
+    exit 1
+  fi
+
+  nmcli connection modify "${HOST_CONN}" bridge.mac-address ""
+
+  print_section "persistent host bridge MAC"
+  printf '%s configured MAC: ' "${HOST_CONN}"
+  nmcli --escape no -g bridge.mac-address connection show "${HOST_CONN}" || true
+  printf 'MAC固定を解除しました。ローカルコンソールを確保して再起動し、./nwchk.sh statusで反映を確認してください。\n'
 }
 
 # run_prepare は、enp3s0用NetworkManager接続をDocker専用に準備する。
@@ -806,6 +966,12 @@ main() {
       ;;
     diagnose)
       run_diagnose_logged
+      ;;
+    pin-host-mac)
+      run_pin_host_mac
+      ;;
+    unpin-host-mac)
+      run_unpin_host_mac
       ;;
     install-service)
       run_install_service
