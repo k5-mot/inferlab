@@ -21,7 +21,7 @@ services:
       - tunnel
       - --no-autoupdate
       - --metrics
-      - 127.0.0.1:20241
+      - 0.0.0.0:20241
       - --protocol
       - http2
       - run

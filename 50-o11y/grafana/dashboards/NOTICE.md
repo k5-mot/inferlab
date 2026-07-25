@@ -1,0 +1,33 @@
+# Dashboard Notice
+
+## 方針
+
+- dashboardは、公式または公式に準ずる提供元を優先して採用する。
+- dashboardを取り込む場合は、出典、license、取得日、変更内容をこのfileへ記録する。
+- licenseが確認できないdashboard JSONは同梱せず、PromQLと画面構成のみを参考に自作する。
+- dashboard JSONを追加した場合は、Grafana provisioningで読み込めることを確認する。
+
+## 初期状態
+
+初期実装では、license確認済みの外部dashboard JSONをまだ同梱しない。
+
+## 採用候補
+
+| 対象 | 提供元候補 | 確認事項 |
+| --- | --- | --- |
+| Prometheus | Prometheus公式またはGrafana Labs | dashboard JSONのlicense |
+| Node Exporter | Prometheus公式またはGrafana Labs | dashboard JSONのlicense |
+| cAdvisor | cAdvisor公式またはGrafana Labs | dashboard JSONのlicense |
+| Grafana | Grafana Labs公式 | dashboard JSONのlicense |
+| RabbitMQ | RabbitMQ公式 | dashboard JSONのlicense |
+| Gitea | Grafana Cloud Integration | dashboard JSONのlicense |
+| Qdrant | Qdrant公式docs | metrics定義をもとに自作するか |
+| CouchDB | Apache CouchDB公式docs | metrics定義をもとに自作するか |
+| Nextcloud | Nextcloud公式docs | metrics定義をもとに自作するか |
+
+## References
+
+- [Grafana dashboard provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards)
+- [Grafana licensing](https://grafana.com/licensing/)
+- [Prometheus exporters and integrations](https://prometheus.io/docs/instrumenting/exporters/)
+

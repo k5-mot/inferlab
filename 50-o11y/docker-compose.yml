@@ -1,0 +1,163 @@
+#
+# 参考資料:
+# - Grafana
+#   - https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/
+# - Prometheus
+#   - https://prometheus.io/docs/prometheus/latest/installation/
+# - Node Exporter
+#   - https://github.com/prometheus/node_exporter
+# - cAdvisor
+#   - https://github.com/google/cadvisor
+# - Blackbox Exporter
+#   - https://github.com/prometheus/blackbox_exporter
+#
+services:
+  grafana:
+    image: docker.io/grafana/grafana:13.1.1
+    container_name: ${STACK_NAME:-inferlab}-grafana
+    restart: unless-stopped
+    profiles:
+      - o11y
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL: http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/
+      GF_METRICS_ENABLED: "true"
+      GF_USERS_DEFAULT_THEME: light
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      DS_PROMETHEUS: http://prometheus:9090
+    ports:
+      - ${GRAFANA_HTTP_HOST_PORT:-35000}:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - internal-nw
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/grafana.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Grafana
+      - homepage.href=http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}
+      - homepage.description=Observability dashboard
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.13.1
+    container_name: ${STACK_NAME:-inferlab}-prometheus
+    restart: unless-stopped
+    profiles:
+      - o11y
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}
+      - --web.enable-lifecycle
+    ports:
+      - ${PROMETHEUS_HTTP_HOST_PORT:-35001}:9090
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
+    networks:
+      - internal-nw
+    depends_on:
+      node-exporter:
+        condition: service_started
+      cadvisor:
+        condition: service_started
+      blackbox-exporter:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "promtool", "check", "config", "/etc/prometheus/prometheus.yaml" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Prometheus
+      - homepage.href=http://${PUBLIC_HOST}:${PROMETHEUS_HTTP_HOST_PORT:-35001}
+      - homepage.description=Metrics database
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.12.1
+    container_name: ${STACK_NAME:-inferlab}-node-exporter
+    restart: unless-stopped
+    profiles:
+      - o11y
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/.+)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - internal-nw
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Node Exporter
+      - homepage.description=Host metrics exporter
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.60.5
+    container_name: ${STACK_NAME:-inferlab}-cadvisor
+    restart: unless-stopped
+    profiles:
+      - o11y
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - internal-nw
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=cAdvisor
+      - homepage.description=Container metrics exporter
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:v0.28.0
+    container_name: ${STACK_NAME:-inferlab}-blackbox-exporter
+    restart: unless-stopped
+    profiles:
+      - o11y
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yaml
+    volumes:
+      - ./blackbox/config.yaml:/etc/blackbox_exporter/config.yaml:ro
+    networks:
+      - internal-nw
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Blackbox Exporter
+      - homepage.description=Endpoint probe exporter
+
+volumes:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  internal-nw:
