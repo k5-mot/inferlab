@@ -147,23 +147,14 @@ services:
       AUDIO_TTS_VOICE: "3"
     entrypoint:
       - bash
-      - -c
-      # TODO: OpenWebUI 本体で Channels の AI 返信保存が修正されたら、起動時パッチ実行を削除する。
-      # NOTE: DOCLING_PARAMS のトップレベルにネストしたオブジェクトは、OpenWebUI の
-      #       DoclingLoader が requests の data= にそのまま渡すため dict のままでは壊れる
-      #       (dict のキー名だけが multipart フィールドとして送信される)。
-      #       起動時にネストオブジェクトのみ JSON 文字列へ変換して export する。
-      - |
-        set -e
-        python /run/patches/open-webui-channel-stream-drain.py
-        DOCLING_PARAMS="$(python -c 'import json,sys;d=json.load(open(sys.argv[1]));print(json.dumps({k:(json.dumps(v) if isinstance(v,dict) else v) for k,v in d.items()}))' /run/config/docling_params.json)"
-        export DOCLING_PARAMS
-        exec bash start.sh
+      - /run/scripts/open-webui-entrypoint.sh
     ports:
       - 31100:8080
     volumes:
       - open-webui-data:/app/backend/data
       - ./docling/params.json:/run/config/docling_params.json:ro
+      - ./scripts/open-webui-entrypoint.sh:/run/scripts/open-webui-entrypoint.sh:ro
+      - ./scripts/render-docling-params.py:/run/scripts/render-docling-params.py:ro
       # TODO: 上記の起動時パッチを削除するときに、このマウントも一緒に削除する。
       - ./patches/open-webui-channel-stream-drain.py:/run/patches/open-webui-channel-stream-drain.py:ro
     networks:
