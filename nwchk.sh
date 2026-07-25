@@ -2,11 +2,26 @@
 set -euo pipefail
 
 HOST_DEV="${HOST_DEV:-bridge0}"
-HOST_NIC="${HOST_NIC:-enp2s0}"
 HOST_CONN="${HOST_CONN:-bridge0}"
+LEGACY_HOST_NIC="${LEGACY_HOST_NIC:-enp2s0}"
+LEGACY_HOST_PORT_CONN="${LEGACY_HOST_PORT_CONN:-Wired connection 1}"
 DOCKER_DEV="${DOCKER_DEV:-enp3s0}"
 DOCKER_CONN="${DOCKER_CONN:-docker-enp3s0}"
 LEGACY_DOCKER_CONN="${LEGACY_DOCKER_CONN:-Wired connection 2}"
+CONSOLIDATED_NIC="${CONSOLIDATED_NIC:-enp3s0}"
+CONSOLIDATED_PORT_CONN="${CONSOLIDATED_PORT_CONN:-bridge0-enp3s0}"
+if [[ -z "${HOST_NIC:-}" ]]; then
+  if [[ -e "/sys/class/net/${HOST_DEV}/brif/${CONSOLIDATED_NIC}" ]]; then
+    HOST_NIC="${CONSOLIDATED_NIC}"
+  else
+    HOST_NIC="${LEGACY_HOST_NIC}"
+  fi
+fi
+if [[ "${HOST_NIC}" == "${CONSOLIDATED_NIC}" ]]; then
+  SECONDARY_NIC="${SECONDARY_NIC:-${LEGACY_HOST_NIC}}"
+else
+  SECONDARY_NIC="${SECONDARY_NIC:-${CONSOLIDATED_NIC}}"
+fi
 EGRESS_SCRIPT="${EGRESS_SCRIPT:-script/inferlab-docker-egress-enp3s0.sh}"
 EGRESS_SERVICE="${EGRESS_SERVICE:-script/inferlab-docker-egress-enp3s0.service}"
 EGRESS_DISPATCHER="${EGRESS_DISPATCHER:-script/inferlab-docker-egress-enp3s0-dispatcher.sh}"
@@ -40,37 +55,31 @@ usage() {
 Usage:
   sudo ./nwchk.sh [--output-dir DIR] [triage]
   ./nwchk.sh [--output-dir DIR] status
-  sudo ./nwchk.sh [--output-dir DIR] prepare
-  sudo ./nwchk.sh [--output-dir DIR] up
-  sudo ./nwchk.sh [--output-dir DIR] apply
-  sudo ./nwchk.sh [--output-dir DIR] verify
   sudo ./nwchk.sh [--output-dir DIR] diagnose
   sudo ./nwchk.sh [--output-dir DIR] pin-host-mac
   sudo ./nwchk.sh [--output-dir DIR] unpin-host-mac
-  sudo ./nwchk.sh [--output-dir DIR] install-service
-  sudo ./nwchk.sh [--output-dir DIR] rollback
+  sudo ./nwchk.sh [--output-dir DIR] consolidate-prepare
+  sudo env CONFIRM_LOCAL_CONSOLE=yes ./nwchk.sh consolidate-apply
+  sudo ./nwchk.sh consolidate-verify
+  sudo ./nwchk.sh consolidate-rollback
 
 Options:
   -o, --output-dir DIR  診断ログの保存先。既定値は logs/
   -h, --help            このヘルプを表示する
 
-Flow:
-  1. ./nwchk.sh status
-  2. sudo ./nwchk.sh prepare
-  3. enp3s0 にLANケーブルを挿す
-  4. sudo ./nwchk.sh up
-  5. sudo ./nwchk.sh apply
-  6. sudo ./nwchk.sh verify
-  7. sudo ./nwchk.sh install-service
-
 Incident:
   1. 再起動前に sudo ./nwchk.sh triage
   2. Dockerだけ疎通しない場合は sudo ./nwchk.sh diagnose
 
-Host bridge MAC:
-  1. sudo ./nwchk.sh pin-host-mac
-  2. ローカルコンソールを確保して sudo reboot
-  3. ./nwchk.sh status
+Single NIC consolidation:
+  1. sudo ./nwchk.sh consolidate-prepare
+  2. ローカルコンソールへ移動する
+  3. sudo env CONFIRM_LOCAL_CONSOLE=yes ./nwchk.sh consolidate-apply
+  4. sudo ./nwchk.sh consolidate-verify
+
+Legacy split-NIC commands:
+  prepare, up, apply, verify, install-service, rollback
+  旧2NIC分離構成の履歴検証とrollback以外には使用しないでください。
 USAGE
 }
 
@@ -90,6 +99,45 @@ require_root() {
 connection_exists() {
   local name="$1"
   nmcli -t -f NAME connection show | grep -Fxq "${name}"
+}
+
+# split_docker_connection は、旧Docker専用NICプロファイル名を返す。
+# 引数: なし。DOCKER_CONNとLEGACY_DOCKER_CONNを使用する。
+# 戻り値: 接続が存在すれば名前を標準出力して0、存在しなければ1。
+split_docker_connection() {
+  if connection_exists "${DOCKER_CONN}"; then
+    printf '%s\n' "${DOCKER_CONN}"
+    return 0
+  fi
+  if connection_exists "${LEGACY_DOCKER_CONN}"; then
+    printf '%s\n' "${LEGACY_DOCKER_CONN}"
+    return 0
+  fi
+  return 1
+}
+
+# require_local_console_confirmation は、管理経路を切断する操作の誤実行を防ぐ。
+# 引数: なし。CONFIRM_LOCAL_CONSOLEを参照する。
+# 戻り値: 値がyesなら0、それ以外は終了コード1で終了する。
+require_local_console_confirmation() {
+  if [[ "${CONFIRM_LOCAL_CONSOLE:-}" != "yes" ]]; then
+    echo "ERROR: この操作はSSHを切断します。ローカルコンソールでCONFIRM_LOCAL_CONSOLE=yesを指定してください。" >&2
+    exit 1
+  fi
+}
+
+# backup_networkmanager_profiles は、変更前のNetworkManager永続設定を退避する。
+# 引数: なし。OUTPUT_ROOTとRUN_IDを使用する。
+# 戻り値: backupを作成できれば0。
+# 副作用: OUTPUT_ROOT配下へrootだけが読めるNetworkManager設定backupを作成する。
+backup_networkmanager_profiles() {
+  initialize_output_paths
+
+  local backup_dir="${OUT_DIR}/networkmanager-system-connections"
+  install -d -m 0700 "${backup_dir}"
+  cp -a /etc/NetworkManager/system-connections/. "${backup_dir}/"
+  chmod -R go-rwx "${backup_dir}"
+  printf '%s\n' "${backup_dir}"
 }
 
 # print_section は、ログを読みやすくするための見出しを表示する。
@@ -217,7 +265,7 @@ write_triage_header() {
 - gateway_ip: ${GATEWAY_IP}
 - primary_bridge: ${PRIMARY_BRIDGE}
 - primary_nic: ${PRIMARY_NIC}
-- docker_nic: ${DOCKER_DEV}
+- secondary_nic: ${SECONDARY_NIC}
 - journal_lines: ${JOURNAL_LINES}
 - docker_since: ${DOCKER_SINCE}
 - docker_log_lines: ${DOCKER_LOG_LINES}
@@ -226,7 +274,7 @@ write_triage_header() {
 ## Codex向け確認ポイント
 
 - 最初に \`read-first-gateway-l2-verdict\` と \`gateway-neighbor-priority-snapshot\` を確認する。
-- \`gateway-dual-nic-packet-capture\`の\`verdict\`で、gateway ARP replyが\`${DOCKER_DEV}\`へ誤配送されていないか確認する。
+- \`gateway-dual-nic-packet-capture\`の\`verdict\`で、gateway ARP replyが\`${SECONDARY_NIC}\`へ誤配送されていないか確認する。
 - \`${GATEWAY_IP} dev ${PRIMARY_BRIDGE} FAILED\` があれば、DNSではなくgateway ARP/L2到達不能として扱う。
 - \`memory-pressure-and-oom\`、\`kernel-oom-current-boot\`、\`docker-resource-state\`で、TEI起動時のOOM、swap枯渇、再起動loopを確認する。
 - \`journal-list-boots\`と前回bootのkernel/network logを使い、再起動で失われたruntime状態と区別する。
@@ -263,45 +311,45 @@ fi
 
 capture_dir="\$(mktemp -d /tmp/inferlab-gateway-capture.XXXXXX)"
 primary_capture="\${capture_dir}/${PRIMARY_NIC}.log"
-docker_capture="\${capture_dir}/${DOCKER_DEV}.log"
+secondary_capture="\${capture_dir}/${SECONDARY_NIC}.log"
 probe_capture="\${capture_dir}/gateway-probe.log"
 # cleanup は、両NICの一時captureを削除する。
 # 引数: なし。
 # 戻り値: 一時directoryを削除できれば0。
 cleanup() {
-  rm -f -- "\${primary_capture}" "\${docker_capture}" "\${probe_capture}"
+  rm -f -- "\${primary_capture}" "\${secondary_capture}" "\${probe_capture}"
   rmdir -- "\${capture_dir}" 2>/dev/null || true
 }
 trap cleanup EXIT
 
 timeout 15 tcpdump -l -eni '${PRIMARY_NIC}' -vv 'arp or (icmp and host ${GATEWAY_IP})' >"\${primary_capture}" 2>&1 &
 primary_pid=\$!
-timeout 15 tcpdump -l -eni '${DOCKER_DEV}' -vv 'arp or (icmp and host ${GATEWAY_IP})' >"\${docker_capture}" 2>&1 &
-docker_pid=\$!
+timeout 15 tcpdump -l -eni '${SECONDARY_NIC}' -vv 'arp or (icmp and host ${GATEWAY_IP})' >"\${secondary_capture}" 2>&1 &
+secondary_pid=\$!
 sleep 1
 ping -I '${PRIMARY_BRIDGE}' -c 5 -W 2 '${GATEWAY_IP}' >"\${probe_capture}" 2>&1 || true
 wait "\${primary_pid}" || true
-wait "\${docker_pid}" || true
+wait "\${secondary_pid}" || true
 
 primary_requests="\$(grep -Ec 'Request who-has ${GATEWAY_IP} tell' "\${primary_capture}" || true)"
 primary_replies="\$(grep -Ec 'Reply ${GATEWAY_IP} is-at' "\${primary_capture}" || true)"
-docker_requests="\$(grep -Ec 'Request who-has ${GATEWAY_IP} tell' "\${docker_capture}" || true)"
-docker_replies="\$(grep -Ec 'Reply ${GATEWAY_IP} is-at' "\${docker_capture}" || true)"
+secondary_requests="\$(grep -Ec 'Request who-has ${GATEWAY_IP} tell' "\${secondary_capture}" || true)"
+secondary_replies="\$(grep -Ec 'Reply ${GATEWAY_IP} is-at' "\${secondary_capture}" || true)"
 
 printf 'primary_nic=%s\n' '${PRIMARY_NIC}'
-printf 'docker_nic=%s\n' '${DOCKER_DEV}'
+printf 'secondary_nic=%s\n' '${SECONDARY_NIC}'
 printf 'gateway_ip=%s\n' '${GATEWAY_IP}'
 printf 'primary_requests=%s\n' "\${primary_requests}"
 printf 'primary_replies=%s\n' "\${primary_replies}"
-printf 'docker_requests=%s\n' "\${docker_requests}"
-printf 'docker_replies=%s\n' "\${docker_replies}"
+printf 'secondary_requests=%s\n' "\${secondary_requests}"
+printf 'secondary_replies=%s\n' "\${secondary_replies}"
 
-if ((primary_replies > 0 && docker_replies > 0)); then
+if ((primary_replies > 0 && secondary_replies > 0)); then
   printf 'verdict=GATEWAY_ARP_REPLY_SEEN_ON_BOTH_NICS\n'
 elif ((primary_replies > 0)); then
   printf 'verdict=GATEWAY_ARP_REPLY_SEEN_ON_PRIMARY_NIC\n'
-elif ((docker_replies > 0)); then
-  printf 'verdict=GATEWAY_ARP_REPLY_MISDIRECTED_TO_DOCKER_NIC\n'
+elif ((secondary_replies > 0)); then
+  printf 'verdict=GATEWAY_ARP_REPLY_MISDIRECTED_TO_SECONDARY_NIC\n'
 elif ((primary_requests > 0)); then
   printf 'verdict=NO_GATEWAY_ARP_REPLY_ON_EITHER_NIC\n'
 else
@@ -312,8 +360,8 @@ printf '\n--- gateway probe ---\n'
 cat "\${probe_capture}"
 printf '\n--- ${PRIMARY_NIC} capture ---\n'
 cat "\${primary_capture}"
-printf '\n--- ${DOCKER_DEV} capture ---\n'
-cat "\${docker_capture}"
+printf '\n--- ${SECONDARY_NIC} capture ---\n'
+cat "\${secondary_capture}"
 EOF
 )"
   run_shell_section "gateway-dual-nic-packet-capture" "${command_text}"
@@ -330,7 +378,7 @@ collect_host_state() {
   run_section "ip-addresses" ip addr
   run_section "ip-links" ip link
   run_section "host-route-and-neighbor" bash -lc 'ip route; printf "\n--- ip rule ---\n"; ip rule; printf "\n--- all route tables ---\n"; ip route show table all; printf "\n--- ip neigh ---\n"; ip neigh'
-  run_shell_section "mac-address-comparison" "printf '%s ' '${PRIMARY_NIC}'; cat '/sys/class/net/${PRIMARY_NIC}/address' 2>/dev/null || true; printf '%s ' '${PRIMARY_BRIDGE}'; cat '/sys/class/net/${PRIMARY_BRIDGE}/address' 2>/dev/null || true; printf '%s ' '${DOCKER_DEV}'; cat '/sys/class/net/${DOCKER_DEV}/address' 2>/dev/null || true; printf '\n--- ${PRIMARY_NIC} link details ---\n'; ip -d link show '${PRIMARY_NIC}' || true; printf '\n--- ${PRIMARY_BRIDGE} link details ---\n'; ip -d link show '${PRIMARY_BRIDGE}' || true; printf '\n--- ${DOCKER_DEV} link details ---\n'; ip -d link show '${DOCKER_DEV}' || true"
+  run_shell_section "mac-address-comparison" "printf '%s ' '${PRIMARY_NIC}'; cat '/sys/class/net/${PRIMARY_NIC}/address' 2>/dev/null || true; printf '%s ' '${PRIMARY_BRIDGE}'; cat '/sys/class/net/${PRIMARY_BRIDGE}/address' 2>/dev/null || true; printf '%s ' '${SECONDARY_NIC}'; cat '/sys/class/net/${SECONDARY_NIC}/address' 2>/dev/null || true; printf '\n--- ${PRIMARY_NIC} link details ---\n'; ip -d link show '${PRIMARY_NIC}' || true; printf '\n--- ${PRIMARY_BRIDGE} link details ---\n'; ip -d link show '${PRIMARY_BRIDGE}' || true; printf '\n--- ${SECONDARY_NIC} link details ---\n'; ip -d link show '${SECONDARY_NIC}' || true"
   run_section "bridge-link" bridge link
   run_section "bridge-vlan" bridge vlan
   run_section "bridge-fdb-show" bridge fdb show
@@ -351,17 +399,17 @@ collect_runtime_health() {
   run_section "gateway-ping" ping -c 3 -W 2 "${GATEWAY_IP}"
   run_section "external-ip-ping" ping -c 3 -W 2 1.1.1.1
   run_section "dns-resolution" bash -lc 'getent hosts cloudflare.com; getent hosts discord.com; getent hosts region1.v2.argotunnel.com'
-  run_shell_section "nic-driver-and-stats" "for nic in '${PRIMARY_NIC}' '${DOCKER_DEV}'; do printf '\n--- %s ---\n' \"\$nic\"; readlink \"/sys/class/net/\${nic}/device/driver\" || true; cat \"/sys/class/net/\${nic}/operstate\" 2>/dev/null || true; for counter in rx_errors tx_errors rx_dropped tx_dropped collisions carrier_changes; do printf '%s=' \"\$counter\"; cat \"/sys/class/net/\${nic}/statistics/\${counter}\" 2>/dev/null || true; done; ip -s link show \"\$nic\" || true; done"
+  run_shell_section "nic-driver-and-stats" "for nic in '${PRIMARY_NIC}' '${SECONDARY_NIC}'; do printf '\n--- %s ---\n' \"\$nic\"; readlink \"/sys/class/net/\${nic}/device/driver\" || true; cat \"/sys/class/net/\${nic}/operstate\" 2>/dev/null || true; for counter in rx_errors tx_errors rx_dropped tx_dropped collisions carrier_changes; do printf '%s=' \"\$counter\"; cat \"/sys/class/net/\${nic}/statistics/\${counter}\" 2>/dev/null || true; done; ip -s link show \"\$nic\" || true; done"
   run_section "ethtool-primary-nic" ethtool "${PRIMARY_NIC}"
   run_section "ethtool-driver-primary-nic" ethtool -i "${PRIMARY_NIC}"
   run_section "ethtool-offload-primary-nic" ethtool -k "${PRIMARY_NIC}"
   run_section "ethtool-eee-primary-nic" ethtool --show-eee "${PRIMARY_NIC}"
   run_section "ethtool-pause-primary-nic" ethtool --show-pause "${PRIMARY_NIC}"
   run_section "ethtool-stats-primary-nic" ethtool -S "${PRIMARY_NIC}"
-  run_section "ethtool-docker-nic" ethtool "${DOCKER_DEV}"
-  run_section "ethtool-driver-docker-nic" ethtool -i "${DOCKER_DEV}"
-  run_section "ethtool-stats-docker-nic" ethtool -S "${DOCKER_DEV}"
-  run_shell_section "nic-driver-deep-dive" "for nic in '${PRIMARY_NIC}' '${DOCKER_DEV}'; do printf '\n--- %s driver symlink ---\n' \"\$nic\"; readlink \"/sys/class/net/\${nic}/device/driver\" || true; printf '%s\n' '--- module symlink ---'; readlink \"/sys/class/net/\${nic}/device/driver/module\" || true; printf '%s\n' '--- PCI modalias ---'; cat \"/sys/class/net/\${nic}/device/modalias\" 2>/dev/null || true; printf '%s\n' '--- device power control ---'; cat \"/sys/class/net/\${nic}/device/power/control\" 2>/dev/null || true; done; printf '\n%s\n' '--- r8168 module parameters ---'; for path in /sys/module/r8168/parameters/*; do [ -e \"\$path\" ] || continue; printf '%s=' \"\$(basename \"\$path\")\"; cat \"\$path\"; done; printf '\n%s\n' '--- PCI and loaded drivers ---'; if command -v lspci >/dev/null 2>&1; then lspci -nnk | grep -A4 -i -E 'ethernet|network|realtek|r816'; else printf 'lspci not installed\n'; fi; printf '\n%s\n' '--- loaded r816 modules ---'; lsmod | grep -E '^r8168|^r8169|realtek' || true; printf '\n%s\n' '--- modinfo r8168 ---'; modinfo r8168 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- modinfo r8169 ---'; modinfo r8169 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- recent NIC kernel messages ---'; journalctl -b -k --no-pager | grep -Ei '${PRIMARY_NIC}|${DOCKER_DEV}|r8168|r8169|realtek|NETDEV|watchdog|tx timeout|reset|link is|carrier' | tail -500 || true"
+  run_section "ethtool-secondary-nic" ethtool "${SECONDARY_NIC}"
+  run_section "ethtool-driver-secondary-nic" ethtool -i "${SECONDARY_NIC}"
+  run_section "ethtool-stats-secondary-nic" ethtool -S "${SECONDARY_NIC}"
+  run_shell_section "nic-driver-deep-dive" "for nic in '${PRIMARY_NIC}' '${SECONDARY_NIC}'; do printf '\n--- %s driver symlink ---\n' \"\$nic\"; readlink \"/sys/class/net/\${nic}/device/driver\" || true; printf '%s\n' '--- module symlink ---'; readlink \"/sys/class/net/\${nic}/device/driver/module\" || true; printf '%s\n' '--- PCI modalias ---'; cat \"/sys/class/net/\${nic}/device/modalias\" 2>/dev/null || true; printf '%s\n' '--- device power control ---'; cat \"/sys/class/net/\${nic}/device/power/control\" 2>/dev/null || true; done; printf '\n%s\n' '--- r8168 module parameters ---'; for path in /sys/module/r8168/parameters/*; do [ -e \"\$path\" ] || continue; printf '%s=' \"\$(basename \"\$path\")\"; cat \"\$path\"; done; printf '\n%s\n' '--- PCI and loaded drivers ---'; if command -v lspci >/dev/null 2>&1; then lspci -nnk | grep -A4 -i -E 'ethernet|network|realtek|r816'; else printf 'lspci not installed\n'; fi; printf '\n%s\n' '--- loaded r816 modules ---'; lsmod | grep -E '^r8168|^r8169|realtek' || true; printf '\n%s\n' '--- modinfo r8168 ---'; modinfo r8168 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- modinfo r8169 ---'; modinfo r8169 2>/dev/null | sed -n '1,120p' || true; printf '\n%s\n' '--- recent NIC kernel messages ---'; journalctl -b -k --no-pager | grep -Ei '${PRIMARY_NIC}|${SECONDARY_NIC}|r8168|r8169|realtek|NETDEV|watchdog|tx timeout|reset|link is|carrier' | tail -500 || true"
   run_shell_section "memory-pressure-and-oom" "printf '%s\n' '--- free ---'; free -h; printf '\n%s\n' '--- swap ---'; swapon --show --bytes || true; printf '\n%s\n' '--- vmstat ---'; vmstat 1 5 || true; printf '\n%s\n' '--- pressure ---'; for path in /proc/pressure/cpu /proc/pressure/io /proc/pressure/memory; do printf '\n%s\n' \"--- \$path ---\"; cat \"\$path\" 2>/dev/null || true; done; printf '\n%s\n' '--- overcommit and swappiness ---'; sysctl vm.overcommit_memory vm.overcommit_ratio vm.swappiness 2>/dev/null || true"
   run_shell_section "kernel-oom-current-boot" "journalctl -b -k --no-pager | grep -Ei 'out of memory|oom-kill|killed process|memory cgroup out of memory|page allocation failure' | tail -1200 || true"
   run_shell_section "kernel-oom-previous-boot" "journalctl -b -1 -k --no-pager | grep -Ei 'out of memory|oom-kill|killed process|memory cgroup out of memory|page allocation failure' | tail -1200 || true"
@@ -591,6 +639,267 @@ run_unpin_host_mac() {
   printf '%s configured MAC: ' "${HOST_CONN}"
   nmcli --escape no -g bridge.mac-address connection show "${HOST_CONN}" || true
   printf 'MAC固定を解除しました。ローカルコンソールを確保して再起動し、./nwchk.sh statusで反映を確認してください。\n'
+}
+
+# remove_split_egress_runtime は、旧2NIC分離用の経路、firewall、serviceを撤去する。
+# 引数: なし。DOCKER_SUBNETSと旧egress設定の定数を使用する。
+# 戻り値: 撤去処理を最後まで実行すれば0。
+# 副作用: policy rule、table 103、iptables、UFW、systemd unit、dispatcherを削除する。
+remove_split_egress_runtime() {
+  local bridge_dev subnet
+  local -a subnet_list
+
+  rm -f -- "${EGRESS_DISPATCHER_TARGET}"
+  systemctl disable --now inferlab-docker-egress-enp3s0.service 2>/dev/null || true
+
+  ip rule del priority "${HOST_RULE_PRIORITY}" 2>/dev/null || true
+  ip rule del priority "${RULE_PRIORITY_BASE}" 2>/dev/null || true
+  ip rule del priority "$((RULE_PRIORITY_BASE + 1))" 2>/dev/null || true
+  ip route flush table "${TABLE}" || true
+
+  read -r -a subnet_list <<< "${DOCKER_SUBNETS}"
+  for subnet in "${subnet_list[@]}"; do
+    bridge_dev="$(ip -4 route show "${subnet}" | awk 'NR == 1 {for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
+    while iptables -t nat -D POSTROUTING -s "${subnet}" -o "${DOCKER_DEV}" -j MASQUERADE 2>/dev/null; do
+      true
+    done
+    if [[ -n "${bridge_dev}" ]]; then
+      while iptables -D FORWARD -i "${bridge_dev}" -o "${DOCKER_DEV}" -j ACCEPT 2>/dev/null; do
+        true
+      done
+      while iptables -D FORWARD -i "${DOCKER_DEV}" -o "${bridge_dev}" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null; do
+        true
+      done
+      if command -v ufw >/dev/null 2>&1; then
+        ufw --force route delete allow in on "${bridge_dev}" out on "${DOCKER_DEV}" from "${subnet}" to any || true
+      fi
+    fi
+  done
+
+  sysctl -w net.ipv4.conf.all.arp_filter=0 >/dev/null
+  sysctl -w "net.ipv4.conf.${HOST_DEV}.arp_ignore=0" >/dev/null
+  sysctl -w "net.ipv4.conf.${HOST_DEV}.arp_announce=0" >/dev/null
+  sysctl -w "net.ipv4.conf.${CONSOLIDATED_NIC}.arp_ignore=0" >/dev/null
+  sysctl -w "net.ipv4.conf.${CONSOLIDATED_NIC}.arp_announce=0" >/dev/null
+
+  rm -f -- \
+    /usr/local/sbin/inferlab-docker-egress-enp3s0.sh \
+    /etc/systemd/system/inferlab-docker-egress-enp3s0.service
+  systemctl daemon-reload
+}
+
+# run_consolidate_prepare は、enp3s0をbridge0の唯一の物理ポートにする永続設定を準備する。
+# 引数: なし。CONSOLIDATED_NICとNetworkManager接続名の定数を使用する。
+# 戻り値: backupとプロファイル変更に成功すれば0。
+# 副作用: NetworkManagerプロファイルを変更するが、稼働中の接続は切断しない。
+run_consolidate_prepare() {
+  require_root
+
+  local backup_dir consolidated_mac split_conn
+  if ! connection_exists "${HOST_CONN}" || ! connection_exists "${LEGACY_HOST_PORT_CONN}"; then
+    echo "ERROR: ${HOST_CONN}または${LEGACY_HOST_PORT_CONN}が見つかりません。" >&2
+    exit 1
+  fi
+  if ! split_conn="$(split_docker_connection)"; then
+    echo "ERROR: ${CONSOLIDATED_NIC}の旧Docker接続が見つかりません。" >&2
+    exit 1
+  fi
+
+  consolidated_mac="$(tr '[:upper:]' '[:lower:]' <"/sys/class/net/${CONSOLIDATED_NIC}/address")"
+  if ! valid_unicast_mac "${consolidated_mac}"; then
+    echo "ERROR: ${CONSOLIDATED_NIC}から有効なMACを取得できません: ${consolidated_mac}" >&2
+    exit 1
+  fi
+
+  backup_dir="$(backup_networkmanager_profiles)"
+
+  if ! connection_exists "${CONSOLIDATED_PORT_CONN}"; then
+    nmcli connection clone "${LEGACY_HOST_PORT_CONN}" "${CONSOLIDATED_PORT_CONN}"
+  fi
+
+  nmcli connection modify "${HOST_CONN}" \
+    connection.autoconnect yes \
+    connection.autoconnect-slaves 1 \
+    bridge.mac-address "${consolidated_mac}" \
+    ipv4.method auto \
+    ipv4.never-default no \
+    ipv4.route-metric 100 \
+    ipv4.dhcp-client-id mac
+  nmcli connection modify "${CONSOLIDATED_PORT_CONN}" \
+    connection.interface-name "${CONSOLIDATED_NIC}" \
+    connection.master "${HOST_CONN}" \
+    connection.slave-type bridge \
+    connection.autoconnect yes \
+    connection.autoconnect-priority 100
+  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" connection.autoconnect no
+  nmcli connection modify "${split_conn}" connection.autoconnect no
+
+  print_section "prepared consolidation"
+  printf 'backup: %s\n' "${backup_dir}"
+  printf 'target MAC: %s\n' "${consolidated_mac}"
+  nmcli -f connection.id,connection.interface-name,connection.master,connection.slave-type,connection.autoconnect \
+    connection show "${CONSOLIDATED_PORT_CONN}"
+  nmcli -f connection.id,connection.autoconnect,bridge.mac-address,ipv4.method,ipv4.never-default,ipv4.route-metric,ipv4.dhcp-client-id \
+    connection show "${HOST_CONN}"
+  printf '稼働中の接続は変更していません。次はローカルコンソールからconsolidate-applyを実行してください。\n'
+}
+
+# run_consolidate_apply は、管理通信とDocker egressをenp3s0へ切り替える。
+# 引数: なし。CONFIRM_LOCAL_CONSOLE=yesを必須とする。
+# 戻り値: bridge0がIPv4を取得できれば0、それ以外は1。
+# 副作用: SSHを切断し、旧egress設定を撤去してNetworkManager接続を再構成する。
+run_consolidate_apply() {
+  require_root
+  require_local_console_confirmation
+
+  local activation_log bridge_ip bridge_pid split_conn
+  if ! connection_exists "${CONSOLIDATED_PORT_CONN}"; then
+    echo "ERROR: 先にconsolidate-prepareを実行してください。" >&2
+    exit 1
+  fi
+  split_conn="$(split_docker_connection || true)"
+
+  print_section "remove split egress"
+  remove_split_egress_runtime
+
+  print_section "switch bridge port"
+  if [[ -n "${split_conn}" ]]; then
+    nmcli connection down "${split_conn}" || true
+  fi
+  nmcli connection down "${LEGACY_HOST_PORT_CONN}" || true
+  nmcli connection down "${HOST_CONN}" || true
+
+  activation_log="$(mktemp /tmp/inferlab-bridge0-activation.XXXXXX)"
+  nmcli --wait 65 connection up "${HOST_CONN}" >"${activation_log}" 2>&1 &
+  bridge_pid=$!
+  sleep 2
+  if ! nmcli --wait 65 connection up "${CONSOLIDATED_PORT_CONN}"; then
+    cat "${activation_log}" >&2
+    wait "${bridge_pid}" || true
+    rm -f -- "${activation_log}"
+    echo "ERROR: ${CONSOLIDATED_PORT_CONN}を起動できませんでした。" >&2
+    exit 1
+  fi
+  if ! wait "${bridge_pid}"; then
+    cat "${activation_log}" >&2
+    rm -f -- "${activation_log}"
+    echo "ERROR: ${HOST_CONN}を起動できませんでした。" >&2
+    exit 1
+  fi
+  cat "${activation_log}"
+  rm -f -- "${activation_log}"
+
+  bridge_ip=""
+  for _ in $(seq 1 30); do
+    bridge_ip="$(host_ip)"
+    [[ -n "${bridge_ip}" ]] && break
+    sleep 2
+  done
+  if [[ -z "${bridge_ip}" ]]; then
+    echo "ERROR: ${HOST_DEV}が60秒以内にIPv4を取得できませんでした。" >&2
+    exit 1
+  fi
+
+  print_section "consolidated address"
+  ip -4 -br addr show dev "${HOST_DEV}"
+  ip -4 -br addr show dev "${CONSOLIDATED_NIC}"
+  bridge link show dev "${CONSOLIDATED_NIC}"
+  printf '管理IP: %s\n' "${bridge_ip}"
+  printf 'ローカル確認後、別端末からssh penguin@%sで再接続してください。\n' "${bridge_ip}"
+}
+
+# run_consolidate_verify は、enp3s0集約後の構成とホスト・Docker疎通を検証する。
+# 引数: なし。HOST_DEV、CONSOLIDATED_NIC、Docker network名を使用する。
+# 戻り値: 全検査が成功すれば0、失敗があれば1。
+# 副作用: gatewayと外部サイトへprobeを送り、一時Dockerコンテナを起動する。
+run_consolidate_verify() {
+  require_root
+
+  local bridge_ip bridge_mac nic_ip nic_mac status=0 table_routes
+  bridge_ip="$(host_ip)"
+  nic_ip="$(ip -4 -o addr show dev "${CONSOLIDATED_NIC}" scope global | awk 'NR == 1 {print $4}')"
+  bridge_mac="$(cat "/sys/class/net/${HOST_DEV}/address" 2>/dev/null || true)"
+  nic_mac="$(cat "/sys/class/net/${CONSOLIDATED_NIC}/address" 2>/dev/null || true)"
+  table_routes="$(ip route show table "${TABLE}" || true)"
+
+  print_section "consolidated topology"
+  ip -br link show dev "${HOST_DEV}"
+  ip -br link show dev "${CONSOLIDATED_NIC}"
+  ip -4 -br addr show dev "${HOST_DEV}"
+  ip -4 -br addr show dev "${CONSOLIDATED_NIC}"
+  bridge link show dev "${CONSOLIDATED_NIC}" || true
+
+  [[ -n "${bridge_ip}" ]] || { echo "ERROR: ${HOST_DEV}にIPv4がありません。" >&2; status=1; }
+  [[ -z "${nic_ip}" ]] || { echo "ERROR: ${CONSOLIDATED_NIC}自身にIPv4が残っています: ${nic_ip}" >&2; status=1; }
+  [[ "${bridge_mac,,}" == "${nic_mac,,}" ]] || { echo "ERROR: ${HOST_DEV}と${CONSOLIDATED_NIC}のMACが一致しません。" >&2; status=1; }
+  bridge link show dev "${CONSOLIDATED_NIC}" | grep -q "master ${HOST_DEV}" \
+    || { echo "ERROR: ${CONSOLIDATED_NIC}が${HOST_DEV}のポートではありません。" >&2; status=1; }
+  if bridge link show dev "${LEGACY_HOST_NIC}" 2>/dev/null | grep -q "master ${HOST_DEV}"; then
+    echo "ERROR: ${LEGACY_HOST_NIC}が${HOST_DEV}に残っています。" >&2
+    status=1
+  fi
+
+  print_section "legacy egress removal"
+  ip rule
+  ip route show table "${TABLE}" || true
+  [[ -z "${table_routes}" ]] || { echo "ERROR: table ${TABLE}に経路が残っています。" >&2; status=1; }
+  if ip rule | grep -Eq "^(${HOST_RULE_PRIORITY}|${RULE_PRIORITY_BASE}|$((RULE_PRIORITY_BASE + 1))):"; then
+    echo "ERROR: 旧policy ruleが残っています。" >&2
+    status=1
+  fi
+  if systemctl is-enabled inferlab-docker-egress-enp3s0.service >/dev/null 2>&1; then
+    echo "ERROR: 旧egress serviceがenabledです。" >&2
+    status=1
+  fi
+  [[ ! -e "${EGRESS_DISPATCHER_TARGET}" ]] || { echo "ERROR: 旧dispatcherが残っています。" >&2; status=1; }
+
+  print_section "host connectivity"
+  ip route get 1.1.1.1
+  ping -I "${HOST_DEV}" -c 3 -W 2 "${GATEWAY_IP}" || status=1
+  ping -I "${HOST_DEV}" -c 3 -W 2 1.1.1.1 || status=1
+  resolvectl query example.com || status=1
+  curl -4I --max-time 10 https://example.com || status=1
+
+  print_section "docker connectivity"
+  docker run --rm --pull never --network "${DOCKER_NETWORK}" curlimages/curl:latest \
+    sh -c 'ip route; getent hosts example.com; curl -4I --max-time 10 https://example.com' || status=1
+  docker run --rm --pull never --network "${DOCKER_NETWORK}" curlimages/curl:latest \
+    sh -c 'curl -4 --max-time 10 https://1.1.1.1/cdn-cgi/trace | head' || status=1
+
+  print_section "cloudflare"
+  docker ps --format 'table {{.Names}}\t{{.Status}}' | grep inferlab-cloudflare || status=1
+
+  return "${status}"
+}
+
+# run_consolidate_rollback は、次回再起動で旧2NIC分離構成へ戻す永続設定を準備する。
+# 引数: なし。旧接続プロファイルと旧egressファイルを使用する。
+# 戻り値: 永続設定とservice配置に成功すれば0。
+# 副作用: NetworkManagerプロファイルとsystemd設定を変更するが、稼働中接続は切断しない。
+run_consolidate_rollback() {
+  require_root
+
+  local legacy_mac split_conn
+  if ! split_conn="$(split_docker_connection)"; then
+    echo "ERROR: 旧Docker接続が見つかりません。" >&2
+    exit 1
+  fi
+  legacy_mac="$(tr '[:upper:]' '[:lower:]' <"/sys/class/net/${LEGACY_HOST_NIC}/address")"
+
+  nmcli connection modify "${HOST_CONN}" bridge.mac-address "${legacy_mac}" ipv4.route-metric 425
+  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" connection.autoconnect yes
+  nmcli connection modify "${CONSOLIDATED_PORT_CONN}" connection.autoconnect no
+  nmcli connection modify "${split_conn}" connection.autoconnect yes
+
+  install -m 0755 "${EGRESS_SCRIPT}" /usr/local/sbin/inferlab-docker-egress-enp3s0.sh
+  install -m 0644 "${EGRESS_SERVICE}" /etc/systemd/system/inferlab-docker-egress-enp3s0.service
+  install -m 0755 "${EGRESS_DISPATCHER}" "${EGRESS_DISPATCHER_TARGET}"
+  systemctl daemon-reload
+  systemctl enable inferlab-docker-egress-enp3s0.service
+
+  print_section "rollback prepared"
+  printf '次回起動時のbridge MAC: %s\n' "${legacy_mac}"
+  printf '稼働中の接続は変更していません。ローカルコンソールを確保してsudo rebootを実行してください。\n'
 }
 
 # run_prepare は、enp3s0用NetworkManager接続をDocker専用に準備する。
@@ -978,6 +1287,18 @@ main() {
       ;;
     rollback)
       run_rollback
+      ;;
+    consolidate-prepare)
+      run_consolidate_prepare
+      ;;
+    consolidate-apply)
+      run_consolidate_apply
+      ;;
+    consolidate-verify)
+      run_consolidate_verify
+      ;;
+    consolidate-rollback)
+      run_consolidate_rollback
       ;;
     help)
       usage
