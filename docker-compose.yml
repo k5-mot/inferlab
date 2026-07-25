@@ -10,6 +10,7 @@ include:
   - ./20-team-chat/docker-compose.yml
   - ./21-team-project/docker-compose.yml
   - ./22-team-wiki/docker-compose.yml
+  - ./23-team-git/docker-compose.yml
   - ./30-developer/docker-compose.yml
   - ./50-o11y/docker-compose.yml
   - ./51-llmops/docker-compose.yml
