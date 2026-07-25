@@ -9,3 +9,4 @@ devcontainer-lock.json
 .env.local
 skills-lock.json
 triage-logs/
+logs/
