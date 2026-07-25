@@ -10,7 +10,7 @@
         "jpn_vert",
         "eng"
     ],
-    "document_timeout": 180,
+    "document_timeout": 21600,
     "do_picture_description": true,
     "picture_description_area_threshold": 0.1,
     "picture_description_custom_config": {
@@ -21,12 +21,12 @@
                 "Authorization": "Bearer sk-litellm-master-key"
             },
             "params": {},
-            "timeout": 120,
+            "timeout": 300,
             "concurrency": 1
         },
         "model_spec": {
-            "name": "ollama/google/gemma4:31b-cloud",
-            "default_repo_id": "ollama/google/gemma4:31b-cloud",
+            "name": "google/gemma4:31b",
+            "default_repo_id": "google/gemma4:31b",
             "prompt": "この画像を日本語でRAG用に説明してください。画像内の文字、図表、UI、構造、位置関係、重要な数値・ラベルを具体的に記述してください。推測は避け、不明な点は不明と書いてください。",
             "response_format": "markdown",
             "supported_engines": [

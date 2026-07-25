@@ -127,7 +127,7 @@ services:
     environment:
       OPEN_WEBUI_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
-      OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-1800}
+      OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-21600}
       OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
       LOG_FORMAT: json
       PYTHONPATH: /run/patches/oikb
