@@ -731,7 +731,12 @@ run_consolidate_prepare() {
     connection.slave-type bridge \
     connection.autoconnect yes \
     connection.autoconnect-priority 100
-  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" connection.autoconnect no
+  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" \
+    connection.master "" \
+    connection.slave-type "" \
+    connection.autoconnect no \
+    ipv4.method disabled \
+    ipv6.method ignore
   nmcli connection modify "${split_conn}" connection.autoconnect no
 
   print_section "prepared consolidation"
@@ -739,6 +744,8 @@ run_consolidate_prepare() {
   printf 'target MAC: %s\n' "${consolidated_mac}"
   nmcli -f connection.id,connection.interface-name,connection.master,connection.slave-type,connection.autoconnect \
     connection show "${CONSOLIDATED_PORT_CONN}"
+  nmcli -f connection.id,connection.interface-name,connection.master,connection.slave-type,connection.autoconnect \
+    connection show "${LEGACY_HOST_PORT_CONN}"
   nmcli -f connection.id,connection.autoconnect,bridge.mac-address,ipv4.method,ipv4.never-default,ipv4.route-metric,ipv4.dhcp-client-id \
     connection show "${HOST_CONN}"
   printf '稼働中の接続は変更していません。次はローカルコンソールからconsolidate-applyを実行してください。\n'
@@ -867,7 +874,8 @@ run_consolidate_verify() {
     sh -c 'curl -4 --max-time 10 https://1.1.1.1/cdn-cgi/trace | head' || status=1
 
   print_section "cloudflare"
-  docker ps --format 'table {{.Names}}\t{{.Status}}' | grep inferlab-cloudflare || status=1
+  docker ps --format '{{.Names}}\t{{.Status}}' \
+    | grep -E '^inferlab-cloudflare[[:space:]].*[(]healthy[)]$' || status=1
 
   return "${status}"
 }
@@ -887,7 +895,13 @@ run_consolidate_rollback() {
   legacy_mac="$(tr '[:upper:]' '[:lower:]' <"/sys/class/net/${LEGACY_HOST_NIC}/address")"
 
   nmcli connection modify "${HOST_CONN}" bridge.mac-address "${legacy_mac}" ipv4.route-metric 425
-  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" connection.autoconnect yes
+  nmcli connection modify "${LEGACY_HOST_PORT_CONN}" \
+    connection.interface-name "${LEGACY_HOST_NIC}" \
+    connection.master "${HOST_CONN}" \
+    connection.slave-type bridge \
+    connection.autoconnect yes \
+    ipv4.method disabled \
+    ipv6.method ignore
   nmcli connection modify "${CONSOLIDATED_PORT_CONN}" connection.autoconnect no
   nmcli connection modify "${split_conn}" connection.autoconnect yes
 
