@@ -1,3 +1,12 @@
+#
+# 参考資料
+#
+# - LiteLLM
+#   - Langfuse連携
+#     - https://docs.openwebui.com/reference/env-configuration/#custom-forwarded-headers-per-connection
+#     - https://docs.litellm.ai/docs/proxy/request_headers#litellm-headers
+#     - https://docs.litellm.ai/docs/observability/langfuse_integration#trace--generation-parameters
+#
 x-external-dns-stabilizer: &external-dns-stabilizer
   dns:
     - 1.1.1.1
@@ -35,9 +44,9 @@ services:
       ENABLE_FORWARD_USER_INFO_HEADERS: "true"
       API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
       ### Tasks
-      # TASK_MODEL: "google/gemma4:31b"
-      # ENABLE_CONTEXT_COMPACTION: "true"
-      # ENABLE_FOLLOW_UP_GENERATION: "false"
+      TASK_MODEL: "google/gemma4:31b"
+      ENABLE_CONTEXT_COMPACTION: "true"
+      ENABLE_FOLLOW_UP_GENERATION: "false"
       ### For Keycloak
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"
@@ -56,9 +65,6 @@ services:
       DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
       OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
-      # https://docs.openwebui.com/reference/env-configuration/#custom-forwarded-headers-per-connection
-      # https://docs.litellm.ai/docs/proxy/request_headers#litellm-headers
-      # https://docs.litellm.ai/docs/observability/langfuse_integration#trace--generation-parameters
       OPENAI_API_CONFIGS: >-
         {
           "0": {
@@ -131,6 +137,15 @@ services:
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
+      # DOCLING_PARAMS: >-
+      #   {
+      #     "to_formats": [ "md" ],
+      #     "do_ocr": true,
+      #     "force_ocr": false,
+      #     "ocr_engine": "tesseract_cli",
+      #     "ocr_preset": "tesseract",
+      #     "ocr_lang": [ "jpn", "jpn_vert", "eng" ]
+      #   }
       ### For Qdrant (Vector DB)
       VECTOR_DB: qdrant
       QDRANT_API_KEY: "sk-qdrant-api-key"
@@ -147,16 +162,17 @@ services:
       AUDIO_TTS_VOICE: "3"
     entrypoint:
       - bash
-      - /run/scripts/open-webui-entrypoint.sh
+      - /run/scripts/entrypoint_patch.sh
     ports:
       - 31100:8080
     volumes:
       - open-webui-data:/app/backend/data
-      - ./docling/params.json:/run/config/docling_params.json:ro
-      - ./scripts/open-webui-entrypoint.sh:/run/scripts/open-webui-entrypoint.sh:ro
-      - ./scripts/render-docling-params.py:/run/scripts/render-docling-params.py:ro
+      - ./open-webui/docling_params_full.json:/run/config/docling_params.json:ro
+      # - ./open-webui/docling_params_slim.json:/run/config/docling_params.json:ro
+      - ./open-webui/entrypoint_patch.sh:/run/scripts/entrypoint_patch.sh:ro
+      - ./open-webui/export_docling_params.py:/run/scripts/export_docling_params.py:ro
       # TODO: 上記の起動時パッチを削除するときに、このマウントも一緒に削除する。
-      - ./patches/open-webui-channel-stream-drain.py:/run/patches/open-webui-channel-stream-drain.py:ro
+      - ./open-webui/patch_channel_stream.py:/run/patches/patch_channel_stream.py:ro
     networks:
       - internal-nw
     depends_on:

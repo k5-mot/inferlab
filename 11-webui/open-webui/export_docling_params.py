@@ -66,7 +66,7 @@ def main(argv: list[str]) -> int:
         生成した JSON 文字列またはエラーメッセージを標準ストリームへ出力する。
     """
     if len(argv) != 2:
-        print("usage: render-docling-params.py CONFIG_PATH", file=sys.stderr)
+        print("usage: export_docling_params CONFIG_PATH", file=sys.stderr)
         return 2
 
     params = load_params(Path(argv[1]))
