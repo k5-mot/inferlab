@@ -225,6 +225,49 @@
             ]
         },
         {
+            "clientId": "grafana",
+            "name": "Grafana",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/",
+            "attributes": {
+                "post.logout.redirect.uris": "+"
+            },
+            "redirectUris": [
+                "http://localhost:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth",
+                "http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth",
+                "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth"
+            ],
+            "webOrigins": [
+                "http://localhost:${GRAFANA_HTTP_HOST_PORT:-35000}",
+                "http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT:-35000}",
+                "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
             "clientId": "zulip",
             "name": "Zulip",
             "enabled": true,
