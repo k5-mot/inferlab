@@ -63,7 +63,12 @@ sudo docker compose --env-file .env --profile o11y up -d
 
 ## Dashboard
 
-外部dashboard JSONは初期状態では同梱しない。採用する場合は、`grafana/dashboards/NOTICE.md`へ出典とlicenseを記録する。
+次のdashboard JSONを同梱する。
+
+- `grafana/dashboards/overview.json`: scrape対象、HTTP probe、Prometheus、Grafanaの概要を表示する。
+- `grafana/dashboards/host-containers.json`: hostとcontainerのCPU、memory、disk、networkを表示する。
+
+外部dashboard JSONを採用する場合は、`grafana/dashboards/NOTICE.md`へ出典とlicenseを記録する。
 
 ## References
 
@@ -73,4 +78,3 @@ sudo docker compose --env-file .env --profile o11y up -d
 - [cAdvisor](https://github.com/google/cadvisor)
 - [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
 - [Gitea configuration cheat sheet](https://docs.gitea.com/administration/config-cheat-sheet)
-
