@@ -127,8 +127,10 @@ services:
     environment:
       OPEN_WEBUI_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+      OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-1800}
       OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
       LOG_FORMAT: json
+      PYTHONPATH: /run/patches/oikb
       NEXTCLOUD_URL: http://nextcloud
       NEXTCLOUD_USER: admin
       NEXTCLOUD_PASSWORD: admin
@@ -139,6 +141,7 @@ services:
       - 31201:8080
     volumes:
       - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
+      - ./oikb/patches:/run/patches/oikb:ro
       - nextcloud:/nextcloud:ro
     networks:
       - internal-nw
