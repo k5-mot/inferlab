@@ -9,7 +9,7 @@ GrafanaとPrometheusを中心にしたobservability stack。
 - Node Exporter
 - cAdvisor
 - Blackbox Exporter
-- AMD Device Metrics Exporter
+- AMD Device Metrics Exporter（初期状態では無効）
 - NVIDIA DCGM Exporter（初期状態では無効）
 
 Portainerは管理UIでありobservability基盤の中核ではないため、このstackには含めない。
@@ -98,9 +98,9 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 | LiteLLM | `prometheus` callbackを有効化し、`/metrics`をBearer認証付きでscrapeする。 |
 | SearXNG | `open_metrics`を有効化し、`/metrics`をBasic Auth付きでscrapeする。 |
 | Qdrant | `api-key` header付きで`/metrics`をscrapeする。 |
-| PostgreSQL | `postgres_exporter`をo11y stackへ追加する。 |
-| Redis/Valkey | `redis_exporter`をo11y stackへ追加する。 |
-| MariaDB/MySQL | `mysqld_exporter`をo11y stackへ追加する。 |
+| PostgreSQL | `postgres_exporter` serviceを用意している。初期状態ではコメントアウト。 |
+| Redis/Valkey | `redis_exporter` serviceを用意している。初期状態ではコメントアウト。 |
+| MariaDB/MySQL | `mysqld_exporter` serviceを用意している。初期状態ではコメントアウト。 |
 | RabbitMQ | `rabbitmq_prometheus` pluginを有効化し、`15692`の`/metrics`をscrapeする。 |
 | ClickHouse | Prometheus protocolを`9363`で有効化し、`/metrics`をscrapeする。 |
 | MinIO | 内部network限定前提でPrometheus metrics認証をpublicにし、`/minio/metrics/v3`をscrapeする。 |
