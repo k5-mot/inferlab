@@ -13,3 +13,6 @@ logs/
 12-storage/LIST.md
 30-developer/SPEC.md
 30-developer/MANUAL.md
+30-developer/harbor/data/
+30-developer/harbor/generated/
+30-developer/harbor/installer/

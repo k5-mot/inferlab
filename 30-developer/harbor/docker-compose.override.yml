@@ -1,0 +1,16 @@
+services:
+  proxy:
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:8080/ >/dev/null
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Harbor
+      - homepage.href=http://${PUBLIC_HOST}:${HARBOR_HTTP_HOST_PORT:-33600}/
+      - homepage.description=Container image registry
