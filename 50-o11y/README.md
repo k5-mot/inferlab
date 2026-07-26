@@ -24,9 +24,14 @@ sudo docker compose --env-file .env --profile o11y up -d
 AMD GPU metricsを有効化する場合:
 
 ```bash
+# AMD GPU exporterに必要なROCm device nodeが存在することを確認する。
+ls -l /dev/kfd /dev/dri
+
 # AMD GPU exporterを追加で起動する。
 sudo docker compose --env-file .env --profile o11y --profile amd-gpu up -d
 ```
+
+`/dev/kfd`または`/dev/dri`が存在しないhostでは、AMD Device Metrics ExporterはGPU metricsを収集できない。Prometheusの`amd-device-metrics-exporter` targetが`down`またはDNS解決失敗になる場合は、`amd-gpu` profileでexporter containerが起動していることと、hostにROCm driverのdevice nodeが露出していることを確認する。
 
 NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-dcgm-exporter` serviceと`prometheus/prometheus.yaml`のscrape設定をコメント解除してから、`nvidia-gpu` profileを併用する。
 
@@ -46,6 +51,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 
 - `prometheus:9090`
 - `grafana:3000`
+- Open-WebUI OTLP metrics（Prometheusの`/api/v1/otlp/v1/metrics`へpush）
 - `node-exporter:9100`
 - `cadvisor:8080`
 - `blackbox-exporter:9115`
@@ -86,6 +92,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 
 | 対象 | 対応 |
 | --- | --- |
+| Open-WebUI | OpenTelemetry metricsを有効化し、PrometheusのOTLP HTTP receiverへpushする。 |
 | Keycloak | `KC_METRICS_ENABLED=true`で管理ポート`9000`の`/metrics`をscrapeする。 |
 | Nextcloud | `openmetrics_allowed_clients`へDocker内部networkを追加し、`/metrics`をscrapeする。 |
 | CouchDB | `/_node/_local/_prometheus`をbasic auth付きでscrapeする。 |
@@ -118,6 +125,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 
 - [Grafana Docker installation](https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/)
 - [Prometheus installation](https://prometheus.io/docs/prometheus/latest/installation/)
+- [Prometheus OpenTelemetry guide](https://prometheus.io/docs/guides/opentelemetry/)
 - [Node Exporter](https://github.com/prometheus/node_exporter)
 - [cAdvisor](https://github.com/google/cadvisor)
 - [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
@@ -132,6 +140,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - [RabbitMQ Prometheus plugin](https://www.rabbitmq.com/docs/prometheus)
 - [ClickHouse Prometheus protocol](https://clickhouse.com/docs/interfaces/prometheus)
 - [MinIO metrics and alerts](https://min.io/docs/minio/linux/operations/monitoring/metrics-and-alerts.html)
+- [Open WebUI OpenTelemetry](https://docs.openwebui.com/reference/monitoring/otel/)
 - [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)
 - [Gitea configuration cheat sheet](https://docs.gitea.com/administration/config-cheat-sheet)

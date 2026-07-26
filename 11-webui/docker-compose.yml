@@ -33,6 +33,17 @@ services:
       ANONYMIZED_TELEMETRY: "false"
       WEBUI_URL: http://${PUBLIC_HOST}:31100
       WEBUI_SECRET_KEY: sk-open-webui-secret-key
+      ### OpenTelemetry設定
+      ENABLE_OTEL: "true"
+      ENABLE_OTEL_TRACES: "false"
+      ENABLE_OTEL_METRICS: "true"
+      ENABLE_OTEL_LOGS: "false"
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_METRICS_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_METRICS_EXPORTER_OTLP_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
+      OTEL_METRICS_OTLP_SPAN_EXPORTER: http
+      OTEL_SERVICE_NAME: open-webui
+      OTEL_METRICS_EXPORT_INTERVAL_MILLIS: "15000"
       # ENABLE_TITLE_GENERATION: "false"
       ENABLE_CALENDAR: "true"
       ENABLE_CHANNELS: "true"

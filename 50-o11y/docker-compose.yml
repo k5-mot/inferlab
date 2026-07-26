@@ -110,7 +110,8 @@ services:
           --config.file=/tmp/prometheus.yaml \
           --storage.tsdb.path=/prometheus \
           --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d} \
-          --web.enable-lifecycle
+          --web.enable-lifecycle \
+          --web.enable-otlp-receiver
     environment:
       COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
