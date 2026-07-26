@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# AirGap環境でもメール確認なしで使い始められるように、初期組織と管理者を直接作成する。
+# メール確認なしで使い始められるように、初期組織と管理者を直接作成する。
 password_file="/data/initial-admin-password"
 if [ -n "${ZULIP_AUTO_CREATE_ADMIN_PASSWORD:-}" ]; then
   password_file="/tmp/zulip-initial-admin-password"

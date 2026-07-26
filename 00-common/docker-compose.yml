@@ -15,7 +15,7 @@ services:
       - 30000:3000
     volumes:
       - ./homepage:/app/config # Make sure your local config directory exists
-      - ./homepage/icons:/app/public/icons:ro # AirGap環境で外部アイコン取得を避けるためローカル配信する
+      - ./homepage/icons:/app/public/icons:ro # 外部アイコン取得を避ける設定でローカル配信する
       - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
     networks:
       - internal-nw

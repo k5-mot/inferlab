@@ -888,7 +888,7 @@ function Invoke-NextcloudAdFileSync {
 指定間隔で Nextcloud への同期を繰り返します。
 
 .DESCRIPTION
-常駐実行が必要な環境向けに、同期完了後に指定分数だけ待機して再実行します。
+継続同期が必要な場合に、同期完了後に指定分数だけ待機して再実行します。
 
 .PARAMETER ResolvedNextcloudCredential
 Nextcloud WebDAV 用の資格情報です。
