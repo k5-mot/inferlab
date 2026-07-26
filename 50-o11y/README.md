@@ -111,12 +111,31 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 
 - `grafana/dashboards/overview.json`: scrape対象、HTTP probe、Prometheus、Grafanaの概要を表示する。
 - `grafana/dashboards/host-containers.json`: hostとcontainerのCPU、memory、disk、networkを表示する。
+- `grafana/dashboards/services/open-webui.json`: Open-WebUIのHTTP request、latency、user数を表示する。自作dashboard。
+- `grafana/dashboards/services/cloudflared.json`: Cloudflaredのtunnel接続、request、active sessionを表示する。自作dashboard。
+- `grafana/dashboards/services/keycloak.json`: KeycloakのHTTP activity、DB pool、cacheを表示する。自作dashboard。
+- `grafana/dashboards/services/couchdb.json`: CouchDBのscrape状態、HTTP request、DB read/writeを表示する。自作dashboard。
+- `grafana/dashboards/services/nextcloud.json`: Nextcloudのscrape状態、user、share、storageを表示する。自作dashboard。
+- `grafana/dashboards/services/text-embeddings-inference.json`: Text Embeddings Inferenceのscrape状態、HTTP request、latency、queueを表示する。自作dashboard。
+- `grafana/dashboards/services/litellm.json`: LiteLLMのrequest、token、responseを表示する。自作dashboard。
+- `grafana/dashboards/services/searxng.json`: SearXNGのscrape状態を表示する。自作dashboard。
+- `grafana/dashboards/services/gitea.json`: GiteaのHTTP request、latency、process memoryを表示する。自作dashboard。
+- `grafana/dashboards/services/qdrant.json`: QdrantのREST/gRPC responseとapp infoを表示する。自作dashboard。
+- `grafana/dashboards/services/postgres-exporters.json`: PostgreSQL exporter群のup、connection、database sizeを表示する。自作dashboard。
+- `grafana/dashboards/services/redis-exporters.json`: Redis exporter群のup、client、memoryを表示する。自作dashboard。
+- `grafana/dashboards/services/mysqld-exporters.json`: MySQL exporter群のup、connection、queryを表示する。自作dashboard。
+- `grafana/dashboards/services/rabbitmq.json`: RabbitMQのup、queue message、connectionを表示する。自作dashboard。
+- `grafana/dashboards/services/clickhouse.json`: ClickHouseのquery、uptime、memoryを表示する。自作dashboard。
+- `grafana/dashboards/services/minio.json`: MinIOのS3 request、usage、node数を表示する。自作dashboard。
+- `grafana/dashboards/services/http-probes.json`: Blackbox ExporterのHTTP probe結果を表示する。自作dashboard。
 - `grafana/dashboards/amd/dashboard_gpu.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_gpu.json>）。
 - `grafana/dashboards/amd/dashboard_job.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_job.json>）。
 - `grafana/dashboards/amd/dashboard_node.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_node.json>）。
 - `grafana/dashboards/amd/dashboard_overview.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_overview.json>）。
 - `grafana/dashboards/amd/dashboard_system.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_system.json>）。
 - `grafana/dashboards/nvidia/dcgm-exporter-dashboard.json`: NVIDIA DCGM Exporter公式dashboard（<https://github.com/NVIDIA/dcgm-exporter/blob/main/grafana/dcgm-exporter-dashboard.json>、Grafana.com: <https://grafana.com/grafana/dashboards/12239>）。
+
+サービス別dashboardは`grafana/generate_service_dashboards.py`で生成する。Grafana上では`services` folderに表示される。
 
 外部dashboard JSONを採用する場合は、`grafana/dashboards/NOTICE.md`へ出典とlicenseを記録する。
 
