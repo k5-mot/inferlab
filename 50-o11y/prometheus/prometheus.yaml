@@ -31,10 +31,11 @@ scrape_configs:
       - targets:
           - blackbox-exporter:9115
 
-  - job_name: amd-device-metrics-exporter
-    static_configs:
-      - targets:
-          - amd-device-metrics-exporter:5000
+  # AMD ROCm対応GPU環境でamd-device-metrics-exporter serviceを有効化した場合のみ使う。
+  # - job_name: amd-device-metrics-exporter
+  #   static_configs:
+  #     - targets:
+  #         - amd-device-metrics-exporter:5000
 
   # NVIDIA GPU環境でnvidia-dcgm-exporter serviceを有効化した場合のみ使う。
   # - job_name: nvidia-dcgm-exporter

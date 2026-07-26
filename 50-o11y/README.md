@@ -31,7 +31,7 @@ ls -l /dev/kfd /dev/dri
 sudo docker compose --env-file .env --profile o11y --profile amd-gpu up -d
 ```
 
-`/dev/kfd`または`/dev/dri`が存在しないhostでは、AMD Device Metrics ExporterはGPU metricsを収集できない。Prometheusの`amd-device-metrics-exporter` targetが`down`またはDNS解決失敗になる場合は、`amd-gpu` profileでexporter containerが起動していることと、hostにROCm driverのdevice nodeが露出していることを確認する。
+AMD GPU metricsを使う場合は、`docker-compose.yml`の`amd-device-metrics-exporter` serviceと`prometheus/prometheus.yaml`のscrape設定をコメント解除してから、`amd-gpu` profileを併用する。`/dev/kfd`または`/dev/dri`が存在しないhostでは、AMD Device Metrics ExporterはGPU metricsを収集できない。
 
 NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-dcgm-exporter` serviceと`prometheus/prometheus.yaml`のscrape設定をコメント解除してから、`nvidia-gpu` profileを併用する。
 
@@ -55,7 +55,6 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `node-exporter:9100`
 - `cadvisor:8080`
 - `blackbox-exporter:9115`
-- `amd-device-metrics-exporter:5000`
 - `cloudflare:20241`
 - `keycloak:9000`
 - `keycloak-https:9000`
