@@ -27,4 +27,4 @@
 ## Hugging Face
 
 - cl-nagoya/ruri-v3-310m
-- cl-nagoya/ruri-v3-310m-reranker
+- cl-nagoya/ruri-v3-reranker-310m
