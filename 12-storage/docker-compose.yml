@@ -47,8 +47,8 @@ services:
       - 31200:80
     volumes:
       - nextcloud:/var/www/html
-      - ./nextcloud/hooks/post-installation:/docker-entrypoint-hooks.d/post-installation:ro
-      - ./nextcloud-hooks/before-starting:/docker-entrypoint-hooks.d/before-starting:ro
+      - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
+      - ./nextcloud/post-installation-hooks:/docker-entrypoint-hooks.d/post-installation:ro
     networks:
       - internal-nw
     healthcheck:
@@ -130,7 +130,6 @@ services:
       OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-21600}
       OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
       LOG_FORMAT: json
-      PYTHONPATH: /run/patches/oikb
       NEXTCLOUD_URL: http://nextcloud
       NEXTCLOUD_USER: admin
       NEXTCLOUD_PASSWORD: admin
@@ -141,7 +140,6 @@ services:
       - 31201:8080
     volumes:
       - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
-      - ./oikb/patches:/run/patches/oikb:ro
       - nextcloud:/nextcloud:ro
     networks:
       - internal-nw
