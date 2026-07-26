@@ -1,0 +1,6 @@
+FROM docker.io/library/fedora:43
+
+RUN dnf install -y createrepo_c findutils rsync \
+    && dnf clean all
+
+WORKDIR /repo

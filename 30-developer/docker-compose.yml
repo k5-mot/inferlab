@@ -1,313 +1,202 @@
 #
 # 参考資料
-# - pulp3
-#   - https://pulpproject.org/pulp-oci-images/docs/admin/tutorials/quickstart/#starting-the-container
-#   - https://pulpproject.org/pulp-oci-images/docs/admin/tutorials/quickstart/#podman-or-docker-compose
-#   - https://github.com/pulp/pulp-oci-images/blob/latest/images/compose/compose.yml
+# - pypiserver
+#   - https://github.com/pypiserver/pypiserver
+# - Verdaccio
+#   - https://verdaccio.org/docs/docker/
+# - code-marketplace
+#   - https://github.com/coder/code-marketplace
+# - aptly
+#   - https://www.aptly.info/
+# - createrepo_c
+#   - https://github.com/rpm-software-management/createrepo_c
 #
 services:
-  pulp-postgres:
-    image: docker.io/library/postgres:16
-    container_name: ${STACK_NAME:-inferlab}-pulp-postgres
-    restart: unless-stopped
-    profiles:
-      - developer
-    environment:
-      POSTGRES_DB: pulp
-      POSTGRES_USER: pulp
-      POSTGRES_PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
-      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-    volumes:
-      - pulp-postgres-data:/var/lib/postgresql/data
-    networks:
-      - internal-nw
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -U pulp -d pulp
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Pulp-PostgreSQL
-      - homepage.description=Relational database
-
-  pulp-redis:
-    image: docker.io/library/redis:8.8.0-alpine
-    container_name: ${STACK_NAME:-inferlab}-pulp-redis
+  pypiserver:
+    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
+    container_name: ${STACK_NAME:-inferlab}-pypiserver
     restart: unless-stopped
     profiles:
       - developer
     command:
-      - sh
-      - -euc
-      - |
-        echo "requirepass '$$REDIS_PASSWORD'" > /etc/redis.conf
-        exec redis-server /etc/redis.conf
-    environment:
-      REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
+      - run
+      - -P
+      - .
+      - -a
+      - .
+      - /data/packages
+    ports:
+      - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
     volumes:
-      - pulp-redis-data:/data
+      - pypiserver-packages:/data/packages
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=PyPI
+      - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-33100}/simple/
+      - homepage.description=Python package registry
+
+  verdaccio:
+    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6}
+    container_name: ${STACK_NAME:-inferlab}-verdaccio
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${VERDACCIO_HTTP_HOST_PORT:-33200}:4873
+    volumes:
+      - verdaccio-storage:/verdaccio/storage
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Verdaccio
+      - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-33200}/
+      - homepage.description=npm registry
+
+  code-marketplace:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace
+    restart: unless-stopped
+    profiles:
+      - developer
+    entrypoint:
+      - code-marketplace
+      - server
+      - --address=0.0.0.0:3000
+      - --extensions-dir=/extensions
+    ports:
+      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}:3000
+    volumes:
+      - code-marketplace-extensions:/extensions
     networks:
       - internal-nw
     healthcheck:
       test:
-        - CMD-SHELL
-        - redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
       - homepage.group=30-developer
-      - homepage.name=Pulp-Redis
-      - homepage.description=In-memory data store
+      - homepage.name=Code Marketplace
+      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/api
+      - homepage.description=VS Code extension marketplace
 
-  pulp-container-token-key:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-container-token-key
-    restart: "no"
+  code-marketplace-publisher:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
     profiles:
       - developer
     command:
-      - sh
-      - -euc
-      - |
-        if [ ! -s /etc/pulp/certs/container_auth_private_key.pem ]; then
-          openssl ecparam -name prime256v1 -genkey -noout -out /etc/pulp/certs/container_auth_private_key.pem
-          openssl ec -in /etc/pulp/certs/container_auth_private_key.pem -pubout -out /etc/pulp/certs/container_auth_public_key.pem
-          chmod 600 /etc/pulp/certs/container_auth_private_key.pem
-          chmod 644 /etc/pulp/certs/container_auth_public_key.pem
-        fi
-        if [ ! -s /etc/pulp/certs/database_fields.symmetric.key ]; then
-          python -c 'from cryptography.fernet import Fernet; open("/etc/pulp/certs/database_fields.symmetric.key", "wb").write(Fernet.generate_key())'
-          chmod 600 /etc/pulp/certs/database_fields.symmetric.key
-        fi
-        chown pulp:pulp /etc/pulp/certs/container_auth_private_key.pem /etc/pulp/certs/container_auth_public_key.pem /etc/pulp/certs/database_fields.symmetric.key
+      - "true"
     volumes:
-      - pulp-certs:/etc/pulp/certs
+      - code-marketplace-extensions:/extensions
     networks:
       - internal-nw
 
-  pulp-migration:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-migration
-    restart: "no"
-    profiles:
-      - developer
-    command:
-      - pulpcore-manager
-      - migrate
-      - --noinput
-    environment: &pulp-env
-      PUBLIC_HOST: ${PUBLIC_HOST}
-      PULP_HTTP_HOST_PORT: ${PULP_HTTP_HOST_PORT:-33000}
-      PULP_SECRET_KEY: ${PULP_SECRET_KEY:-sk-pulp-secret-key-change-me}
-      PULP_CONTENT_ORIGIN: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}
-      PULP_DATABASES__default__ENGINE: django.db.backends.postgresql
-      PULP_DATABASES__default__HOST: pulp-postgres
-      PULP_DATABASES__default__NAME: pulp
-      PULP_DATABASES__default__USER: pulp
-      PULP_DATABASES__default__PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
-      PULP_DATABASES__default__PORT: 5432
-      PULP_DATABASES__default__OPTIONS__sslmode: prefer
-      PULP_CACHE_ENABLED: true
-      PULP_REDIS_HOST: pulp-redis
-      PULP_REDIS_PORT: 6379
-      PULP_REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
-      PULP_TOKEN_SERVER: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/token/
-      PULP_TOKEN_AUTH_DISABLED: false
-      PULP_TOKEN_SIGNATURE_ALGORITHM: ES256
-      PULP_PUBLIC_KEY_PATH: /etc/pulp/certs/container_auth_public_key.pem
-      PULP_PRIVATE_KEY_PATH: /etc/pulp/certs/container_auth_private_key.pem
-      PULP_ANSIBLE_API_HOSTNAME: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}
-      PULP_ANSIBLE_CONTENT_HOSTNAME: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/pulp/content
-      PULP_ANALYTICS: false
-    volumes: &pulp-volumes
-      - pulp-certs:/etc/pulp/certs
-      - pulp-data:/var/lib/pulp
-    networks:
-      - internal-nw
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-redis:
-        condition: service_healthy
-      pulp-container-token-key:
-        condition: service_completed_successfully
-
-  pulp-signing-service:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-signing-service
-    restart: "no"
-    profiles:
-      - developer
-    command:
-      - sh
-      - -euc
-      - add_signing_service.sh
-    environment: *pulp-env
-    volumes: *pulp-volumes
-    networks:
-      - internal-nw
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-migration:
-        condition: service_completed_successfully
-
-  pulp-init-admin:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-init-admin
-    restart: "no"
-    profiles:
-      - developer
-    command:
-      - set_init_password.sh
-    environment:
-      <<: *pulp-env
-      PULP_DEFAULT_ADMIN_PASSWORD: ${PULP_DEFAULT_ADMIN_PASSWORD:-pulp_admin_password}
-    volumes: *pulp-volumes
-    networks:
-      - internal-nw
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-migration:
-        condition: service_completed_successfully
-
-  pulp-api:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-api
+  rpm-repo:
+    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-rpm-repo
     restart: unless-stopped
     profiles:
       - developer
-    command:
-      - pulp-api
-    user: pulp
-    environment: *pulp-env
-    volumes: *pulp-volumes
-    networks:
-      - internal-nw
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-redis:
-        condition: service_healthy
-      pulp-migration:
-        condition: service_completed_successfully
-      pulp-signing-service:
-        condition: service_completed_successfully
-      pulp-init-admin:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        - CMD
-        - readyz.py
-        - /pulp/api/v3/status/
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Pulp API
-      - homepage.description=Repository manager API
-
-  pulp-content:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-content
-    restart: unless-stopped
-    profiles:
-      - developer
-    command:
-      - pulp-content
-    user: pulp
-    environment: *pulp-env
-    volumes: *pulp-volumes
-    networks:
-      - internal-nw
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-redis:
-        condition: service_healthy
-      pulp-migration:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        - CMD
-        - readyz.py
-        - /pulp/content/
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Pulp Content
-      - homepage.description=Repository content service
-
-  pulp-worker:
-    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
-    restart: unless-stopped
-    profiles:
-      - developer
-    command:
-      - pulp-worker
-    user: pulp
-    environment: *pulp-env
-    volumes: *pulp-volumes
-    networks:
-      - internal-nw
-    deploy:
-      replicas: ${PULP_WORKER_REPLICAS:-2}
-    depends_on:
-      pulp-postgres:
-        condition: service_healthy
-      pulp-redis:
-        condition: service_healthy
-      pulp-migration:
-        condition: service_completed_successfully
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Pulp Worker
-      - homepage.description=Repository task worker
-
-  pulp-web:
-    image: ghcr.io/k5-mot/pulp-web:${PULP_IMAGE_TAG:-3.114.0}
-    container_name: ${STACK_NAME:-inferlab}-pulp-web
-    restart: unless-stopped
-    profiles:
-      - developer
-    user: root
     ports:
-      - ${PULP_HTTP_HOST_PORT:-33000}:8080
+      - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
+    volumes:
+      - rpm-repository:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=RPM
+      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
+      - homepage.description=RPM repository
+
+  deb-repo:
+    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-deb-repo
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
+    volumes:
+      - aptly-public:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=deb
+      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
+      - homepage.description=Debian package repository
+
+  asset-publisher:
+    image: alpine:${ALPINE_IMAGE_TAG:-3.22}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - pypiserver-packages:/publish/pypi
+    networks:
+      - internal-nw
+
+  npm-publisher:
+    image: node:${NODE_IMAGE_TAG:-22-alpine}
+    profiles:
+      - developer
+    working_dir: /work
+    command:
+      - "true"
     networks:
       - internal-nw
     depends_on:
-      pulp-api:
-        condition: service_healthy
-      pulp-content:
-        condition: service_healthy
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Pulp
-      - homepage.href=http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/pulp/content/
-      - homepage.description=Repository manager
+      - verdaccio
+
+  rpm-publisher:
+    build:
+      context: ./rpm-publisher
+      dockerfile: Containerfile
+    image: ${STACK_NAME:-inferlab}/rpm-publisher:${RPM_PUBLISHER_IMAGE_TAG:-local}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - rpm-repository:/repo
+    networks:
+      - internal-nw
+
+  aptly-publisher:
+    build:
+      context: ./aptly
+      dockerfile: Containerfile
+    image: ${STACK_NAME:-inferlab}/aptly:${APTLY_IMAGE_TAG:-local}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - aptly-data:/aptly
+      - aptly-public:/public
+    networks:
+      - internal-nw
 
 volumes:
-  pulp-certs:
-  pulp-data:
-  pulp-postgres-data:
-  pulp-redis-data:
+  aptly-data:
+  aptly-public:
+  code-marketplace-extensions:
+  pypiserver-packages:
+  rpm-repository:
+  verdaccio-storage:
 
 networks:
   internal-nw:
