@@ -2,7 +2,7 @@
 set -eu
 
 cert_dir="$(CDPATH= cd -- "$(dirname -- "$0")/certs" && pwd)"
-public_host="${PUBLIC_HOST:-192.168.1.100}"
+public_host="${PUBLIC_HOST:-localhost}"
 
 case "$public_host" in
   *[!0-9.]*)

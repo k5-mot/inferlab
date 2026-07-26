@@ -10,7 +10,7 @@
                 "stdio"
             ],
             "env": {
-                "DOCLING_SERVICE_URL": "http://192.168.3.10:50000",
+                "DOCLING_SERVICE_URL": "http://localhost:50000",
                 "DOCLING_SERVICE_API_KEY": "sk-docling-master-key",
                 "DOCLING_CONVERSION_MODE": "remote",
                 "DOCLING_FALLBACK_TO_LOCAL": "true"
