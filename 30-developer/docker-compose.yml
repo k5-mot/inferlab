@@ -288,7 +288,7 @@ services:
     labels:
       - homepage.group=30-developer
       - homepage.name=Pulp
-      - homepage.href=http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/pulp/api/v3/
+      - homepage.href=http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/pulp/content/
       - homepage.description=Repository manager
 
 volumes:
