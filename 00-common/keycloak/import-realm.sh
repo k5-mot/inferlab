@@ -7,6 +7,7 @@ keycloak_realm_admin_password="${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}"
 keycloak_realm_admin_password_json_escaped="$(printf '%s' "${keycloak_realm_admin_password}" | sed 's/\\/\\\\/g; s/"/\\"/g')"
 keycloak_realm_admin_password_escaped="$(printf '%s' "${keycloak_realm_admin_password_json_escaped}" | sed 's/[&|\\]/\\&/g')"
 nextcloud_oidc_client_secret="${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}"
+open_webui_oidc_client_secret="${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}"
 langfuse_oidc_client_secret="${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}"
 leantime_oidc_client_secret="${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}"
 bookstack_oidc_client_secret="${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}"
@@ -20,6 +21,7 @@ sed \
   -e "s|\${GRAFANA_HTTP_HOST_PORT:-35000}|${grafana_http_host_port}|g" \
   -e "s|\${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}|${keycloak_realm_admin_password_escaped}|g" \
   -e "s|\${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}|${nextcloud_oidc_client_secret}|g" \
+  -e "s|\${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}|${open_webui_oidc_client_secret}|g" \
   -e "s|\${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}|${langfuse_oidc_client_secret}|g" \
   -e "s|\${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}|${leantime_oidc_client_secret}|g" \
   -e "s|\${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}|${bookstack_oidc_client_secret}|g" \

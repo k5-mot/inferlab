@@ -63,7 +63,7 @@ services:
       ENABLE_OAUTH_SIGNUP: "true"
       DEFAULT_USER_ROLE: "user"
       OAUTH_CLIENT_ID: "open-webui"
-      OAUTH_CLIENT_SECRET: "open-webui-oauth-client-secret-key"
+      OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
       OPENID_PROVIDER_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
       OPENID_REDIRECT_URI: http://${PUBLIC_HOST}:31100/oauth/oidc/callback
       OAUTH_SCOPES: openid
