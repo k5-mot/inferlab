@@ -19,6 +19,8 @@ readonly PROFILES=(
 #   "team-chat"
 #   "team-project"
 #   "team-wiki"
+#   "team-git"
+  "o11y"
   "llmops"
 )
 
