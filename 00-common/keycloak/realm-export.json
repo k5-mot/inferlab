@@ -26,7 +26,7 @@
             "enabled": true,
             "firstName": "admin",
             "lastName": "admin",
-            "email": "admin@example.local",
+            "email": "admin@admin.com",
             "emailVerified": true,
             "groups": [
                 "/admins",
