@@ -1,0 +1,16 @@
+- targets:
+    - http://homepage:3000
+    - http://grafana:3000/api/health
+    - http://prometheus:9090/-/healthy
+    - http://open-webui:8080
+    - http://docling:5001/readyz
+    - http://searxng:8080/healthz
+    - http://nextcloud/status.php
+    - http://oikb:8080/health
+    - http://dify-nginx
+    - http://bookstack
+    - http://leantime:8080
+    - http://gitea:3000
+  labels:
+    probe: http_2xx
+

@@ -131,9 +131,9 @@
     "gitlab.duoCodeSuggestions.enabled": false,
     // GitHub Copilot
     "github.copilot.enable": {
-        "*": true,
+        "*": false,
         "plaintext": false,
-        "markdown": true,
+        "markdown": false,
         "scminput": false
     },
     "github.copilot.nextEditSuggestions.enabled": true,

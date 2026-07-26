@@ -1,0 +1,98 @@
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:26.05.2
+    container_name: ${STACK_NAME:-inferlab}-bookstack
+    restart: unless-stopped
+    profiles:
+      - team-wiki
+    environment:
+      PUID: ${BOOKSTACK_PUID:-1000}
+      PGID: ${BOOKSTACK_PGID:-1000}
+      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
+      APP_URL: ${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:32200}
+      APP_KEY: ${BOOKSTACK_APP_KEY:-base64:8Xpuu6D/PftKO7GAZWORsKIw1rveODqBcEyU8HKaxCA=}
+      DB_HOST: bookstack-mariadb
+      DB_PORT: "3306"
+      DB_USERNAME: ${BOOKSTACK_DB_USER:-bookstack}
+      DB_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
+      DB_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
+      QUEUE_CONNECTION: database
+      AUTH_METHOD: oidc
+      AUTH_AUTO_INITIATE: false
+      OIDC_NAME: Keycloak
+      OIDC_DISPLAY_NAME_CLAIMS: name
+      OIDC_CLIENT_ID: bookstack
+      OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
+      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}}
+      OIDC_ISSUER_DISCOVER: true
+      OIDC_END_SESSION_ENDPOINT: false
+      OIDC_USER_TO_GROUPS: true
+      OIDC_GROUPS_CLAIM: groups
+      OIDC_REMOVE_FROM_GROUPS: false
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+    ports:
+      - "${BOOKSTACK_HOST_PORT:-32200}:80"
+    volumes:
+      - bookstack-config:/config
+      - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
+      - ./custom-cont-init.d:/custom-cont-init.d:ro
+    networks:
+      - internal-nw
+    depends_on:
+      bookstack-mariadb:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent http://127.0.0.1/login > /dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    labels:
+      - homepage.group=22-team-wiki
+      - homepage.name=BookStack
+      - homepage.href=http://${PUBLIC_HOST}:32200
+      - homepage.description=Team documentation wiki
+      - homepage.icon=bookstack.png
+
+  bookstack-mariadb:
+    image: lscr.io/linuxserver/mariadb:11.4.12
+    container_name: ${STACK_NAME:-inferlab}-bookstack-mariadb
+    restart: unless-stopped
+    profiles:
+      - team-wiki
+    environment:
+      PUID: ${BOOKSTACK_PUID:-1000}
+      PGID: ${BOOKSTACK_PGID:-1000}
+      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
+      MYSQL_ROOT_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD:-bookstack_root_password}
+      MYSQL_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
+      MYSQL_USER: ${BOOKSTACK_DB_USER:-bookstack}
+      MYSQL_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
+    volumes:
+      - bookstack-mariadb-config:/config
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
+    labels:
+      - homepage.group=22-team-wiki
+      - homepage.name=BookStack-MariaDB
+      - homepage.description=MySQL-compatible relational database
+
+volumes:
+  bookstack-config:
+  bookstack-mariadb-config:
+
+networks:
+  internal-nw:

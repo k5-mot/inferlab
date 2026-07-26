@@ -1,0 +1,25 @@
+storage: /verdaccio/storage
+
+web:
+  title: InferLab npm Registry
+
+auth:
+  htpasswd:
+    file: /verdaccio/storage/htpasswd
+
+uplinks: {}
+
+packages:
+  "@*/*":
+    access: $all
+    publish: $all
+    unpublish: $all
+  "**":
+    access: $all
+    publish: $all
+    unpublish: $all
+
+server:
+  keepAliveTimeout: 60
+
+log: { type: stdout, format: pretty, level: http }

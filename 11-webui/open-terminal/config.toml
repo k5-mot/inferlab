@@ -1,0 +1,8 @@
+host = "0.0.0.0"
+port = 8000
+api_key = "sk-open-terminal-api-key"
+cors_allowed_origins = "*"
+log_dir = "/var/log/open-terminal"
+binary_mime_prefixes = "image,audio"
+execute_timeout = 5  # seconds to wait for command output (unset by default)
+file_browser_root = "home"

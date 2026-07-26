@@ -1,37 +1,46 @@
-# Rules
+# AGENTS.md
 
-## Comments
+## Scope
 
-- MUST write comments in Japanese.
-- MUST write a documentation comment for every function, using the standard format of the language (e.g. JSDoc for TypeScript/JavaScript, docstring for Python).
-- Function comments MUST describe: the purpose of the function, its parameters, and its return value.
-- SHOULD also describe thrown exceptions and side effects when they exist.
-- MUST NOT write comments that merely restate the code. Comments SHOULD explain why, not what.
+- AI agents MUST respond to users in Japanese.
+- Contributors and AI agents MUST follow the [coding rules](docs/rules/CODING_RULES.md) when changing code.
+- Contributors and AI agents MUST follow the [contribution rules](docs/rules/CONTRIBUTING.md) when working with branches, commits, or tags.
+- If a directory contains another `AGENTS.md`, its more specific rules MUST take precedence within that directory.
 
-## Git
+## Documentation Rules
 
-### Commit Messages
+### Format and Language
 
-- MUST write commit messages in Japanese.
-- MUST follow the Conventional Commits format, prefixed with a gitmoji:
-    ```plaintext
-    <gitmoji> <type>(<scope>): <subject>
-    ```
-- `<scope>` is optional.
-- `<subject>` MUST be written in Japanese, within 50 characters, and MUST NOT end with a period (「。」).
-- MUST choose the gitmoji that matches the type (e.g. feat → ✨, fix → 🐛, docs → 📝, refactor → ♻️, test → ✅).
-- SHOULD add a body (separated by a blank line) explaining the reason for the change when the subject alone is not sufficient.
-- MUST NOT mix unrelated changes in one commit.
+- All project documentation MUST use Markdown and MUST have the `.md` extension.
+- Documents under `docs/` MUST be written in Japanese.
+- `AGENTS.md` files MUST be written in English.
+- Language required by an external file format, source code, command, identifier, product name, or quoted specification MAY remain unchanged.
 
-### Commit Granularity
+### Normative Language
 
-- MUST commit one logical change per commit. A commit SHOULD be
-  revertable on its own without breaking the build.
-- MUST separate refactoring from behavior changes
-  (e.g. commit `♻️ refactor` first, then `✨ feat`).
-- MUST NOT create commits smaller than a meaningful unit
-  (e.g. fixing a typo introduced in the same session SHOULD be
-  amended, not committed separately).
-- MUST ensure the code builds and tests pass at every commit.
-- (For AI agents) MUST commit after completing each task or subtask,
-  and MUST NOT commit work-in-progress code without being asked.
+- The terms `MUST`, `MUST NOT`, `REQUIRED`, `SHALL`, `SHALL NOT`, `SHOULD`, `SHOULD NOT`, `RECOMMENDED`, `NOT RECOMMENDED`, `MAY`, and `OPTIONAL` have the normative meanings defined by RFC 8174 only when written in uppercase.
+- Requirements MUST use the normative terms above to make their strength explicit.
+- The uppercase terms above MUST NOT be used when their normative meanings are not intended.
+
+### Structure and Content
+
+- Each rule MUST have one authoritative location. The same rule MUST NOT be duplicated across documents.
+- References to rules in another document MUST use relative links.
+- Headings MUST identify their contents clearly and MUST distinguish procedures, expected results, exceptions, and rollback steps.
+- Every executable command in documentation MUST have a comment that explains its purpose.
+- Commands requiring elevated privileges MUST show `sudo` explicitly.
+- Procedures that change state MUST document their expected results and failure criteria.
+- Acronyms, standards, and project-specific terms SHOULD be explained or linked when first introduced.
+- Moving or renaming a document MUST update all project-local links in the same change.
+
+### References
+
+- A document that relies on an external specification, official documentation, issue, or article MUST include a final `## References` section.
+- A `References` section MUST list only sources actually used by that document.
+- Primary sources and official documentation SHOULD be preferred when available.
+- A document without external references MAY omit the `References` section.
+- No content section MAY appear after `References`.
+
+## References
+
+- [RFC 8174: Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words](https://www.rfc-editor.org/info/rfc8174/)

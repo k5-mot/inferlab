@@ -1,0 +1,4 @@
+name: boot-md
+description: Run InferLab bootstrap script on gateway startup
+events:
+  - gateway:startup

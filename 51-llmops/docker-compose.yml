@@ -1,0 +1,261 @@
+#
+# 参考資料:
+# - Langfuse
+#   - https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
+#
+services:
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:3.212.0
+    container_name: ${STACK_NAME:-inferlab}-langfuse-worker
+    restart: unless-stopped
+    profiles:
+      - llmops
+    depends_on: &langfuse-depends-on
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+    environment: &langfuse-worker-env
+      HOSTNAME: 0.0.0.0
+      NEXTAUTH_URL: http://${PUBLIC_HOST}:35100
+      DATABASE_URL: postgresql://postgres_user:postgres_password@langfuse-postgres:5432/langfuse_db
+      SALT: ${SALT:-mysalt} # CHANGEME
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000} # CHANGEME: generate via `openssl rand -hex 32`
+      TELEMETRY_ENABLED: false
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: false
+      CLICKHOUSE_DB: langfuse_chdb
+      CLICKHOUSE_MIGRATION_URL: clickhouse://langfuse-clickhouse:9000/langfuse_chdb
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123/langfuse_chdb
+      CLICKHOUSE_USER: clickhouse_user
+      CLICKHOUSE_PASSWORD: clickhouse_password # CHANGEME
+      CLICKHOUSE_CLUSTER_ENABLED: false
+      LANGFUSE_USE_AZURE_BLOB: false
+      LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE: false
+      # LANGFUSE_OCI_AUTH_TYPE: ${LANGFUSE_OCI_AUTH_TYPE:-workload_identity}
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse-bucket
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio_user
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: true
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse-bucket
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio_user
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret # CHANGEME
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: true
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: false
+      LANGFUSE_S3_BATCH_EXPORT_BUCKET: langfuse-bucket
+      LANGFUSE_S3_BATCH_EXPORT_PREFIX: exports/
+      LANGFUSE_S3_BATCH_EXPORT_REGION: auto
+      LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: minio_user
+      LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY: miniosecret # CHANGEME
+      LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: true
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: ${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS: ${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: 6379
+      REDIS_AUTH: sk-langfuse-redis-secret-key # CHANGEME
+      LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK: false
+      REDIS_TLS_ENABLED: false
+      # REDIS_TLS_CA: ${REDIS_TLS_CA:-/certs/ca.crt}
+      # REDIS_TLS_CERT: ${REDIS_TLS_CERT:-/certs/redis.crt}
+      # REDIS_TLS_KEY: ${REDIS_TLS_KEY:-/certs/redis.key}
+      # EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      # SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
+      AUTH_KEYCLOAK_CLIENT_ID: langfuse
+      AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
+      AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:30001/realms/inferlab
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3030/api/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse-Worker
+      - homepage.description=LLMOps platform
+
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:3.212.0
+    container_name: ${STACK_NAME:-inferlab}-langfuse-web
+    restart: unless-stopped
+    profiles:
+      - llmops
+    depends_on: *langfuse-depends-on
+    environment:
+      <<: *langfuse-worker-env
+      NEXTAUTH_SECRET: mysecret # CHANGEME
+      LANGFUSE_INIT_ORG_ID: org0
+      LANGFUSE_INIT_ORG_NAME: org0
+      LANGFUSE_INIT_PROJECT_ID: prg0
+      LANGFUSE_INIT_PROJECT_NAME: prg0
+      LANGFUSE_INIT_PROJECT_RETENTION: 30
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_INIT_USER_EMAIL: admin@langfuse.com
+      LANGFUSE_INIT_USER_NAME: admin
+      LANGFUSE_INIT_USER_PASSWORD: password123 # CHANGEME
+      LANGFUSE_DEFAULT_ORG_ID: org0
+      LANGFUSE_DEFAULT_ORG_ROLE: OWNER # OWNER/ADMIN/MEMBER/VIEWER
+      LANGFUSE_DEFAULT_PROJECT_ID: prg0
+      LANGFUSE_DEFAULT_PROJECT_ROLE: OWNER
+    ports:
+      - 35100:3000
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3000/api/public/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse
+      - homepage.href=http://${PUBLIC_HOST}:35100
+      - homepage.description=LLMOps platform
+
+  langfuse-clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:25.8.28.1
+    container_name: ${STACK_NAME:-inferlab}-langfuse-clickhouse
+    restart: unless-stopped
+    user: "101:101"
+    profiles:
+      - llmops
+    environment:
+      CLICKHOUSE_DB: langfuse_chdb
+      CLICKHOUSE_USER: clickhouse_user
+      CLICKHOUSE_PASSWORD: clickhouse_password # CHANGEME
+    networks:
+      - internal-nw
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse/prometheus.xml:/etc/clickhouse-server/config.d/prometheus.xml:ro
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/clickhouse.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse-ClickHouse
+      - homepage.description=Columnar analytics database
+
+  langfuse-minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: ${STACK_NAME:-inferlab}-langfuse-minio
+    restart: unless-stopped
+    entrypoint: sh
+    # create the Langfuse bucket before starting the service
+    command: -c 'mkdir -p /data/${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket} && minio server --address ":9000" --console-address ":9001" /data'
+    profiles:
+      - llmops
+    environment:
+      MINIO_ROOT_USER: minio_user
+      MINIO_ROOT_PASSWORD: miniosecret # CHANGEME
+      MINIO_UPDATE: "off"
+      MINIO_PROMETHEUS_AUTH_TYPE: public
+    networks:
+      - internal-nw
+    volumes:
+      - langfuse_minio_data:/data
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 1s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/minio.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse-MinIO
+      - homepage.description=S3-compatible object storage
+
+  langfuse-redis:
+    # image: docker.io/library/redis:7.4.9-bookworm
+    image: docker.io/library/redis:8.8.0-trixie
+    container_name: ${STACK_NAME:-inferlab}-langfuse-redis
+    restart: unless-stopped
+    profiles:
+      - llmops
+    # CHANGEME: row below to secure redis password
+    command: >
+      --requirepass sk-langfuse-redis-secret-key --maxmemory-policy noeviction
+    environment:
+      REDIS_AUTH: sk-langfuse-redis-secret-key
+    networks:
+      - internal-nw
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$${REDIS_AUTH}\" ping | grep -q PONG" ]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse-Redis
+      - homepage.description=Inmemory key-value NoSQL database
+
+  langfuse-postgres:
+    # image: docker.io/library/postgres:17.10-trixie
+    image: docker.io/library/postgres:18.4-trixie
+    container_name: ${STACK_NAME:-inferlab}-langfuse-postgres
+    restart: unless-stopped
+    profiles:
+      - llmops
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password # CHANGEME
+      POSTGRES_DB: langfuse_db
+      TZ: UTC
+      PGTZ: UTC
+    networks:
+      - internal-nw
+    volumes:
+      # - langfuse_postgres_data:/var/lib/postgresql/data
+      - langfuse_postgres_data:/var/lib/postgresql
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+    labels:
+      - homepage.group=51-llmops
+      - homepage.name=Langfuse-Postgres
+      - homepage.description=Relational database
+
+volumes:
+  langfuse_clickhouse_data:
+  langfuse_clickhouse_logs:
+  langfuse_minio_data:
+  langfuse_redis_data:
+  langfuse_postgres_data:
+
+networks:
+  internal-nw:

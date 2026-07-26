@@ -1,19 +1,19 @@
-name: inferlab
+name: ${STACK_NAME:-inferlab}
 
 include:
-  - ./docker-compose.common.yml
-  - ./docker-compose.inference-ollama.yml
-  - ./docker-compose.openwebui.yml
-  - ./docker-compose.ragflow.yml
-  - ./docker-compose.seafile.yml
-  - ./docker-compose.comfyui.yml
-  - ./docker-compose.carbone.yml
-  - ./docker-compose.hermes-agent.yml
-  - ./docker-compose.openclaw.yml
-  - ./docker-compose.dify.yml
-  - ./docker-compose.langfuse.yml
-  - ./docker-compose.paperless.yml
-  - ./docker-compose.deepwiki.yml
-  - ./docker-compose.nextcloud.yml
-  - ./docker-compose.cloudflare.yml
-  - ./docker-compose.obsidian.yml
+  - ./00-common/docker-compose.yml
+  - ./01-infra/docker-compose.yml
+  - ./10-inference/docker-compose.yml
+  - ./11-webui/docker-compose.yml
+  - ./12-storage/docker-compose.yml
+  - ./13-automation/docker-compose.yml
+  - ./20-team-chat/docker-compose.yml
+  - ./21-team-project/docker-compose.yml
+  - ./22-team-wiki/docker-compose.yml
+  - ./23-team-git/docker-compose.yml
+  - ./30-developer/docker-compose.yml
+  - ./50-o11y/docker-compose.yml
+  - ./51-llmops/docker-compose.yml
+
+networks:
+  internal-nw:

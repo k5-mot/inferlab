@@ -1,0 +1,105 @@
+services:
+  leantime:
+    image: docker.io/leantime/leantime:${LEAN_VERSION:-3.9.8}
+    container_name: ${STACK_NAME:-inferlab}-leantime
+    restart: unless-stopped
+    profiles:
+      - team-project
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - CAP_CHOWN
+      - CAP_SETGID
+      - CAP_SETUID
+    environment:
+      PUID: 1000
+      PGID: 1000
+      LEAN_APP_URL: http://${PUBLIC_HOST}:32001
+      LEAN_APP_DIR: ""
+      LEAN_DEBUG: 0
+      LEAN_SITENAME: Leantime
+      LEAN_LANGUAGE: ja-JP
+      LEAN_DEFAULT_TIMEZONE: Asia/Tokyo
+      LEAN_DB_HOST: leantime-db
+      LEAN_DB_USER: leantime
+      LEAN_DB_PASSWORD: leantime_password
+      LEAN_DB_DATABASE: leantime
+      LEAN_DB_PORT: 3306
+      LEAN_SESSION_PASSWORD: ${LEANTIME_SESSION_PASSWORD:-sk-leantime-session-password-change-me}
+      LEAN_SESSION_EXPIRATION: 28800
+      LEAN_SESSION_SECURE: false
+      LEAN_OIDC_ENABLE: ${LEANTIME_OIDC_ENABLE:-true}
+      # LEAN_OIDC_ENABLE: ${LEANTIME_OIDC_ENABLE:-false}
+      LEAN_OIDC_CLIENT_ID: ${LEANTIME_OIDC_CLIENT_ID:-leantime}
+      LEAN_OIDC_CLIENT_SECRET: ${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}
+      LEAN_OIDC_PROVIDER_URL: ${LEANTIME_OIDC_PROVIDER_URL:-http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}}
+      LEAN_OIDC_CREATE_USER: ${LEANTIME_OIDC_CREATE_USER:-true}
+      LEAN_OIDC_DEFAULT_ROLE: ${LEANTIME_OIDC_DEFAULT_ROLE:-20}
+    ports:
+      - 32001:8080
+    volumes:
+      - leantime-public-userfiles:/var/www/html/public/userfiles
+      - leantime-userfiles:/var/www/html/userfiles
+      - leantime-plugins:/var/www/html/app/Plugins
+      - leantime-logs:/var/www/html/storage/logs
+    networks:
+      - internal-nw
+    depends_on:
+      leantime-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "php -r 'exit(@file_get_contents(\"http://127.0.0.1:8080\") === false ? 1 : 0);'"
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    labels:
+      - homepage.group=21-team-project
+      - homepage.name=Leantime
+      - homepage.href=http://${PUBLIC_HOST}:32001
+      - homepage.description=Project management tool
+      - homepage.icon=leantime.png
+
+  leantime-db:
+    image: docker.io/library/mysql:8.4.10
+    container_name: ${STACK_NAME:-inferlab}-leantime-db
+    restart: unless-stopped
+    profiles:
+      - team-project
+    command:
+      - --character-set-server=UTF8MB4
+      - --collation-server=UTF8MB4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: leantime_root_password
+      MYSQL_DATABASE: leantime
+      MYSQL_USER: leantime
+      MYSQL_PASSWORD: leantime_password
+    volumes:
+      - leantime-db-data:/var/lib/mysql
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    labels:
+      - homepage.group=21-team-project
+      - homepage.name=Leantime-MySQL
+      - homepage.description=Relational database
+      - homepage.icon=mysql.png
+
+volumes:
+  leantime-db-data:
+  leantime-public-userfiles:
+  leantime-userfiles:
+  leantime-plugins:
+  leantime-logs:
+
+networks:
+  internal-nw:

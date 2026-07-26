@@ -1,0 +1,334 @@
+#
+# 参考資料:
+# - LiteLLM
+#   - https://docs.litellm.ai/docs/simple_proxy
+# - Ollama
+#   - https://docs.ollama.com/docker
+# - TEI; HuggingFace Text Embedding Inference
+#   - https://huggingface.co/docs/text-embeddings-inference/quick_tour
+#
+
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
+services:
+  litellm:
+    <<: *external-dns-stabilizer
+    image: docker.io/litellm/litellm:v1.91.0
+    container_name: ${STACK_NAME:-inferlab}-litellm
+    restart: unless-stopped
+    profiles:
+      - inference
+    command:
+      - --config
+      - /app/config.yaml
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "4000"
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_OTEL_HOST: http://langfuse-web:3000
+    ports:
+      - 31000:4000
+    volumes:
+      - ./litellm/config-litellm.yaml:/app/config.yaml:ro
+    networks:
+      - internal-nw
+    depends_on:
+      ollama:
+        condition: service_healthy
+      tei-embedding:
+        condition: service_healthy
+      tei-reranking:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/litellm.labels
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=LiteLLM
+      - homepage.href=http://${PUBLIC_HOST}:31000/ui
+      - homepage.description=LLM proxy
+
+  ollama:
+    <<: *external-dns-stabilizer
+    image: docker.io/ollama/ollama:0.31.1
+    container_name: ${STACK_NAME:-inferlab}-ollama
+    restart: unless-stopped
+    profiles:
+      - inference
+    tty: true
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+    volumes:
+      - ollama-cache:/root/.ollama
+    networks:
+      - internal-nw
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - OLLAMA_HOST=127.0.0.1:11434 ollama list > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/ollama.labels
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=Ollama
+      - homepage.description=Inference engine
+
+  ollama-init:
+    <<: *external-dns-stabilizer
+    image: docker.io/ollama/ollama:0.31.1
+    container_name: ${STACK_NAME:-inferlab}-ollama-init
+    restart: no
+    profiles:
+      - inference
+    tty: true
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OLLAMA_KEEP_ALIVE: 24h
+      OLLAMA_INIT_MODELS: "gemma4:31b-cloud gpt-oss:20b-cloud nemotron-3-nano:30b-cloud"
+    volumes:
+      - ollama-cache:/root/.ollama
+    networks:
+      - internal-nw
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command:
+      - >-
+        ollama serve & OLLAMA_PID=$$!; until ollama list > /dev/null 2>&1; do
+          echo 'Waiting for Ollama to be ready...';
+          sleep 1;
+        done; echo 'Ollama is ready. Importing models sequentially...'; for model in $${OLLAMA_INIT_MODELS}; do
+          echo "Pulling $$model...";
+          ollama pull "$$model";
+        done; echo 'All models pulled.'; kill "$$OLLAMA_PID"
+
+  tei-embedding:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+    container_name: ${STACK_NAME:-inferlab}-tei-embedding
+    restart: on-failure:3
+    profiles:
+      - inference
+    command:
+      - --model-id
+      - cl-nagoya/ruri-v3-310m
+      - --hostname
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --pooling
+      - mean
+      - --max-batch-tokens
+      - "1024"
+      # - "8192"
+      - --auto-truncate
+      - "true"
+      - --max-client-batch-size
+      - "2"
+      - --max-concurrent-requests
+      - "2"
+      - --tokenization-workers
+      - "1"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      # HF_HUB_OFFLINE: "1"
+    volumes:
+      - tei-cache:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -s http://127.0.0.1:8000/health"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=TEI_Embedding
+      - homepage.description=Embedding inference engine
+    mem_limit: 6g
+    memswap_limit: 7g
+    cpus: 4.0
+
+  tei-reranking:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+    container_name: ${STACK_NAME:-inferlab}-tei-reranking
+    restart: on-failure:3
+    profiles:
+      - inference
+    command:
+      - --model-id
+      - cl-nagoya/ruri-v3-reranker-310m
+      - --hostname
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --pooling
+      - mean
+      - --max-batch-tokens
+      - "1024"
+      # - "8192"
+      - --auto-truncate
+      - "true"
+      - --max-client-batch-size
+      - "2"
+      - --max-concurrent-requests
+      - "2"
+      - --tokenization-workers
+      - "1"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      # HF_HUB_OFFLINE: "1"
+    volumes:
+      - tei-cache:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -s http://127.0.0.1:8000/health"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 60s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=TEI_Reranking
+      - homepage.description=Embedding inference engine
+    mem_limit: 6g
+    memswap_limit: 7g
+    cpus: 4.0
+
+  hermes-agent:
+    <<: *external-dns-stabilizer
+    image: docker.io/nousresearch/hermes-agent:main
+    # image: docker.io/nousresearch/hermes-agent:v2026.7.7.2
+    container_name: ${STACK_NAME:-inferlab}-hermes-agent
+    restart: unless-stopped
+    profiles:
+      - inference
+      - hermes-agent
+    command:
+      - gateway
+      - run
+    environment:
+      # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
+      ### OpenAI-Compatible API
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: "0.0.0.0"
+      # API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
+      API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
+      GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
+      GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
+      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
+      ### Web Dashboard
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-admin}
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
+      ### Open-WebUI
+      OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_PUBLIC_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST}:31001}
+      OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+      OPEN_WEBUI_DEFAULT_CHANNEL: ${OPEN_WEBUI_DEFAULT_CHANNEL:-general}
+      OPEN_WEBUI_CHANNELS_LIST_PATH: ${OPEN_WEBUI_CHANNELS_LIST_PATH:-/api/v1/channels/}
+      OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
+      OPEN_WEBUI_CHATS_ALL_DB_PATH: ${OPEN_WEBUI_CHATS_ALL_DB_PATH:-/api/v1/chats/all/db}
+      OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
+      ### Discord
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
+      DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
+      DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
+      DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
+      ### Langfuse
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      ### SearXNG
+      SEARXNG_URL: "http://searxng:8080/"
+      SEARXNG_SECRET_KEY: "sk-searxng-secret-key"
+      ### docling-serve
+      DOCLING_SERVER_URL: http://docling:5001
+      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      ### Model providers
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CODEX_HOME: /opt/config/.codex
+      HERMES_HOME: /opt/data
+      HERMES_UID: ${HERMES_UID:-1000}
+      HERMES_GID: ${HERMES_GID:-1000}
+    ports:
+      - 31001:9119
+    volumes:
+      - ./hermes-agent:/opt/data
+      - ~/.codex:/opt/config/.codex:ro
+    networks:
+      - internal-nw
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:${HERMES_AGENT_PORT:-8642}/health >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=Hermes-Agent
+      - homepage.description=AI agent
+      - homepage.href=http://${PUBLIC_HOST}:31001
+
+volumes:
+  ollama-cache:
+  tei-cache:
+
+networks:
+  internal-nw:

@@ -1,0 +1,628 @@
+#
+# 参考資料:
+# - Grafana
+#   - https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/
+# - Prometheus
+#   - https://prometheus.io/docs/prometheus/latest/installation/
+# - Node Exporter
+#   - https://github.com/prometheus/node_exporter
+# - cAdvisor
+#   - https://github.com/google/cadvisor
+# - Blackbox Exporter
+#   - https://github.com/prometheus/blackbox_exporter
+# - PostgreSQL Exporter
+#   - https://github.com/prometheus-community/postgres_exporter
+# - Redis Exporter
+#   - https://github.com/oliver006/redis_exporter
+# - MySQL Server Exporter
+#   - https://github.com/prometheus/mysqld_exporter
+# - AMD Device Metrics Exporter
+#   - https://github.com/ROCm/device-metrics-exporter
+# - NVIDIA DCGM Exporter
+#   - https://github.com/NVIDIA/dcgm-exporter
+#
+services:
+  grafana:
+    image: docker.io/grafana/grafana:13.1.1
+    container_name: ${STACK_NAME:-inferlab}-grafana
+    restart: unless-stopped
+    profiles:
+      - o11y
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SERVER_ROOT_URL: http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/
+      GF_METRICS_ENABLED: "true"
+      GF_USERS_DEFAULT_THEME: light
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: Keycloak
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ${GRAFANA_OIDC_CLIENT_ID:-grafana}
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}
+      GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email offline_access
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/auth
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/userinfo
+      GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: "true"
+      GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
+      GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH: name
+      GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH: email
+      GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH: groups
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(groups[*], 'admins') && 'Admin' || contains(groups[*], 'users') && 'Editor' || 'Viewer'"
+      DS_PROMETHEUS: http://prometheus:9090
+    ports:
+      - ${GRAFANA_HTTP_HOST_PORT:-35000}:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - internal-nw
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/grafana.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Grafana
+      - homepage.href=http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}
+      - homepage.description=Observability dashboard
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.13.1
+    container_name: ${STACK_NAME:-inferlab}-prometheus
+    restart: unless-stopped
+    profiles:
+      - o11y
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        awk '
+        BEGIN {
+          couchdb_user = ENVIRON["COUCHDB_USER"]
+          couchdb_password = ENVIRON["COUCHDB_PASSWORD"]
+          litellm_master_key = ENVIRON["LITELLM_MASTER_KEY"]
+          gsub(/\\/, "\\\\", couchdb_user)
+          gsub(/&/, "\\&", couchdb_user)
+          gsub(/\\/, "\\\\", couchdb_password)
+          gsub(/&/, "\\&", couchdb_password)
+          gsub(/\\/, "\\\\", litellm_master_key)
+          gsub(/&/, "\\&", litellm_master_key)
+        }
+        {
+          gsub(/__COUCHDB_USER__/, couchdb_user)
+          gsub(/__COUCHDB_PASSWORD__/, couchdb_password)
+          gsub(/__LITELLM_MASTER_KEY__/, litellm_master_key)
+          print
+        }
+        ' /etc/prometheus/prometheus.yaml > /tmp/prometheus.yaml
+        exec /bin/prometheus \
+          --config.file=/tmp/prometheus.yaml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d} \
+          --web.enable-lifecycle \
+          --web.enable-otlp-receiver
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+    ports:
+      - ${PROMETHEUS_HTTP_HOST_PORT:-35001}:9090
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./prometheus/targets:/etc/prometheus/targets:ro
+    networks:
+      - internal-nw
+    depends_on:
+      node-exporter:
+        condition: service_healthy
+      cadvisor:
+        condition: service_healthy
+      blackbox-exporter:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "promtool", "check", "config", "/tmp/prometheus.yaml" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Prometheus
+      - homepage.href=http://${PUBLIC_HOST}:${PROMETHEUS_HTTP_HOST_PORT:-35001}
+      - homepage.description=Metrics database
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.12.1
+    container_name: ${STACK_NAME:-inferlab}-node-exporter
+    restart: unless-stopped
+    profiles:
+      - o11y
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/.+)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "-T", "3", "http://127.0.0.1:9100/metrics" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Node Exporter
+      - homepage.description=Host metrics exporter
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    container_name: ${STACK_NAME:-inferlab}-cadvisor
+    restart: unless-stopped
+    profiles:
+      - o11y
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    networks:
+      - internal-nw
+    # label_file:
+    #   - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=cAdvisor
+      - homepage.description=Container metrics exporter
+      - homepage.icon=cadvisor.png
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:v0.28.0
+    container_name: ${STACK_NAME:-inferlab}-blackbox-exporter
+    restart: unless-stopped
+    profiles:
+      - o11y
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yaml
+    volumes:
+      - ./blackbox/config.yaml:/etc/blackbox_exporter/config.yaml:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "-T", "3", "http://127.0.0.1:9115/-/healthy" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+    labels:
+      - homepage.group=50-o11y
+      - homepage.name=Blackbox Exporter
+      - homepage.description=Endpoint probe exporter
+  # keycloak-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-keycloak-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: keycloak-postgres:5432/keycloak_db?sslmode=disable
+  #     DATA_SOURCE_USER: keycloak_user
+  #     DATA_SOURCE_PASS: keycloak_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Keycloak PostgreSQL Exporter
+  #     - homepage.description=Keycloak database metrics exporter
+
+  # langfuse-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-langfuse-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: langfuse-postgres:5432/langfuse_db?sslmode=disable
+  #     DATA_SOURCE_USER: postgres_user
+  #     DATA_SOURCE_PASS: postgres_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Langfuse PostgreSQL Exporter
+  #     - homepage.description=Langfuse database metrics exporter
+
+  # gitea-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-gitea-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: gitea-postgres:5432/${GITEA_DB_NAME:-gitea}?sslmode=disable
+  #     DATA_SOURCE_USER: ${GITEA_DB_USER:-gitea}
+  #     DATA_SOURCE_PASS: ${GITEA_DB_PASSWORD:-gitea_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Gitea PostgreSQL Exporter
+  #     - homepage.description=Gitea database metrics exporter
+
+  # dify-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-dify-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: dify-postgres:5432/dify_db?sslmode=disable
+  #     DATA_SOURCE_USER: dify_user
+  #     DATA_SOURCE_PASS: dify_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Dify PostgreSQL Exporter
+  #     - homepage.description=Dify database metrics exporter
+
+  # zulip-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-zulip-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: zulip-postgres:5432/zulip?sslmode=disable
+  #     DATA_SOURCE_USER: zulip
+  #     DATA_SOURCE_PASS: ${ZULIP_POSTGRES_PASSWORD:-zulip_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Zulip PostgreSQL Exporter
+  #     - homepage.description=Zulip database metrics exporter
+
+  # pulp-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-pulp-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: pulp-postgres:5432/pulp?sslmode=disable
+  #     DATA_SOURCE_USER: pulp
+  #     DATA_SOURCE_PASS: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Pulp PostgreSQL Exporter
+  #     - homepage.description=Pulp database metrics exporter
+
+  # nextcloud-redis-exporter:
+  #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
+  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-redis-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     REDIS_ADDR: redis://nextcloud-redis:6379
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9121/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Nextcloud Redis Exporter
+  #     - homepage.description=Nextcloud cache metrics exporter
+
+  # langfuse-redis-exporter:
+  #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
+  #   container_name: ${STACK_NAME:-inferlab}-langfuse-redis-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     REDIS_ADDR: redis://langfuse-redis:6379
+  #     REDIS_PASSWORD: sk-langfuse-redis-secret-key
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9121/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Langfuse Redis Exporter
+  #     - homepage.description=Langfuse cache metrics exporter
+
+  # dify-redis-exporter:
+  #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
+  #   container_name: ${STACK_NAME:-inferlab}-dify-redis-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     REDIS_ADDR: redis://dify-redis:6379
+  #     REDIS_PASSWORD: dify_redis_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9121/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Dify Redis Exporter
+  #     - homepage.description=Dify cache metrics exporter
+
+  # zulip-redis-exporter:
+  #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
+  #   container_name: ${STACK_NAME:-inferlab}-zulip-redis-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     REDIS_ADDR: redis://zulip-redis:6379
+  #     REDIS_PASSWORD: ${ZULIP_REDIS_PASSWORD:-zulip_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9121/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Zulip Redis Exporter
+  #     - homepage.description=Zulip cache metrics exporter
+
+  # pulp-redis-exporter:
+  #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
+  #   container_name: ${STACK_NAME:-inferlab}-pulp-redis-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     REDIS_ADDR: redis://pulp-redis:6379
+  #     REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9121/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Pulp Redis Exporter
+  #     - homepage.description=Pulp cache metrics exporter
+
+  # nextcloud-mysqld-exporter:
+  #   image: docker.io/prom/mysqld-exporter:v0.19.0
+  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-mysqld-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   command:
+  #     - --mysqld.address=nextcloud-mariadb:3306
+  #     - --mysqld.username=root
+  #   environment:
+  #     MYSQLD_EXPORTER_PASSWORD: nextcloud_root_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9104/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Nextcloud MariaDB Exporter
+  #     - homepage.description=Nextcloud database metrics exporter
+
+  # leantime-mysqld-exporter:
+  #   image: docker.io/prom/mysqld-exporter:v0.19.0
+  #   container_name: ${STACK_NAME:-inferlab}-leantime-mysqld-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   command:
+  #     - --mysqld.address=leantime-db:3306
+  #     - --mysqld.username=root
+  #   environment:
+  #     MYSQLD_EXPORTER_PASSWORD: leantime_root_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9104/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Leantime MySQL Exporter
+  #     - homepage.description=Leantime database metrics exporter
+
+  # bookstack-mysqld-exporter:
+  #   image: docker.io/prom/mysqld-exporter:v0.19.0
+  #   container_name: ${STACK_NAME:-inferlab}-bookstack-mysqld-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   command:
+  #     - --mysqld.address=bookstack-mariadb:3306
+  #     - --mysqld.username=root
+  #   environment:
+  #     MYSQLD_EXPORTER_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD:-bookstack_root_password}
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9104/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=BookStack MariaDB Exporter
+  #     - homepage.description=BookStack database metrics exporter
+
+  # AMD ROCm対応GPU環境でのみ有効化する。/dev/kfdと/dev/driが必要。
+  # amd-device-metrics-exporter:
+  #   image: docker.io/rocm/device-metrics-exporter:v1.5.0
+  #   container_name: ${STACK_NAME:-inferlab}-amd-device-metrics-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - amd-gpu
+  #   devices:
+  #     - /dev/dri:/dev/dri
+  #     - /dev/kfd:/dev/kfd
+  #   volumes:
+  #     - /sys:/sys:ro
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:5000/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 30s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=AMD Device Metrics Exporter
+  #     - homepage.description=AMD GPU metrics exporter
+
+  # NVIDIA GPU環境でのみ有効化する。NVIDIA Container Toolkitが必要。
+  # nvidia-dcgm-exporter:
+  #   image: nvcr.io/nvidia/k8s/dcgm-exporter:${NVIDIA_DCGM_EXPORTER_TAG:-4.5.3-4.8.2-distroless}
+  #   container_name: ${STACK_NAME:-inferlab}-nvidia-dcgm-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - nvidia-gpu
+  #   cap_add:
+  #     - SYS_ADMIN
+  #   gpus: all
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9400/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 30s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=NVIDIA DCGM Exporter
+  #     - homepage.description=NVIDIA GPU metrics exporter
+
+volumes:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  internal-nw:

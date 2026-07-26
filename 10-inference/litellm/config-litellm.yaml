@@ -1,0 +1,87 @@
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  callbacks:
+    - langfuse_otel
+    - prometheus
+  drop_params: true
+  request_timeout: 600
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+
+model_list:
+  ### Ollama
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: ollama_chat/gemma4:31b-cloud
+      api_base: http://ollama:11434
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b-cloud
+      api_base: http://ollama:11434
+  - model_name: nvidia/nemotron-3-nano:30b
+    litellm_params:
+      model: ollama_chat/nemotron-3-nano:30b-cloud
+      api_base: http://ollama:11434
+
+  ### OpenRouter
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: openrouter/openai/gpt-oss-20b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: nvidia/nemotron-3-nano:30b
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  # - model_name: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+  #   litellm_params:
+  #     model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+  #     api_key: os.environ/OPENROUTER_API_KEY
+  # - model_name: openrouter/openrouter/free-router
+  #   litellm_params:
+  #     model: openrouter/openrouter/free
+  #     api_key: os.environ/OPENROUTER_API_KEY
+
+  ### Google AI Studio
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: gemini/gemma-4-31b-it
+      api_key: os.environ/GEMINI_API_KEY
+  # - model_name: google/gemini-3.5-flash
+  #   litellm_params:
+  #     model: gemini/gemini-3.5-flash
+  #     api_key: os.environ/GEMINI_API_KEY
+  # - model_name: google/gemini-embedding-2
+  #   litellm_params:
+  #     model: gemini/gemini-embedding-2
+  #     api_key: os.environ/GEMINI_API_KEY
+
+  ### TEI; HuggingFace Text Embedding Inference
+  - model_name: cl-nagoya/ruri-v3:310m
+    litellm_params:
+      model: huggingface/cl-nagoya/ruri-v3-310m
+      api_base: http://tei-embedding:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+  - model_name: cl-nagoya/ruri-v3-reranker:310m
+    litellm_params:
+      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+      api_base: http://tei-reranking:8000
+      api_key: EMPTY
+      encoding_format: float
+
+  ### TTS
+  - model_name: voicevox/tts
+    litellm_params:
+      model: openai/tts-1
+      api_base: http://voicevox-openai-tts:8000/v1
+      api_key: EMPTY
+    model_info:
+      mode: audio_speech

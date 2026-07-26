@@ -1,0 +1,76 @@
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  callbacks:
+    - langfuse_otel
+  drop_params: true
+  request_timeout: 600
+
+# router_settings:
+#   routing_strategy: simple-shuffle
+#   num_retries: 2
+
+model_list:
+  ## vLLM
+  - model_name: thinking-model
+    litellm_params:
+      model: openai/Qwen3.6-27B-FP8:27B
+      api_base: http://vllm-foundation:8000/v1
+      api_key: EMPTY
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
+    model_info:
+      max_input_tokens: 28672
+      max_output_tokens: 4096
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+  - model_name: instruct-model
+    litellm_params:
+      model: openai/Qwen3.6-27B-FP8:27B
+      api_base: http://vllm-foundation:8000/v1
+      api_key: EMPTY
+      extra_body:
+        chat_template_kwargs:
+          enable_thinking: false
+    model_info:
+      max_input_tokens: 28672
+      max_output_tokens: 4096
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+  - model_name: embedding-model
+    litellm_params:
+      model: openai/ruri-v3:310m
+      api_base: http://vllm-embedding:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+  - model_name: reranking-model
+    litellm_params:
+      model: openai/ruri-v3-reranker:310m
+      api_base: http://vllm-reranking:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+
+  ### TEI; HuggingFace Text Embedding Inference
+  - model_name: cl-nagoya/ruri-v3:310m
+    litellm_params:
+      model: openai/ruri-v3:310m
+      api_base: http://tei-embedding:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+  - model_name: cl-nagoya/ruri-v3-reranker:310m
+    litellm_params:
+      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+      api_base: http://tei-reranking:8000
+      api_key: EMPTY
+      encoding_format: float
+
+  ### TTS
+  - model_name: voicevox/tts
+    litellm_params:
+      model: openai/tts-1
+      api_base: http://voicevox-openai-tts:8000/v1
+      api_key: EMPTY
+    model_info:
+      mode: audio_speech

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Analytics database">
+  <rect width="128" height="128" rx="24" fill="#334155"/>
+  <ellipse cx="64" cy="34" rx="38" ry="14" fill="#ffffff"/>
+  <path d="M26 34v54c0 8 17 14 38 14s38-6 38-14V34" fill="none" stroke="#ffffff" stroke-width="10"/>
+  <path d="M42 82V62M64 82V52M86 82V68" stroke="#facc15" stroke-width="8" stroke-linecap="round"/>
+</svg>

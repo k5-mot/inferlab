@@ -1,0 +1,13 @@
+defaults:
+  interval: 24h
+  concurrency: 1
+
+sources:
+  - name: nextcloud-documents
+    source: "/nextcloud/data/admin/files/oikb"
+    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    filter:
+      exclude:
+        - "**/.DS_Store"
+        - "**/Thumbs.db"
+        - "**/*.url"

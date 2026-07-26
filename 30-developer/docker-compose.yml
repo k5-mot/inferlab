@@ -1,0 +1,202 @@
+#
+# 参考資料
+# - pypiserver
+#   - https://github.com/pypiserver/pypiserver
+# - Verdaccio
+#   - https://verdaccio.org/docs/docker/
+# - code-marketplace
+#   - https://github.com/coder/code-marketplace
+# - aptly
+#   - https://www.aptly.info/
+# - createrepo_c
+#   - https://github.com/rpm-software-management/createrepo_c
+#
+services:
+  pypiserver:
+    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
+    container_name: ${STACK_NAME:-inferlab}-pypiserver
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - run
+      - -P
+      - .
+      - -a
+      - .
+      - /data/packages
+    ports:
+      - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
+    volumes:
+      - pypiserver-packages:/data/packages
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=PyPI
+      - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-33100}/simple/
+      - homepage.description=Python package registry
+
+  verdaccio:
+    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6}
+    container_name: ${STACK_NAME:-inferlab}-verdaccio
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${VERDACCIO_HTTP_HOST_PORT:-33200}:4873
+    volumes:
+      - verdaccio-storage:/verdaccio/storage
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Verdaccio
+      - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-33200}/
+      - homepage.description=npm registry
+
+  code-marketplace:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace
+    restart: unless-stopped
+    profiles:
+      - developer
+    entrypoint:
+      - code-marketplace
+      - server
+      - --address=0.0.0.0:3000
+      - --extensions-dir=/extensions
+    ports:
+      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}:3000
+    volumes:
+      - code-marketplace-extensions:/extensions
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Code Marketplace
+      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/api
+      - homepage.description=VS Code extension marketplace
+
+  code-marketplace-publisher:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - code-marketplace-extensions:/extensions
+    networks:
+      - internal-nw
+
+  rpm-repo:
+    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-rpm-repo
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
+    volumes:
+      - rpm-repository:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=RPM
+      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
+      - homepage.description=RPM repository
+
+  deb-repo:
+    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-deb-repo
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
+    volumes:
+      - aptly-public:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=deb
+      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
+      - homepage.description=Debian package repository
+
+  asset-publisher:
+    image: alpine:${ALPINE_IMAGE_TAG:-3.22}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - pypiserver-packages:/publish/pypi
+    networks:
+      - internal-nw
+
+  npm-publisher:
+    image: node:${NODE_IMAGE_TAG:-22-alpine}
+    profiles:
+      - developer
+    working_dir: /work
+    command:
+      - "true"
+    networks:
+      - internal-nw
+    depends_on:
+      - verdaccio
+
+  rpm-publisher:
+    build:
+      context: ./rpm-publisher
+      dockerfile: Containerfile
+    image: ${STACK_NAME:-inferlab}/rpm-publisher:${RPM_PUBLISHER_IMAGE_TAG:-local}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - rpm-repository:/repo
+    networks:
+      - internal-nw
+
+  aptly-publisher:
+    build:
+      context: ./aptly
+      dockerfile: Containerfile
+    image: ${STACK_NAME:-inferlab}/aptly:${APTLY_IMAGE_TAG:-local}
+    profiles:
+      - developer
+    command:
+      - "true"
+    volumes:
+      - aptly-data:/aptly
+      - aptly-public:/public
+    networks:
+      - internal-nw
+
+volumes:
+  aptly-data:
+  aptly-public:
+  code-marketplace-extensions:
+  pypiserver-packages:
+  rpm-repository:
+  verdaccio-storage:
+
+networks:
+  internal-nw:
