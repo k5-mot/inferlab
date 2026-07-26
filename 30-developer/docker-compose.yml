@@ -110,7 +110,7 @@ services:
     labels:
       - homepage.group=30-developer
       - homepage.name=Code Marketplace
-      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/api
+      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/
       - homepage.description=VS Code extension marketplace
 
   code-marketplace-publisher:
@@ -124,6 +124,46 @@ services:
     networks:
       - internal-nw
 
+  repo-landing-page:
+    image: alpine:${ALPINE_IMAGE_TAG:-3.22}
+    profiles:
+      - developer
+    command:
+      - sh
+      - -eu
+      - -c
+      - |
+        rm -f /repo/rpm/50x.html /repo/apt/50x.html
+        cat > /repo/rpm/index.html <<'EOF'
+        <!doctype html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>createrepo_c</title></head>
+        <body>
+        <h1>createrepo_c</h1>
+        <p>RPM source repository for dnf/yum.</p>
+        <ul>
+          <li><a href="./repodata/repomd.xml">repodata/repomd.xml</a></li>
+        </ul>
+        </body>
+        </html>
+        EOF
+        cat > /repo/apt/index.html <<'EOF'
+        <!doctype html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>aptly</title></head>
+        <body>
+        <h1>aptly</h1>
+        <p>APT source repository.</p>
+        <ul>
+          <li><a href="./dists/stable/Release">dists/stable/Release</a></li>
+        </ul>
+        </body>
+        </html>
+        EOF
+    volumes:
+      - rpm-repository:/repo/rpm
+      - aptly-public:/repo/apt
+
   rpm-repo:
     image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
     container_name: ${STACK_NAME:-inferlab}-rpm-repo
@@ -136,6 +176,9 @@ services:
       - rpm-repository:/usr/share/nginx/html:ro
     networks:
       - internal-nw
+    depends_on:
+      repo-landing-page:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD
@@ -166,6 +209,9 @@ services:
       - aptly-public:/usr/share/nginx/html:ro
     networks:
       - internal-nw
+    depends_on:
+      repo-landing-page:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD
