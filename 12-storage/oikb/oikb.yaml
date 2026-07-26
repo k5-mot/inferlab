@@ -1,12 +1,10 @@
 defaults:
   interval: 24h
   concurrency: 1
-  filter:
-    max-size: 200mb
 
 sources:
   - name: nextcloud-documents
-    source: "/nextcloud/data/admin/files/Documents"
+    source: "/nextcloud/data/k5-mot/files/Documents"
     kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
     filter:
       exclude:
