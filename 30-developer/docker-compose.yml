@@ -71,12 +71,7 @@ services:
       - homepage.description=In-memory data store
 
   pulp-container-token-key:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-container-token-key
     restart: "no"
     profiles:
@@ -97,12 +92,7 @@ services:
       - internal-nw
 
   pulp-migration:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-migration
     restart: "no"
     profiles:
@@ -137,12 +127,7 @@ services:
         condition: service_completed_successfully
 
   pulp-signing-service:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-signing-service
     restart: "no"
     profiles:
@@ -162,12 +147,7 @@ services:
         condition: service_completed_successfully
 
   pulp-init-admin:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-init-admin
     restart: "no"
     profiles:
@@ -187,12 +167,7 @@ services:
         condition: service_completed_successfully
 
   pulp-api:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-api
     restart: unless-stopped
     profiles:
@@ -230,12 +205,7 @@ services:
       - homepage.description=Repository manager API
 
   pulp-content:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-content
     restart: unless-stopped
     profiles:
@@ -269,12 +239,7 @@ services:
       - homepage.description=Repository content service
 
   pulp-worker:
-    image: ${STACK_NAME:-inferlab}-pulp-minimal:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-minimal
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-minimal:${PULP_IMAGE_TAG:-3.114.0}
     restart: unless-stopped
     profiles:
       - developer
@@ -300,27 +265,14 @@ services:
       - homepage.description=Repository task worker
 
   pulp-web:
-    image: ${STACK_NAME:-inferlab}-pulp-web:${PULP_IMAGE_TAG:-custom}
-    build:
-      context: ./pulp-web
-      dockerfile: Containerfile
-      args:
-        PULP_BASE_TAG: ${PULP_BASE_TAG:-stable}
+    image: ghcr.io/k5-mot/pulp-web:${PULP_IMAGE_TAG:-3.114.0}
     container_name: ${STACK_NAME:-inferlab}-pulp-web
     restart: unless-stopped
     profiles:
       - developer
-    command:
-      - /usr/bin/nginx.sh
     user: root
-    environment:
-      PUBLIC_HOST: ${PUBLIC_HOST}
-      PULP_HTTP_HOST_PORT: ${PULP_HTTP_HOST_PORT:-33000}
     ports:
       - ${PULP_HTTP_HOST_PORT:-33000}:8080
-    volumes:
-      - ./pulp-web/nginx.sh:/usr/bin/nginx.sh:ro
-      - ./pulp-web/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
     networks:
       - internal-nw
     depends_on:

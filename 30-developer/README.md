@@ -33,7 +33,7 @@ Pulp は GPLv2+ の OSS で、公式説明でも free and open-source とされ�
 | npm | `pulp_npm` | 採用、要検証 | sync、publish/host、pull-through cache の公式 docs がある。公式 stable image に含まれない場合はカスタム image に追加する。 |
 | Hugging Face | `pulp_hugging_face` | 採用、要検証 | pull-through caching と HF CLI 利用の docs がある。若い plugin なので、本番前に対象モデル形式と認証付き upstream を検証する。 |
 
-公式 `pulp-minimal:stable` は `pulp_container`, `pulp_deb`, `pulp_python`, `pulp_rpm` などを含むが、npm と Hugging Face は含まれない可能性がある。この構成では、最初からカスタム image を作り、必要 plugin を明示的に install する。
+公式 `pulp-minimal:stable` は `pulp_container`, `pulp_deb`, `pulp_python`, `pulp_rpm` などを含むが、npm と Hugging Face は含まれない可能性がある。この構成では、`k5-mot/pulp-custom` で build した `ghcr.io/k5-mot/pulp-minimal` と `ghcr.io/k5-mot/pulp-web` を使い、必要 plugin を含む image を pull する。
 
 ## 想定する構成
 
@@ -280,7 +280,7 @@ deb [trusted=yes] http://<IP>:33000/pulp/content/deb-internal/ stable main
 
 - root の `docker-compose.yml` に `./30-developer/docker-compose.yml` を include する。
 - `.env` に `PULP_HTTP_HOST_PORT=33000` と `PULP_OIDC_CLIENT_SECRET` を追加する。
-- npm と Hugging Face plugin を含むカスタム image を作る。
+- npm と Hugging Face plugin を含むカスタム image は `k5-mot/pulp-custom` で build し、この構成では GHCR から pull する。
 - Pulp API と content は同一外部 URL に寄せる。IP 運用では redirect と generated URL の不整合を避ける。
 - 管理用 API と upload は Keycloak 認証必須、公開 distribution の content read は未認証にする。
 - 初期化は手動 UI ではなく、`pulp-cli` または REST API script で冪等に作る。

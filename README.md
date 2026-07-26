@@ -73,6 +73,8 @@ sudo ./dc.sh up-full --remove-orphans
 - Qdrant: `docker.io/qdrant/qdrant:v1.18.2`
 - Nextcloud: `docker.io/library/nextcloud:34.0.1-apache`
 - OIKB: `ghcr.io/open-webui/oikb:0.3.6`
+- Pulp Minimal: `ghcr.io/k5-mot/pulp-minimal:3.114.0`
+- Pulp Web: `ghcr.io/k5-mot/pulp-web:3.114.0`
 - Grafana: `docker.io/grafana/grafana:13.1.1`
 - Prometheus: `docker.io/prom/prometheus:v3.13.1`
 - Node Exporter: `quay.io/prometheus/node-exporter:v1.12.1`
