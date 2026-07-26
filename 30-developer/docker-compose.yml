@@ -86,6 +86,11 @@ services:
           chmod 600 /etc/pulp/certs/container_auth_private_key.pem
           chmod 644 /etc/pulp/certs/container_auth_public_key.pem
         fi
+        if [ ! -s /etc/pulp/certs/database_fields.symmetric.key ]; then
+          python -c 'from cryptography.fernet import Fernet; open("/etc/pulp/certs/database_fields.symmetric.key", "wb").write(Fernet.generate_key())'
+          chmod 600 /etc/pulp/certs/database_fields.symmetric.key
+        fi
+        chown pulp:pulp /etc/pulp/certs/container_auth_private_key.pem /etc/pulp/certs/container_auth_public_key.pem /etc/pulp/certs/database_fields.symmetric.key
     volumes:
       - pulp-certs:/etc/pulp/certs
     networks:
