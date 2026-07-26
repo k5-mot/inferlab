@@ -638,7 +638,6 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "inferlab",
     "observability"
   ],
   "templating": {
@@ -650,7 +649,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "InferLab Observability Overview",
+  "title": "Observability Overview",
   "uid": "inferlab-o11y-overview",
   "version": 1
 }

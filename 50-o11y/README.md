@@ -9,6 +9,8 @@ GrafanaとPrometheusを中心にしたobservability stack。
 - Node Exporter
 - cAdvisor
 - Blackbox Exporter
+- AMD Device Metrics Exporter
+- NVIDIA DCGM Exporter（初期状態では無効）
 
 Portainerは管理UIでありobservability基盤の中核ではないため、このstackには含めない。
 
@@ -18,6 +20,15 @@ Portainerは管理UIでありobservability基盤の中核ではないため、�
 # o11y stackを起動する。
 sudo docker compose --env-file .env --profile o11y up -d
 ```
+
+AMD GPU metricsを有効化する場合:
+
+```bash
+# AMD GPU exporterを追加で起動する。
+sudo docker compose --env-file .env --profile o11y --profile amd-gpu up -d
+```
+
+NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-dcgm-exporter` serviceと`prometheus/prometheus.yaml`のscrape設定をコメント解除してから、`nvidia-gpu` profileを併用する。
 
 期待値:
 
@@ -38,6 +49,7 @@ sudo docker compose --env-file .env --profile o11y up -d
 - `node-exporter:9100`
 - `cadvisor:8080`
 - `blackbox-exporter:9115`
+- `amd-device-metrics-exporter:5000`
 - `cloudflare:20241`
 - `tei-embedding:8000`
 - `tei-reranking:8000`
@@ -67,6 +79,8 @@ sudo docker compose --env-file .env --profile o11y up -d
 
 - `grafana/dashboards/overview.json`: scrape対象、HTTP probe、Prometheus、Grafanaの概要を表示する。
 - `grafana/dashboards/host-containers.json`: hostとcontainerのCPU、memory、disk、networkを表示する。
+- `grafana/dashboards/amd/*.json`: ROCm Device Metrics Exporter公式dashboard。
+- `grafana/dashboards/nvidia/dcgm-exporter-dashboard.json`: NVIDIA DCGM Exporter公式dashboard。
 
 外部dashboard JSONを採用する場合は、`grafana/dashboards/NOTICE.md`へ出典とlicenseを記録する。
 
@@ -77,4 +91,6 @@ sudo docker compose --env-file .env --profile o11y up -d
 - [Node Exporter](https://github.com/prometheus/node_exporter)
 - [cAdvisor](https://github.com/google/cadvisor)
 - [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
+- [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
+- [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)
 - [Gitea configuration cheat sheet](https://docs.gitea.com/administration/config-cheat-sheet)

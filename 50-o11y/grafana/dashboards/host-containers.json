@@ -587,7 +587,6 @@
   "refresh": "30s",
   "schemaVersion": 42,
   "tags": [
-    "inferlab",
     "host",
     "containers"
   ],
@@ -600,7 +599,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "InferLab Host and Containers",
+  "title": "Host and Containers",
   "uid": "inferlab-host-containers",
   "version": 1
 }

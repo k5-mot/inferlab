@@ -7,9 +7,16 @@
 - licenseが確認できないdashboard JSONは同梱せず、PromQLと画面構成のみを参考に自作する。
 - dashboard JSONを追加した場合は、Grafana provisioningで読み込めることを確認する。
 
-## 初期状態
+## 採用済みDashboard
 
-初期実装では、license確認済みの外部dashboard JSONをまだ同梱しない。
+| 対象 | 配置先 | 提供元 | License | 取得日 | 変更内容 |
+| --- | --- | --- | --- | --- | --- |
+| AMD Device Metrics Exporter | `amd/dashboard_gpu.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `amd/dashboard_job.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `amd/dashboard_node.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `amd/dashboard_overview.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `amd/dashboard_system.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| NVIDIA DCGM Exporter | `nvidia/dcgm-exporter-dashboard.json` | NVIDIA/dcgm-exporter | Apache-2.0 | 2026-07-26 | 変更なし。 |
 
 ## 採用候補
 
@@ -30,4 +37,7 @@
 - [Grafana dashboard provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards)
 - [Grafana licensing](https://grafana.com/licensing/)
 - [Prometheus exporters and integrations](https://prometheus.io/docs/instrumenting/exporters/)
-
+- [ROCm Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
+- [AMD Device Metrics Exporter Prometheus and Grafana integration](https://instinct.docs.amd.com/projects/device-metrics-exporter/en/latest/integrations/prometheus-grafana.html)
+- [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)
+- [NVIDIA DCGM Exporter documentation](https://docs.nvidia.com/datacenter/dcgm/latest/gpu-telemetry/dcgm-exporter.html)

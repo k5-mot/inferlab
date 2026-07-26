@@ -31,6 +31,17 @@ scrape_configs:
       - targets:
           - blackbox-exporter:9115
 
+  - job_name: amd-device-metrics-exporter
+    static_configs:
+      - targets:
+          - amd-device-metrics-exporter:5000
+
+  # NVIDIA GPU環境でnvidia-dcgm-exporter serviceを有効化した場合のみ使う。
+  # - job_name: nvidia-dcgm-exporter
+  #   static_configs:
+  #     - targets:
+  #         - nvidia-dcgm-exporter:9400
+
   - job_name: blackbox-http
     metrics_path: /probe
     params:
@@ -72,4 +83,3 @@ scrape_configs:
       - targets:
           - qdrant:6333
           - dify-qdrant:6333
-
