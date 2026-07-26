@@ -11,6 +11,8 @@
 # - createrepo_c
 #   - https://github.com/rpm-software-management/createrepo_c
 #
+name: ${STACK_NAME:-inferlab}
+
 services:
   pypiserver:
     image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
@@ -31,6 +33,16 @@ services:
       - pypiserver-packages:/data/packages
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/simple/', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - homepage.group=30-developer
       - homepage.name=PyPI
@@ -50,6 +62,16 @@ services:
       - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "const http=require('http'); const req=http.get('http://127.0.0.1:4873/', res => process.exit(res.statusCode < 500 ? 0 : 1)); req.on('error', () => process.exit(1)); req.setTimeout(3000, () => req.destroy());"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - homepage.group=30-developer
       - homepage.name=Verdaccio
@@ -114,11 +136,23 @@ services:
       - rpm-repository:/usr/share/nginx/html:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - homepage.group=30-developer
-      - homepage.name=RPM
+      - homepage.name=createrepo_c
       - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
-      - homepage.description=RPM repository
+      - homepage.description=RPM source repository for dnf/yum
 
   deb-repo:
     image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
@@ -132,11 +166,23 @@ services:
       - aptly-public:/usr/share/nginx/html:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - homepage.group=30-developer
-      - homepage.name=deb
+      - homepage.name=aptly
       - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
-      - homepage.description=Debian package repository
+      - homepage.description=APT source repository
 
   asset-publisher:
     image: alpine:${ALPINE_IMAGE_TAG:-3.22}

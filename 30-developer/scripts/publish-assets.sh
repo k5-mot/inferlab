@@ -3,7 +3,7 @@ set -euo pipefail
 
 # このscriptはrepository rootから実行する。
 ASSETS_DIR="${ASSETS_DIR:-30-developer/assets}"
-COMPOSE_FILE="${COMPOSE_FILE:-30-developer/docker-compose.yml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 HARBOR_REGISTRY="${HARBOR_REGISTRY:-}"
 HARBOR_PROJECT="${HARBOR_PROJECT:-library}"
 NPM_PUBLISH_TOKEN="${NPM_PUBLISH_TOKEN:-local-publish-token}"
