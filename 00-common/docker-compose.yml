@@ -56,6 +56,8 @@ services:
       # 初期管理者.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # inferlab realmのadminユーザー.
+      KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       # OIDCクライアント.
       GRAFANA_HTTP_HOST_PORT: ${GRAFANA_HTTP_HOST_PORT:-35000}
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}

@@ -3,6 +3,9 @@ set -eu
 
 realm_name="${STACK_NAME:-inferlab}"
 grafana_http_host_port="${GRAFANA_HTTP_HOST_PORT:-35000}"
+keycloak_realm_admin_password="${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}"
+keycloak_realm_admin_password_json_escaped="$(printf '%s' "${keycloak_realm_admin_password}" | sed 's/\\/\\\\/g; s/"/\\"/g')"
+keycloak_realm_admin_password_escaped="$(printf '%s' "${keycloak_realm_admin_password_json_escaped}" | sed 's/[&|\\]/\\&/g')"
 nextcloud_oidc_client_secret="${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}"
 langfuse_oidc_client_secret="${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}"
 leantime_oidc_client_secret="${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}"
@@ -15,6 +18,7 @@ sed \
   -e "s|\${PUBLIC_HOST}|${PUBLIC_HOST}|g" \
   -e "s|\${STACK_NAME:-inferlab}|${realm_name}|g" \
   -e "s|\${GRAFANA_HTTP_HOST_PORT:-35000}|${grafana_http_host_port}|g" \
+  -e "s|\${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}|${keycloak_realm_admin_password_escaped}|g" \
   -e "s|\${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}|${nextcloud_oidc_client_secret}|g" \
   -e "s|\${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}|${langfuse_oidc_client_secret}|g" \
   -e "s|\${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}|${leantime_oidc_client_secret}|g" \

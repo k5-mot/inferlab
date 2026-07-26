@@ -31,6 +31,13 @@
             "groups": [
                 "/admins",
                 "/users"
+            ],
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}",
+                    "temporary": false
+                }
             ]
         }
     ],
