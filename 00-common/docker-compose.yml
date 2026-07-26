@@ -80,7 +80,6 @@ services:
       - ./keycloak/import-realm.sh:/opt/keycloak/import-realm.sh:ro
     networks:
       - internal-nw
-      - keycloak-nw
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -134,7 +133,6 @@ services:
       - ./keycloak/certs:/opt/keycloak/certs:ro
     networks:
       - internal-nw
-      - keycloak-nw
     depends_on:
       keycloak:
         condition: service_healthy
@@ -170,7 +168,6 @@ services:
       - keycloak_postgres_data:/var/lib/postgresql
     networks:
       - internal-nw
-      - keycloak-nw
     healthcheck:
       test:
         - CMD-SHELL
@@ -191,4 +188,3 @@ volumes:
 
 networks:
   internal-nw:
-  keycloak-nw:
