@@ -4,6 +4,7 @@ general_settings:
 litellm_settings:
   callbacks:
     - langfuse_otel
+    - prometheus
   drop_params: true
   request_timeout: 600
 

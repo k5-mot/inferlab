@@ -68,6 +68,9 @@ services:
       # KC_PROXY_HEADERS: xforwarded
       # ヘルスチェックエンドポイントの有効化.
       KC_HEALTH_ENABLED: "true"
+      # Prometheus metricsを管理ポートで公開する。
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_SCHEME: http
     ports:
       - 30001:8080
     volumes:
@@ -120,6 +123,9 @@ services:
       JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
       # ヘルスチェックエンドポイントの有効化.
       KC_HEALTH_ENABLED: "true"
+      # Prometheus metricsを管理ポートでHTTP公開する。
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_SCHEME: http
     ports:
       - ${KEYCLOAK_HTTPS_HOST_PORT:-30002}:8443
     volumes:

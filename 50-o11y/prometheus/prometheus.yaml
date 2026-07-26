@@ -64,12 +64,51 @@ scrape_configs:
       - targets:
           - cloudflare:20241
 
+  - job_name: keycloak
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - keycloak:9000
+          - keycloak-https:9000
+
+  - job_name: couchdb
+    metrics_path: /_node/_local/_prometheus
+    basic_auth:
+      username: "__COUCHDB_USER__"
+      password: "__COUCHDB_PASSWORD__"
+    static_configs:
+      - targets:
+          - couchdb:5984
+
+  - job_name: nextcloud
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - nextcloud:80
+
   - job_name: text-embeddings-inference
     metrics_path: /metrics
     static_configs:
       - targets:
           - tei-embedding:8000
           - tei-reranking:8000
+
+  - job_name: litellm
+    metrics_path: /metrics
+    authorization:
+      credentials: "__LITELLM_MASTER_KEY__"
+    static_configs:
+      - targets:
+          - litellm:4000
+
+  - job_name: searxng
+    metrics_path: /metrics
+    basic_auth:
+      username: prometheus
+      password: sk-searxng-openmetrics-password
+    static_configs:
+      - targets:
+          - searxng:8080
 
   - job_name: gitea
     metrics_path: /metrics
@@ -79,7 +118,58 @@ scrape_configs:
 
   - job_name: qdrant
     metrics_path: /metrics
+    http_headers:
+      api-key:
+        secrets:
+          - sk-qdrant-api-key
     static_configs:
       - targets:
           - qdrant:6333
           - dify-qdrant:6333
+
+  - job_name: postgres-exporters
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - keycloak-postgres-exporter:9187
+          - langfuse-postgres-exporter:9187
+          - gitea-postgres-exporter:9187
+          - dify-postgres-exporter:9187
+          - zulip-postgres-exporter:9187
+          - pulp-postgres-exporter:9187
+
+  - job_name: redis-exporters
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - nextcloud-redis-exporter:9121
+          - langfuse-redis-exporter:9121
+          - dify-redis-exporter:9121
+          - zulip-redis-exporter:9121
+          - pulp-redis-exporter:9121
+
+  - job_name: mysqld-exporters
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - nextcloud-mysqld-exporter:9104
+          - leantime-mysqld-exporter:9104
+          - bookstack-mysqld-exporter:9104
+
+  - job_name: rabbitmq
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - zulip-rabbitmq:15692
+
+  - job_name: clickhouse
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - langfuse-clickhouse:9363
+
+  - job_name: minio
+    metrics_path: /minio/metrics/v3
+    static_configs:
+      - targets:
+          - langfuse-minio:9000

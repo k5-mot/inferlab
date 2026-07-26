@@ -51,27 +51,53 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `blackbox-exporter:9115`
 - `amd-device-metrics-exporter:5000`
 - `cloudflare:20241`
+- `keycloak:9000`
+- `keycloak-https:9000`
+- `couchdb:5984`
+- `nextcloud:80`
 - `tei-embedding:8000`
 - `tei-reranking:8000`
+- `litellm:4000`
+- `searxng:8080`
 - `gitea:3000`
 - `qdrant:6333`
 - `dify-qdrant:6333`
+- `keycloak-postgres-exporter:9187`
+- `langfuse-postgres-exporter:9187`
+- `gitea-postgres-exporter:9187`
+- `dify-postgres-exporter:9187`
+- `zulip-postgres-exporter:9187`
+- `pulp-postgres-exporter:9187`
+- `nextcloud-redis-exporter:9121`
+- `langfuse-redis-exporter:9121`
+- `dify-redis-exporter:9121`
+- `zulip-redis-exporter:9121`
+- `pulp-redis-exporter:9121`
+- `nextcloud-mysqld-exporter:9104`
+- `leantime-mysqld-exporter:9104`
+- `bookstack-mysqld-exporter:9104`
+- `zulip-rabbitmq:15692`
+- `langfuse-clickhouse:9363`
+- `langfuse-minio:9000`
 
 一部の対象は該当profileが起動していない場合にdownになる。これはstack分割されたCompose構成では許容する。
 
-## 追加予定のmetrics有効化
+## Metrics対応
 
 | 対象 | 対応 |
 | --- | --- |
-| Keycloak | `KC_METRICS_ENABLED=true`を設定する。 |
-| Nextcloud | `openmetrics`の許可clientをPrometheus containerへ合わせる。 |
+| Keycloak | `KC_METRICS_ENABLED=true`で管理ポート`9000`の`/metrics`をscrapeする。 |
+| Nextcloud | `openmetrics_allowed_clients`へDocker内部networkを追加し、`/metrics`をscrapeする。 |
 | CouchDB | `/_node/_local/_prometheus`をbasic auth付きでscrapeする。 |
-| LiteLLM | Prometheus callbackを有効化する。 |
-| RabbitMQ | `rabbitmq_prometheus` pluginを有効化する。 |
-| PostgreSQL | `postgres_exporter`を追加する。 |
-| Redis/Valkey | `redis_exporter`を追加する。 |
-| MariaDB/MySQL | `mysqld_exporter`を追加する。 |
-| Open WebUI | OpenTelemetry Collector経由でPrometheusへ接続する。 |
+| LiteLLM | `prometheus` callbackを有効化し、`/metrics`をBearer認証付きでscrapeする。 |
+| SearXNG | `open_metrics`を有効化し、`/metrics`をBasic Auth付きでscrapeする。 |
+| Qdrant | `api-key` header付きで`/metrics`をscrapeする。 |
+| PostgreSQL | `postgres_exporter`をo11y stackへ追加する。 |
+| Redis/Valkey | `redis_exporter`をo11y stackへ追加する。 |
+| MariaDB/MySQL | `mysqld_exporter`をo11y stackへ追加する。 |
+| RabbitMQ | `rabbitmq_prometheus` pluginを有効化し、`15692`の`/metrics`をscrapeする。 |
+| ClickHouse | Prometheus protocolを`9363`で有効化し、`/metrics`をscrapeする。 |
+| MinIO | 内部network限定前提でPrometheus metrics認証をpublicにし、`/minio/metrics/v3`をscrapeする。 |
 
 ## Dashboard
 
@@ -79,8 +105,12 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 
 - `grafana/dashboards/overview.json`: scrape対象、HTTP probe、Prometheus、Grafanaの概要を表示する。
 - `grafana/dashboards/host-containers.json`: hostとcontainerのCPU、memory、disk、networkを表示する。
-- `grafana/dashboards/amd/*.json`: ROCm Device Metrics Exporter公式dashboard。
-- `grafana/dashboards/nvidia/dcgm-exporter-dashboard.json`: NVIDIA DCGM Exporter公式dashboard。
+- `grafana/dashboards/amd/dashboard_gpu.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_gpu.json>）。
+- `grafana/dashboards/amd/dashboard_job.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_job.json>）。
+- `grafana/dashboards/amd/dashboard_node.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_node.json>）。
+- `grafana/dashboards/amd/dashboard_overview.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_overview.json>）。
+- `grafana/dashboards/amd/dashboard_system.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_system.json>）。
+- `grafana/dashboards/nvidia/dcgm-exporter-dashboard.json`: NVIDIA DCGM Exporter公式dashboard（<https://github.com/NVIDIA/dcgm-exporter/blob/main/grafana/dcgm-exporter-dashboard.json>、Grafana.com: <https://grafana.com/grafana/dashboards/12239>）。
 
 外部dashboard JSONを採用する場合は、`grafana/dashboards/NOTICE.md`へ出典とlicenseを記録する。
 
@@ -91,6 +121,17 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - [Node Exporter](https://github.com/prometheus/node_exporter)
 - [cAdvisor](https://github.com/google/cadvisor)
 - [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
+- [PostgreSQL Exporter](https://github.com/prometheus-community/postgres_exporter)
+- [Redis Exporter](https://github.com/oliver006/redis_exporter)
+- [MySQL Server Exporter](https://github.com/prometheus/mysqld_exporter)
+- [Keycloak metrics](https://www.keycloak.org/observability/configuration-metrics)
+- [CouchDB Prometheus endpoint](https://docs.couchdb.org/en/stable/api/server/common.html#node-node-name-prometheus)
+- [Nextcloud OpenMetrics](https://docs.nextcloud.com/server/latest/admin_manual/configuration_monitoring/index.html#openmetrics)
+- [LiteLLM Prometheus metrics](https://docs.litellm.ai/docs/proxy/prometheus)
+- [SearXNG general settings](https://docs.searxng.org/admin/settings/settings_general.html)
+- [RabbitMQ Prometheus plugin](https://www.rabbitmq.com/docs/prometheus)
+- [ClickHouse Prometheus protocol](https://clickhouse.com/docs/interfaces/prometheus)
+- [MinIO metrics and alerts](https://min.io/docs/minio/linux/operations/monitoring/metrics-and-alerts.html)
 - [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)
 - [Gitea configuration cheat sheet](https://docs.gitea.com/administration/config-cheat-sheet)

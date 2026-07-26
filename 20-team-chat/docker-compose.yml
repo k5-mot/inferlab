@@ -140,6 +140,12 @@ services:
     restart: unless-stopped
     profiles:
       - team-chat
+    command:
+      - sh
+      - -euc
+      - |
+        rabbitmq-plugins enable --offline rabbitmq_prometheus
+        exec rabbitmq-server
     environment:
       RABBITMQ_DEFAULT_USER: zulip
       RABBITMQ_DEFAULT_PASS: ${ZULIP_RABBITMQ_PASSWORD:-zulip_password}

@@ -147,6 +147,7 @@ services:
     volumes:
       - langfuse_clickhouse_data:/var/lib/clickhouse
       - langfuse_clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse/prometheus.xml:/etc/clickhouse-server/config.d/prometheus.xml:ro
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
       interval: 5s
@@ -173,6 +174,7 @@ services:
       MINIO_ROOT_USER: minio_user
       MINIO_ROOT_PASSWORD: miniosecret # CHANGEME
       MINIO_UPDATE: "off"
+      MINIO_PROMETHEUS_AUTH_TYPE: public
     networks:
       - internal-nw
     volumes:
