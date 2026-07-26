@@ -4,8 +4,6 @@ FROM docker.io/pulp/pulp-minimal:${PULP_BASE_TAG}
 USER root
 
 RUN pip install --upgrade \
-      social-auth-core \
-      social-auth-app-django \
       pulp-npm \
       pulp-hugging-face \
       -c /constraints.txt && \

@@ -110,15 +110,27 @@ services:
       PUBLIC_HOST: ${PUBLIC_HOST}
       PULP_HTTP_HOST_PORT: ${PULP_HTTP_HOST_PORT:-33000}
       PULP_SECRET_KEY: ${PULP_SECRET_KEY:-sk-pulp-secret-key-change-me}
-      PULP_POSTGRES_PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+      PULP_CONTENT_ORIGIN: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}
+      PULP_DATABASES__default__ENGINE: django.db.backends.postgresql
+      PULP_DATABASES__default__HOST: pulp-postgres
+      PULP_DATABASES__default__NAME: pulp
+      PULP_DATABASES__default__USER: pulp
+      PULP_DATABASES__default__PASSWORD: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+      PULP_DATABASES__default__PORT: 5432
+      PULP_DATABASES__default__OPTIONS__sslmode: prefer
+      PULP_CACHE_ENABLED: true
+      PULP_REDIS_HOST: pulp-redis
+      PULP_REDIS_PORT: 6379
       PULP_REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
-      PULP_OIDC_CLIENT_ID: ${PULP_OIDC_CLIENT_ID:-pulp}
-      PULP_OIDC_CLIENT_SECRET: ${PULP_OIDC_CLIENT_SECRET:-sk-pulp-oidc-client-secret-key}
-      PULP_KEYCLOAK_REALM: ${PULP_KEYCLOAK_REALM:-${STACK_NAME:-inferlab}}
-      PULP_KEYCLOAK_PUBLIC_KEY: ${PULP_KEYCLOAK_PUBLIC_KEY:-}
-      PULP_KEYCLOAK_BASE_URL: ${PULP_KEYCLOAK_BASE_URL:-http://${PUBLIC_HOST}:30001}
+      PULP_TOKEN_SERVER: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/token/
+      PULP_TOKEN_AUTH_DISABLED: false
+      PULP_TOKEN_SIGNATURE_ALGORITHM: ES256
+      PULP_PUBLIC_KEY_PATH: /etc/pulp/certs/container_auth_public_key.pem
+      PULP_PRIVATE_KEY_PATH: /etc/pulp/certs/container_auth_private_key.pem
+      PULP_ANSIBLE_API_HOSTNAME: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}
+      PULP_ANSIBLE_CONTENT_HOSTNAME: http://${PUBLIC_HOST}:${PULP_HTTP_HOST_PORT:-33000}/pulp/content
+      PULP_ANALYTICS: false
     volumes: &pulp-volumes
-      - ./pulp/settings.py:/etc/pulp/settings.py:ro
       - pulp-certs:/etc/pulp/certs
       - pulp-data:/var/lib/pulp
     networks:
