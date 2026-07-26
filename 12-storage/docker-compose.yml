@@ -135,7 +135,7 @@ services:
       NEXTCLOUD_USER: admin
       NEXTCLOUD_PASSWORD: admin
       NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
-      OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/k5-mot/files/Documents
+      OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
       OIKB_NEXTCLOUD_INTERVAL: 1h
     ports:
       - 31201:8080

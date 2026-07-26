@@ -4,7 +4,7 @@ defaults:
 
 sources:
   - name: nextcloud-documents
-    source: "/nextcloud/data/k5-mot/files/Documents"
+    source: "/nextcloud/data/admin/files/oikb"
     kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
     filter:
       exclude:

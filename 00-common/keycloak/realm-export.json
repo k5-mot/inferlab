@@ -20,6 +20,20 @@
             "path": "/users"
         }
     ],
+    "users": [
+        {
+            "username": "admin",
+            "enabled": true,
+            "firstName": "admin",
+            "lastName": "admin",
+            "email": "admin@example.local",
+            "emailVerified": true,
+            "groups": [
+                "/admins",
+                "/users"
+            ]
+        }
+    ],
     "clients": [
         {
             "clientId": "open-webui",
