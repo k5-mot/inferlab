@@ -11,12 +11,12 @@
 
 | 対象 | 配置先 | 提供元 | License | 取得日 | 変更内容 |
 | --- | --- | --- | --- | --- | --- |
-| AMD Device Metrics Exporter | `amd/dashboard_gpu.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `amd/dashboard_job.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `amd/dashboard_node.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `amd/dashboard_overview.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `amd/dashboard_system.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| NVIDIA DCGM Exporter | `nvidia/dcgm-exporter-dashboard.json` | NVIDIA/dcgm-exporter | Apache-2.0 | 2026-07-26 | 変更なし。 |
+| AMD Device Metrics Exporter | `services/amd-dashboard_gpu.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `services/amd-dashboard_job.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `services/amd-dashboard_node.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `services/amd-dashboard_overview.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| AMD Device Metrics Exporter | `services/amd-dashboard_system.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
+| NVIDIA DCGM Exporter | `services/nvidia-dcgm-exporter-dashboard.json` | NVIDIA/dcgm-exporter | Apache-2.0 | 2026-07-26 | 変更なし。 |
 
 ## 自作Dashboard
 
