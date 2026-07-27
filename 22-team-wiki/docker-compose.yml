@@ -55,7 +55,7 @@ services:
       - homepage.name=BookStack
       - homepage.href=http://${PUBLIC_HOST}:32200
       - homepage.description=Team documentation wiki
-      - homepage.icon=bookstack.png
+      - homepage.icon=/icons/bookstack.png
 
   bookstack-mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.12

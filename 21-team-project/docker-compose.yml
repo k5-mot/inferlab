@@ -60,7 +60,7 @@ services:
       - homepage.name=Leantime
       - homepage.href=http://${PUBLIC_HOST}:32001
       - homepage.description=Project management tool
-      - homepage.icon=leantime.png
+      - homepage.icon=/icons/leantime.png
 
   leantime-db:
     image: docker.io/library/mysql:8.4.10
@@ -92,7 +92,7 @@ services:
       - homepage.group=21-team-project
       - homepage.name=Leantime-MySQL
       - homepage.description=Relational database
-      - homepage.icon=mysql.png
+      - homepage.icon=/icons/mysql.png
 
 volumes:
   leantime-db-data:

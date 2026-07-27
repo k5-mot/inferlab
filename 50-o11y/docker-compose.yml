@@ -195,7 +195,7 @@ services:
       - homepage.group=50-o11y
       - homepage.name=cAdvisor
       - homepage.description=Container metrics exporter
-      - homepage.icon=cadvisor.png
+      - homepage.icon=/icons/cadvisor.png
 
   blackbox-exporter:
     image: quay.io/prometheus/blackbox-exporter:v0.28.0

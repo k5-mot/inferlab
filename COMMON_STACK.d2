@@ -9,7 +9,6 @@ direction: right
 
 users: {
   label: "Users"
-  icon: "./00-common/homepage/icons/web-ui.svg"
   style: {
     fill: "#f8fafc"
     stroke: "#475569"
@@ -18,7 +17,6 @@ users: {
 
 public_host: {
   label: "PUBLIC_HOST"
-  icon: "./00-common/homepage/icons/proxy.svg"
   style: {
     fill: "#eef2ff"
     stroke: "#4f46e5"
@@ -35,7 +33,7 @@ common_stack: {
 
   homepage: {
     label: "Homepage\n30000 -> 3000"
-    icon: "./00-common/homepage/icons/dashboard.svg"
+    icon: "./00-common/homepage/icons/homepage.png"
     style: {
       fill: "#ecfeff"
       stroke: "#0891b2"
@@ -44,7 +42,7 @@ common_stack: {
 
   keycloak: {
     label: "Keycloak\n30001 -> 8080"
-    icon: "./00-common/homepage/icons/identity.svg"
+    icon: "./00-common/homepage/icons/keycloak.png"
     style: {
       fill: "#eff6ff"
       stroke: "#2563eb"
@@ -53,7 +51,7 @@ common_stack: {
 
   keycloak_https: {
     label: "Keycloak HTTPS\n30002 -> 8443"
-    icon: "./00-common/homepage/icons/identity.svg"
+    icon: "./00-common/homepage/icons/keycloak.png"
     style: {
       fill: "#eff6ff"
       stroke: "#1d4ed8"
@@ -62,7 +60,7 @@ common_stack: {
 
   keycloak_postgres: {
     label: "Keycloak PostgreSQL\n5432"
-    icon: "./00-common/homepage/icons/relational-db.svg"
+    icon: "./00-common/homepage/icons/postgresql.png"
     style: {
       fill: "#fef3c7"
       stroke: "#d97706"
@@ -79,22 +77,18 @@ runtime_inputs: {
 
   homepage_config: {
     label: "./homepage\nconfig and icons"
-    icon: "./00-common/homepage/icons/file-storage.svg"
   }
 
   realm_import: {
     label: "realm-export.json\nimport-realm.sh"
-    icon: "./00-common/homepage/icons/document-processing.svg"
   }
 
   keycloak_certs: {
     label: "./keycloak/certs"
-    icon: "./00-common/homepage/icons/secure-tunnel.svg"
   }
 
   postgres_volume: {
     label: "keycloak_postgres_data"
-    icon: "./00-common/homepage/icons/file-storage.svg"
   }
 }
 

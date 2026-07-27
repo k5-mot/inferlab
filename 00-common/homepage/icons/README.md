@@ -1,7 +1,7 @@
 # Homepage icons
 
-このディレクトリの SVG は、Homepage が外部アイコン配信元へアクセスしない設定で使うローカルアイコンです。
+このディレクトリの画像は、Homepage が外部アイコン配信元へアクセスしない設定で使うローカルアイコンです。
 
-各アイコンは特定サービスの公式ロゴやブランドアセットではなく、用途カテゴリを表すために単純な図形で作成しています。
+PNG は [Homarr Labs Dashboard Icons](https://github.com/homarr-labs/dashboard-icons/tree/main/png) から取得した製品アイコンです。ライセンスは `LICENSE.dashboard-icons` を参照してください。
 
-このディレクトリ内の SVG は `LICENSE` に従い、商用利用を含めて利用できます。
+SVG は Dashboard Icons に対象製品のアイコンがない場合のフォールバックです。これらの SVG は `LICENSE` に従い、商用利用を含めて利用できます。

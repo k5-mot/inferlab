@@ -78,7 +78,7 @@ services:
       - homepage.name=Zulip
       - homepage.href=https://${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-32000}}/
       - homepage.description=Team chat platform
-      - homepage.icon=zulip.png
+      - homepage.icon=/icons/zulip.png
 
   zulip-postgres:
     image: zulip/zulip-postgresql:14

@@ -28,7 +28,7 @@ services:
       - homepage.name=Homepage
       - homepage.href=http://${PUBLIC_HOST}:30000
       - homepage.description=Dashboard
-      - homepage.icon=/icons/dashboard.svg
+      - homepage.icon=/icons/homepage.png
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.0

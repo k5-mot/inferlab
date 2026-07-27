@@ -1,8 +1,8 @@
 # Homepage icon labels
 
-Homepage の `homepage.icon` ラベルを、外部アイコン指定とローカルアイコン指定で切り替えるためのラベルファイルです。
+Homepage の `homepage.icon` ラベルを管理するためのラベルファイルです。
 
-- `false/`: 変更前と同じ外部アイコン指定を使います。
-- `true/`: `00-common/homepage/icons/` のローカル汎用 SVG を使います。
+- Dashboard Icons に正式な製品アイコンがあるサービスは、`false/` と `true/` の両方で `00-common/homepage/icons/` のローカル PNG を使います。
+- Dashboard Icons に該当アイコンが見つからないサービスは、既存の外部アイコン指定またはローカル SVG フォールバックを使います。
 
-Docker Compose では `label_file` のパスに `${AIRGAP:-false}` を使っています。`.env` で `AIRGAP=true` を指定した場合だけ `true/` のラベルファイルが読み込まれ、未設定または `AIRGAP=false` の場合は `false/` が読み込まれます。
+Docker Compose では互換性のため、`label_file` のパスに `${AIRGAP:-false}` を使っています。

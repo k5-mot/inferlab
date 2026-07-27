@@ -8,26 +8,26 @@
 
 layout:
   - 00-common:
-      icon: /icons/dashboard.svg
+      icon: /icons/homepage.png
       style: row
       columns: 4
   - 01-infra:
-      icon: /icons/secure-tunnel.svg
+      icon: /icons/cloudflared.png
       style: row
       columns: 4
   - 10-inference:
-      icon: /icons/inference-engine.svg
+      icon: /icons/ollama.png
       style: row
       columns: 4
   - 11-webui:
-      icon: /icons/web-ui.svg
+      icon: /icons/open-webui.png
       style: row
       columns: 4
   - 12-storage:
-      icon: /icons/file-storage.svg
+      icon: /icons/nextcloud.png
       style: row
       columns: 4
   - 51-llmops:
-      icon: /icons/observability.svg
+      icon: /icons/grafana.png
       style: row
       columns: 4

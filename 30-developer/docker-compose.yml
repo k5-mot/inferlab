@@ -48,6 +48,7 @@ services:
       - homepage.name=PyPI
       - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-33100}/simple/
       - homepage.description=Python package registry
+      - homepage.icon=/icons/pypi.png
 
   verdaccio:
     image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6}
@@ -77,6 +78,7 @@ services:
       - homepage.name=Verdaccio
       - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-33200}/
       - homepage.description=npm registry
+      - homepage.icon=/icons/verdaccio.png
 
   code-marketplace:
     image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
@@ -196,6 +198,7 @@ services:
       - homepage.name=createrepo_c
       - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
       - homepage.description=RPM source repository for dnf/yum
+      - homepage.icon=/icons/redhat-linux.png
 
   deb-repo:
     image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
@@ -229,6 +232,7 @@ services:
       - homepage.name=aptly
       - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
       - homepage.description=APT source repository
+      - homepage.icon=/icons/debian-linux.png
 
   asset-publisher:
     image: alpine:${ALPINE_IMAGE_TAG:-3.22}
