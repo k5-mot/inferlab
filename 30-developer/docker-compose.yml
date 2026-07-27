@@ -28,7 +28,7 @@ services:
     ports:
       - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
     volumes:
-      - ./pypi:/data/packages:ro
+      - ./registry/pypi:/data/packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -134,7 +134,7 @@ services:
     ports:
       - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
     volumes:
-      - ./rpm:/usr/share/nginx/html:ro
+      - ./registry/rpm:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
@@ -167,7 +167,7 @@ services:
     ports:
       - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
     volumes:
-      - ./deb:/usr/share/nginx/html:ro
+      - ./registry/deb:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
@@ -204,7 +204,7 @@ services:
       - sh
       - /usr/local/bin/import-npm-packages
     volumes:
-      - ./npm:/imports:ro
+      - ./registry/npm:/imports:ro
       - ./scripts/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw
@@ -225,7 +225,7 @@ services:
       - bash
       - /usr/local/bin/sync-rpm-repository
     volumes:
-      - ./rpm:/repo
+      - ./registry/rpm:/repo
       - ./scripts/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
       - ./scripts/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
     networks:
@@ -242,7 +242,7 @@ services:
       - bash
       - /usr/local/bin/sync-deb-repository
     volumes:
-      - ./deb:/repo
+      - ./registry/deb:/repo
       - ./scripts/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
       - ./scripts/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
     networks:
