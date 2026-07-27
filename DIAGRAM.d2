@@ -141,6 +141,7 @@ service_catalog: {
 
       openrouter: {
         label: "OpenRouter\n外部サービス"
+        icon: "./00-common/homepage/icons/open-router.png"
         shape: cloud
         style: {
           fill: "#f8fafc"
@@ -151,6 +152,7 @@ service_catalog: {
 
       google_ai_studio: {
         label: "Google AI Studio\n外部サービス"
+        icon: "./00-common/homepage/icons/google-gemini.png"
         shape: cloud
         style: {
           fill: "#f8fafc"
@@ -510,6 +512,7 @@ service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference
 service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.openrouter: "external LLM API"
 service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.google_ai_studio: "external LLM API"
 service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
+service_catalog.row_1.10_inference.hermes_agent -> service_catalog.row_1.10_inference.litellm: "LLM API"
 
 service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM / RAG API"
 service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.hermes_agent: "agent API"
