@@ -371,6 +371,10 @@ function Test-RpmRequirementName {
         return $false
     }
 
+    if ($Name.StartsWith("(") -or $Name.Contains(" if ") -or $Name.Contains(" unless ") -or $Name.Contains(" with ") -or $Name.Contains(" without ")) {
+        return $false
+    }
+
     return $true
 }
 
@@ -526,9 +530,15 @@ foreach ($Image in $ContainerImages) {
 
 # Hugging Face modelを取得する。
 python -m pip install --upgrade "huggingface_hub>=1,<2"
+$HuggingFaceDownloadScript = @'
+import sys
+from huggingface_hub import snapshot_download
+
+snapshot_download(repo_id=sys.argv[1], local_dir=sys.argv[2])
+'@
 foreach ($Model in $HuggingFaceModels) {
     $ModelPath = Join-Path (Join-Path $AssetsPath "huggingface") $Model
-    hf download $Model --local-dir $ModelPath
+    python -c $HuggingFaceDownloadScript $Model $ModelPath
 }
 
 Write-Host "download completed: $AssetsPath"
