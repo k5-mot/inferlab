@@ -1,18 +1,445 @@
 $ErrorActionPreference = "Stop"
 
-# このscriptは作業directoryから実行する。
-$AssetsDir = if ($env:ASSETS_DIR) { $env:ASSETS_DIR } else { "assets" }
+<#
+.SYNOPSIS
+相対pathまたは絶対pathを絶対pathへ解決する。
+.PARAMETER Path
+解決するpath。相対pathの場合はBasePathからの相対pathとして扱う。
+.PARAMETER BasePath
+相対pathを解決する基準directory。
+.OUTPUTS
+解決済みの絶対path文字列を返す。
+#>
+function Resolve-AssetPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$BasePath
+    )
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return $Path
+    }
+
+    return (Join-Path $BasePath $Path)
+}
+
+<#
+.SYNOPSIS
+repository URLと相対pathを結合する。
+.PARAMETER BaseUrl
+repository rootのURL。
+.PARAMETER RelativePath
+repository rootからの相対path。
+.OUTPUTS
+結合済みURL文字列を返す。
+#>
+function Join-RepositoryUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseUrl,
+        [Parameter(Mandatory = $true)][string]$RelativePath
+    )
+
+    return $BaseUrl.TrimEnd("/") + "/" + $RelativePath.TrimStart("/")
+}
+
+<#
+.SYNOPSIS
+HTTPでfileを取得し、既存fileを置き換える。
+.PARAMETER Url
+取得元URL。
+.PARAMETER OutputPath
+保存先file path。
+.OUTPUTS
+値は返さない。
+.NOTES
+保存先directoryを作成し、同名fileがある場合は上書きする。
+#>
+function Save-FileFromUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][string]$OutputPath
+    )
+
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
+    Invoke-WebRequest -Uri $Url -OutFile $OutputPath -UseBasicParsing
+}
+
+<#
+.SYNOPSIS
+gzip圧縮されたtext fileをHTTPで取得して展開する。
+.PARAMETER Url
+gzip fileの取得元URL。
+.OUTPUTS
+展開済みtextを返す。
+.NOTES
+一時fileを作成し、読み取り後に削除する。
+#>
+function Read-GzipTextFromUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url
+    )
+
+    $TempFile = New-TemporaryFile
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $TempFile.FullName -UseBasicParsing
+        $InputStream = [System.IO.File]::OpenRead($TempFile.FullName)
+        try {
+            $GzipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+                $Reader = [System.IO.StreamReader]::new($GzipStream, [System.Text.Encoding]::UTF8)
+                try {
+                    return $Reader.ReadToEnd()
+                } finally {
+                    $Reader.Dispose()
+                }
+            } finally {
+                $GzipStream.Dispose()
+            }
+        } finally {
+            $InputStream.Dispose()
+        }
+    } finally {
+        Remove-Item -Force $TempFile.FullName
+    }
+}
+
+<#
+.SYNOPSIS
+Debian Packages metadataをpackage名で引けるindexへ変換する。
+.PARAMETER PackagesUrl
+Packages.gzのURL。
+.OUTPUTS
+package名をkey、metadata hashtableをvalueにしたhashtableを返す。
+#>
+function Get-DebPackageIndex {
+    param(
+        [Parameter(Mandatory = $true)][string]$PackagesUrl
+    )
+
+    $Index = @{}
+    $Text = Read-GzipTextFromUrl -Url $PackagesUrl
+    foreach ($Entry in ($Text -split "(?:`r?`n){2,}")) {
+        if ([string]::IsNullOrWhiteSpace($Entry)) {
+            continue
+        }
+
+        $Fields = @{}
+        $CurrentField = $null
+        foreach ($Line in ($Entry -split "`r?`n")) {
+            if ($Line -match "^([^:]+):\s*(.*)$") {
+                $CurrentField = $Matches[1]
+                $Fields[$CurrentField] = $Matches[2]
+            } elseif ($Line -match "^\s+(.*)$" -and $CurrentField) {
+                $Fields[$CurrentField] = $Fields[$CurrentField] + " " + $Matches[1]
+            }
+        }
+
+        if ($Fields.ContainsKey("Package") -and -not $Index.ContainsKey($Fields["Package"])) {
+            $Index[$Fields["Package"]] = $Fields
+        }
+    }
+
+    return $Index
+}
+
+<#
+.SYNOPSIS
+deb package metadataから依存package名を取り出す。
+.PARAMETER Package
+Packages metadataの1 package分のhashtable。
+.OUTPUTS
+依存package名の配列を返す。
+#>
+function Get-DebDependencyNames {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Package
+    )
+
+    $Dependencies = [System.Collections.Generic.List[string]]::new()
+    foreach ($FieldName in @("Pre-Depends", "Depends")) {
+        if (-not $Package.ContainsKey($FieldName)) {
+            continue
+        }
+
+        foreach ($Part in ($Package[$FieldName] -split ",")) {
+            $Candidate = (($Part -split "\|")[0]).Trim()
+            $Name = ($Candidate -replace "\s*\(.*?\)", "" -replace ":[A-Za-z0-9][A-Za-z0-9-]*", "").Trim()
+            if ($Name -and -not $Dependencies.Contains($Name)) {
+                $Dependencies.Add($Name)
+            }
+        }
+    }
+
+    return $Dependencies.ToArray()
+}
+
+<#
+.SYNOPSIS
+deb packageと依存packageをHTTP repositoryから取得する。
+.PARAMETER PackageNames
+取得するroot package名。
+.PARAMETER RepositoryBaseUrl
+Debian repository rootのURL。
+.PARAMETER PackagesUrl
+Packages.gzのURL。
+.PARAMETER OutputDirectory
+deb fileの保存先directory。
+.OUTPUTS
+値は返さない。
+#>
+function Save-DebPackagesWithDependencies {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$PackageNames,
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
+        [Parameter(Mandatory = $true)][string]$PackagesUrl,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+
+    if ($PackageNames.Count -eq 0) {
+        return
+    }
+
+    $Index = Get-DebPackageIndex -PackagesUrl $PackagesUrl
+    $Queue = [System.Collections.Queue]::new()
+    $Seen = @{}
+    foreach ($Name in $PackageNames) {
+        $Queue.Enqueue($Name)
+    }
+
+    while ($Queue.Count -gt 0) {
+        $Name = [string]$Queue.Dequeue()
+        if ($Seen.ContainsKey($Name)) {
+            continue
+        }
+
+        $Seen[$Name] = $true
+        if (-not $Index.ContainsKey($Name)) {
+            Write-Warning "deb package not found: $Name"
+            continue
+        }
+
+        $Package = $Index[$Name]
+        $FileName = Split-Path -Leaf $Package["Filename"]
+        $OutputPath = Join-Path $OutputDirectory $FileName
+        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Package["Filename"]) -OutputPath $OutputPath
+
+        foreach ($Dependency in (Get-DebDependencyNames -Package $Package)) {
+            if (-not $Seen.ContainsKey($Dependency)) {
+                $Queue.Enqueue($Dependency)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+RPM repositoryのrepomd.xmlからprimary metadata URLを取得する。
+.PARAMETER RepositoryBaseUrl
+RPM repository rootのURL。
+.OUTPUTS
+primary.xml.gzのURLを返す。
+#>
+function Get-RpmPrimaryMetadataUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl
+    )
+
+    [xml]$RepoMetadata = (Invoke-WebRequest -Uri (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath "repodata/repomd.xml") -UseBasicParsing).Content
+    $Namespace = [System.Xml.XmlNamespaceManager]::new($RepoMetadata.NameTable)
+    $Namespace.AddNamespace("repo", "http://linux.duke.edu/metadata/repo")
+    $Location = $RepoMetadata.SelectSingleNode("//repo:data[@type='primary']/repo:location", $Namespace)
+    if (-not $Location) {
+        throw "primary metadata was not found: $RepositoryBaseUrl"
+    }
+
+    return (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Location.GetAttribute("href"))
+}
+
+<#
+.SYNOPSIS
+RPM primary metadataをpackage indexとprovide indexへ変換する。
+.PARAMETER PrimaryMetadataUrl
+primary.xml.gzのURL。
+.PARAMETER Architecture
+取得対象architecture。
+.OUTPUTS
+PackagesとProvidersを持つhashtableを返す。
+#>
+function Get-RpmPackageIndex {
+    param(
+        [Parameter(Mandatory = $true)][string]$PrimaryMetadataUrl,
+        [Parameter(Mandatory = $true)][string]$Architecture
+    )
+
+    [xml]$PrimaryMetadata = Read-GzipTextFromUrl -Url $PrimaryMetadataUrl
+    $Namespace = [System.Xml.XmlNamespaceManager]::new($PrimaryMetadata.NameTable)
+    $Namespace.AddNamespace("common", "http://linux.duke.edu/metadata/common")
+    $Namespace.AddNamespace("rpm", "http://linux.duke.edu/metadata/rpm")
+
+    $Packages = @{}
+    $Providers = @{}
+    foreach ($PackageNode in $PrimaryMetadata.SelectNodes("//common:package[@type='rpm']", $Namespace)) {
+        $Arch = $PackageNode.SelectSingleNode("common:arch", $Namespace).InnerText
+        if ($Arch -ne $Architecture -and $Arch -ne "noarch") {
+            continue
+        }
+
+        $Name = $PackageNode.SelectSingleNode("common:name", $Namespace).InnerText
+        $Location = $PackageNode.SelectSingleNode("common:location", $Namespace).GetAttribute("href")
+        $Requires = [System.Collections.Generic.List[string]]::new()
+        foreach ($RequireNode in $PackageNode.SelectNodes("common:format/rpm:requires/rpm:entry", $Namespace)) {
+            $RequireName = $RequireNode.GetAttribute("name")
+            if ($RequireName -and $RequireName -ne $Name) {
+                $Requires.Add($RequireName)
+            }
+        }
+
+        $Provides = [System.Collections.Generic.List[string]]::new()
+        $Provides.Add($Name)
+        foreach ($ProvideNode in $PackageNode.SelectNodes("common:format/rpm:provides/rpm:entry", $Namespace)) {
+            $ProvideName = $ProvideNode.GetAttribute("name")
+            if ($ProvideName -and -not $Provides.Contains($ProvideName)) {
+                $Provides.Add($ProvideName)
+            }
+        }
+
+        $Package = [pscustomobject]@{
+            Name = $Name
+            Arch = $Arch
+            Location = $Location
+            Requires = $Requires.ToArray()
+            Provides = $Provides.ToArray()
+        }
+
+        if (-not $Packages.ContainsKey($Name) -or $Packages[$Name].Arch -eq "noarch") {
+            $Packages[$Name] = $Package
+        }
+
+        foreach ($Provide in $Package.Provides) {
+            if (-not $Providers.ContainsKey($Provide)) {
+                $Providers[$Provide] = [System.Collections.Generic.List[object]]::new()
+            }
+            $Providers[$Provide].Add($Package)
+        }
+    }
+
+    return @{
+        Packages = $Packages
+        Providers = $Providers
+    }
+}
+
+<#
+.SYNOPSIS
+RPM require entryを依存解決対象にするか判定する。
+.PARAMETER Name
+require entryのname。
+.OUTPUTS
+依存解決対象ならtrue、無視する内部capabilityならfalseを返す。
+#>
+function Test-RpmRequirementName {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    if ($Name.StartsWith("rpmlib(") -or $Name.StartsWith("config(") -or $Name.StartsWith("/")) {
+        return $false
+    }
+
+    return $true
+}
+
+<#
+.SYNOPSIS
+RPM packageと依存packageをHTTP repositoryから取得する。
+.PARAMETER PackageNames
+取得するroot package名。
+.PARAMETER RepositoryBaseUrl
+RPM repository rootのURL。
+.PARAMETER Architecture
+取得対象architecture。
+.PARAMETER OutputDirectory
+rpm fileの保存先directory。
+.OUTPUTS
+値は返さない。
+#>
+function Save-RpmPackagesWithDependencies {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$PackageNames,
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
+        [Parameter(Mandatory = $true)][string]$Architecture,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+
+    if ($PackageNames.Count -eq 0) {
+        return
+    }
+
+    $PrimaryUrl = Get-RpmPrimaryMetadataUrl -RepositoryBaseUrl $RepositoryBaseUrl
+    $Index = Get-RpmPackageIndex -PrimaryMetadataUrl $PrimaryUrl -Architecture $Architecture
+    $Packages = $Index.Packages
+    $Providers = $Index.Providers
+    $Queue = [System.Collections.Queue]::new()
+    $SeenPackages = @{}
+    foreach ($Name in $PackageNames) {
+        $Queue.Enqueue($Name)
+    }
+
+    while ($Queue.Count -gt 0) {
+        $Name = [string]$Queue.Dequeue()
+        $Package = $null
+
+        if ($Packages.ContainsKey($Name)) {
+            $Package = $Packages[$Name]
+        } elseif ($Providers.ContainsKey($Name)) {
+            $Package = @($Providers[$Name] | Where-Object { $_.Arch -eq $Architecture } | Select-Object -First 1)[0]
+            if (-not $Package) {
+                $Package = @($Providers[$Name] | Select-Object -First 1)[0]
+            }
+        }
+
+        if (-not $Package) {
+            Write-Warning "rpm capability not found: $Name"
+            continue
+        }
+
+        if ($SeenPackages.ContainsKey($Package.Name)) {
+            continue
+        }
+
+        $SeenPackages[$Package.Name] = $true
+        $OutputPath = Join-Path $OutputDirectory (Split-Path -Leaf $Package.Location)
+        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Package.Location) -OutputPath $OutputPath
+
+        foreach ($Requirement in $Package.Requires) {
+            if ((Test-RpmRequirementName -Name $Requirement) -and -not $SeenPackages.ContainsKey($Requirement)) {
+                $Queue.Enqueue($Requirement)
+            }
+        }
+    }
+}
+
+# このscriptはrepository rootから実行する。
+$AssetsDir = if ($env:ASSETS_DIR) { $env:ASSETS_DIR } else { "30-developer" }
 $RootDir = (Get-Location).Path
-$AssetsPath = if ([System.IO.Path]::IsPathRooted($AssetsDir)) { $AssetsDir } else { Join-Path $RootDir $AssetsDir }
+$AssetsPath = Resolve-AssetPath -Path $AssetsDir -BasePath $RootDir
 
 # LIST.mdで管理する資材を定義する。
 $PypiPackages = @("python-docx", "pypdf", "pypandoc")
 $NpmPackages = @("cowsay")
+$RpmPackages = @("tmux", "vim")
+$DebPackages = @("tmux")
 $ContainerImages = @(
     @{ Source = "docker.io/library/hello-world:latest"; File = "hello-world_latest.tar" },
     @{ Source = "docker.io/ollama/ollama:latest"; File = "ollama_ollama_latest.tar" }
 )
 $HuggingFaceModels = @("cl-nagoya/ruri-v3-310m", "cl-nagoya/ruri-v3-reranker-310m")
+
+# metadata取得先を環境ごとに差し替えられるようにする。
+$RpmRepositoryBaseUrl = if ($env:RPM_REPOSITORY_BASE_URL) { $env:RPM_REPOSITORY_BASE_URL } else { "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Everything/x86_64/os/" }
+$RpmArchitecture = if ($env:RPM_ARCHITECTURE) { $env:RPM_ARCHITECTURE } else { "x86_64" }
+$DebRepositoryBaseUrl = if ($env:DEB_REPOSITORY_BASE_URL) { $env:DEB_REPOSITORY_BASE_URL } else { "https://deb.debian.org/debian/" }
+$DebPackagesUrl = if ($env:DEB_PACKAGES_URL) { $env:DEB_PACKAGES_URL } else { Join-RepositoryUrl -BaseUrl $DebRepositoryBaseUrl -RelativePath "dists/trixie/main/binary-amd64/Packages.gz" }
 
 # 資材置場を作成する。
 foreach ($Name in @("pypi", "npm", "docker", "rpm", "deb", "huggingface", "vsix")) {
@@ -33,6 +460,12 @@ node -e "const lock=require('./package-lock.json'); for (const [k,p] of Object.e
     npm pack $_ --pack-destination $NpmAssetsDir | Out-Null
 }
 Pop-Location
+
+# RPM資材をHTTP metadataから依存package込みで取得する。
+Save-RpmPackagesWithDependencies -PackageNames $RpmPackages -RepositoryBaseUrl $RpmRepositoryBaseUrl -Architecture $RpmArchitecture -OutputDirectory (Join-Path $AssetsPath "rpm")
+
+# deb資材をHTTP metadataから依存package込みで取得する。
+Save-DebPackagesWithDependencies -PackageNames $DebPackages -RepositoryBaseUrl $DebRepositoryBaseUrl -PackagesUrl $DebPackagesUrl -OutputDirectory (Join-Path $AssetsPath "deb")
 
 # container imageをtarとして取得する。
 foreach ($Image in $ContainerImages) {

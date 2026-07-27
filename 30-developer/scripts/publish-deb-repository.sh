@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # このscriptはaptlyを使わず、APTが読める最小metadataだけを生成する。
-IMPORTS_DIR="${IMPORTS_DIR:-/imports}"
 REPOSITORY_DIR="${REPOSITORY_DIR:-/repo}"
+IMPORTS_DIR="${IMPORTS_DIR:-$REPOSITORY_DIR}"
 
 case "$REPOSITORY_DIR" in
   "" | "/")
@@ -15,17 +15,20 @@ esac
 shopt -s nullglob
 deb_files=("$IMPORTS_DIR"/*.deb)
 
-if [ "${#deb_files[@]}" -eq 0 ]; then
-  exit 0
-fi
-
 build_dir="$(mktemp -d)"
 trap 'rm -rf "$build_dir"' EXIT
 
-cp -f "${deb_files[@]}" "$build_dir/"
+if [ "${#deb_files[@]}" -gt 0 ]; then
+  cp -f "${deb_files[@]}" "$build_dir/"
+fi
+
+if [ -f "$REPOSITORY_DIR/.gitkeep" ]; then
+  : > "$build_dir/.gitkeep"
+fi
 
 packages_file="$build_dir/Packages.tmp"
-for file in "$build_dir"/*.deb; do
+generated_deb_files=("$build_dir"/*.deb)
+for file in "${generated_deb_files[@]}"; do
   package="./$(basename "$file")"
   size="$(wc -c < "$file" | tr -d ' ')"
   md5="$(md5sum "$file" | awk '{print $1}')"
@@ -72,4 +75,4 @@ chmod -R a+rX "$build_dir"
 
 mkdir -p "$REPOSITORY_DIR"
 find "$REPOSITORY_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-cp -a "$build_dir"/. "$REPOSITORY_DIR"/
+cp -R "$build_dir"/. "$REPOSITORY_DIR"/

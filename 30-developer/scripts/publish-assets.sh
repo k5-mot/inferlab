@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# このscriptはrepository rootから実行する。
-ASSETS_DIR="${ASSETS_DIR:-30-developer/assets}"
+# このscriptはrepository rootから実行し、資材directoryを同期してserviceを起動する。
+ASSETS_DIR="${ASSETS_DIR:-30-developer}"
+TARGET_ASSETS_DIR="${TARGET_ASSETS_DIR:-30-developer}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
-PUBLISHER_SCRIPTS_DIR="${PUBLISHER_SCRIPTS_DIR:-$PWD/30-developer/scripts}"
 HARBOR_REGISTRY="${HARBOR_REGISTRY:-}"
 HARBOR_PROJECT="${HARBOR_PROJECT:-library}"
-NPM_PUBLISH_TOKEN="${NPM_PUBLISH_TOKEN:-local-publish-token}"
 
 # ASSETS_DIRが相対pathでも絶対pathでも扱えるようにする。
 case "$ASSETS_DIR" in
@@ -15,30 +14,25 @@ case "$ASSETS_DIR" in
   *) ASSETS_PATH="$PWD/$ASSETS_DIR" ;;
 esac
 
-# 配信serviceを起動する。
-docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer up -d pypiserver verdaccio rpm-repo deb-repo code-marketplace
+case "$TARGET_ASSETS_DIR" in
+  /*) TARGET_ASSETS_PATH="$TARGET_ASSETS_DIR" ;;
+  *) TARGET_ASSETS_PATH="$PWD/$TARGET_ASSETS_DIR" ;;
+esac
 
-# PyPI packageをpypiserverの永続volumeへpublishする。
-if [ -d "$ASSETS_PATH/pypi" ]; then
-  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/pypi:/imports:ro" asset-publisher sh -eu -c 'set -- /imports/*; [ -e "$1" ] || exit 0; mkdir -p /publish/pypi && cp -f "$@" /publish/pypi/'
+# 外部assetsを使う場合だけ、composeがbind mountするdirectoryへfileを同期する。
+if [ "$ASSETS_PATH" != "$TARGET_ASSETS_PATH" ]; then
+  for name in pypi npm rpm deb; do
+    source_dir="$ASSETS_PATH/$name"
+    target_dir="$TARGET_ASSETS_PATH/$name"
+    mkdir -p "$target_dir"
+    if [ -d "$source_dir" ]; then
+      find "$source_dir" -maxdepth 1 -type f -exec cp -f {} "$target_dir/" \;
+    fi
+  done
 fi
 
-# npm packageをVerdaccioへpublishする。
-if [ -d "$ASSETS_PATH/npm" ]; then
-  if find "$ASSETS_PATH/npm" -maxdepth 1 -name '*.tgz' | grep -q .; then
-    docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -e NPM_PUBLISH_TOKEN -v "$ASSETS_PATH/npm:/imports:ro" npm-publisher sh -eu -c 'npm config set //verdaccio:4873/:_authToken "$NPM_PUBLISH_TOKEN"; for file in /imports/*.tgz; do package=$(tar -xOf "$file" package/package.json | node -e "let s=\"\"; process.stdin.on(\"data\", d => s += d); process.stdin.on(\"end\", () => { const p = JSON.parse(s); console.log(p.name + \"@\" + p.version); });"); if npm view "$package" version --registry http://verdaccio:4873/ >/dev/null 2>&1; then echo "skip npm: $package"; else npm publish "$file" --registry http://verdaccio:4873/ --ignore-scripts; fi; done'
-  fi
-fi
-
-# RPM packageを配置してmetadataを生成する。
-if [ -d "$ASSETS_PATH/rpm" ]; then
-  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/rpm:/imports:ro" -v "$PUBLISHER_SCRIPTS_DIR/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro" rpm-publisher bash /usr/local/bin/publish-rpm-repository
-fi
-
-# deb packageをflat APT repositoryとして配置してmetadataを生成する。
-if [ -d "$ASSETS_PATH/deb" ]; then
-  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/deb:/imports:ro" -v "$PUBLISHER_SCRIPTS_DIR/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro" deb-publisher bash /usr/local/bin/publish-deb-repository
-fi
+# 配信serviceと自動取り込みjobを起動する。
+docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer up -d pypiserver verdaccio npm-importer rpm-repo deb-repo code-marketplace
 
 # VSIXをcode-marketplaceへ登録する。
 if [ -d "$ASSETS_PATH/vsix" ]; then

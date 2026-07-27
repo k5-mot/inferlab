@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # このscriptはpublisher container内で実行し、RPM配信volumeを完全に置き換える。
-IMPORTS_DIR="${IMPORTS_DIR:-/imports}"
 REPOSITORY_DIR="${REPOSITORY_DIR:-/repo}"
+IMPORTS_DIR="${IMPORTS_DIR:-$REPOSITORY_DIR}"
 
 case "$REPOSITORY_DIR" in
   "" | "/")
@@ -15,14 +15,17 @@ esac
 shopt -s nullglob
 rpm_files=("$IMPORTS_DIR"/*.rpm)
 
-if [ "${#rpm_files[@]}" -eq 0 ]; then
-  exit 0
-fi
-
 build_dir="$(mktemp -d)"
 trap 'rm -rf "$build_dir"' EXIT
 
-cp -f "${rpm_files[@]}" "$build_dir/"
+if [ "${#rpm_files[@]}" -gt 0 ]; then
+  cp -f "${rpm_files[@]}" "$build_dir/"
+fi
+
+if [ -f "$REPOSITORY_DIR/.gitkeep" ]; then
+  : > "$build_dir/.gitkeep"
+fi
+
 createrepo_c --update "$build_dir"
 
 cat > "$build_dir/index.html" <<'EOF'
@@ -43,4 +46,4 @@ chmod -R a+rX "$build_dir"
 
 mkdir -p "$REPOSITORY_DIR"
 find "$REPOSITORY_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-cp -a "$build_dir"/. "$REPOSITORY_DIR"/
+cp -R "$build_dir"/. "$REPOSITORY_DIR"/

@@ -28,7 +28,7 @@ services:
     ports:
       - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
     volumes:
-      - pypiserver-packages:/data/packages
+      - ./pypi:/data/packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -125,46 +125,6 @@ services:
     networks:
       - internal-nw
 
-  repo-landing-page:
-    image: alpine:${ALPINE_IMAGE_TAG:-3.22}
-    profiles:
-      - developer
-    command:
-      - sh
-      - -eu
-      - -c
-      - |
-        rm -f /repo/rpm/50x.html /repo/apt/50x.html
-        cat > /repo/rpm/index.html <<'EOF'
-        <!doctype html>
-        <html lang="en">
-        <head><meta charset="utf-8"><title>createrepo_c</title></head>
-        <body>
-        <h1>createrepo_c</h1>
-        <p>RPM source repository for dnf/yum.</p>
-        <ul>
-          <li><a href="./repodata/repomd.xml">repodata/repomd.xml</a></li>
-        </ul>
-        </body>
-        </html>
-        EOF
-        cat > /repo/apt/index.html <<'EOF'
-        <!doctype html>
-        <html lang="en">
-        <head><meta charset="utf-8"><title>APT repository</title></head>
-        <body>
-        <h1>APT repository</h1>
-        <p>Flat APT repository.</p>
-        <ul>
-          <li><a href="./Packages">Packages</a></li>
-        </ul>
-        </body>
-        </html>
-        EOF
-    volumes:
-      - rpm-repository:/repo/rpm
-      - deb-repository:/repo/apt
-
   rpm-repo:
     image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
     container_name: ${STACK_NAME:-inferlab}-rpm-repo
@@ -174,12 +134,11 @@ services:
     ports:
       - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
     volumes:
-      - rpm-repository:/usr/share/nginx/html:ro
+      - ./rpm:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
-      repo-landing-page:
-        condition: service_completed_successfully
+      - rpm-repository-sync
     healthcheck:
       test:
         - CMD
@@ -208,12 +167,11 @@ services:
     ports:
       - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
     volumes:
-      - deb-repository:/usr/share/nginx/html:ro
+      - ./deb:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
-      repo-landing-page:
-        condition: service_completed_successfully
+      - deb-repository-sync
     healthcheck:
       test:
         - CMD
@@ -233,57 +191,65 @@ services:
       - homepage.description=Flat APT repository
       - homepage.icon=/icons/debian-linux.png
 
-  asset-publisher:
-    image: alpine:${ALPINE_IMAGE_TAG:-3.22}
-    profiles:
-      - developer
-    command:
-      - "true"
-    volumes:
-      - pypiserver-packages:/publish/pypi
-    networks:
-      - internal-nw
-
-  npm-publisher:
+  npm-importer:
     image: node:${NODE_IMAGE_TAG:-22-alpine}
     profiles:
       - developer
+    restart: unless-stopped
     working_dir: /work
+    environment:
+      NPM_IMPORT_INTERVAL_SECONDS: ${NPM_IMPORT_INTERVAL_SECONDS:-30}
+      NPM_PUBLISH_TOKEN: ${NPM_PUBLISH_TOKEN:-local-publish-token}
     command:
-      - "true"
+      - sh
+      - /usr/local/bin/import-npm-packages
+    volumes:
+      - ./npm:/imports:ro
+      - ./scripts/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw
     depends_on:
-      - verdaccio
+      verdaccio:
+        condition: service_healthy
 
-  rpm-publisher:
+  rpm-repository-sync:
     image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
     profiles:
       - developer
+    restart: unless-stopped
+    user: "0:0"
     entrypoint: []
+    environment:
+      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
     command:
-      - "true"
+      - bash
+      - /usr/local/bin/sync-rpm-repository
     volumes:
-      - rpm-repository:/repo
+      - ./rpm:/repo
+      - ./scripts/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
+      - ./scripts/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
     networks:
       - internal-nw
 
-  deb-publisher:
+  deb-repository-sync:
     image: ${DEB_PUBLISHER_IMAGE:-docker.io/library/debian:13-slim}
     profiles:
       - developer
+    restart: unless-stopped
+    environment:
+      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
     command:
-      - "true"
+      - bash
+      - /usr/local/bin/sync-deb-repository
     volumes:
-      - deb-repository:/repo
+      - ./deb:/repo
+      - ./scripts/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
+      - ./scripts/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
     networks:
       - internal-nw
 
 volumes:
   code-marketplace-extensions:
-  deb-repository:
-  pypiserver-packages:
-  rpm-repository:
   verdaccio-storage:
 
 networks:
