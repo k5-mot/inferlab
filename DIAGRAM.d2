@@ -121,6 +121,44 @@ service_catalog: {
         }
       }
 
+      ollama: {
+        label: "Ollama"
+        icon: "./00-common/homepage/icons/ollama.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      tei: {
+        label: "TEI\nEmbedding / Reranking"
+        icon: "./00-common/homepage/icons/hugging-face.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      openrouter: {
+        label: "OpenRouter\n外部サービス"
+        shape: cloud
+        style: {
+          fill: "#f8fafc"
+          stroke: "#64748b"
+          stroke-dash: 4
+        }
+      }
+
+      google_ai_studio: {
+        label: "Google AI Studio\n外部サービス"
+        shape: cloud
+        style: {
+          fill: "#f8fafc"
+          stroke: "#64748b"
+          stroke-dash: 4
+        }
+      }
+
       hermes_agent: {
         label: "Hermes-Agent\n31001"
         icon: "./00-common/homepage/icons/hermes-icon.png"
@@ -169,6 +207,24 @@ service_catalog: {
       searxng: {
         label: "SearXNG\n31102"
         icon: "./00-common/homepage/icons/searxng.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      qdrant: {
+        label: "Qdrant"
+        icon: "./00-common/homepage/icons/qdrant.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      voicevox_tts: {
+        label: "VOICEVOX TTS"
+        icon: "./00-common/homepage/icons/volume-high.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -449,5 +505,16 @@ service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.promet
 }
 service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
 
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM API"
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.ollama: "chat models"
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.tei: "embedding / reranking"
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.openrouter: "external LLM API"
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.google_ai_studio: "external LLM API"
 service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
+
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM / RAG API"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.hermes_agent: "agent API"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.open_terminal: "terminal"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.docling: "content extraction"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.searxng: "web search"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.qdrant: "vector store"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.voicevox_tts: "TTS"
