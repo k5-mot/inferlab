@@ -1,0 +1,113 @@
+vars: {
+  d2-config: {
+    layout-engine: elk
+    theme-id: 101
+  }
+}
+
+direction: right
+
+users: {
+  label: "Users"
+  icon: "./00-common/homepage/icons/web-ui.svg"
+  style: {
+    fill: "#f8fafc"
+    stroke: "#475569"
+  }
+}
+
+public_host: {
+  label: "PUBLIC_HOST"
+  icon: "./00-common/homepage/icons/proxy.svg"
+  style: {
+    fill: "#eef2ff"
+    stroke: "#4f46e5"
+  }
+}
+
+common_stack: {
+  label: "00-common stack"
+  style: {
+    fill: "#f8fafc"
+    stroke: "#0f766e"
+    stroke-width: 2
+  }
+
+  homepage: {
+    label: "Homepage\n30000 -> 3000"
+    icon: "./00-common/homepage/icons/dashboard.svg"
+    style: {
+      fill: "#ecfeff"
+      stroke: "#0891b2"
+    }
+  }
+
+  keycloak: {
+    label: "Keycloak\n30001 -> 8080"
+    icon: "./00-common/homepage/icons/identity.svg"
+    style: {
+      fill: "#eff6ff"
+      stroke: "#2563eb"
+    }
+  }
+
+  keycloak_https: {
+    label: "Keycloak HTTPS\n30002 -> 8443"
+    icon: "./00-common/homepage/icons/identity.svg"
+    style: {
+      fill: "#eff6ff"
+      stroke: "#1d4ed8"
+    }
+  }
+
+  keycloak_postgres: {
+    label: "Keycloak PostgreSQL\n5432"
+    icon: "./00-common/homepage/icons/relational-db.svg"
+    style: {
+      fill: "#fef3c7"
+      stroke: "#d97706"
+    }
+  }
+}
+
+runtime_inputs: {
+  label: "Runtime inputs"
+  style: {
+    fill: "#fff7ed"
+    stroke: "#ea580c"
+  }
+
+  homepage_config: {
+    label: "./homepage\nconfig and icons"
+    icon: "./00-common/homepage/icons/file-storage.svg"
+  }
+
+  realm_import: {
+    label: "realm-export.json\nimport-realm.sh"
+    icon: "./00-common/homepage/icons/document-processing.svg"
+  }
+
+  keycloak_certs: {
+    label: "./keycloak/certs"
+    icon: "./00-common/homepage/icons/secure-tunnel.svg"
+  }
+
+  postgres_volume: {
+    label: "keycloak_postgres_data"
+    icon: "./00-common/homepage/icons/file-storage.svg"
+  }
+}
+
+users -> public_host: "browser access"
+public_host -> common_stack.homepage: "HTTP :30000"
+public_host -> common_stack.keycloak: "HTTP :30001"
+public_host -> common_stack.keycloak_https: "HTTPS :30002"
+
+common_stack.keycloak -> common_stack.keycloak_postgres: "JDBC"
+common_stack.keycloak_https -> common_stack.keycloak_postgres: "JDBC"
+common_stack.keycloak_https -> common_stack.keycloak: "starts after healthy"
+
+runtime_inputs.homepage_config -> common_stack.homepage: "bind mount"
+runtime_inputs.realm_import -> common_stack.keycloak: "realm bootstrap"
+runtime_inputs.keycloak_certs -> common_stack.keycloak_https: "TLS files"
+runtime_inputs.postgres_volume -> common_stack.keycloak_postgres: "database data"
