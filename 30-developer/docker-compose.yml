@@ -198,6 +198,7 @@ services:
     restart: unless-stopped
     working_dir: /work
     environment:
+      NPM_IMPORT_ENABLED: ${NPM_IMPORT_ENABLED:-false}
       NPM_IMPORT_INTERVAL_SECONDS: ${NPM_IMPORT_INTERVAL_SECONDS:-30}
       NPM_PUBLISH_TOKEN: ${NPM_PUBLISH_TOKEN:-local-publish-token}
     command:
