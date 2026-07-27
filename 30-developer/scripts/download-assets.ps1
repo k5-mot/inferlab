@@ -203,6 +203,54 @@ function Invoke-NativeCommand {
 
 <#
 .SYNOPSIS
+利用可能なPython 3 commandを検出する。
+.OUTPUTS
+FilePathとArgumentsを持つcommand情報を返す。
+.NOTES
+WindowsのApp Execution AliasはGet-Commandで見えても実行できないことがあるため、--version実行まで確認する。
+#>
+function Get-PythonCommand {
+    $Candidates = @()
+    if ($env:PYTHON_COMMAND) {
+        $Candidates += [pscustomobject]@{ FilePath = $env:PYTHON_COMMAND; Arguments = @() }
+    }
+    $Candidates += [pscustomobject]@{ FilePath = "python"; Arguments = @() }
+    $Candidates += [pscustomobject]@{ FilePath = "py"; Arguments = @("-3") }
+    $Candidates += [pscustomobject]@{ FilePath = "python3"; Arguments = @() }
+
+    foreach ($Candidate in $Candidates) {
+        if (-not (Get-Command $Candidate.FilePath -ErrorAction SilentlyContinue)) {
+            continue
+        }
+
+        & $Candidate.FilePath @(@($Candidate.Arguments) + @("--version")) *> $null
+        if ($LASTEXITCODE -eq 0) {
+            return $Candidate
+        }
+    }
+
+    throw "required command was not found: Python 3. Install Python 3, enable the py launcher, or set PYTHON_COMMAND to python.exe."
+}
+
+<#
+.SYNOPSIS
+検出済みPython commandでargumentを実行する。
+.PARAMETER Arguments
+Python commandへ渡すargument配列。
+.OUTPUTS
+Python commandの標準出力を返す。
+#>
+function Invoke-PythonCommand {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $PythonCommand = Get-PythonCommand
+    Invoke-NativeCommand -FilePath $PythonCommand.FilePath -Arguments (@($PythonCommand.Arguments) + $Arguments)
+}
+
+<#
+.SYNOPSIS
 Visual Studio MarketplaceからVSIXを取得する。
 .PARAMETER ExtensionIds
 publisher.extension形式のextension ID配列。
@@ -647,7 +695,7 @@ foreach ($Name in @("pypi", "npm", "docker", "rpm", "deb", "huggingface", "vsix"
 
 # PyPI資材を依存package込みで取得する。
 $PypiAssetsDir = Join-Path $AssetsPath "pypi"
-Invoke-NativeCommand -FilePath "python" -Arguments (@("-m", "pip", "download", "--dest", $PypiAssetsDir) + $PypiPackages)
+Invoke-PythonCommand -Arguments (@("-m", "pip", "download", "--dest", $PypiAssetsDir) + $PypiPackages)
 Assert-AssetFilesExist -Directory $PypiAssetsDir -Pattern @("*.whl", "*.tar.gz", "*.zip") -Description "PyPI"
 
 # npm資材を依存package込みでtgz取得する。
@@ -683,7 +731,7 @@ Save-VsixExtensions -ExtensionIds $VsixExtensions -OutputDirectory (Join-Path $A
 Assert-AssetFilesExist -Directory (Join-Path $AssetsPath "vsix") -Pattern "*.vsix" -Description "VSIX"
 
 # Hugging Face modelを取得する。
-Invoke-NativeCommand -FilePath "python" -Arguments @("-m", "pip", "install", "--upgrade", "huggingface_hub>=1,<2")
+Invoke-PythonCommand -Arguments @("-m", "pip", "install", "--upgrade", "huggingface_hub>=1,<2")
 $HuggingFaceDownloadScript = @'
 import sys
 from huggingface_hub import snapshot_download
@@ -692,7 +740,7 @@ snapshot_download(repo_id=sys.argv[1], local_dir=sys.argv[2])
 '@
 foreach ($Model in $HuggingFaceModels) {
     $ModelPath = Join-Path (Join-Path $AssetsPath "huggingface") $Model
-    Invoke-NativeCommand -FilePath "python" -Arguments @("-c", $HuggingFaceDownloadScript, $Model, $ModelPath)
+    Invoke-PythonCommand -Arguments @("-c", $HuggingFaceDownloadScript, $Model, $ModelPath)
 }
 
 Write-Host "download completed: $AssetsPath"
