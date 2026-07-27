@@ -36,6 +36,7 @@ note: {
 service_catalog: {
   label: "InferLab user-facing services"
   direction: down
+  grid-columns: 1
   style: {
     fill: "#f8fafc"
     stroke: "#334155"
@@ -45,6 +46,7 @@ service_catalog: {
   row_1: {
     label: "Foundation / Inference / Web UI"
     direction: right
+    grid-columns: 4
     style: {
       fill: "#ffffff"
       stroke: "#cbd5e1"
@@ -52,6 +54,7 @@ service_catalog: {
 
     00_common: {
       label: "00-common"
+      grid-columns: 2
       style: {
         fill: "#f0fdfa"
         stroke: "#0f766e"
@@ -75,10 +78,20 @@ service_catalog: {
           stroke: "#0f766e"
         }
       }
+
+      oidc: {
+        label: "OIDC"
+        style: {
+          fill: "#ccfbf1"
+          stroke: "#0f766e"
+          stroke-dash: 4
+        }
+      }
     }
 
     01_infra: {
       label: "01-infra"
+      grid-columns: 2
       style: {
         fill: "#eef2ff"
         stroke: "#4f46e5"
@@ -106,6 +119,7 @@ service_catalog: {
 
     10_inference: {
       label: "10-inference"
+      grid-columns: 3
       style: {
         fill: "#fefce8"
         stroke: "#a16207"
@@ -173,6 +187,7 @@ service_catalog: {
 
     11_webui: {
       label: "11-webui"
+      grid-columns: 3
       style: {
         fill: "#eff6ff"
         stroke: "#2563eb"
@@ -232,12 +247,22 @@ service_catalog: {
           stroke: "#2563eb"
         }
       }
+
+      integrations: {
+        label: "integrations"
+        style: {
+          fill: "#dbeafe"
+          stroke: "#2563eb"
+          stroke-dash: 4
+        }
+      }
     }
   }
 
   row_2: {
     label: "Storage / Automation / Collaboration"
     direction: right
+    grid-columns: 5
     style: {
       fill: "#ffffff"
       stroke: "#cbd5e1"
@@ -245,6 +270,7 @@ service_catalog: {
 
     12_storage: {
       label: "12-storage"
+      grid-columns: 2
       style: {
         fill: "#ecfdf5"
         stroke: "#059669"
@@ -346,6 +372,7 @@ service_catalog: {
   row_3: {
     label: "Git / Developer / Observability / LLMOps"
     direction: right
+    grid-columns: 4
     style: {
       fill: "#ffffff"
       stroke: "#cbd5e1"
@@ -371,6 +398,7 @@ service_catalog: {
 
     30_developer: {
       label: "30-developer"
+      grid-columns: 3
       style: {
         fill: "#f0f9ff"
         stroke: "#0284c7"
@@ -425,6 +453,7 @@ service_catalog: {
 
     50_o11y: {
       label: "50-o11y"
+      grid-columns: 2
       style: {
         fill: "#ecfeff"
         stroke: "#0891b2"
@@ -446,6 +475,15 @@ service_catalog: {
         style: {
           fill: "#ffffff"
           stroke: "#0891b2"
+        }
+      }
+
+      metrics: {
+        label: "metrics"
+        style: {
+          fill: "#cffafe"
+          stroke: "#0891b2"
+          stroke-dash: 4
         }
       }
     }
@@ -473,36 +511,40 @@ service_catalog: {
 users -> public_host: "access"
 public_host -> service_catalog: "published services"
 
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.11_webui.open_webui: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.21_team_project.leantime: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.22_team_wiki.bookstack: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.grafana: "OIDC"
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.00_common.oidc: "auth"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_1.11_webui.open_webui: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_2.21_team_project.leantime: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_2.22_team_wiki.bookstack: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
 
-service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_3.50_o11y.prometheus: "OTLP metrics" {
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.11_webui.searxng -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_1.11_webui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_3.23_team_git.gitea -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_3.23_team_git.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_3.50_o11y.metrics -> service_catalog.row_3.50_o11y.prometheus: "scrape / push" {
   style.stroke-dash: 4
 }
 service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
@@ -516,8 +558,9 @@ service_catalog.row_1.10_inference.hermes_agent -> service_catalog.row_1.10_infe
 
 service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM / RAG API"
 service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.hermes_agent: "agent API"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.open_terminal: "terminal"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.docling: "content extraction"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.searxng: "web search"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.qdrant: "vector store"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.voicevox_tts: "TTS"
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.integrations: "uses"
+service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.open_terminal: "terminal"
+service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.docling: "content extraction"
+service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.searxng: "web search"
+service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.qdrant: "vector store"
+service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.voicevox_tts: "TTS"
