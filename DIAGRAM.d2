@@ -5,7 +5,7 @@ vars: {
   }
 }
 
-direction: right
+direction: down
 
 users: {
   label: "Users"
@@ -25,932 +25,364 @@ public_host: {
   }
 }
 
-internal_nw: {
-  label: "internal-nw"
-  shape: cloud
-  style: {
-    fill: "#f1f5f9"
-    stroke: "#64748b"
-  }
-}
-
 note: {
-  label: "対象: ルート docker-compose.yml の include に含まれる全サービス\n実線: depends_on / 主要な実通信  点線: 公開ポート入口"
+  label: "README 向けサービス一覧\n内部 DB / Redis / worker / proxy / exporter は省略"
   style: {
     fill: "#fffbeb"
     stroke: "#d97706"
   }
 }
 
-00_common: {
-  label: "00-common 基盤"
-  style: {
-    fill: "#f0fdfa"
-    stroke: "#0f766e"
-    stroke-width: 2
-  }
-
-  homepage: {
-    label: "Homepage\n30000"
-    icon: "./00-common/homepage/icons/homepage.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  keycloak: {
-    label: "Keycloak\n30001"
-    icon: "./00-common/homepage/icons/keycloak.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  keycloak_https: {
-    label: "Keycloak HTTPS\n30002"
-    icon: "./00-common/homepage/icons/keycloak.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  keycloak_postgres: {
-    label: "Keycloak-Postgres\nRelational database"
-    icon: "./00-common/homepage/icons/postgresql.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-}
-
-01_infra: {
-  label: "01-infra 外部接続"
-  style: {
-    fill: "#eef2ff"
-    stroke: "#4f46e5"
-    stroke-width: 2
-  }
-
-  cloudflare: {
-    label: "Cloudflare\nSecure outband tunnel"
-    icon: "./00-common/homepage/icons/cloudflared.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  couchdb: {
-    label: "CouchDB\n30100"
-    icon: "./00-common/homepage/icons/couchdb.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-}
-
-10_inference: {
-  label: "10-inference 推論基盤"
-  style: {
-    fill: "#fefce8"
-    stroke: "#a16207"
-    stroke-width: 2
-  }
-
-  litellm: {
-    label: "LiteLLM\n31000"
-    icon: "./00-common/homepage/icons/litlellm.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  ollama: {
-    label: "Ollama\nInference engine"
-    icon: "./00-common/homepage/icons/ollama.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  ollama_init: {
-    label: "ollama-init"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  tei_embedding: {
-    label: "TEI_Embedding\nEmbedding inference engine"
-    icon: "./00-common/homepage/icons/hugging-face.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  tei_reranking: {
-    label: "TEI_Reranking\nEmbedding inference engine"
-    icon: "./00-common/homepage/icons/hugging-face.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  hermes_agent: {
-    label: "Hermes-Agent\n31001"
-    icon: "./00-common/homepage/icons/hermes-icon.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-}
-
-11_webui: {
-  label: "11-webui AI UI"
-  style: {
-    fill: "#eff6ff"
-    stroke: "#2563eb"
-    stroke-width: 2
-  }
-
-  open_webui: {
-    label: "Open-WebUI\n31100"
-    icon: "./00-common/homepage/icons/open-webui.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  open_terminal: {
-    label: "Open-Terminal\n31103"
-    icon: "./00-common/homepage/icons/open-webui.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  docling: {
-    label: "docling-serve\n31101"
-    icon: "./00-common/homepage/icons/docling.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  searxng: {
-    label: "SearXNG\n31102"
-    icon: "./00-common/homepage/icons/searxng.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  voicevox_engine: {
-    label: "VOICEVOX-Engine\nText-to-Speech Engine"
-    icon: "./00-common/homepage/icons/volume-high.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  voicevox_openai_tts: {
-    label: "VOICEVOX-API\nText-to-Speech API"
-    icon: "./00-common/homepage/icons/volume-high.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  qdrant: {
-    label: "Qdrant\nVector search database"
-    icon: "./00-common/homepage/icons/qdrant.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-}
-
-12_storage: {
-  label: "12-storage ストレージ"
-  style: {
-    fill: "#ecfdf5"
-    stroke: "#059669"
-    stroke-width: 2
-  }
-
-  nextcloud: {
-    label: "Nextcloud\n31200"
-    icon: "./00-common/homepage/icons/nextcloud.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  nextcloud_mariadb: {
-    label: "Nextcloud-MariaDB\nMySQL-compatible relational database"
-    icon: "./00-common/homepage/icons/mariadb.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  nextcloud_redis: {
-    label: "Nextcloud-Redis\nInmemory key-value NoSQL database"
-    icon: "./00-common/homepage/icons/redis.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  oikb: {
-    label: "Open-WebUI-Knowledge-Bases\n31201"
-    icon: "./00-common/homepage/icons/open-webui.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-}
-
-13_automation: {
-  label: "13-automation ワークフロー"
-  style: {
-    fill: "#fff7ed"
-    stroke: "#ea580c"
-    stroke-width: 2
-  }
-
-  dify_init_permissions: {
-    label: "dify-init-permissions"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  dify_api: {
-    label: "Dify-API\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_worker: {
-    label: "Dify-Worker\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  dify_worker_beat: {
-    label: "Dify-Worker-Beat\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  dify_web: {
-    label: "Dify-Web\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_plugin_daemon: {
-    label: "Dify-Plugin\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_sandbox: {
-    label: "Dify-Sandbox\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_local_sandbox: {
-    label: "Dify-Local-Sandbox\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_agent_backend: {
-    label: "Dify-Agent-Backend\nAI workflow platform"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_ssrf_proxy: {
-    label: "Dify-SSRF-Proxy\nForward proxy"
-    icon: "./00-common/homepage/icons/squidex.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  dify_postgres: {
-    label: "Dify-Postgres\nRelational database"
-    icon: "./00-common/homepage/icons/postgresql.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  dify_redis: {
-    label: "Dify-Redis\nInmemory key-value NoSQL database"
-    icon: "./00-common/homepage/icons/redis.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  dify_qdrant: {
-    label: "Dify-Qdrant\nVector search database"
-    icon: "./00-common/homepage/icons/qdrant.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  dify_nginx: {
-    label: "Dify\n31300"
-    icon: "./00-common/homepage/icons/dify.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-}
-
-20_team_chat: {
-  label: "20-team-chat チャット"
-  style: {
-    fill: "#fdf2f8"
-    stroke: "#db2777"
-    stroke-width: 2
-  }
-
-  zulip: {
-    label: "Zulip\n32002, 32000, 32025"
-    icon: "./00-common/homepage/icons/zulip.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  zulip_postgres: {
-    label: "Zulip-Postgres\nRelational database"
-    icon: "./00-common/homepage/icons/postgresql.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  zulip_memcached: {
-    label: "Zulip-Memcached\nIn-memory cache"
-    icon: "./00-common/homepage/icons/memcached.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  zulip_rabbitmq: {
-    label: "Zulip-RabbitMQ\nReliable message broker"
-    icon: "./00-common/homepage/icons/rabbitmq.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  zulip_redis: {
-    label: "Zulip-Redis\nIn-memory data store"
-    icon: "./00-common/homepage/icons/redis.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-}
-
-21_team_project: {
-  label: "21-team-project プロジェクト"
-  style: {
-    fill: "#f5f3ff"
-    stroke: "#7c3aed"
-    stroke-width: 2
-  }
-
-  leantime: {
-    label: "Leantime\n32001"
-    icon: "./00-common/homepage/icons/leantime.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  leantime_db: {
-    label: "Leantime-MySQL\nRelational database"
-    icon: "./00-common/homepage/icons/mysql.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-}
-
-22_team_wiki: {
-  label: "22-team-wiki Wiki"
+service_catalog: {
+  label: "InferLab user-facing services"
   style: {
     fill: "#f8fafc"
-    stroke: "#475569"
+    stroke: "#334155"
     stroke-width: 2
   }
 
-  bookstack: {
-    label: "BookStack\n32200"
-    icon: "./00-common/homepage/icons/bookstack.png"
+  00_common: {
+    label: "00-common"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#f0fdfa"
+      stroke: "#0f766e"
+      stroke-width: 2
+    }
+
+    homepage: {
+      label: "Homepage\n30000"
+      icon: "./00-common/homepage/icons/homepage.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0f766e"
+      }
+    }
+
+    keycloak: {
+      label: "Keycloak\n30001 / 30002"
+      icon: "./00-common/homepage/icons/keycloak.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0f766e"
+      }
     }
   }
 
-  bookstack_mariadb: {
-    label: "BookStack-MariaDB\nMySQL-compatible relational database"
-    icon: "./00-common/homepage/icons/mariadb.png"
+  01_infra: {
+    label: "01-infra"
     style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
+      fill: "#eef2ff"
+      stroke: "#4f46e5"
+      stroke-width: 2
+    }
+
+    cloudflare: {
+      label: "Cloudflare Tunnel"
+      icon: "./00-common/homepage/icons/cloudflared.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#4f46e5"
+      }
+    }
+
+    couchdb: {
+      label: "CouchDB\n30100"
+      icon: "./00-common/homepage/icons/couchdb.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#4f46e5"
+      }
     }
   }
 
-}
-
-23_team_git: {
-  label: "23-team-git Git"
-  style: {
-    fill: "#fef2f2"
-    stroke: "#dc2626"
-    stroke-width: 2
-  }
-
-  gitea: {
-    label: "Gitea\n32300, 32322"
-    icon: "./00-common/homepage/icons/gitea.png"
+  10_inference: {
+    label: "10-inference"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#fefce8"
+      stroke: "#a16207"
+      stroke-width: 2
+    }
+
+    litellm: {
+      label: "LiteLLM\n31000"
+      icon: "./00-common/homepage/icons/litlellm.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#a16207"
+      }
+    }
+
+    hermes_agent: {
+      label: "Hermes-Agent\n31001"
+      icon: "./00-common/homepage/icons/hermes-icon.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#a16207"
+      }
     }
   }
 
-  gitea_postgres: {
-    label: "Gitea-Postgres\nRelational database"
-    icon: "./00-common/homepage/icons/postgresql.png"
+  11_webui: {
+    label: "11-webui"
     style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
+      fill: "#eff6ff"
+      stroke: "#2563eb"
+      stroke-width: 2
+    }
+
+    open_webui: {
+      label: "Open WebUI\n31100"
+      icon: "./00-common/homepage/icons/open-webui.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#2563eb"
+      }
+    }
+
+    open_terminal: {
+      label: "Open Terminal\n31103"
+      icon: "./00-common/homepage/icons/open-webui.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#2563eb"
+      }
+    }
+
+    docling: {
+      label: "docling-serve\n31101"
+      icon: "./00-common/homepage/icons/docling.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#2563eb"
+      }
+    }
+
+    searxng: {
+      label: "SearXNG\n31102"
+      icon: "./00-common/homepage/icons/searxng.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#2563eb"
+      }
     }
   }
 
-}
-
-30_developer: {
-  label: "30-developer 開発者向け"
-  style: {
-    fill: "#f0f9ff"
-    stroke: "#0284c7"
-    stroke-width: 2
-  }
-
-  pypiserver: {
-    label: "PyPI\n33100"
-    icon: "./00-common/homepage/icons/pypi.png"
+  12_storage: {
+    label: "12-storage"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#ecfdf5"
+      stroke: "#059669"
+      stroke-width: 2
+    }
+
+    nextcloud: {
+      label: "Nextcloud\n31200"
+      icon: "./00-common/homepage/icons/nextcloud.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#059669"
+      }
+    }
+
+    oikb: {
+      label: "Open-WebUI Knowledge Bases\n31201"
+      icon: "./00-common/homepage/icons/open-webui.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#059669"
+      }
     }
   }
 
-  verdaccio: {
-    label: "Verdaccio\n33200"
-    icon: "./00-common/homepage/icons/verdaccio.png"
+  13_automation: {
+    label: "13-automation"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#fff7ed"
+      stroke: "#ea580c"
+      stroke-width: 2
+    }
+
+    dify: {
+      label: "Dify\n31300"
+      icon: "./00-common/homepage/icons/dify.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#ea580c"
+      }
     }
   }
 
-  code_marketplace: {
-    label: "Code Marketplace\n33300"
-    icon: "./00-common/homepage/icons/visual-studio-code.png"
+  20_team_chat: {
+    label: "20-team-chat"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#fdf2f8"
+      stroke: "#db2777"
+      stroke-width: 2
+    }
+
+    zulip: {
+      label: "Zulip\n32000 / 32002 / 32025"
+      icon: "./00-common/homepage/icons/zulip.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#db2777"
+      }
     }
   }
 
-  code_marketplace_publisher: {
-    label: "code-marketplace-publisher"
+  21_team_project: {
+    label: "21-team-project"
+    style: {
+      fill: "#f5f3ff"
+      stroke: "#7c3aed"
+      stroke-width: 2
+    }
+
+    leantime: {
+      label: "Leantime\n32001"
+      icon: "./00-common/homepage/icons/leantime.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#7c3aed"
+      }
+    }
+  }
+
+  22_team_wiki: {
+    label: "22-team-wiki"
     style: {
       fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  repo_landing_page: {
-    label: "repo-landing-page"
-    style: {
-      fill: "#ffffff"
       stroke: "#475569"
+      stroke-width: 2
+    }
+
+    bookstack: {
+      label: "BookStack\n32200"
+      icon: "./00-common/homepage/icons/bookstack.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#475569"
+      }
     }
   }
 
-  rpm_repo: {
-    label: "createrepo_c\n33400"
-    icon: "./00-common/homepage/icons/redhat-linux.png"
+  23_team_git: {
+    label: "23-team-git"
     style: {
-      fill: "#e0f2fe"
+      fill: "#fef2f2"
+      stroke: "#dc2626"
+      stroke-width: 2
+    }
+
+    gitea: {
+      label: "Gitea\n32300 / 32322"
+      icon: "./00-common/homepage/icons/gitea.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#dc2626"
+      }
+    }
+  }
+
+  30_developer: {
+    label: "30-developer"
+    style: {
+      fill: "#f0f9ff"
       stroke: "#0284c7"
+      stroke-width: 2
+    }
+
+    pypiserver: {
+      label: "PyPI\n33100"
+      icon: "./00-common/homepage/icons/pypi.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0284c7"
+      }
+    }
+
+    verdaccio: {
+      label: "Verdaccio\n33200"
+      icon: "./00-common/homepage/icons/verdaccio.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0284c7"
+      }
+    }
+
+    code_marketplace: {
+      label: "Code Marketplace\n33300"
+      icon: "./00-common/homepage/icons/visual-studio-code.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0284c7"
+      }
+    }
+
+    rpm_repo: {
+      label: "RPM Repository\n33400"
+      icon: "./00-common/homepage/icons/redhat-linux.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0284c7"
+      }
+    }
+
+    deb_repo: {
+      label: "APT Repository\n33500"
+      icon: "./00-common/homepage/icons/debian-linux.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0284c7"
+      }
     }
   }
 
-  deb_repo: {
-    label: "aptly\n33500"
-    icon: "./00-common/homepage/icons/debian-linux.png"
+  50_o11y: {
+    label: "50-o11y"
     style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
+      fill: "#ecfeff"
+      stroke: "#0891b2"
+      stroke-width: 2
+    }
+
+    grafana: {
+      label: "Grafana\n35000"
+      icon: "./00-common/homepage/icons/grafana.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0891b2"
+      }
+    }
+
+    prometheus: {
+      label: "Prometheus\n35001"
+      icon: "./00-common/homepage/icons/prometheus.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#0891b2"
+      }
     }
   }
 
-  asset_publisher: {
-    label: "asset-publisher"
+  51_llmops: {
+    label: "51-llmops"
     style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
+      fill: "#faf5ff"
+      stroke: "#9333ea"
+      stroke-width: 2
+    }
+
+    langfuse: {
+      label: "Langfuse\n35100"
+      icon: "./00-common/homepage/icons/langfuse.png"
+      style: {
+        fill: "#ffffff"
+        stroke: "#9333ea"
+      }
     }
   }
-
-  npm_publisher: {
-    label: "npm-publisher"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  rpm_publisher: {
-    label: "rpm-publisher"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  aptly_publisher: {
-    label: "aptly-publisher"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
 }
 
-50_o11y: {
-  label: "50-o11y 監視"
-  style: {
-    fill: "#ecfeff"
-    stroke: "#0891b2"
-    stroke-width: 2
-  }
-
-  grafana: {
-    label: "Grafana\n35000"
-    icon: "./00-common/homepage/icons/grafana.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  prometheus: {
-    label: "Prometheus\n35001"
-    icon: "./00-common/homepage/icons/prometheus.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  node_exporter: {
-    label: "Node Exporter\nHost metrics exporter"
-    icon: "./00-common/homepage/icons/prometheus.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  cadvisor: {
-    label: "cAdvisor\nContainer metrics exporter"
-    icon: "./00-common/homepage/icons/cadvisor.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-  blackbox_exporter: {
-    label: "Blackbox Exporter\nEndpoint probe exporter"
-    icon: "./00-common/homepage/icons/prometheus.png"
-    style: {
-      fill: "#ffffff"
-      stroke: "#475569"
-    }
-  }
-
-}
-
-51_llmops: {
-  label: "51-llmops LLMOps"
-  style: {
-    fill: "#faf5ff"
-    stroke: "#9333ea"
-    stroke-width: 2
-  }
-
-  langfuse_worker: {
-    label: "Langfuse-Worker\nLLMOps platform"
-    icon: "./00-common/homepage/icons/langfuse.png"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#64748b"
-    }
-  }
-
-  langfuse_web: {
-    label: "Langfuse\n35100"
-    icon: "./00-common/homepage/icons/langfuse.png"
-    style: {
-      fill: "#e0f2fe"
-      stroke: "#0284c7"
-    }
-  }
-
-  langfuse_clickhouse: {
-    label: "Langfuse-ClickHouse\nColumnar analytics database"
-    icon: "./00-common/homepage/icons/clickhouse.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  langfuse_minio: {
-    label: "Langfuse-MinIO\nS3-compatible object storage"
-    icon: "./00-common/homepage/icons/minio.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  langfuse_redis: {
-    label: "Langfuse-Redis\nInmemory key-value NoSQL database"
-    icon: "./00-common/homepage/icons/redis.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-  langfuse_postgres: {
-    label: "Langfuse-Postgres\nRelational database"
-    icon: "./00-common/homepage/icons/postgresql.png"
-    style: {
-      fill: "#fef3c7"
-      stroke: "#d97706"
-    }
-  }
-
-}
-
-users -> public_host: "browser / API"
-public_host -> internal_nw: "published ports" {
-  style.stroke-dash: 4
-}
-public_host -> 00_common.homepage: "30000" {
-  style.stroke-dash: 4
-}
-public_host -> 00_common.keycloak: "30001" {
-  style.stroke-dash: 4
-}
-public_host -> 00_common.keycloak_https: "30002" {
-  style.stroke-dash: 4
-}
-public_host -> 01_infra.couchdb: "30100" {
-  style.stroke-dash: 4
-}
-public_host -> 10_inference.litellm: "31000" {
-  style.stroke-dash: 4
-}
-public_host -> 10_inference.hermes_agent: "31001" {
-  style.stroke-dash: 4
-}
-public_host -> 11_webui.open_webui: "31100" {
-  style.stroke-dash: 4
-}
-public_host -> 11_webui.open_terminal: "31103" {
-  style.stroke-dash: 4
-}
-public_host -> 11_webui.docling: "31101" {
-  style.stroke-dash: 4
-}
-public_host -> 11_webui.searxng: "31102" {
-  style.stroke-dash: 4
-}
-public_host -> 12_storage.nextcloud: "31200" {
-  style.stroke-dash: 4
-}
-public_host -> 12_storage.oikb: "31201" {
-  style.stroke-dash: 4
-}
-public_host -> 13_automation.dify_nginx: "31300" {
-  style.stroke-dash: 4
-}
-public_host -> 20_team_chat.zulip: "32002, 32000, 32025" {
-  style.stroke-dash: 4
-}
-public_host -> 21_team_project.leantime: "32001" {
-  style.stroke-dash: 4
-}
-public_host -> 22_team_wiki.bookstack: "32200" {
-  style.stroke-dash: 4
-}
-public_host -> 23_team_git.gitea: "32300, 32322" {
-  style.stroke-dash: 4
-}
-public_host -> 30_developer.pypiserver: "33100" {
-  style.stroke-dash: 4
-}
-public_host -> 30_developer.verdaccio: "33200" {
-  style.stroke-dash: 4
-}
-public_host -> 30_developer.code_marketplace: "33300" {
-  style.stroke-dash: 4
-}
-public_host -> 30_developer.rpm_repo: "33400" {
-  style.stroke-dash: 4
-}
-public_host -> 30_developer.deb_repo: "33500" {
-  style.stroke-dash: 4
-}
-public_host -> 50_o11y.grafana: "35000" {
-  style.stroke-dash: 4
-}
-public_host -> 50_o11y.prometheus: "35001" {
-  style.stroke-dash: 4
-}
-public_host -> 51_llmops.langfuse_web: "35100" {
-  style.stroke-dash: 4
-}
-
-00_common.keycloak_postgres -> 00_common.keycloak: "depends_on"
-00_common.keycloak -> 00_common.keycloak_https: "depends_on"
-00_common.keycloak_postgres -> 00_common.keycloak_https: "depends_on"
-10_inference.ollama -> 10_inference.litellm: "depends_on"
-10_inference.tei_embedding -> 10_inference.litellm: "depends_on"
-10_inference.tei_reranking -> 10_inference.litellm: "depends_on"
-10_inference.ollama_init -> 10_inference.ollama: "depends_on"
-11_webui.docling -> 11_webui.open_webui: "depends_on"
-11_webui.searxng -> 11_webui.open_webui: "depends_on"
-11_webui.voicevox_openai_tts -> 11_webui.open_webui: "depends_on"
-11_webui.qdrant -> 11_webui.open_webui: "depends_on"
-11_webui.voicevox_engine -> 11_webui.voicevox_openai_tts: "depends_on"
-12_storage.nextcloud_mariadb -> 12_storage.nextcloud: "depends_on"
-12_storage.nextcloud_redis -> 12_storage.nextcloud: "depends_on"
-12_storage.nextcloud -> 12_storage.oikb: "depends_on"
-13_automation.dify_init_permissions -> 13_automation.dify_api: "depends_on"
-13_automation.dify_postgres -> 13_automation.dify_api: "depends_on"
-13_automation.dify_redis -> 13_automation.dify_api: "depends_on"
-13_automation.dify_qdrant -> 13_automation.dify_api: "depends_on"
-13_automation.dify_sandbox -> 13_automation.dify_api: "depends_on"
-13_automation.dify_plugin_daemon -> 13_automation.dify_api: "depends_on"
-13_automation.dify_agent_backend -> 13_automation.dify_api: "depends_on"
-13_automation.dify_init_permissions -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_postgres -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_redis -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_qdrant -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_sandbox -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_plugin_daemon -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_agent_backend -> 13_automation.dify_worker: "depends_on"
-13_automation.dify_init_permissions -> 13_automation.dify_worker_beat: "depends_on"
-13_automation.dify_postgres -> 13_automation.dify_worker_beat: "depends_on"
-13_automation.dify_redis -> 13_automation.dify_worker_beat: "depends_on"
-13_automation.dify_api -> 13_automation.dify_web: "depends_on"
-13_automation.dify_postgres -> 13_automation.dify_plugin_daemon: "depends_on"
-13_automation.dify_redis -> 13_automation.dify_plugin_daemon: "depends_on"
-13_automation.dify_ssrf_proxy -> 13_automation.dify_sandbox: "depends_on"
-13_automation.dify_redis -> 13_automation.dify_agent_backend: "depends_on"
-13_automation.dify_plugin_daemon -> 13_automation.dify_agent_backend: "depends_on"
-13_automation.dify_local_sandbox -> 13_automation.dify_agent_backend: "depends_on"
-13_automation.dify_api -> 13_automation.dify_nginx: "depends_on"
-13_automation.dify_web -> 13_automation.dify_nginx: "depends_on"
-13_automation.dify_plugin_daemon -> 13_automation.dify_nginx: "depends_on"
-20_team_chat.zulip_postgres -> 20_team_chat.zulip: "depends_on"
-20_team_chat.zulip_memcached -> 20_team_chat.zulip: "depends_on"
-20_team_chat.zulip_rabbitmq -> 20_team_chat.zulip: "depends_on"
-20_team_chat.zulip_redis -> 20_team_chat.zulip: "depends_on"
-21_team_project.leantime_db -> 21_team_project.leantime: "depends_on"
-22_team_wiki.bookstack_mariadb -> 22_team_wiki.bookstack: "depends_on"
-23_team_git.gitea_postgres -> 23_team_git.gitea: "depends_on"
-30_developer.repo_landing_page -> 30_developer.rpm_repo: "depends_on"
-30_developer.repo_landing_page -> 30_developer.deb_repo: "depends_on"
-30_developer.verdaccio -> 30_developer.npm_publisher: "depends_on"
-50_o11y.prometheus -> 50_o11y.grafana: "depends_on"
-50_o11y.node_exporter -> 50_o11y.prometheus: "depends_on"
-50_o11y.cadvisor -> 50_o11y.prometheus: "depends_on"
-50_o11y.blackbox_exporter -> 50_o11y.prometheus: "depends_on"
-51_llmops.langfuse_postgres -> 51_llmops.langfuse_worker: "depends_on"
-51_llmops.langfuse_minio -> 51_llmops.langfuse_worker: "depends_on"
-51_llmops.langfuse_redis -> 51_llmops.langfuse_worker: "depends_on"
-51_llmops.langfuse_clickhouse -> 51_llmops.langfuse_worker: "depends_on"
-51_llmops.langfuse_postgres -> 51_llmops.langfuse_web: "depends_on"
-51_llmops.langfuse_minio -> 51_llmops.langfuse_web: "depends_on"
-51_llmops.langfuse_redis -> 51_llmops.langfuse_web: "depends_on"
-51_llmops.langfuse_clickhouse -> 51_llmops.langfuse_web: "depends_on"
-00_common.keycloak -> 11_webui.open_webui: "OIDC"
-00_common.keycloak -> 12_storage.nextcloud: "OIDC"
-00_common.keycloak -> 20_team_chat.zulip: "OIDC"
-00_common.keycloak -> 21_team_project.leantime: "OIDC"
-00_common.keycloak -> 22_team_wiki.bookstack: "OIDC"
-00_common.keycloak -> 50_o11y.grafana: "OIDC"
-00_common.keycloak -> 51_llmops.langfuse_web: "OIDC"
-10_inference.litellm -> 11_webui.open_webui: "OpenAI API"
-10_inference.hermes_agent -> 11_webui.open_webui: "OpenAI API"
-10_inference.litellm -> 51_llmops.langfuse_web: "traces"
-12_storage.nextcloud -> 12_storage.oikb: "files"
-12_storage.oikb -> 11_webui.open_webui: "knowledge sync"
-50_o11y.prometheus -> 50_o11y.grafana: "datasource"
-50_o11y.node_exporter -> 50_o11y.prometheus: "metrics"
-50_o11y.cadvisor -> 50_o11y.prometheus: "metrics"
-50_o11y.blackbox_exporter -> 50_o11y.prometheus: "probes"
+users -> public_host: "access"
+public_host -> service_catalog: "service catalog"
