@@ -7,7 +7,7 @@ HARBOR_OVERRIDE_FILE="${HARBOR_OVERRIDE_FILE:-30-developer/harbor/docker-compose
 
 if [ ! -f "$HARBOR_COMPOSE_FILE" ]; then
   echo "ERROR: $HARBOR_COMPOSE_FILE が見つかりません。" >&2
-  echo "ERROR: 先に 30-developer/scripts/prepare-harbor-compose.sh を実行してください。" >&2
+  echo "ERROR: 先に 30-developer/harbor/prepare-harbor-compose.sh を実行してください。" >&2
   exit 1
 fi
 

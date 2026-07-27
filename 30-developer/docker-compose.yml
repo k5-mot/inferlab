@@ -205,7 +205,7 @@ services:
       - /usr/local/bin/import-npm-packages
     volumes:
       - ./registry/npm:/imports:ro
-      - ./scripts/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
+      - ./npm-importer/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw
     depends_on:
@@ -226,8 +226,8 @@ services:
       - /usr/local/bin/sync-rpm-repository
     volumes:
       - ./registry/rpm:/repo
-      - ./scripts/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
-      - ./scripts/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
+      - ./rpm-repository-sync/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
+      - ./rpm-repository-sync/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
     networks:
       - internal-nw
 
@@ -243,8 +243,8 @@ services:
       - /usr/local/bin/sync-deb-repository
     volumes:
       - ./registry/deb:/repo
-      - ./scripts/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
-      - ./scripts/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
+      - ./deb-repository-sync/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
+      - ./deb-repository-sync/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
     networks:
       - internal-nw
 
