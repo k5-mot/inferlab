@@ -26,7 +26,7 @@ public_host: {
 }
 
 note: {
-  label: "README 向けサービス一覧\n内部 DB / Redis / worker / proxy / exporter は省略\n矢印は認証・監視・LLMOps の代表的な情報流だけを表示"
+  label: "README 向けサービス一覧\n1行目: 00-common / 01-infra / 30-developer\n2行目: 利用アプリ群\n3行目: 50-o11y / 51-llmops"
   style: {
     fill: "#fffbeb"
     stroke: "#d97706"
@@ -44,9 +44,9 @@ service_catalog: {
   }
 
   row_1: {
-    label: "Foundation / Inference / Web UI"
+    label: "Platform / Infrastructure / Developer"
     direction: right
-    grid-columns: 4
+    grid-columns: 3
     style: {
       fill: "#ffffff"
       stroke: "#cbd5e1"
@@ -115,6 +115,71 @@ service_catalog: {
           stroke: "#4f46e5"
         }
       }
+    }
+
+    30_developer: {
+      label: "30-developer"
+      grid-columns: 3
+      style: {
+        fill: "#f0f9ff"
+        stroke: "#0284c7"
+        stroke-width: 2
+      }
+
+      pypiserver: {
+        label: "PyPI\n33100"
+        icon: "./00-common/homepage/icons/pypi.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      verdaccio: {
+        label: "Verdaccio\n33200"
+        icon: "./00-common/homepage/icons/verdaccio.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      code_marketplace: {
+        label: "Code Marketplace\n33300"
+        icon: "./00-common/homepage/icons/visual-studio-code.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      rpm_repo: {
+        label: "RPM Repository\n33400"
+        icon: "./00-common/homepage/icons/redhat-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      deb_repo: {
+        label: "APT Repository\n33500"
+        icon: "./00-common/homepage/icons/debian-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+    }
+  }
+
+  row_2: {
+    label: "Application services"
+    direction: right
+    grid-columns: 4
+    style: {
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
     }
 
     10_inference: {
@@ -257,16 +322,6 @@ service_catalog: {
         }
       }
     }
-  }
-
-  row_2: {
-    label: "Storage / Automation / Collaboration"
-    direction: right
-    grid-columns: 5
-    style: {
-      fill: "#ffffff"
-      stroke: "#cbd5e1"
-    }
 
     12_storage: {
       label: "12-storage"
@@ -367,16 +422,6 @@ service_catalog: {
         }
       }
     }
-  }
-
-  row_3: {
-    label: "Git / Developer / Observability / LLMOps"
-    direction: right
-    grid-columns: 4
-    style: {
-      fill: "#ffffff"
-      stroke: "#cbd5e1"
-    }
 
     23_team_git: {
       label: "23-team-git"
@@ -395,60 +440,15 @@ service_catalog: {
         }
       }
     }
+  }
 
-    30_developer: {
-      label: "30-developer"
-      grid-columns: 3
-      style: {
-        fill: "#f0f9ff"
-        stroke: "#0284c7"
-        stroke-width: 2
-      }
-
-      pypiserver: {
-        label: "PyPI\n33100"
-        icon: "./00-common/homepage/icons/pypi.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      verdaccio: {
-        label: "Verdaccio\n33200"
-        icon: "./00-common/homepage/icons/verdaccio.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      code_marketplace: {
-        label: "Code Marketplace\n33300"
-        icon: "./00-common/homepage/icons/visual-studio-code.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      rpm_repo: {
-        label: "RPM Repository\n33400"
-        icon: "./00-common/homepage/icons/redhat-linux.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      deb_repo: {
-        label: "APT Repository\n33500"
-        icon: "./00-common/homepage/icons/debian-linux.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
+  row_3: {
+    label: "Observability / LLMOps"
+    direction: right
+    grid-columns: 2
+    style: {
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
     }
 
     50_o11y: {
@@ -512,7 +512,7 @@ users -> public_host: "access"
 public_host -> service_catalog: "published services"
 
 service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.00_common.oidc: "auth"
-service_catalog.row_1.00_common.oidc -> service_catalog.row_1.11_webui.open_webui: "OIDC"
+service_catalog.row_1.00_common.oidc -> service_catalog.row_2.11_webui.open_webui: "OIDC"
 service_catalog.row_1.00_common.oidc -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
 service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
 service_catalog.row_1.00_common.oidc -> service_catalog.row_2.21_team_project.leantime: "OIDC"
@@ -526,19 +526,19 @@ service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.metric
 service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_1.11_webui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+service_catalog.row_2.11_webui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
 service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
-service_catalog.row_3.23_team_git.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+service_catalog.row_2.23_team_git.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
   style.stroke-dash: 4
 }
 service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
@@ -549,18 +549,18 @@ service_catalog.row_3.50_o11y.metrics -> service_catalog.row_3.50_o11y.prometheu
 }
 service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
 
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.ollama: "chat models"
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.tei: "embedding / reranking"
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.openrouter: "external LLM API"
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_1.10_inference.google_ai_studio: "external LLM API"
-service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
-service_catalog.row_1.10_inference.hermes_agent -> service_catalog.row_1.10_inference.litellm: "LLM API"
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama: "chat models"
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei: "embedding / reranking"
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter: "external LLM API"
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio: "external LLM API"
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
+service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm: "LLM API"
 
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM / RAG API"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.hermes_agent: "agent API"
-service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.11_webui.integrations: "uses"
-service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.open_terminal: "terminal"
-service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.docling: "content extraction"
-service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.searxng: "web search"
-service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.qdrant: "vector store"
-service_catalog.row_1.11_webui.integrations -> service_catalog.row_1.11_webui.voicevox_tts: "TTS"
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.hermes_agent: "agent API"
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.integrations: "uses"
+service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.open_terminal: "terminal"
+service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.docling: "content extraction"
+service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.searxng: "web search"
+service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.qdrant: "vector store"
+service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.voicevox_tts: "TTS"
