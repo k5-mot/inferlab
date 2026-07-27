@@ -14,3 +14,28 @@ services:
       - homepage.name=Harbor
       - homepage.href=http://${PUBLIC_HOST}:${HARBOR_HTTP_HOST_PORT:-33600}/
       - homepage.description=Container image registry
+
+  docker-archive-importer:
+    image: quay.io/skopeo/stable:${SKOPEO_IMAGE_TAG:-v1.20.0}
+    restart: unless-stopped
+    entrypoint: []
+    environment:
+      DOCKER_ARCHIVE_IMPORT_INTERVAL_SECONDS: ${DOCKER_ARCHIVE_IMPORT_INTERVAL_SECONDS:-30}
+      HARBOR_PASSWORD: ${HARBOR_ADMIN_PASSWORD:-}
+      HARBOR_PROJECT: ${HARBOR_PROJECT:-library}
+      HARBOR_REGISTRY: ${HARBOR_INTERNAL_REGISTRY:-proxy:8080}
+      HARBOR_TLS_VERIFY: ${HARBOR_TLS_VERIFY:-false}
+      HARBOR_USERNAME: ${HARBOR_USERNAME:-admin}
+    command:
+      - bash
+      - /usr/local/bin/import-docker-archives
+    volumes:
+      - ../registry/docker-archive:/archives:ro
+      - docker-archive-importer-state:/state
+      - ../docker-archive-importer/import-docker-archives.sh:/usr/local/bin/import-docker-archives:ro
+    depends_on:
+      proxy:
+        condition: service_healthy
+
+volumes:
+  docker-archive-importer-state:

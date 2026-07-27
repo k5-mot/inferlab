@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# このscriptはaptlyを使わず、APTが読める最小metadataだけを生成する。
+# このscriptはregistry/deb直下のdebをreprepro repositoryへ反映する。
 REPOSITORY_DIR="${REPOSITORY_DIR:-/repo}"
 IMPORTS_DIR="${IMPORTS_DIR:-$REPOSITORY_DIR}"
+DEB_DISTRIBUTION="${DEB_DISTRIBUTION:-stable}"
+DEB_CODENAME="${DEB_CODENAME:-stable}"
+DEB_COMPONENT="${DEB_COMPONENT:-main}"
+DEB_ARCHITECTURES="${DEB_ARCHITECTURES:-amd64 arm64 all}"
+DEB_ORIGIN="${DEB_ORIGIN:-InferLab}"
+DEB_LABEL="${DEB_LABEL:-InferLab}"
+PUBLIC_DIR="$REPOSITORY_DIR/public"
 
 case "$REPOSITORY_DIR" in
   "" | "/")
@@ -12,67 +19,53 @@ case "$REPOSITORY_DIR" in
     ;;
 esac
 
-shopt -s nullglob
-deb_files=("$IMPORTS_DIR"/*.deb)
+case "$PUBLIC_DIR" in
+  "$REPOSITORY_DIR" | "" | "/")
+    echo "ERROR: PUBLIC_DIR must not be repository root." >&2
+    exit 1
+    ;;
+esac
 
 build_dir="$(mktemp -d)"
 trap 'rm -rf "$build_dir"' EXIT
 
-if [ "${#deb_files[@]}" -gt 0 ]; then
-  cp -f "${deb_files[@]}" "$build_dir/"
-fi
-
-if [ -f "$REPOSITORY_DIR/.gitkeep" ]; then
-  : > "$build_dir/.gitkeep"
-fi
-
-packages_file="$build_dir/Packages.tmp"
-generated_deb_files=("$build_dir"/*.deb)
-for file in "${generated_deb_files[@]}"; do
-  package="./$(basename "$file")"
-  size="$(wc -c < "$file" | tr -d ' ')"
-  md5="$(md5sum "$file" | awk '{print $1}')"
-  sha1="$(sha1sum "$file" | awk '{print $1}')"
-  sha256="$(sha256sum "$file" | awk '{print $1}')"
-
-  dpkg-deb -f "$file"
-  printf 'Filename: %s\nSize: %s\nMD5sum: %s\nSHA1: %s\nSHA256: %s\n\n' "$package" "$size" "$md5" "$sha1" "$sha256"
-done > "$packages_file"
-
-mv "$packages_file" "$build_dir/Packages"
-gzip -kf "$build_dir/Packages"
-
-cat > "$build_dir/Release" <<EOF
-Archive: stable
-Component: main
-Date: $(date -Ru)
-MD5Sum:
- $(md5sum "$build_dir/Packages" | awk '{print $1}') $(wc -c < "$build_dir/Packages" | tr -d ' ') Packages
- $(md5sum "$build_dir/Packages.gz" | awk '{print $1}') $(wc -c < "$build_dir/Packages.gz" | tr -d ' ') Packages.gz
-SHA1:
- $(sha1sum "$build_dir/Packages" | awk '{print $1}') $(wc -c < "$build_dir/Packages" | tr -d ' ') Packages
- $(sha1sum "$build_dir/Packages.gz" | awk '{print $1}') $(wc -c < "$build_dir/Packages.gz" | tr -d ' ') Packages.gz
-SHA256:
- $(sha256sum "$build_dir/Packages" | awk '{print $1}') $(wc -c < "$build_dir/Packages" | tr -d ' ') Packages
- $(sha256sum "$build_dir/Packages.gz" | awk '{print $1}') $(wc -c < "$build_dir/Packages.gz" | tr -d ' ') Packages.gz
+mkdir -p "$build_dir/conf"
+cat > "$build_dir/conf/distributions" <<EOF
+Origin: $DEB_ORIGIN
+Label: $DEB_LABEL
+Codename: $DEB_CODENAME
+Suite: $DEB_DISTRIBUTION
+Architectures: $DEB_ARCHITECTURES
+Components: $DEB_COMPONENT
+Description: InferLab local APT repository
 EOF
 
-cat > "$build_dir/index.html" <<'EOF'
+shopt -s nullglob
+deb_files=("$IMPORTS_DIR"/*.deb)
+
+if [ "${#deb_files[@]}" -gt 0 ]; then
+  for file in "${deb_files[@]}"; do
+    reprepro --basedir "$build_dir" --ignore=wrongdistribution includedeb "$DEB_CODENAME" "$file"
+  done
+else
+  reprepro --basedir "$build_dir" export "$DEB_CODENAME"
+fi
+
+cat > "$build_dir/index.html" <<EOF
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>APT repository</title></head>
+<head><meta charset="utf-8"><title>reprepro</title></head>
 <body>
-<h1>APT repository</h1>
-<p>Flat APT repository.</p>
+<h1>reprepro</h1>
+<p>APT repository.</p>
 <ul>
-  <li><a href="./Packages">Packages</a></li>
+  <li><a href="./dists/$DEB_CODENAME/Release">dists/$DEB_CODENAME/Release</a></li>
 </ul>
 </body>
 </html>
 EOF
 
 chmod -R a+rX "$build_dir"
-
-mkdir -p "$REPOSITORY_DIR"
-find "$REPOSITORY_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-cp -R "$build_dir"/. "$REPOSITORY_DIR"/
+mkdir -p "$PUBLIC_DIR"
+find "$PUBLIC_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+cp -R "$build_dir"/. "$PUBLIC_DIR"/

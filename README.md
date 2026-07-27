@@ -48,7 +48,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `team-project` | `21-team-project/docker-compose.yml` | Leantime |
 | `team-wiki` | `22-team-wiki/docker-compose.yml` | BookStack |
 | `team-git` | `23-team-git/docker-compose.yml` | Gitea |
-| `developer` | `30-developer/docker-compose.yml` | Pulp custom image |
+| `developer` | `30-developer/docker-compose.yml` | pypiserver、Verdaccio、createrepo_c、reprepro、Harbor |
 | `o11y` | `50-o11y/docker-compose.yml` | Grafana、Prometheus、Node Exporter、cAdvisor、Blackbox Exporter |
 | `llmops` | `51-llmops/docker-compose.yml` | Langfuse、ClickHouse、MinIO、Redis、PostgreSQL |
 
@@ -75,8 +75,10 @@ sudo ./dc.sh up-full --remove-orphans
 - Qdrant: `docker.io/qdrant/qdrant:v1.18.2`
 - Nextcloud: `docker.io/library/nextcloud:34.0.1-apache`
 - OIKB: `ghcr.io/open-webui/oikb:0.3.6`
-- Pulp Minimal: `ghcr.io/k5-mot/pulp-minimal:3.114.0`
-- Pulp Web: `ghcr.io/k5-mot/pulp-web:3.114.0`
+- pypiserver: `pypiserver/pypiserver:latest`
+- Verdaccio: `verdaccio/verdaccio:6`
+- createrepo_c: `docker.io/openitcockpit/createrepo_c:bullseye-0.17.0`
+- reprepro: `docker.io/eilandert/reprepro:latest`
 - Grafana: `docker.io/grafana/grafana:13.1.1`
 - Prometheus: `docker.io/prom/prometheus:v3.13.1`
 - Node Exporter: `quay.io/prometheus/node-exporter:v1.12.1`

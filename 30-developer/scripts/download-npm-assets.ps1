@@ -11,8 +11,8 @@ $ScriptDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Pa
 $AssetsPath = Get-AssetsPath -ScriptDirectory $ScriptDirectory -CurrentDirectory (Get-Location).Path
 Write-Host "assets directory: $AssetsPath"
 
-New-AssetDirectories -AssetsPath $AssetsPath -Names @("npm")
-$NpmAssetsDir = Join-Path $AssetsPath "npm"
+New-AssetDirectories -AssetsPath $AssetsPath -Names @("npm-packages")
+$NpmAssetsDir = Join-Path $AssetsPath "npm-packages"
 $NpmWorkDir = Join-Path (Join-Path (Split-Path -Parent $AssetsPath) ".npm-works") "npm-assets"
 New-Item -ItemType Directory -Force -Path $NpmWorkDir | Out-Null
 

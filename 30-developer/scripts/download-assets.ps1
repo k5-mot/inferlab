@@ -6,9 +6,7 @@ $DownloadScripts = @(
     "download-npm-assets.ps1",
     "download-rpm-assets.ps1",
     "download-deb-assets.ps1",
-    "download-docker-assets.ps1",
-    "download-vsix-assets.ps1",
-    "download-huggingface-assets.ps1"
+    "download-docker-assets.ps1"
 )
 
 $ScriptDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }

@@ -2,7 +2,7 @@
 set -eu
 
 # このscriptはVerdaccio起動後に、取得済みtgzを冪等にpublishする。
-NPM_IMPORT_ENABLED="${NPM_IMPORT_ENABLED:-false}"
+NPM_IMPORT_ENABLED="${NPM_IMPORT_ENABLED:-true}"
 IMPORTS_DIR="${IMPORTS_DIR:-/imports}"
 NPM_IMPORT_INTERVAL_SECONDS="${NPM_IMPORT_INTERVAL_SECONDS:-30}"
 REGISTRY_URL="${REGISTRY_URL:-http://verdaccio:4873/}"

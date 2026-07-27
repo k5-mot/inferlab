@@ -12,8 +12,8 @@ $ScriptDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Pa
 $AssetsPath = Get-AssetsPath -ScriptDirectory $ScriptDirectory -CurrentDirectory (Get-Location).Path
 Write-Host "assets directory: $AssetsPath"
 
-New-AssetDirectories -AssetsPath $AssetsPath -Names @("docker")
-$DockerAssetsDir = Join-Path $AssetsPath "docker"
+New-AssetDirectories -AssetsPath $AssetsPath -Names @("docker-archive")
+$DockerAssetsDir = Join-Path $AssetsPath "docker-archive"
 
 foreach ($Image in $ContainerImages) {
     Invoke-NativeCommand -FilePath "crane" -Arguments @("pull", $Image.Source, (Join-Path $DockerAssetsDir $Image.File))

@@ -4,10 +4,10 @@
 #   - https://github.com/pypiserver/pypiserver
 # - Verdaccio
 #   - https://verdaccio.org/docs/docker/
-# - code-marketplace
-#   - https://github.com/coder/code-marketplace
 # - createrepo_c
 #   - https://github.com/rpm-software-management/createrepo_c
+# - reprepro
+#   - https://salsa.debian.org/debian/reprepro
 #
 name: ${STACK_NAME:-inferlab}
 
@@ -28,7 +28,7 @@ services:
     ports:
       - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
     volumes:
-      - ./registry/pypi:/data/packages:ro
+      - ./registry/wheel:/data/packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -78,53 +78,6 @@ services:
       - homepage.description=npm registry
       - homepage.icon=/icons/verdaccio.png
 
-  code-marketplace:
-    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
-    container_name: ${STACK_NAME:-inferlab}-code-marketplace
-    restart: unless-stopped
-    profiles:
-      - developer
-    entrypoint:
-      - code-marketplace
-      - server
-      - --address=0.0.0.0:3000
-      - --extensions-dir=/extensions
-    ports:
-      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}:3000
-    volumes:
-      - code-marketplace-extensions:/extensions
-    networks:
-      - internal-nw
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - -q
-        - -O
-        - /dev/null
-        - http://127.0.0.1:3000/healthz
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=Code Marketplace
-      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/
-      - homepage.description=VS Code extension marketplace
-      - homepage.icon=/icons/visual-studio-code.png
-
-  code-marketplace-publisher:
-    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
-    profiles:
-      - developer
-    command:
-      - "true"
-    volumes:
-      - code-marketplace-extensions:/extensions
-    networks:
-      - internal-nw
-
   rpm-repo:
     image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
     container_name: ${STACK_NAME:-inferlab}-rpm-repo
@@ -167,7 +120,7 @@ services:
     ports:
       - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
     volumes:
-      - ./registry/deb:/usr/share/nginx/html:ro
+      - ./registry/deb/public:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
@@ -186,9 +139,9 @@ services:
       start_period: 10s
     labels:
       - homepage.group=30-developer
-      - homepage.name=APT Repository
+      - homepage.name=reprepro
       - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
-      - homepage.description=Flat APT repository
+      - homepage.description=APT repository
       - homepage.icon=/icons/debian-linux.png
 
   npm-importer:
@@ -198,14 +151,14 @@ services:
     restart: unless-stopped
     working_dir: /work
     environment:
-      NPM_IMPORT_ENABLED: ${NPM_IMPORT_ENABLED:-false}
+      NPM_IMPORT_ENABLED: ${NPM_IMPORT_ENABLED:-true}
       NPM_IMPORT_INTERVAL_SECONDS: ${NPM_IMPORT_INTERVAL_SECONDS:-30}
       NPM_PUBLISH_TOKEN: ${NPM_PUBLISH_TOKEN:-local-publish-token}
     command:
       - sh
       - /usr/local/bin/import-npm-packages
     volumes:
-      - ./registry/npm:/imports:ro
+      - ./registry/npm-packages:/imports:ro
       - ./npm-importer/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw
@@ -233,11 +186,19 @@ services:
       - internal-nw
 
   deb-repository-sync:
-    image: ${DEB_PUBLISHER_IMAGE:-docker.io/library/debian:13-slim}
+    image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro:latest}
     profiles:
       - developer
     restart: unless-stopped
+    user: "0:0"
+    entrypoint: []
     environment:
+      DEB_ARCHITECTURES: ${DEB_ARCHITECTURES:-amd64 arm64 all}
+      DEB_CODENAME: ${DEB_CODENAME:-stable}
+      DEB_COMPONENT: ${DEB_COMPONENT:-main}
+      DEB_DISTRIBUTION: ${DEB_DISTRIBUTION:-stable}
+      DEB_LABEL: ${DEB_LABEL:-InferLab}
+      DEB_ORIGIN: ${DEB_ORIGIN:-InferLab}
       REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
     command:
       - bash
@@ -250,7 +211,6 @@ services:
       - internal-nw
 
 volumes:
-  code-marketplace-extensions:
   verdaccio-storage:
 
 networks:
