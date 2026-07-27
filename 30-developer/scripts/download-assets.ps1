@@ -128,7 +128,7 @@ directoryにfileが存在することを検証する。
 .PARAMETER Directory
 検証するdirectory。
 .PARAMETER Pattern
-対象file pattern。
+対象file pattern配列。
 .PARAMETER Description
 エラー表示用の資材種別。
 .OUTPUTS
@@ -137,11 +137,15 @@ directoryにfileが存在することを検証する。
 function Assert-AssetFilesExist {
     param(
         [Parameter(Mandatory = $true)][string]$Directory,
-        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string[]]$Pattern,
         [Parameter(Mandatory = $true)][string]$Description
     )
 
-    $Files = @(Get-ChildItem -Path $Directory -Filter $Pattern -File -ErrorAction SilentlyContinue)
+    $Files = @()
+    foreach ($ItemPattern in $Pattern) {
+        $Files += @(Get-ChildItem -Path $Directory -Filter $ItemPattern -File -ErrorAction SilentlyContinue)
+    }
+
     if ($Files.Count -eq 0) {
         throw "$Description assets were not created: $Directory"
     }
@@ -167,6 +171,34 @@ function Save-FileFromUrl {
 
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
     Invoke-WebRequest -Uri $Url -OutFile $OutputPath -UseBasicParsing
+}
+
+<#
+.SYNOPSIS
+外部commandを実行し、終了codeを検証する。
+.PARAMETER FilePath
+実行するcommand名またはpath。
+.PARAMETER Arguments
+commandへ渡すargument配列。
+.OUTPUTS
+commandの標準出力を返す。
+.NOTES
+Windows PowerShellは外部commandの非ゼロ終了で自動停止しないため、この関数で明示的に失敗させる。
+#>
+function Invoke-NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    if (-not (Get-Command $FilePath -ErrorAction SilentlyContinue)) {
+        throw "required command was not found: $FilePath"
+    }
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "command failed with exit code $LASTEXITCODE: $FilePath $($Arguments -join ' ')"
+    }
 }
 
 <#
@@ -615,20 +647,24 @@ foreach ($Name in @("pypi", "npm", "docker", "rpm", "deb", "huggingface", "vsix"
 
 # PyPI資材を依存package込みで取得する。
 $PypiAssetsDir = Join-Path $AssetsPath "pypi"
-python -m pip download --dest $PypiAssetsDir @PypiPackages
-Assert-AssetFilesExist -Directory $PypiAssetsDir -Pattern "*" -Description "PyPI"
+Invoke-NativeCommand -FilePath "python" -Arguments (@("-m", "pip", "download", "--dest", $PypiAssetsDir) + $PypiPackages)
+Assert-AssetFilesExist -Directory $PypiAssetsDir -Pattern @("*.whl", "*.tar.gz", "*.zip") -Description "PyPI"
 
 # npm資材を依存package込みでtgz取得する。
 $NpmWorkDir = Join-Path "work" "npm-assets"
 New-Item -ItemType Directory -Force -Path $NpmWorkDir | Out-Null
 Push-Location $NpmWorkDir
-npm init -y | Out-Null
-npm install --package-lock-only --ignore-scripts @NpmPackages
-node -e "const lock=require('./package-lock.json'); for (const [k,p] of Object.entries(lock.packages)) { if (k && p.resolved && p.version) console.log(k.split('node_modules/').pop()+'@'+p.version); }" | ForEach-Object {
-    $NpmAssetsDir = Join-Path $AssetsPath "npm"
-    npm pack $_ --pack-destination $NpmAssetsDir | Out-Null
+try {
+    Invoke-NativeCommand -FilePath "npm" -Arguments @("init", "-y") | Out-Null
+    Invoke-NativeCommand -FilePath "npm" -Arguments (@("install", "--package-lock-only", "--ignore-scripts") + $NpmPackages)
+    $NpmPackageSpecs = Invoke-NativeCommand -FilePath "node" -Arguments @("-e", "const lock=require('./package-lock.json'); for (const [k,p] of Object.entries(lock.packages)) { if (k && p.resolved && p.version) console.log(k.split('node_modules/').pop()+'@'+p.version); }")
+    $NpmPackageSpecs | ForEach-Object {
+        $NpmAssetsDir = Join-Path $AssetsPath "npm"
+        Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $_, "--pack-destination", $NpmAssetsDir) | Out-Null
+    }
+} finally {
+    Pop-Location
 }
-Pop-Location
 
 # RPM資材をHTTP metadataから依存package込みで取得する。
 Save-RpmPackagesWithDependencies -PackageNames $RpmPackages -RepositoryBaseUrls $RpmRepositoryBaseUrls -Architecture $RpmArchitecture -OutputDirectory (Join-Path $AssetsPath "rpm")
@@ -639,7 +675,7 @@ Save-DebPackagesWithDependencies -PackageNames $DebPackages -RepositoryBaseUrl $
 # container imageをtarとして取得する。
 foreach ($Image in $ContainerImages) {
     $DockerAssetsDir = Join-Path $AssetsPath "docker"
-    crane pull $Image.Source (Join-Path $DockerAssetsDir $Image.File)
+    Invoke-NativeCommand -FilePath "crane" -Arguments @("pull", $Image.Source, (Join-Path $DockerAssetsDir $Image.File))
 }
 
 # VSIXをVisual Studio Marketplaceから取得する。
@@ -647,7 +683,7 @@ Save-VsixExtensions -ExtensionIds $VsixExtensions -OutputDirectory (Join-Path $A
 Assert-AssetFilesExist -Directory (Join-Path $AssetsPath "vsix") -Pattern "*.vsix" -Description "VSIX"
 
 # Hugging Face modelを取得する。
-python -m pip install --upgrade "huggingface_hub>=1,<2"
+Invoke-NativeCommand -FilePath "python" -Arguments @("-m", "pip", "install", "--upgrade", "huggingface_hub>=1,<2")
 $HuggingFaceDownloadScript = @'
 import sys
 from huggingface_hub import snapshot_download
@@ -656,7 +692,7 @@ snapshot_download(repo_id=sys.argv[1], local_dir=sys.argv[2])
 '@
 foreach ($Model in $HuggingFaceModels) {
     $ModelPath = Join-Path (Join-Path $AssetsPath "huggingface") $Model
-    python -c $HuggingFaceDownloadScript $Model $ModelPath
+    Invoke-NativeCommand -FilePath "python" -Arguments @("-c", $HuggingFaceDownloadScript, $Model, $ModelPath)
 }
 
 Write-Host "download completed: $AssetsPath"
