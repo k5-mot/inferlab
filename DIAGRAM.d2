@@ -26,7 +26,7 @@ public_host: {
 }
 
 note: {
-  label: "README 向けサービス一覧\n内部 DB / Redis / worker / proxy / exporter は省略"
+  label: "README 向けサービス一覧\n内部 DB / Redis / worker / proxy / exporter は省略\n矢印は認証・監視・LLMOps の代表的な情報流だけを表示"
   style: {
     fill: "#fffbeb"
     stroke: "#d97706"
@@ -35,354 +35,419 @@ note: {
 
 service_catalog: {
   label: "InferLab user-facing services"
+  direction: down
   style: {
     fill: "#f8fafc"
     stroke: "#334155"
     stroke-width: 2
   }
 
-  00_common: {
-    label: "00-common"
+  row_1: {
+    label: "Foundation / Inference / Web UI"
+    direction: right
     style: {
-      fill: "#f0fdfa"
-      stroke: "#0f766e"
-      stroke-width: 2
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
     }
 
-    homepage: {
-      label: "Homepage\n30000"
-      icon: "./00-common/homepage/icons/homepage.png"
+    00_common: {
+      label: "00-common"
       style: {
-        fill: "#ffffff"
+        fill: "#f0fdfa"
         stroke: "#0f766e"
+        stroke-width: 2
+      }
+
+      homepage: {
+        label: "Homepage\n30000"
+        icon: "./00-common/homepage/icons/homepage.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0f766e"
+        }
+      }
+
+      keycloak: {
+        label: "Keycloak\n30001 / 30002"
+        icon: "./00-common/homepage/icons/keycloak.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0f766e"
+        }
       }
     }
 
-    keycloak: {
-      label: "Keycloak\n30001 / 30002"
-      icon: "./00-common/homepage/icons/keycloak.png"
+    01_infra: {
+      label: "01-infra"
       style: {
-        fill: "#ffffff"
-        stroke: "#0f766e"
-      }
-    }
-  }
-
-  01_infra: {
-    label: "01-infra"
-    style: {
-      fill: "#eef2ff"
-      stroke: "#4f46e5"
-      stroke-width: 2
-    }
-
-    cloudflare: {
-      label: "Cloudflare Tunnel"
-      icon: "./00-common/homepage/icons/cloudflared.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#eef2ff"
         stroke: "#4f46e5"
+        stroke-width: 2
+      }
+
+      cloudflare: {
+        label: "Cloudflare Tunnel"
+        icon: "./00-common/homepage/icons/cloudflared.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#4f46e5"
+        }
+      }
+
+      couchdb: {
+        label: "CouchDB\n30100"
+        icon: "./00-common/homepage/icons/couchdb.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#4f46e5"
+        }
       }
     }
 
-    couchdb: {
-      label: "CouchDB\n30100"
-      icon: "./00-common/homepage/icons/couchdb.png"
+    10_inference: {
+      label: "10-inference"
       style: {
-        fill: "#ffffff"
-        stroke: "#4f46e5"
-      }
-    }
-  }
-
-  10_inference: {
-    label: "10-inference"
-    style: {
-      fill: "#fefce8"
-      stroke: "#a16207"
-      stroke-width: 2
-    }
-
-    litellm: {
-      label: "LiteLLM\n31000"
-      icon: "./00-common/homepage/icons/litlellm.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#fefce8"
         stroke: "#a16207"
+        stroke-width: 2
+      }
+
+      litellm: {
+        label: "LiteLLM\n31000"
+        icon: "./00-common/homepage/icons/litlellm.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      hermes_agent: {
+        label: "Hermes-Agent\n31001"
+        icon: "./00-common/homepage/icons/hermes-icon.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
       }
     }
 
-    hermes_agent: {
-      label: "Hermes-Agent\n31001"
-      icon: "./00-common/homepage/icons/hermes-icon.png"
+    11_webui: {
+      label: "11-webui"
       style: {
-        fill: "#ffffff"
-        stroke: "#a16207"
+        fill: "#eff6ff"
+        stroke: "#2563eb"
+        stroke-width: 2
+      }
+
+      open_webui: {
+        label: "Open WebUI\n31100"
+        icon: "./00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      open_terminal: {
+        label: "Open Terminal\n31103"
+        icon: "./00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      docling: {
+        label: "docling-serve\n31101"
+        icon: "./00-common/homepage/icons/docling.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      searxng: {
+        label: "SearXNG\n31102"
+        icon: "./00-common/homepage/icons/searxng.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
       }
     }
   }
 
-  11_webui: {
-    label: "11-webui"
+  row_2: {
+    label: "Storage / Automation / Collaboration"
+    direction: right
     style: {
-      fill: "#eff6ff"
-      stroke: "#2563eb"
-      stroke-width: 2
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
     }
 
-    open_webui: {
-      label: "Open WebUI\n31100"
-      icon: "./00-common/homepage/icons/open-webui.png"
+    12_storage: {
+      label: "12-storage"
       style: {
-        fill: "#ffffff"
-        stroke: "#2563eb"
-      }
-    }
-
-    open_terminal: {
-      label: "Open Terminal\n31103"
-      icon: "./00-common/homepage/icons/open-webui.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#2563eb"
-      }
-    }
-
-    docling: {
-      label: "docling-serve\n31101"
-      icon: "./00-common/homepage/icons/docling.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#2563eb"
-      }
-    }
-
-    searxng: {
-      label: "SearXNG\n31102"
-      icon: "./00-common/homepage/icons/searxng.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#2563eb"
-      }
-    }
-  }
-
-  12_storage: {
-    label: "12-storage"
-    style: {
-      fill: "#ecfdf5"
-      stroke: "#059669"
-      stroke-width: 2
-    }
-
-    nextcloud: {
-      label: "Nextcloud\n31200"
-      icon: "./00-common/homepage/icons/nextcloud.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#ecfdf5"
         stroke: "#059669"
+        stroke-width: 2
+      }
+
+      nextcloud: {
+        label: "Nextcloud\n31200"
+        icon: "./00-common/homepage/icons/nextcloud.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#059669"
+        }
+      }
+
+      oikb: {
+        label: "Open-WebUI Knowledge Bases\n31201"
+        icon: "./00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#059669"
+        }
       }
     }
 
-    oikb: {
-      label: "Open-WebUI Knowledge Bases\n31201"
-      icon: "./00-common/homepage/icons/open-webui.png"
+    13_automation: {
+      label: "13-automation"
       style: {
-        fill: "#ffffff"
-        stroke: "#059669"
-      }
-    }
-  }
-
-  13_automation: {
-    label: "13-automation"
-    style: {
-      fill: "#fff7ed"
-      stroke: "#ea580c"
-      stroke-width: 2
-    }
-
-    dify: {
-      label: "Dify\n31300"
-      icon: "./00-common/homepage/icons/dify.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#fff7ed"
         stroke: "#ea580c"
+        stroke-width: 2
+      }
+
+      dify: {
+        label: "Dify\n31300"
+        icon: "./00-common/homepage/icons/dify.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#ea580c"
+        }
       }
     }
-  }
 
-  20_team_chat: {
-    label: "20-team-chat"
-    style: {
-      fill: "#fdf2f8"
-      stroke: "#db2777"
-      stroke-width: 2
-    }
-
-    zulip: {
-      label: "Zulip\n32000 / 32002 / 32025"
-      icon: "./00-common/homepage/icons/zulip.png"
+    20_team_chat: {
+      label: "20-team-chat"
       style: {
-        fill: "#ffffff"
+        fill: "#fdf2f8"
         stroke: "#db2777"
+        stroke-width: 2
+      }
+
+      zulip: {
+        label: "Zulip\n32000 / 32002 / 32025"
+        icon: "./00-common/homepage/icons/zulip.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#db2777"
+        }
       }
     }
-  }
 
-  21_team_project: {
-    label: "21-team-project"
-    style: {
-      fill: "#f5f3ff"
-      stroke: "#7c3aed"
-      stroke-width: 2
-    }
-
-    leantime: {
-      label: "Leantime\n32001"
-      icon: "./00-common/homepage/icons/leantime.png"
+    21_team_project: {
+      label: "21-team-project"
       style: {
-        fill: "#ffffff"
+        fill: "#f5f3ff"
         stroke: "#7c3aed"
+        stroke-width: 2
+      }
+
+      leantime: {
+        label: "Leantime\n32001"
+        icon: "./00-common/homepage/icons/leantime.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#7c3aed"
+        }
       }
     }
-  }
 
-  22_team_wiki: {
-    label: "22-team-wiki"
-    style: {
-      fill: "#f8fafc"
-      stroke: "#475569"
-      stroke-width: 2
-    }
-
-    bookstack: {
-      label: "BookStack\n32200"
-      icon: "./00-common/homepage/icons/bookstack.png"
+    22_team_wiki: {
+      label: "22-team-wiki"
       style: {
-        fill: "#ffffff"
+        fill: "#f8fafc"
         stroke: "#475569"
+        stroke-width: 2
+      }
+
+      bookstack: {
+        label: "BookStack\n32200"
+        icon: "./00-common/homepage/icons/bookstack.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#475569"
+        }
       }
     }
   }
 
-  23_team_git: {
-    label: "23-team-git"
+  row_3: {
+    label: "Git / Developer / Observability / LLMOps"
+    direction: right
     style: {
-      fill: "#fef2f2"
-      stroke: "#dc2626"
-      stroke-width: 2
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
     }
 
-    gitea: {
-      label: "Gitea\n32300 / 32322"
-      icon: "./00-common/homepage/icons/gitea.png"
+    23_team_git: {
+      label: "23-team-git"
       style: {
-        fill: "#ffffff"
+        fill: "#fef2f2"
         stroke: "#dc2626"
+        stroke-width: 2
+      }
+
+      gitea: {
+        label: "Gitea\n32300 / 32322"
+        icon: "./00-common/homepage/icons/gitea.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#dc2626"
+        }
       }
     }
-  }
 
-  30_developer: {
-    label: "30-developer"
-    style: {
-      fill: "#f0f9ff"
-      stroke: "#0284c7"
-      stroke-width: 2
-    }
-
-    pypiserver: {
-      label: "PyPI\n33100"
-      icon: "./00-common/homepage/icons/pypi.png"
+    30_developer: {
+      label: "30-developer"
       style: {
-        fill: "#ffffff"
+        fill: "#f0f9ff"
         stroke: "#0284c7"
+        stroke-width: 2
+      }
+
+      pypiserver: {
+        label: "PyPI\n33100"
+        icon: "./00-common/homepage/icons/pypi.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      verdaccio: {
+        label: "Verdaccio\n33200"
+        icon: "./00-common/homepage/icons/verdaccio.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      code_marketplace: {
+        label: "Code Marketplace\n33300"
+        icon: "./00-common/homepage/icons/visual-studio-code.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      rpm_repo: {
+        label: "RPM Repository\n33400"
+        icon: "./00-common/homepage/icons/redhat-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      deb_repo: {
+        label: "APT Repository\n33500"
+        icon: "./00-common/homepage/icons/debian-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
       }
     }
 
-    verdaccio: {
-      label: "Verdaccio\n33200"
-      icon: "./00-common/homepage/icons/verdaccio.png"
+    50_o11y: {
+      label: "50-o11y"
       style: {
-        fill: "#ffffff"
-        stroke: "#0284c7"
-      }
-    }
-
-    code_marketplace: {
-      label: "Code Marketplace\n33300"
-      icon: "./00-common/homepage/icons/visual-studio-code.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#0284c7"
-      }
-    }
-
-    rpm_repo: {
-      label: "RPM Repository\n33400"
-      icon: "./00-common/homepage/icons/redhat-linux.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#0284c7"
-      }
-    }
-
-    deb_repo: {
-      label: "APT Repository\n33500"
-      icon: "./00-common/homepage/icons/debian-linux.png"
-      style: {
-        fill: "#ffffff"
-        stroke: "#0284c7"
-      }
-    }
-  }
-
-  50_o11y: {
-    label: "50-o11y"
-    style: {
-      fill: "#ecfeff"
-      stroke: "#0891b2"
-      stroke-width: 2
-    }
-
-    grafana: {
-      label: "Grafana\n35000"
-      icon: "./00-common/homepage/icons/grafana.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#ecfeff"
         stroke: "#0891b2"
+        stroke-width: 2
+      }
+
+      grafana: {
+        label: "Grafana\n35000"
+        icon: "./00-common/homepage/icons/grafana.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0891b2"
+        }
+      }
+
+      prometheus: {
+        label: "Prometheus\n35001"
+        icon: "./00-common/homepage/icons/prometheus.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0891b2"
+        }
       }
     }
 
-    prometheus: {
-      label: "Prometheus\n35001"
-      icon: "./00-common/homepage/icons/prometheus.png"
+    51_llmops: {
+      label: "51-llmops"
       style: {
-        fill: "#ffffff"
-        stroke: "#0891b2"
-      }
-    }
-  }
-
-  51_llmops: {
-    label: "51-llmops"
-    style: {
-      fill: "#faf5ff"
-      stroke: "#9333ea"
-      stroke-width: 2
-    }
-
-    langfuse: {
-      label: "Langfuse\n35100"
-      icon: "./00-common/homepage/icons/langfuse.png"
-      style: {
-        fill: "#ffffff"
+        fill: "#faf5ff"
         stroke: "#9333ea"
+        stroke-width: 2
+      }
+
+      langfuse: {
+        label: "Langfuse\n35100"
+        icon: "./00-common/homepage/icons/langfuse.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#9333ea"
+        }
       }
     }
   }
 }
 
 users -> public_host: "access"
-public_host -> service_catalog: "service catalog"
+public_host -> service_catalog: "published services"
+
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.11_webui.open_webui: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.21_team_project.leantime: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_2.22_team_wiki.bookstack: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.grafana: "OIDC"
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
+
+service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_3.50_o11y.prometheus: "OTLP metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_1.11_webui.searxng -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_3.23_team_git.gitea -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.prometheus: "metrics" {
+  style.stroke-dash: 4
+}
+service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
+
+service_catalog.row_1.11_webui.open_webui -> service_catalog.row_1.10_inference.litellm: "LLM API"
+service_catalog.row_1.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
