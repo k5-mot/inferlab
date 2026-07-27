@@ -23,7 +23,7 @@ sudo ./dc.sh up --remove-orphans
 - `docker compose config`相当の設定解決でエラーになる。
 - 必須serviceのcontainerが`unhealthy`になる。
 
-標準profileは`common`、`infra`、`inference`、`webui`、`storage`、`o11y`、`llmops`。
+標準profileは`common`、`infra`、`inference`、`webui`、`storage`、`developer`、`o11y`、`llmops`。
 
 全profileをまとめてComposeへ渡す場合:
 
