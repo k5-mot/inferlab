@@ -6,4 +6,10 @@ PNG の多くは [Homarr Labs Dashboard Icons](https://github.com/homarr-labs/da
 
 `dify.png`、`langfuse.png`、`memcached.png` は [selfhst/icons](https://github.com/selfhst/icons) から取得した製品アイコンです。ライセンスは `LICENSE.selfhst` を参照してください。
 
-`volume-high.png` は [Pictogrammers Material Design Icons](https://pictogrammers.com/library/mdi/icon/volume-high/) の `volume-high` から生成した PNG です。ライセンスは `LICENSE.mdi` を参照してください。
+`mdi-*.png` と `volume-high.png` は [Pictogrammers Material Design Icons](https://pictogrammers.com/library/mdi/) から生成した PNG です。ライセンスは `LICENSE.mdi` を参照してください。
+
+## References
+
+- [Homarr Labs Dashboard Icons](https://github.com/homarr-labs/dashboard-icons/tree/main/png)
+- [selfhst/icons](https://github.com/selfhst/icons)
+- [Pictogrammers Material Design Icons](https://pictogrammers.com/library/mdi/)

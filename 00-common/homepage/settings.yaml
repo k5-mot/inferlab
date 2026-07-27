@@ -8,26 +8,54 @@
 
 layout:
   - 00-common:
-      icon: /icons/homepage.png
+      icon: /icons/mdi-home.png
       style: row
       columns: 4
   - 01-infra:
-      icon: /icons/cloudflared.png
+      icon: /icons/mdi-cloud.png
       style: row
       columns: 4
   - 10-inference:
-      icon: /icons/ollama.png
+      icon: /icons/mdi-brain.png
       style: row
       columns: 4
   - 11-webui:
-      icon: /icons/open-webui.png
+      icon: /icons/mdi-web.png
       style: row
       columns: 4
   - 12-storage:
-      icon: /icons/nextcloud.png
+      icon: /icons/mdi-nas.png
+      style: row
+      columns: 4
+  - 13-automation:
+      icon: /icons/mdi-robot.png
+      style: row
+      columns: 4
+  - 20-team-chat:
+      icon: /icons/mdi-chat.png
+      style: row
+      columns: 4
+  - 21-team-project:
+      icon: /icons/mdi-bulletin-board.png
+      style: row
+      columns: 4
+  - 22-team-wiki:
+      icon: /icons/mdi-book.png
+      style: row
+      columns: 4
+  - 23-team-git:
+      icon: /icons/mdi-file-code.png
+      style: row
+      columns: 4
+  - 30-developer:
+      icon: /icons/mdi-warehouse.png
+      style: row
+      columns: 4
+  - 50-o11y:
+      icon: /icons/mdi-monitor-eye.png
       style: row
       columns: 4
   - 51-llmops:
-      icon: /icons/grafana.png
+      icon: /icons/mdi-monitor-shimmer.png
       style: row
       columns: 4
