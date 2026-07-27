@@ -1,5 +1,45 @@
 $ErrorActionPreference = "Stop"
 
+# 取得対象は保守しやすいように、このsectionへ集約する。
+$PypiPackages = @("python-docx", "pypdf", "pypandoc")
+$NpmPackages = @("cowsay")
+$RpmPackages = @("tmux", "vim")
+$DebPackages = @("tmux")
+$ContainerImages = @(
+    @{ Source = "docker.io/library/hello-world:latest"; File = "hello-world_latest.tar" },
+    @{ Source = "docker.io/ollama/ollama:latest"; File = "ollama_ollama_latest.tar" }
+)
+$HuggingFaceModels = @("cl-nagoya/ruri-v3-310m", "cl-nagoya/ruri-v3-reranker-310m")
+$VsixExtensions = @(
+    "github.copilot",
+    "github.copilot-chat",
+    "anthropic.claude-code",
+    "openai.chatgpt",
+    "foam.foam-vscode",
+    "gitlab.gitlab-workflow",
+    "biomejs.biome",
+    "xabikos.JavaScriptSnippets",
+    "crystal-spider.jsdoc-generator",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+    "dsznajder.es7-react-js-snippets",
+    "wix.vscode-import-cost",
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml"
+)
+
+# metadata取得先は環境変数で上書きできる。
+$DefaultRpmRepositoryBaseUrls = @(
+    "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
+    "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/"
+)
+$DefaultRpmArchitecture = "x86_64"
+$DefaultDebRepositoryBaseUrl = "https://deb.debian.org/debian/"
+$DefaultDebPackagesPath = "dists/trixie/main/binary-amd64/Packages.gz"
+
 <#
 .SYNOPSIS
 相対pathまたは絶対pathを絶対pathへ解決する。
@@ -60,6 +100,55 @@ function Split-ListValue {
 
 <#
 .SYNOPSIS
+script配置場所から既定の資材置場を決定する。
+.PARAMETER ScriptDirectory
+実行中scriptが置かれているdirectory。
+.PARAMETER CurrentDirectory
+PowerShellの現在directory。
+.OUTPUTS
+既定の資材置場pathを返す。
+#>
+function Get-DefaultAssetsPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScriptDirectory,
+        [Parameter(Mandatory = $true)][string]$CurrentDirectory
+    )
+
+    $ParentDirectory = Split-Path -Parent $ScriptDirectory
+    if ((Split-Path -Leaf $ScriptDirectory) -eq "scripts" -and (Split-Path -Leaf $ParentDirectory) -eq "30-developer") {
+        return $ParentDirectory
+    }
+
+    return (Join-Path $CurrentDirectory "30-developer")
+}
+
+<#
+.SYNOPSIS
+directoryにfileが存在することを検証する。
+.PARAMETER Directory
+検証するdirectory。
+.PARAMETER Pattern
+対象file pattern。
+.PARAMETER Description
+エラー表示用の資材種別。
+.OUTPUTS
+値は返さない。
+#>
+function Assert-AssetFilesExist {
+    param(
+        [Parameter(Mandatory = $true)][string]$Directory,
+        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    $Files = @(Get-ChildItem -Path $Directory -Filter $Pattern -File -ErrorAction SilentlyContinue)
+    if ($Files.Count -eq 0) {
+        throw "$Description assets were not created: $Directory"
+    }
+}
+
+<#
+.SYNOPSIS
 HTTPでfileを取得し、既存fileを置き換える。
 .PARAMETER Url
 取得元URL。
@@ -78,6 +167,40 @@ function Save-FileFromUrl {
 
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
     Invoke-WebRequest -Uri $Url -OutFile $OutputPath -UseBasicParsing
+}
+
+<#
+.SYNOPSIS
+Visual Studio MarketplaceからVSIXを取得する。
+.PARAMETER ExtensionIds
+publisher.extension形式のextension ID配列。
+.PARAMETER OutputDirectory
+vsix fileの保存先directory。
+.OUTPUTS
+値は返さない。
+#>
+function Save-VsixExtensions {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$ExtensionIds,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+
+    foreach ($ExtensionId in $ExtensionIds) {
+        $Parts = $ExtensionId.Split([string[]]@("."), 2, [System.StringSplitOptions]::None)
+        if ($Parts.Count -ne 2) {
+            throw "invalid VSIX extension id: $ExtensionId"
+        }
+
+        $Publisher = [System.Uri]::EscapeDataString($Parts[0])
+        $ExtensionName = [System.Uri]::EscapeDataString($Parts[1])
+        $Url = "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$Publisher/vsextensions/$ExtensionName/latest/vspackage"
+        $OutputPath = Join-Path $OutputDirectory "$ExtensionId.vsix"
+        try {
+            Save-FileFromUrl -Url $Url -OutputPath $OutputPath
+        } catch {
+            Write-Warning "VSIX download failed: $ExtensionId ($($_.Exception.Message))"
+        }
+    }
 }
 
 <#
@@ -464,27 +587,16 @@ function Save-RpmPackagesWithDependencies {
     }
 }
 
-# このscriptはrepository rootから実行する。
-$AssetsDir = if ($env:ASSETS_DIR) { $env:ASSETS_DIR } else { "30-developer" }
 $RootDir = (Get-Location).Path
-$AssetsPath = Resolve-AssetPath -Path $AssetsDir -BasePath $RootDir
+$ScriptDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { $RootDir }
+$AssetsPath = if ($env:ASSETS_DIR) {
+    Resolve-AssetPath -Path $env:ASSETS_DIR -BasePath $RootDir
+} else {
+    Get-DefaultAssetsPath -ScriptDirectory $ScriptDirectory -CurrentDirectory $RootDir
+}
 
-# LIST.mdで管理する資材を定義する。
-$PypiPackages = @("python-docx", "pypdf", "pypandoc")
-$NpmPackages = @("cowsay")
-$RpmPackages = @("tmux", "vim")
-$DebPackages = @("tmux")
-$ContainerImages = @(
-    @{ Source = "docker.io/library/hello-world:latest"; File = "hello-world_latest.tar" },
-    @{ Source = "docker.io/ollama/ollama:latest"; File = "ollama_ollama_latest.tar" }
-)
-$HuggingFaceModels = @("cl-nagoya/ruri-v3-310m", "cl-nagoya/ruri-v3-reranker-310m")
+Write-Host "assets directory: $AssetsPath"
 
-# metadata取得先を環境ごとに差し替えられるようにする。
-$DefaultRpmRepositoryBaseUrls = @(
-    "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-    "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/"
-)
 $RpmRepositoryBaseUrls = if ($env:RPM_REPOSITORY_BASE_URLS) {
     Split-ListValue -Value $env:RPM_REPOSITORY_BASE_URLS
 } elseif ($env:RPM_REPOSITORY_BASE_URL) {
@@ -492,9 +604,9 @@ $RpmRepositoryBaseUrls = if ($env:RPM_REPOSITORY_BASE_URLS) {
 } else {
     $DefaultRpmRepositoryBaseUrls
 }
-$RpmArchitecture = if ($env:RPM_ARCHITECTURE) { $env:RPM_ARCHITECTURE } else { "x86_64" }
-$DebRepositoryBaseUrl = if ($env:DEB_REPOSITORY_BASE_URL) { $env:DEB_REPOSITORY_BASE_URL } else { "https://deb.debian.org/debian/" }
-$DebPackagesUrl = if ($env:DEB_PACKAGES_URL) { $env:DEB_PACKAGES_URL } else { Join-RepositoryUrl -BaseUrl $DebRepositoryBaseUrl -RelativePath "dists/trixie/main/binary-amd64/Packages.gz" }
+$RpmArchitecture = if ($env:RPM_ARCHITECTURE) { $env:RPM_ARCHITECTURE } else { $DefaultRpmArchitecture }
+$DebRepositoryBaseUrl = if ($env:DEB_REPOSITORY_BASE_URL) { $env:DEB_REPOSITORY_BASE_URL } else { $DefaultDebRepositoryBaseUrl }
+$DebPackagesUrl = if ($env:DEB_PACKAGES_URL) { $env:DEB_PACKAGES_URL } else { Join-RepositoryUrl -BaseUrl $DebRepositoryBaseUrl -RelativePath $DefaultDebPackagesPath }
 
 # 資材置場を作成する。
 foreach ($Name in @("pypi", "npm", "docker", "rpm", "deb", "huggingface", "vsix")) {
@@ -502,7 +614,9 @@ foreach ($Name in @("pypi", "npm", "docker", "rpm", "deb", "huggingface", "vsix"
 }
 
 # PyPI資材を依存package込みで取得する。
-python -m pip download --dest (Join-Path $AssetsPath "pypi") @PypiPackages
+$PypiAssetsDir = Join-Path $AssetsPath "pypi"
+python -m pip download --dest $PypiAssetsDir @PypiPackages
+Assert-AssetFilesExist -Directory $PypiAssetsDir -Pattern "*" -Description "PyPI"
 
 # npm資材を依存package込みでtgz取得する。
 $NpmWorkDir = Join-Path "work" "npm-assets"
@@ -527,6 +641,10 @@ foreach ($Image in $ContainerImages) {
     $DockerAssetsDir = Join-Path $AssetsPath "docker"
     crane pull $Image.Source (Join-Path $DockerAssetsDir $Image.File)
 }
+
+# VSIXをVisual Studio Marketplaceから取得する。
+Save-VsixExtensions -ExtensionIds $VsixExtensions -OutputDirectory (Join-Path $AssetsPath "vsix")
+Assert-AssetFilesExist -Directory (Join-Path $AssetsPath "vsix") -Pattern "*.vsix" -Description "VSIX"
 
 # Hugging Face modelを取得する。
 python -m pip install --upgrade "huggingface_hub>=1,<2"
