@@ -23,13 +23,12 @@ services:
       # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
       # HOMEPAGE_ALLOWED_HOSTS: gethomepage.dev
       HOMEPAGE_ALLOWED_HOSTS: "$PUBLIC_HOST:30000"
-    label_file:
-      - ./homepage/icon-labels/${AIRGAP:-false}/homepage.labels
     labels:
       - homepage.group=00-common
       - homepage.name=Homepage
       - homepage.href=http://${PUBLIC_HOST}:30000
       - homepage.description=Dashboard
+      - homepage.icon=/icons/dashboard.svg
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.0
