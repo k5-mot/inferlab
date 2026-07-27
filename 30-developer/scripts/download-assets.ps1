@@ -44,6 +44,22 @@ function Join-RepositoryUrl {
 
 <#
 .SYNOPSIS
+区切り文字つき文字列を空要素なしの配列へ変換する。
+.PARAMETER Value
+カンマ、セミコロン、改行で区切られた文字列。
+.OUTPUTS
+trim済み文字列の配列を返す。
+#>
+function Split-ListValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Value
+    )
+
+    return @($Value -split "[,;`r`n]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+<#
+.SYNOPSIS
 HTTPでfileを取得し、既存fileを置き換える。
 .PARAMETER Url
 取得元URL。
@@ -252,7 +268,12 @@ function Get-RpmPrimaryMetadataUrl {
         throw "primary metadata was not found: $RepositoryBaseUrl"
     }
 
-    return (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Location.GetAttribute("href"))
+    $Href = $Location.GetAttribute("href")
+    if (-not $Href.EndsWith(".gz")) {
+        throw "unsupported RPM primary metadata compression: $Href. Set RPM_REPOSITORY_BASE_URLS to repositories that provide primary.xml.gz."
+    }
+
+    return (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Href)
 }
 
 <#
@@ -260,6 +281,8 @@ function Get-RpmPrimaryMetadataUrl {
 RPM primary metadataをpackage indexとprovide indexへ変換する。
 .PARAMETER PrimaryMetadataUrl
 primary.xml.gzのURL。
+.PARAMETER RepositoryBaseUrl
+package fileを取得するrepository rootのURL。
 .PARAMETER Architecture
 取得対象architecture。
 .OUTPUTS
@@ -268,6 +291,7 @@ PackagesとProvidersを持つhashtableを返す。
 function Get-RpmPackageIndex {
     param(
         [Parameter(Mandatory = $true)][string]$PrimaryMetadataUrl,
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
         [Parameter(Mandatory = $true)][string]$Architecture
     )
 
@@ -306,6 +330,7 @@ function Get-RpmPackageIndex {
         $Package = [pscustomobject]@{
             Name = $Name
             Arch = $Arch
+            RepositoryBaseUrl = $RepositoryBaseUrl
             Location = $Location
             Requires = $Requires.ToArray()
             Provides = $Provides.ToArray()
@@ -354,8 +379,8 @@ function Test-RpmRequirementName {
 RPM packageと依存packageをHTTP repositoryから取得する。
 .PARAMETER PackageNames
 取得するroot package名。
-.PARAMETER RepositoryBaseUrl
-RPM repository rootのURL。
+.PARAMETER RepositoryBaseUrls
+RPM repository rootのURL配列。
 .PARAMETER Architecture
 取得対象architecture。
 .PARAMETER OutputDirectory
@@ -366,7 +391,7 @@ rpm fileの保存先directory。
 function Save-RpmPackagesWithDependencies {
     param(
         [Parameter(Mandatory = $true)][string[]]$PackageNames,
-        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
+        [Parameter(Mandatory = $true)][string[]]$RepositoryBaseUrls,
         [Parameter(Mandatory = $true)][string]$Architecture,
         [Parameter(Mandatory = $true)][string]$OutputDirectory
     )
@@ -375,10 +400,26 @@ function Save-RpmPackagesWithDependencies {
         return
     }
 
-    $PrimaryUrl = Get-RpmPrimaryMetadataUrl -RepositoryBaseUrl $RepositoryBaseUrl
-    $Index = Get-RpmPackageIndex -PrimaryMetadataUrl $PrimaryUrl -Architecture $Architecture
-    $Packages = $Index.Packages
-    $Providers = $Index.Providers
+    $Packages = @{}
+    $Providers = @{}
+    foreach ($RepositoryBaseUrl in $RepositoryBaseUrls) {
+        $PrimaryUrl = Get-RpmPrimaryMetadataUrl -RepositoryBaseUrl $RepositoryBaseUrl
+        $Index = Get-RpmPackageIndex -PrimaryMetadataUrl $PrimaryUrl -RepositoryBaseUrl $RepositoryBaseUrl -Architecture $Architecture
+        foreach ($PackageName in $Index.Packages.Keys) {
+            if (-not $Packages.ContainsKey($PackageName) -or $Packages[$PackageName].Arch -eq "noarch") {
+                $Packages[$PackageName] = $Index.Packages[$PackageName]
+            }
+        }
+        foreach ($ProviderName in $Index.Providers.Keys) {
+            if (-not $Providers.ContainsKey($ProviderName)) {
+                $Providers[$ProviderName] = [System.Collections.Generic.List[object]]::new()
+            }
+            foreach ($ProviderPackage in $Index.Providers[$ProviderName]) {
+                $Providers[$ProviderName].Add($ProviderPackage)
+            }
+        }
+    }
+
     $Queue = [System.Collections.Queue]::new()
     $SeenPackages = @{}
     foreach ($Name in $PackageNames) {
@@ -409,7 +450,7 @@ function Save-RpmPackagesWithDependencies {
 
         $SeenPackages[$Package.Name] = $true
         $OutputPath = Join-Path $OutputDirectory (Split-Path -Leaf $Package.Location)
-        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Package.Location) -OutputPath $OutputPath
+        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $Package.RepositoryBaseUrl -RelativePath $Package.Location) -OutputPath $OutputPath
 
         foreach ($Requirement in $Package.Requires) {
             if ((Test-RpmRequirementName -Name $Requirement) -and -not $SeenPackages.ContainsKey($Requirement)) {
@@ -436,7 +477,17 @@ $ContainerImages = @(
 $HuggingFaceModels = @("cl-nagoya/ruri-v3-310m", "cl-nagoya/ruri-v3-reranker-310m")
 
 # metadata取得先を環境ごとに差し替えられるようにする。
-$RpmRepositoryBaseUrl = if ($env:RPM_REPOSITORY_BASE_URL) { $env:RPM_REPOSITORY_BASE_URL } else { "https://download.fedoraproject.org/pub/fedora/linux/releases/43/Everything/x86_64/os/" }
+$DefaultRpmRepositoryBaseUrls = @(
+    "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
+    "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/"
+)
+$RpmRepositoryBaseUrls = if ($env:RPM_REPOSITORY_BASE_URLS) {
+    Split-ListValue -Value $env:RPM_REPOSITORY_BASE_URLS
+} elseif ($env:RPM_REPOSITORY_BASE_URL) {
+    @($env:RPM_REPOSITORY_BASE_URL)
+} else {
+    $DefaultRpmRepositoryBaseUrls
+}
 $RpmArchitecture = if ($env:RPM_ARCHITECTURE) { $env:RPM_ARCHITECTURE } else { "x86_64" }
 $DebRepositoryBaseUrl = if ($env:DEB_REPOSITORY_BASE_URL) { $env:DEB_REPOSITORY_BASE_URL } else { "https://deb.debian.org/debian/" }
 $DebPackagesUrl = if ($env:DEB_PACKAGES_URL) { $env:DEB_PACKAGES_URL } else { Join-RepositoryUrl -BaseUrl $DebRepositoryBaseUrl -RelativePath "dists/trixie/main/binary-amd64/Packages.gz" }
@@ -462,7 +513,7 @@ node -e "const lock=require('./package-lock.json'); for (const [k,p] of Object.e
 Pop-Location
 
 # RPM資材をHTTP metadataから依存package込みで取得する。
-Save-RpmPackagesWithDependencies -PackageNames $RpmPackages -RepositoryBaseUrl $RpmRepositoryBaseUrl -Architecture $RpmArchitecture -OutputDirectory (Join-Path $AssetsPath "rpm")
+Save-RpmPackagesWithDependencies -PackageNames $RpmPackages -RepositoryBaseUrls $RpmRepositoryBaseUrls -Architecture $RpmArchitecture -OutputDirectory (Join-Path $AssetsPath "rpm")
 
 # deb資材をHTTP metadataから依存package込みで取得する。
 Save-DebPackagesWithDependencies -PackageNames $DebPackages -RepositoryBaseUrl $DebRepositoryBaseUrl -PackagesUrl $DebPackagesUrl -OutputDirectory (Join-Path $AssetsPath "deb")
