@@ -1,112 +1,112 @@
 # inferlab サービス構成図
 
-この図は `docker-compose.yml` が include する標準 Compose ファイルを profile 単位で整理したものです。各サービスには Mermaid Architecture Beta の Iconify 形式で、サービス固有または役割に近いアイコンを割り当てています。
+この図は `docker-compose.yml` が include する標準 Compose ファイルを profile 単位で整理したものです。各サービスには Mermaid Architecture Beta の Iconify 形式で、VS Code 標準 Markdown プレビューでも表示できる `logos` または `mdi` のアイコンを割り当てています。
 
 ```mermaid
 %%{init: {"theme": "base", "architecture": {"nodeSeparation": 90, "idealEdgeLengthMultiplier": 2.2, "edgeElasticity": 0.3, "numIter": 3500, "seed": 7}, "themeVariables": {"archEdgeColor": "#374151", "archEdgeArrowColor": "#111827", "archGroupBorderColor": "#6b7280", "archGroupTextColor": "#111827"}}}%%
 architecture-beta
-    group access(lucide:globe)[Access]
-    service users(lucide:users)[Users] in access
-    service internet(lucide:globe)[Internet] in access
-    service public_host(lucide:monitor)[PUBLIC_HOST ports] in access
+    group access(mdi:web)[Access]
+    service users(mdi:account-group)[Users] in access
+    service internet(mdi:web)[Internet] in access
+    service public_host(mdi:monitor)[PUBLIC_HOST ports] in access
 
-    group common(selfhst:homepage)[00 common]
-    service homepage(selfhst:homepage)[Homepage] in common
-    service keycloak(selfhst:keycloak)[Keycloak] in common
-    service keycloak_https(selfhst:keycloak)[Keycloak HTTPS] in common
-    service keycloak_postgres(selfhst:postgresql)[Keycloak PostgreSQL] in common
+    group common(mdi:home)[00 common]
+    service homepage(mdi:home)[Homepage] in common
+    service keycloak(mdi:shield-key)[Keycloak] in common
+    service keycloak_https(mdi:shield-key)[Keycloak HTTPS] in common
+    service keycloak_postgres(logos:postgresql)[Keycloak PostgreSQL] in common
 
-    group infra(selfhst:cloudflare)[01 infra]
-    service cloudflare(selfhst:cloudflare)[Cloudflared] in infra
-    service couchdb(selfhst:couchdb)[CouchDB] in infra
+    group infra(logos:cloudflare)[01 infra]
+    service cloudflare(logos:cloudflare)[Cloudflared] in infra
+    service couchdb(logos:couchdb)[CouchDB] in infra
 
-    group inference(selfhst:litellm)[10 inference]
-    service litellm(selfhst:litellm)[LiteLLM] in inference
-    service ollama(selfhst:ollama)[Ollama] in inference
-    service ollama_init(selfhst:ollama)[Ollama Init] in inference
+    group inference(mdi:robot)[10 inference]
+    service litellm(mdi:api)[LiteLLM] in inference
+    service ollama(mdi:robot)[Ollama] in inference
+    service ollama_init(mdi:robot)[Ollama Init] in inference
     service tei_embedding(logos:hugging-face)[TEI Embedding] in inference
     service tei_reranking(logos:hugging-face)[TEI Reranking] in inference
-    service hermes_agent(simple:hermes)[Hermes Agent] in inference
-    service openrouter(selfhst:openai)[OpenRouter and Gemini] in inference
-    service discord(simple:discord)[Discord] in inference
+    service hermes_agent(logos:hermes)[Hermes Agent] in inference
+    service openrouter(logos:openai-icon)[OpenRouter and Gemini] in inference
+    service discord(mdi:message-text)[Discord] in inference
 
-    group webui(selfhst:open-webui)[11 webui]
-    service open_webui(selfhst:open-webui)[Open WebUI] in webui
+    group webui(mdi:monitor-dashboard)[11 webui]
+    service open_webui(mdi:robot)[Open WebUI] in webui
     service open_terminal(logos:terminal)[Open Terminal] in webui
-    service docling(lucide:file-text)[Docling] in webui
-    service searxng(selfhst:searxng)[SearXNG] in webui
-    service voicevox_engine(lucide:speech)[VOICEVOX Engine] in webui
-    service voicevox_api(selfhst:piper-tts)[VOICEVOX API] in webui
-    service qdrant(selfhst:qdrant)[Qdrant] in webui
+    service docling(mdi:file-document)[Docling] in webui
+    service searxng(mdi:magnify-scan)[SearXNG] in webui
+    service voicevox_engine(mdi:account-voice)[VOICEVOX Engine] in webui
+    service voicevox_api(mdi:microphone-message)[VOICEVOX API] in webui
+    service qdrant(logos:qdrant)[Qdrant] in webui
 
-    group storage(selfhst:nextcloud)[12 storage]
-    service nextcloud(selfhst:nextcloud)[Nextcloud] in storage
-    service nextcloud_mariadb(selfhst:mariadb)[Nextcloud MariaDB] in storage
-    service nextcloud_redis(selfhst:redis)[Nextcloud Redis] in storage
-    service oikb(lucide:book-open)[OIKB] in storage
+    group storage(mdi:cloud)[12 storage]
+    service nextcloud(mdi:cloud)[Nextcloud] in storage
+    service nextcloud_mariadb(logos:mariadb)[Nextcloud MariaDB] in storage
+    service nextcloud_redis(logos:redis)[Nextcloud Redis] in storage
+    service oikb(mdi:book-open-page-variant)[OIKB] in storage
 
-    group automation(selfhst:dify)[13 automation]
-    service dify_nginx(selfhst:nginx)[Dify Nginx] in automation
-    service dify_web(selfhst:dify)[Dify Web] in automation
-    service dify_api(selfhst:dify)[Dify API] in automation
-    service dify_worker(selfhst:dify)[Dify Worker] in automation
-    service dify_worker_beat(selfhst:dify)[Dify Worker Beat] in automation
-    service dify_plugin_daemon(selfhst:dify)[Dify Plugin Daemon] in automation
-    service dify_agent_backend(lucide:bot)[Dify Agent Backend] in automation
-    service dify_sandbox(lucide:braces)[Dify Sandbox] in automation
-    service dify_local_sandbox(lucide:file-code)[Dify Local Sandbox] in automation
-    service dify_ssrf_proxy(lucide:shield)[Dify SSRF Proxy] in automation
-    service dify_init_permissions(lucide:shield)[Dify Init Permissions] in automation
-    service dify_postgres(selfhst:postgresql)[Dify PostgreSQL] in automation
-    service dify_redis(selfhst:redis)[Dify Redis] in automation
-    service dify_qdrant(selfhst:qdrant)[Dify Qdrant] in automation
+    group automation(mdi:sitemap)[13 automation]
+    service dify_nginx(logos:nginx)[Dify Nginx] in automation
+    service dify_web(mdi:sitemap)[Dify Web] in automation
+    service dify_api(mdi:api)[Dify API] in automation
+    service dify_worker(mdi:cog)[Dify Worker] in automation
+    service dify_worker_beat(mdi:cog-clockwise)[Dify Worker Beat] in automation
+    service dify_plugin_daemon(mdi:puzzle)[Dify Plugin Daemon] in automation
+    service dify_agent_backend(mdi:robot)[Dify Agent Backend] in automation
+    service dify_sandbox(mdi:code-braces)[Dify Sandbox] in automation
+    service dify_local_sandbox(mdi:file-code)[Dify Local Sandbox] in automation
+    service dify_ssrf_proxy(mdi:shield-check)[Dify SSRF Proxy] in automation
+    service dify_init_permissions(mdi:shield-check)[Dify Init Permissions] in automation
+    service dify_postgres(logos:postgresql)[Dify PostgreSQL] in automation
+    service dify_redis(logos:redis)[Dify Redis] in automation
+    service dify_qdrant(logos:qdrant)[Dify Qdrant] in automation
 
-    group team_chat(selfhst:zulip)[20 team chat]
-    service zulip(selfhst:zulip)[Zulip] in team_chat
-    service zulip_postgres(selfhst:postgresql)[Zulip PostgreSQL] in team_chat
-    service zulip_memcached(selfhst:memcached)[Zulip Memcached] in team_chat
-    service zulip_rabbitmq(selfhst:rabbitmq)[Zulip RabbitMQ] in team_chat
-    service zulip_redis(selfhst:redis)[Zulip Redis] in team_chat
+    group team_chat(logos:zulip)[20 team chat]
+    service zulip(logos:zulip)[Zulip] in team_chat
+    service zulip_postgres(logos:postgresql)[Zulip PostgreSQL] in team_chat
+    service zulip_memcached(logos:memcached)[Zulip Memcached] in team_chat
+    service zulip_rabbitmq(logos:rabbitmq)[Zulip RabbitMQ] in team_chat
+    service zulip_redis(logos:redis)[Zulip Redis] in team_chat
 
-    group team_project(selfhst:leantime)[21 team project]
-    service leantime(selfhst:leantime)[Leantime] in team_project
-    service leantime_db(selfhst:mysql)[Leantime MySQL] in team_project
+    group team_project(mdi:chart-timeline-variant)[21 team project]
+    service leantime(mdi:chart-timeline-variant)[Leantime] in team_project
+    service leantime_db(logos:mysql)[Leantime MySQL] in team_project
 
-    group team_wiki(selfhst:bookstack)[22 team wiki]
-    service bookstack(selfhst:bookstack)[BookStack] in team_wiki
-    service bookstack_mariadb(selfhst:mariadb)[BookStack MariaDB] in team_wiki
+    group team_wiki(mdi:book-open-page-variant)[22 team wiki]
+    service bookstack(mdi:book-open-page-variant)[BookStack] in team_wiki
+    service bookstack_mariadb(logos:mariadb)[BookStack MariaDB] in team_wiki
 
-    group team_git(selfhst:gitea)[23 team git]
-    service gitea(selfhst:gitea)[Gitea] in team_git
-    service gitea_postgres(selfhst:postgresql)[Gitea PostgreSQL] in team_git
+    group team_git(mdi:git)[23 team git]
+    service gitea(mdi:git)[Gitea] in team_git
+    service gitea_postgres(logos:postgresql)[Gitea PostgreSQL] in team_git
 
-    group developer(simple:visualstudiocode)[30 developer]
-    service pypiserver(simple:pypi)[PyPI Server] in developer
-    service verdaccio(selfhst:verdaccio)[Verdaccio] in developer
-    service code_marketplace(simple:visualstudiocode)[Code Marketplace] in developer
-    service code_marketplace_publisher(simple:visualstudiocode)[Marketplace Publisher] in developer
-    service repo_landing_page(selfhst:alpine-linux)[Repo Landing Page] in developer
-    service rpm_repo(simple:redhat)[RPM Repo] in developer
-    service deb_repo(simple:debian)[APT Repo] in developer
-    service asset_publisher(lucide:package)[Asset Publisher] in developer
-    service npm_publisher(selfhst:node-js)[npm Publisher] in developer
-    service rpm_publisher(simple:redhat)[RPM Publisher] in developer
-    service aptly_publisher(simple:debian)[Aptly Publisher] in developer
+    group developer(mdi:microsoft-visual-studio-code)[30 developer]
+    service pypiserver(logos:pypi)[PyPI Server] in developer
+    service verdaccio(logos:verdaccio)[Verdaccio] in developer
+    service code_marketplace(mdi:microsoft-visual-studio-code)[Code Marketplace] in developer
+    service code_marketplace_publisher(mdi:microsoft-visual-studio-code)[Marketplace Publisher] in developer
+    service repo_landing_page(mdi:web)[Repo Landing Page] in developer
+    service rpm_repo(logos:redhat)[RPM Repo] in developer
+    service deb_repo(logos:debian)[APT Repo] in developer
+    service asset_publisher(mdi:package-variant-closed)[Asset Publisher] in developer
+    service npm_publisher(logos:nodejs-icon)[npm Publisher] in developer
+    service rpm_publisher(logos:redhat)[RPM Publisher] in developer
+    service aptly_publisher(logos:debian)[Aptly Publisher] in developer
 
-    group o11y(selfhst:grafana)[50 o11y]
-    service grafana(selfhst:grafana)[Grafana] in o11y
-    service prometheus(selfhst:prometheus)[Prometheus] in o11y
-    service node_exporter(lucide:server)[Node Exporter] in o11y
-    service cadvisor(selfhst:cadvisor)[cAdvisor] in o11y
-    service blackbox_exporter(lucide:search)[Blackbox Exporter] in o11y
+    group o11y(logos:grafana)[50 o11y]
+    service grafana(logos:grafana)[Grafana] in o11y
+    service prometheus(logos:prometheus)[Prometheus] in o11y
+    service node_exporter(mdi:server)[Node Exporter] in o11y
+    service cadvisor(logos:docker)[cAdvisor] in o11y
+    service blackbox_exporter(mdi:magnify-scan)[Blackbox Exporter] in o11y
 
-    group llmops(selfhst:langfuse)[51 llmops]
-    service langfuse_web(selfhst:langfuse)[Langfuse Web] in llmops
-    service langfuse_worker(selfhst:langfuse)[Langfuse Worker] in llmops
-    service langfuse_clickhouse(selfhst:clickhouse)[Langfuse ClickHouse] in llmops
-    service langfuse_minio(selfhst:minio)[Langfuse MinIO] in llmops
-    service langfuse_redis(selfhst:redis)[Langfuse Redis] in llmops
-    service langfuse_postgres(selfhst:postgresql)[Langfuse PostgreSQL] in llmops
+    group llmops(mdi:chart-line)[51 llmops]
+    service langfuse_web(mdi:chart-line)[Langfuse Web] in llmops
+    service langfuse_worker(mdi:cog)[Langfuse Worker] in llmops
+    service langfuse_clickhouse(mdi:chart-histogram)[Langfuse ClickHouse] in llmops
+    service langfuse_minio(mdi:harddisk)[Langfuse MinIO] in llmops
+    service langfuse_redis(logos:redis)[Langfuse Redis] in llmops
+    service langfuse_postgres(logos:postgresql)[Langfuse PostgreSQL] in llmops
 
     users:R --> L:internet
     internet:R --> L:public_host
@@ -219,4 +219,5 @@ architecture-beta
 
 - [Mermaid Architecture Diagrams Documentation](https://mermaid.ai/open-source/syntax/architecture.html)
 - [Mermaid Registering icon pack](https://mermaid.ai/open-source/config/icons.html)
-- [selfh.st/icons icon set - Iconify](https://icon-sets.iconify.design/selfhst/?keyword=sel)
+- [Iconify Logos icon set](https://icon-sets.iconify.design/logos/)
+- [Iconify Material Design Icons icon set](https://icon-sets.iconify.design/mdi/)
