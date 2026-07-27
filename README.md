@@ -2,6 +2,8 @@
 
 ローカルAI実験環境をDocker Composeでまとめて起動するstack。
 
+![diagram](docs/assets/DIAGRAM.svg)
+
 ## Usage
 
 通常起動は`dc.sh`を使う。
