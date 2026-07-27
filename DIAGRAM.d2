@@ -174,6 +174,24 @@ service_catalog: {
         stroke-width: 2
       }
 
+      hermes_agent: {
+        label: "Hermes-Agent\n31001"
+        icon: "./00-common/homepage/icons/hermes-icon.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      tei: {
+        label: "TEI\nEmbedding / Reranking"
+        icon: "./00-common/homepage/icons/hugging-face.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
       litellm: {
         label: "LiteLLM\n31000"
         icon: "./00-common/homepage/icons/litlellm.png"
@@ -186,15 +204,6 @@ service_catalog: {
       ollama: {
         label: "Ollama"
         icon: "./00-common/homepage/icons/ollama.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
-
-      tei: {
-        label: "TEI\nEmbedding / Reranking"
-        icon: "./00-common/homepage/icons/hugging-face.png"
         style: {
           fill: "#ffffff"
           stroke: "#a16207"
@@ -222,15 +231,6 @@ service_catalog: {
           stroke-dash: 4
         }
       }
-
-      hermes_agent: {
-        label: "Hermes-Agent\n31001"
-        icon: "./00-common/homepage/icons/hermes-icon.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
     }
 
     11_webui: {
@@ -240,15 +240,6 @@ service_catalog: {
         fill: "#eff6ff"
         stroke: "#2563eb"
         stroke-width: 2
-      }
-
-      open_webui: {
-        label: "Open WebUI\n31100"
-        icon: "./00-common/homepage/icons/open-webui.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#2563eb"
-        }
       }
 
       open_terminal: {
@@ -263,6 +254,15 @@ service_catalog: {
       docling: {
         label: "docling-serve\n31101"
         icon: "./00-common/homepage/icons/docling.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      open_webui: {
+        label: "Open WebUI\n31100"
+        icon: "./00-common/homepage/icons/open-webui.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -306,18 +306,18 @@ service_catalog: {
         stroke-width: 2
       }
 
-      nextcloud: {
-        label: "Nextcloud\n31200"
-        icon: "./00-common/homepage/icons/nextcloud.png"
+      oikb: {
+        label: "Open-WebUI Knowledge Bases\n31201"
+        icon: "./00-common/homepage/icons/open-webui.png"
         style: {
           fill: "#ffffff"
           stroke: "#059669"
         }
       }
 
-      oikb: {
-        label: "Open-WebUI Knowledge Bases\n31201"
-        icon: "./00-common/homepage/icons/open-webui.png"
+      nextcloud: {
+        label: "Nextcloud\n31200"
+        icon: "./00-common/homepage/icons/nextcloud.png"
         style: {
           fill: "#ffffff"
           stroke: "#059669"
@@ -474,10 +474,77 @@ service_catalog: {
 }
 
 users -> public_host: "access"
-public_host -> service_catalog.row_1: "platform / developer entrypoints"
-public_host -> service_catalog.row_2: "application entrypoints"
-public_host -> service_catalog.row_3: "dashboard entrypoints"
+public_host -> service_catalog: "published services"
 
-service_catalog.row_1 -> service_catalog.row_2: "OIDC / infrastructure / repositories"
-service_catalog.row_2 -> service_catalog.row_3: "metrics / LLM traces"
-service_catalog.row_1 -> service_catalog.row_3: "platform metrics"
+service_catalog.row_1 -> service_catalog.row_2: "認証・パッケージ提供"
+service_catalog.row_2 -> service_catalog.row_3: "観測"
+
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
+service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm
+
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.open_terminal
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.docling
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.searxng
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.qdrant
+service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.voicevox_tts
+
+service_catalog.row_2.12_storage.oikb -> service_catalog.row_2.12_storage.nextcloud
+
+service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheus
+
+# service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.00_common.oidc: "auth"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.11_webui.open_webui: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.21_team_project.leantime: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.22_team_wiki.bookstack: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
+
+# service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_2.11_webui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_2.23_team_git.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_3.50_o11y.metrics -> service_catalog.row_3.50_o11y.prometheus: "scrape / push" {
+#   style.stroke-dash: 4
+# }
+# service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
+
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama: "chat models"
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei: "embedding / reranking"
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter: "external LLM API"
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio: "external LLM API"
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
+# service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm: "LLM API"
+
+# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
+# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.hermes_agent: "agent API"
+# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.integrations: "uses"
+# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.open_terminal: "terminal"
+# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.docling: "content extraction"
+# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.searxng: "web search"
+# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.qdrant: "vector store"
+# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.voicevox_tts: "TTS"
