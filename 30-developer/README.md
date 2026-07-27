@@ -7,7 +7,7 @@
 - Container image: Harbor
 - VS Code Extensions: code-marketplace
 - rpm: createrepo_c + nginx
-- deb: aptly + nginx
+- deb: flat APT repository + nginx
 
 Harbor は公式 installer の `harbor.yml` から生成した `docker-compose.yml` を、起動時だけ root compose に重ねて使う。
 

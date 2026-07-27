@@ -4,6 +4,7 @@ set -euo pipefail
 # このscriptはrepository rootから実行する。
 ASSETS_DIR="${ASSETS_DIR:-30-developer/assets}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+PUBLISHER_SCRIPTS_DIR="${PUBLISHER_SCRIPTS_DIR:-$PWD/30-developer/scripts}"
 HARBOR_REGISTRY="${HARBOR_REGISTRY:-}"
 HARBOR_PROJECT="${HARBOR_PROJECT:-library}"
 NPM_PUBLISH_TOKEN="${NPM_PUBLISH_TOKEN:-local-publish-token}"
@@ -31,36 +32,12 @@ fi
 
 # RPM packageを配置してmetadataを生成する。
 if [ -d "$ASSETS_PATH/rpm" ]; then
-  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/rpm:/imports:ro" rpm-publisher sh -eu -c 'mkdir -p /repo && rsync -a --delete /imports/ /repo/ && createrepo_c --update /repo && cat > /repo/index.html <<EOF
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>createrepo_c</title></head>
-<body>
-<h1>createrepo_c</h1>
-<p>RPM source repository for dnf/yum.</p>
-<ul>
-  <li><a href="./repodata/repomd.xml">repodata/repomd.xml</a></li>
-</ul>
-</body>
-</html>
-EOF'
+  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/rpm:/imports:ro" -v "$PUBLISHER_SCRIPTS_DIR/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro" rpm-publisher bash /usr/local/bin/publish-rpm-repository
 fi
 
-# deb packageをaptly local repositoryへ登録してpublishする。
+# deb packageをflat APT repositoryとして配置してmetadataを生成する。
 if [ -d "$ASSETS_PATH/deb" ]; then
-  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/deb:/imports:ro" aptly-publisher sh -eu -c 'set -- /imports/*.deb; [ -e "$1" ] || exit 0; repo=deb-internal; snapshot="${repo}-$(date +%Y%m%d%H%M%S)"; aptly repo show "$repo" >/dev/null 2>&1 || aptly repo create -distribution=stable -component=main "$repo"; aptly repo add -force-replace "$repo" /imports; aptly snapshot create "$snapshot" from repo "$repo"; if aptly publish show stable filesystem:public: >/dev/null 2>&1; then aptly publish switch -skip-signing stable filesystem:public: "$snapshot"; else aptly publish snapshot -skip-signing -distribution=stable -component=main "$snapshot" filesystem:public:; fi; cat > /public/index.html <<EOF
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>aptly</title></head>
-<body>
-<h1>aptly</h1>
-<p>APT source repository.</p>
-<ul>
-  <li><a href="./dists/stable/Release">dists/stable/Release</a></li>
-</ul>
-</body>
-</html>
-EOF'
+  docker compose -f "$COMPOSE_FILE" --env-file .env --profile developer run --rm --no-deps -v "$ASSETS_PATH/deb:/imports:ro" -v "$PUBLISHER_SCRIPTS_DIR/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro" deb-publisher bash /usr/local/bin/publish-deb-repository
 fi
 
 # VSIXをcode-marketplaceへ登録する。

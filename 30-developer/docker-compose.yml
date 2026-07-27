@@ -6,8 +6,6 @@
 #   - https://verdaccio.org/docs/docker/
 # - code-marketplace
 #   - https://github.com/coder/code-marketplace
-# - aptly
-#   - https://www.aptly.info/
 # - createrepo_c
 #   - https://github.com/rpm-software-management/createrepo_c
 #
@@ -153,19 +151,19 @@ services:
         cat > /repo/apt/index.html <<'EOF'
         <!doctype html>
         <html lang="en">
-        <head><meta charset="utf-8"><title>aptly</title></head>
+        <head><meta charset="utf-8"><title>APT repository</title></head>
         <body>
-        <h1>aptly</h1>
-        <p>APT source repository.</p>
+        <h1>APT repository</h1>
+        <p>Flat APT repository.</p>
         <ul>
-          <li><a href="./dists/stable/Release">dists/stable/Release</a></li>
+          <li><a href="./Packages">Packages</a></li>
         </ul>
         </body>
         </html>
         EOF
     volumes:
       - rpm-repository:/repo/rpm
-      - aptly-public:/repo/apt
+      - deb-repository:/repo/apt
 
   rpm-repo:
     image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
@@ -210,7 +208,7 @@ services:
     ports:
       - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
     volumes:
-      - aptly-public:/usr/share/nginx/html:ro
+      - deb-repository:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
@@ -230,9 +228,9 @@ services:
       start_period: 10s
     labels:
       - homepage.group=30-developer
-      - homepage.name=aptly
+      - homepage.name=APT Repository
       - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
-      - homepage.description=APT source repository
+      - homepage.description=Flat APT repository
       - homepage.icon=/icons/debian-linux.png
 
   asset-publisher:
@@ -259,12 +257,10 @@ services:
       - verdaccio
 
   rpm-publisher:
-    build:
-      context: ./rpm-publisher
-      dockerfile: Containerfile
-    image: ${STACK_NAME:-inferlab}/rpm-publisher:${RPM_PUBLISHER_IMAGE_TAG:-local}
+    image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
     profiles:
       - developer
+    entrypoint: []
     command:
       - "true"
     volumes:
@@ -272,25 +268,20 @@ services:
     networks:
       - internal-nw
 
-  aptly-publisher:
-    build:
-      context: ./aptly
-      dockerfile: Containerfile
-    image: ${STACK_NAME:-inferlab}/aptly:${APTLY_IMAGE_TAG:-local}
+  deb-publisher:
+    image: ${DEB_PUBLISHER_IMAGE:-docker.io/library/debian:13-slim}
     profiles:
       - developer
     command:
       - "true"
     volumes:
-      - aptly-data:/aptly
-      - aptly-public:/public
+      - deb-repository:/repo
     networks:
       - internal-nw
 
 volumes:
-  aptly-data:
-  aptly-public:
   code-marketplace-extensions:
+  deb-repository:
   pypiserver-packages:
   rpm-repository:
   verdaccio-storage:
