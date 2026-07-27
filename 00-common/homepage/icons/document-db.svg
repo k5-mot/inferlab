@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Document database">
-  <rect width="128" height="128" rx="24" fill="#475569"/>
-  <ellipse cx="64" cy="34" rx="36" ry="13" fill="#ffffff"/>
-  <path d="M28 34v58c0 7 16 13 36 13s36-6 36-13V34" fill="none" stroke="#ffffff" stroke-width="10"/>
-  <path d="M49 57h30M49 73h30M49 89h20" stroke="#bfdbfe" stroke-width="7" stroke-linecap="round"/>
-</svg>

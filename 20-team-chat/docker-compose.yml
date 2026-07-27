@@ -133,7 +133,7 @@ services:
       - homepage.group=20-team-chat
       - homepage.name=Zulip-Memcached
       - homepage.description=In-memory cache
-      - homepage.icon=sh-memcached
+      - homepage.icon=/icons/memcached.png
   zulip-rabbitmq:
     image: docker.io/library/rabbitmq:4.2
     container_name: ${STACK_NAME:-inferlab}-zulip-rabbitmq

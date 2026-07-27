@@ -114,6 +114,7 @@ services:
       - homepage.name=Code Marketplace
       - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/
       - homepage.description=VS Code extension marketplace
+      - homepage.icon=/icons/visual-studio-code.png
 
   code-marketplace-publisher:
     image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}

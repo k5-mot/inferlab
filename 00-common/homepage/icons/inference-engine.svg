@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Inference engine">
-  <rect width="128" height="128" rx="24" fill="#111827"/>
-  <rect x="34" y="34" width="60" height="60" rx="10" fill="#ffffff"/>
-  <path d="M50 22v16M64 22v16M78 22v16M50 90v16M64 90v16M78 90v16M22 50h16M22 64h16M22 78h16M90 50h16M90 64h16M90 78h16" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
-  <path d="M51 67h26M64 54v26" stroke="#111827" stroke-width="8" stroke-linecap="round"/>
-</svg>
