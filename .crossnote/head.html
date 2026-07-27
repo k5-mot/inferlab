@@ -1,0 +1,97 @@
+<script>
+/**
+ * Markdown Preview Enhanced の Mermaid に構成図用の Iconify パックを登録する。
+ *
+ * @returns {void} この初期化処理は値を返さない。
+ *
+ * 副作用:
+ * - `window.mermaid.registerIconPacks` を呼び出して Mermaid のアイコン解決へ影響する。
+ * - Mermaid の読み込みが遅い場合は短時間の再試行タイマーを登録する。
+ */
+(function () {
+    const ICON_PACKS = [
+        {
+            name: "selfhst",
+            url: "https://unpkg.com/@iconify-json/selfhst/icons.json",
+        },
+        {
+            name: "simple",
+            url: "https://unpkg.com/@iconify-json/simple-icons/icons.json",
+        },
+        {
+            name: "logos",
+            url: "https://unpkg.com/@iconify-json/logos/icons.json",
+        },
+        {
+            name: "lucide",
+            url: "https://unpkg.com/@iconify-json/lucide/icons.json",
+        },
+    ];
+
+    /**
+     * Iconify JSON を取得して Mermaid の icon pack loader へ渡す。
+     *
+     * @param {string} url 取得する Iconify JSON の URL。
+     * @returns {Promise<object>} Mermaid が解釈できる Iconify JSON。
+     * @throws {Error} CDN が異常応答を返した場合に送出する。
+     */
+    async function loadIconPack(url) {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Iconify icon pack loading failed: ${response.status} ${url}`);
+        }
+
+        return response.json();
+    }
+
+    /**
+     * Mermaid の `registerIconPacks` に渡す icon pack 定義を作る。
+     *
+     * @param {{name: string, url: string}} iconPack 登録名と取得元 URL。
+     * @returns {{name: string, loader: Function}} Mermaid 用の icon pack 定義。
+     */
+    function createMermaidIconPack(iconPack) {
+        return {
+            name: iconPack.name,
+            loader: loadIconPack.bind(null, iconPack.url),
+        };
+    }
+
+    /**
+     * Mermaid が利用可能なら Iconify パックを登録する。
+     *
+     * @returns {boolean} 登録できた場合は `true`、まだ Mermaid が未準備なら `false`。
+     */
+    function registerIconPacks() {
+        if (!window.mermaid || typeof window.mermaid.registerIconPacks !== "function") {
+            return false;
+        }
+
+        if (window.__inferlabMermaidIconPacksRegistered) {
+            return true;
+        }
+
+        window.mermaid.registerIconPacks(ICON_PACKS.map(createMermaidIconPack));
+        window.__inferlabMermaidIconPacksRegistered = true;
+
+        return true;
+    }
+
+    /**
+     * Mermaid の読み込み完了を待って Iconify パック登録を再試行する。
+     *
+     * @param {number} remainingRetries 残りの再試行回数。
+     * @returns {void} 登録結果は内部状態と Mermaid 設定へ反映する。
+     */
+    function registerWhenReady(remainingRetries) {
+        if (registerIconPacks() || remainingRetries <= 0) {
+            return;
+        }
+
+        window.setTimeout(registerWhenReady.bind(null, remainingRetries - 1), 100);
+    }
+
+    registerWhenReady(100);
+})();
+</script>
