@@ -21,6 +21,8 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
+    # image: ghcr.io/open-webui/open-webui:0.11.0-slim
+    # image: ghcr.io/open-webui/open-webui:0.11.0
     image: ghcr.io/open-webui/open-webui:0.10.2
     container_name: ${STACK_NAME:-inferlab}-open-webui
     restart: unless-stopped
@@ -187,10 +189,20 @@ services:
       SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
       ### For Edge-TTS (Text-to-Speech)
       AUDIO_TTS_ENGINE: openai
-      AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
-      AUDIO_TTS_OPENAI_API_KEY: "EMPTY"
-      AUDIO_TTS_MODEL: "voicevox/tts"
-      AUDIO_TTS_VOICE: "3"
+      # AUDIO_TTS_OPENAI_API_BASE_URL: http://voicevox-openai-tts:8000/v1
+      # AUDIO_TTS_OPENAI_API_BASE_URL: http://irodori-tts:8088/v1
+      AUDIO_TTS_OPENAI_API_BASE_URL: http://kokoro:8880/v1
+      # AUDIO_TTS_OPENAI_API_KEY: "EMPTY"
+      AUDIO_TTS_OPENAI_API_KEY: "not-needed"
+      # AUDIO_TTS_MODEL: "voicevox/tts"
+      # AUDIO_TTS_MODEL: "irodori-tts"
+      AUDIO_TTS_MODEL: "kokoro"
+      # AUDIO_TTS_VOICE: "3"
+      # 参照音声を使う場合は ./irodori-tts/voices/<voice>.wav を置いて voice 名へ変更する。
+      # AUDIO_TTS_VOICE: "none"
+      # AUDIO_TTS_VOICE: "af_heart"
+      # AUDIO_TTS_VOICE: "alloy"
+      AUDIO_TTS_VOICE: "jf_alpha"
     entrypoint:
       - bash
       - /run/scripts/entrypoint_patch.sh
@@ -211,7 +223,9 @@ services:
         condition: service_started
       searxng:
         condition: service_started
-      voicevox-openai-tts:
+      # voicevox-openai-tts:
+      # irodori-tts:
+      kokoro:
         condition: service_started
       qdrant:
         condition: service_started
@@ -388,51 +402,123 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:31102
       - homepage.description=Metasearch engine
 
-  voicevox_engine:
-    image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
-    container_name: ${STACK_NAME:-inferlab}-voicevox_engine
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: ${STACK_NAME:-inferlab}-kokoro
     restart: unless-stopped
-    profiles:
-      - webui
-    networks:
-      - internal-nw
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:50021/docs" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
-    labels:
-      - homepage.group=11-webui
-      - homepage.name=VOICEVOX-Engine
-      - homepage.description=Text-to-Speech Engine
-
-  voicevox-openai-tts:
-    <<: *external-dns-stabilizer
-    image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0
-    container_name: ${STACK_NAME:-inferlab}-voicevox-openai-tts
-    restart: unless-stopped
-    profiles:
-      - webui
     environment:
-      - VOICEVOX_ENGINE_URL=http://voicevox_engine:50021
+      DEFAULT_VOICE: jf_alpha
+      DEFAULT_VOICE_CODE: j
+      USE_GPU: "false"
+      DEVICE_TYPE: cpu
+    ports:
+      - 31105:8880
     networks:
       - internal-nw
-    depends_on:
-      voicevox_engine:
-        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=5)" ]
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8880/health" ]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
     label_file:
       - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
     labels:
       - homepage.group=11-webui
-      - homepage.name=VOICEVOX-API
-      - homepage.description=Text-to-Speech API
+      - homepage.name=Kokoro-TTS
+      - homepage.description=Text-to-Speech Engine
+      - homepage.href=http://${PUBLIC_HOST}:31105/web
+
+  # kokoro:
+  #   image: hwdsl2/kokoro-server
+  #   container_name: ${STACK_NAME:-inferlab}-kokoro
+  #   restart: always
+  #   environment:
+  #     KOKORO_API_KEY: sk-kokoro-api-secret-key
+  #     KOKORO_VOICE: jf_alpha
+  #     KOKORO_LANG_CODE: "j"
+  #     # ports:
+  #     #   - 8880:8880 # For a host-based reverse proxy, change to "127.0.0.1:8880:8880/tcp"
+  #   volumes:
+  #     - kokoro-data:/var/lib/kokoro
+  #   networks:
+  #     - internal-nw
+
+  # irodori-tts:
+  #   # image: ghcr.io/k5-mot/irodori-tts-server:20260727-2038
+  #   image: ghcr.io/k5-mot/irodori-tts-server:20260728-2353
+  #   container_name: ${STACK_NAME:-inferlab}-irodori-tts
+  #   restart: unless-stopped
+  #   profiles:
+  #     - webui
+  #   environment:
+  #     IRODORI_HOST: 0.0.0.0
+  #     IRODORI_PORT: 8088
+  #     IRODORI_DEFAULT_VOICE: none
+  #     IRODORI_ALLOW_NO_REF_VOICE: "true"
+  #     # IRODORI_API_KEY: sk-irodori-tts-api-secret-key
+  #   volumes:
+  #     - irodori-hf-cache:/root/.cache/huggingface
+  #     - ./irodori-tts/voices:/app/voices
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8088/health" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
+  #   labels:
+  #     - homepage.group=11-webui
+  #     - homepage.name=Irodori-TTS
+  #     - homepage.description=Text-to-Speech Engine
+
+  # voicevox_engine:
+  #   image: docker.io/voicevox/voicevox_engine:cpu-0.25.2
+  #   container_name: ${STACK_NAME:-inferlab}-voicevox_engine
+  #   restart: unless-stopped
+  #   profiles:
+  #     - webui
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://127.0.0.1:50021/docs" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
+  #   labels:
+  #     - homepage.group=11-webui
+  #     - homepage.name=VOICEVOX-Engine
+  #     - homepage.description=Text-to-Speech Engine
+
+  # voicevox-openai-tts:
+  #   <<: *external-dns-stabilizer
+  #   image: ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0
+  #   container_name: ${STACK_NAME:-inferlab}-voicevox-openai-tts
+  #   restart: unless-stopped
+  #   profiles:
+  #     - webui
+  #   environment:
+  #     - VOICEVOX_ENGINE_URL=http://voicevox_engine:50021
+  #   networks:
+  #     - internal-nw
+  #   depends_on:
+  #     voicevox_engine:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=5)" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
+  #   labels:
+  #     - homepage.group=11-webui
+  #     - homepage.name=VOICEVOX-API
+  #     - homepage.description=Text-to-Speech API
 
   qdrant:
     <<: *external-dns-stabilizer
@@ -472,6 +558,7 @@ volumes:
   open-webui-data:
   open-terminal-data:
   docling-data:
+  irodori-hf-cache:
   qdrant-storage:
   qdrant-snapshots:
 
