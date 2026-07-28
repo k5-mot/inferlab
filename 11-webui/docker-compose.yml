@@ -22,8 +22,8 @@ services:
   open-webui:
     <<: *external-dns-stabilizer
     # image: ghcr.io/open-webui/open-webui:0.11.0-slim
-    # image: ghcr.io/open-webui/open-webui:0.11.0
-    image: ghcr.io/open-webui/open-webui:0.10.2
+    image: ghcr.io/open-webui/open-webui:0.11.0
+    # image: ghcr.io/open-webui/open-webui:0.10.2
     container_name: ${STACK_NAME:-inferlab}-open-webui
     restart: unless-stopped
     profiles:
@@ -210,12 +210,9 @@ services:
       - 31100:8080
     volumes:
       - open-webui-data:/app/backend/data
-      # - ./open-webui/docling_params_full.json:/run/config/docling_params.json:ro
       - ./open-webui/docling_params_slim.json:/run/config/docling_params.json:ro
       - ./open-webui/entrypoint_patch.sh:/run/scripts/entrypoint_patch.sh:ro
       - ./open-webui/export_docling_params.py:/run/scripts/export_docling_params.py:ro
-      # TODO: 上記の起動時パッチを削除するときに、このマウントも一緒に削除する。
-      - ./open-webui/patch_channel_stream.py:/run/patches/patch_channel_stream.py:ro
     networks:
       - internal-nw
     depends_on:
