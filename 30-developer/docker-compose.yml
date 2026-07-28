@@ -193,7 +193,7 @@ services:
     user: "0:0"
     entrypoint: []
     environment:
-      DEB_ARCHITECTURES: ${DEB_ARCHITECTURES:-amd64 arm64 all}
+      DEB_ARCHITECTURES: ${DEB_ARCHITECTURES:-amd64 arm64}
       DEB_CODENAME: ${DEB_CODENAME:-stable}
       DEB_COMPONENT: ${DEB_COMPONENT:-main}
       DEB_DISTRIBUTION: ${DEB_DISTRIBUTION:-stable}
@@ -203,6 +203,14 @@ services:
     command:
       - bash
       - /usr/local/bin/sync-deb-repository
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f "/repo/public/dists/$${DEB_CODENAME:-stable}/Release"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     volumes:
       - ./registry/deb:/repo
       - ./deb-repository-sync/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro

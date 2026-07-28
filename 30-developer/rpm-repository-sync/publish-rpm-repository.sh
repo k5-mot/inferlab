@@ -23,7 +23,7 @@ if [ "${#rpm_files[@]}" -gt 0 ]; then
 fi
 
 if [ -f "$REPOSITORY_DIR/.gitkeep" ]; then
-  : > "$build_dir/.gitkeep"
+  printf '\n' > "$build_dir/.gitkeep"
 fi
 
 createrepo_c --update "$build_dir"
@@ -47,3 +47,4 @@ chmod -R a+rX "$build_dir"
 mkdir -p "$REPOSITORY_DIR"
 find "$REPOSITORY_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 cp -R "$build_dir"/. "$REPOSITORY_DIR"/
+chmod -R a+rX "$REPOSITORY_DIR"

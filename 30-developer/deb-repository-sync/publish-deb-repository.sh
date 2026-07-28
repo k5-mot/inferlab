@@ -7,7 +7,7 @@ IMPORTS_DIR="${IMPORTS_DIR:-$REPOSITORY_DIR}"
 DEB_DISTRIBUTION="${DEB_DISTRIBUTION:-stable}"
 DEB_CODENAME="${DEB_CODENAME:-stable}"
 DEB_COMPONENT="${DEB_COMPONENT:-main}"
-DEB_ARCHITECTURES="${DEB_ARCHITECTURES:-amd64 arm64 all}"
+DEB_ARCHITECTURES="${DEB_ARCHITECTURES:-amd64 arm64}"
 DEB_ORIGIN="${DEB_ORIGIN:-InferLab}"
 DEB_LABEL="${DEB_LABEL:-InferLab}"
 PUBLIC_DIR="$REPOSITORY_DIR/public"
@@ -65,7 +65,12 @@ cat > "$build_dir/index.html" <<EOF
 </html>
 EOF
 
+if [ -f "$PUBLIC_DIR/.gitkeep" ] || [ -f "$REPOSITORY_DIR/.gitkeep" ]; then
+  printf '\n' > "$build_dir/.gitkeep"
+fi
+
 chmod -R a+rX "$build_dir"
 mkdir -p "$PUBLIC_DIR"
 find "$PUBLIC_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 cp -R "$build_dir"/. "$PUBLIC_DIR"/
+chmod -R a+rX "$PUBLIC_DIR"
