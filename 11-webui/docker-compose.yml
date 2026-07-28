@@ -58,6 +58,26 @@ services:
       TASK_MODEL: "google/gemma4:31b"
       ENABLE_CONTEXT_COMPACTION: "true"
       ENABLE_FOLLOW_UP_GENERATION: "false"
+      ### MCPO
+      ENABLE_DIRECT_CONNECTIONS: "true"
+      TOOL_SERVER_CONNECTIONS: >-
+        [
+          {
+            "type": "openapi",
+            "url": "http://mcpo:8000",
+            "spec_type": "url",
+            "spec": "",
+            "path": "openapi.json",
+            "auth_type": "bearer",
+            "key": "sk-mcpo-api-secret-key",
+            "config": { "enable": true },
+            "info": {
+              "id": "open-webui",
+              "name": "Open-WebUI",
+              "description": "MCP server description."
+            }
+          }
+        ]
       ### For Keycloak
       ENABLE_SIGNUP: "false"
       ENABLE_OAUTH_SIGNUP: "true"
@@ -246,6 +266,47 @@ services:
       - homepage.name=Open-Terminal
       - homepage.href=http://${PUBLIC_HOST}:31103/docs
       - homepage.description=Terminal support tool
+
+  mcpo:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: ${STACK_NAME:-inferlab}-mcpo
+    restart: unless-stopped
+    profiles:
+      - webui
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      # - --api-key
+      # - sk-mcpo-api-secret-key
+      - --config
+      - /config/config.json
+      - --hot-reload
+      - --
+      - mcp-proxy-server
+    ports:
+      - 31104:8000
+    volumes:
+      - ./mcpo/config.json:/config/config.json
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/openapi.json"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    label_file:
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
+    labels:
+      - homepage.group=11-webui
+      - homepage.name=mcpo
+      - homepage.href=http://${PUBLIC_HOST}:31104/docs
+      - homepage.description=MCP support tool
 
   docling:
     <<: *external-dns-stabilizer
