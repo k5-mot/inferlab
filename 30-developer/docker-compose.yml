@@ -20,15 +20,10 @@ services:
       - developer
     command:
       - run
-      - -P
-      - .
-      - -a
-      - .
-      - /data/packages
     ports:
       - ${PYPISERVER_HTTP_HOST_PORT:-33100}:8080
     volumes:
-      - ./registry/wheel:/data/packages:ro
+      - ./registry/pypi:/data/packages
     networks:
       - internal-nw
     healthcheck:
@@ -43,7 +38,7 @@ services:
       start_period: 10s
     labels:
       - homepage.group=30-developer
-      - homepage.name=PyPI
+      - homepage.name=PyPIserver
       - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-33100}/simple/
       - homepage.description=Python package registry
       - homepage.icon=/icons/pypi.png
@@ -78,74 +73,9 @@ services:
       - homepage.description=npm registry
       - homepage.icon=/icons/verdaccio.png
 
-  rpm-repo:
-    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
-    container_name: ${STACK_NAME:-inferlab}-rpm-repo
-    restart: unless-stopped
-    profiles:
-      - developer
-    ports:
-      - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
-    volumes:
-      - ./registry/rpm:/usr/share/nginx/html:ro
-    networks:
-      - internal-nw
-    depends_on:
-      - rpm-repository-sync
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - -q
-        - -O
-        - /dev/null
-        - http://127.0.0.1:8080/
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=createrepo_c
-      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
-      - homepage.description=RPM source repository for dnf/yum
-      - homepage.icon=/icons/redhat-linux.png
-
-  deb-repo:
-    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
-    container_name: ${STACK_NAME:-inferlab}-deb-repo
-    restart: unless-stopped
-    profiles:
-      - developer
-    ports:
-      - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
-    volumes:
-      - ./registry/deb/public:/usr/share/nginx/html:ro
-    networks:
-      - internal-nw
-    depends_on:
-      - deb-repository-sync
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - -q
-        - -O
-        - /dev/null
-        - http://127.0.0.1:8080/
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    labels:
-      - homepage.group=30-developer
-      - homepage.name=reprepro
-      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
-      - homepage.description=APT repository
-      - homepage.icon=/icons/debian-linux.png
-
   npm-importer:
     image: node:${NODE_IMAGE_TAG:-22-alpine}
+    container_name: ${STACK_NAME:-inferlab}-npm-importer
     profiles:
       - developer
     restart: unless-stopped
@@ -166,8 +96,9 @@ services:
       verdaccio:
         condition: service_healthy
 
-  rpm-repository-sync:
+  createrepo_c:
     image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
+    container_name: ${STACK_NAME:-inferlab}-createrepo_c
     profiles:
       - developer
     restart: unless-stopped
@@ -185,8 +116,42 @@ services:
     networks:
       - internal-nw
 
-  deb-repository-sync:
+  rpm-dist:
+    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-rpm-dist
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${RPM_REPO_HTTP_HOST_PORT:-33400}:8080
+    volumes:
+      - ./registry/rpm:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - createrepo_c
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=createrepo_c
+      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-33400}/
+      - homepage.description=RPM source repository for dnf/yum
+      - homepage.icon=/icons/redhat-linux.png
+
+  reprepro:
     image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro:latest}
+    container_name: ${STACK_NAME:-inferlab}-reprepro
     profiles:
       - developer
     restart: unless-stopped
@@ -217,6 +182,39 @@ services:
       - ./deb-repository-sync/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
     networks:
       - internal-nw
+
+  deb-dist:
+    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-deb-dist
+    restart: unless-stopped
+    profiles:
+      - developer
+    ports:
+      - ${DEB_REPO_HTTP_HOST_PORT:-33500}:8080
+    volumes:
+      - ./registry/deb/public:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - reprepro
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=reprepro
+      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-33500}/
+      - homepage.description=APT repository
+      - homepage.icon=/icons/debian-linux.png
 
 volumes:
   verdaccio-storage:
