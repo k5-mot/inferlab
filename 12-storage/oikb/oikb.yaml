@@ -3,19 +3,20 @@ defaults:
   concurrency: 1
 
 sources:
-  - name: nextcloud-documents
-    source: "/nextcloud/data/admin/files/oikb"
-    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
-    filter:
-      exclude:
-        - "**/.DS_Store"
-        - "**/Thumbs.db"
-        - "**/*.url"
+  # Nextcloud連携はRustFS検証中のため無効化する。
+  # - name: nextcloud-documents
+  #   source: "/nextcloud/data/admin/files/oikb"
+  #   kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+  #   filter:
+  #     exclude:
+  #       - "**/.DS_Store"
+  #       - "**/Thumbs.db"
+  #       - "**/*.url"
 
-  - name: seaweedfs-documents
-    source: "${OIKB_SEAWEEDFS_SOURCE:-s3://oikb/documents}"
-    kb-id: "${SEAWEEDFS_OPENWEBUI_KB_ID:-}"
-    interval: "${OIKB_SEAWEEDFS_INTERVAL:-1h}"
+  - name: rustfs-documents
+    source: "${OIKB_RUSTFS_SOURCE:-s3://oikb/documents}"
+    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    interval: "${OIKB_RUSTFS_INTERVAL:-1h}"
     filter:
       exclude:
         - "**/.DS_Store"

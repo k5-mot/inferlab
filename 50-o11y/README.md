@@ -81,10 +81,6 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `bookstack-mysqld-exporter:9104`
 - `zulip-rabbitmq:15692`
 - `langfuse-clickhouse:9363`
-- `seaweedfs-master:9324`
-- `seaweedfs-volume:9325`
-- `seaweedfs-filer:9326`
-- `seaweedfs-s3:9327`
 
 一部の対象は該当profileが起動していない場合にdownになる。これはstack分割されたCompose構成では許容する。
 
@@ -104,7 +100,6 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 | MariaDB/MySQL | `mysqld_exporter` serviceを用意している。初期状態ではコメントアウト。 |
 | RabbitMQ | `rabbitmq_prometheus` pluginを有効化し、`15692`の`/metrics`をscrapeする。 |
 | ClickHouse | Prometheus protocolを`9363`で有効化し、`/metrics`をscrapeする。 |
-| SeaweedFS | master、volume、filer、S3 gatewayのmetrics portをscrapeする。 |
 
 ## Dashboard
 
@@ -158,7 +153,6 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - [SearXNG general settings](https://docs.searxng.org/admin/settings/settings_general.html)
 - [RabbitMQ Prometheus plugin](https://www.rabbitmq.com/docs/prometheus)
 - [ClickHouse Prometheus protocol](https://clickhouse.com/docs/interfaces/prometheus)
-- [SeaweedFS](https://github.com/seaweedfs/seaweedfs)
 - [Open WebUI OpenTelemetry](https://docs.openwebui.com/reference/monitoring/otel/)
 - [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)

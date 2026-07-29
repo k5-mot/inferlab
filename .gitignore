@@ -10,6 +10,7 @@ devcontainer-lock.json
 skills-lock.json
 triage-logs/
 logs/
+backups/
 12-storage/LIST.md
 30-developer/SPEC.md
 30-developer/MANUAL.md

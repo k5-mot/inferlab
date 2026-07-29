@@ -116,143 +116,75 @@ services:
       - homepage.name=Nextcloud-Valkey
       - homepage.description=Inmemory key-value NoSQL database
 
-  seaweedfs-master:
-    image: docker.io/chrislusf/seaweedfs:4.40
-    container_name: ${STACK_NAME:-inferlab}-seaweedfs-master
+  oikb-rustfs:
+    image: docker.io/rustfs/rustfs:latest
+    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs
     restart: unless-stopped
     profiles:
       - storage
-      - llmops
-    command: master -ip=seaweedfs-master -ip.bind=0.0.0.0 -mdir=/data -metricsPort=9324
-    volumes:
-      - seaweedfs-master:/data
-    networks:
-      - internal-nw
-    healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9324/metrics > /dev/null" ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/seaweedfs.labels
-    labels:
-      - homepage.group=12-storage
-      - homepage.name=SeaweedFS-Master
-      - homepage.description=Object storage metadata service
-
-  seaweedfs-volume:
-    image: docker.io/chrislusf/seaweedfs:4.40
-    container_name: ${STACK_NAME:-inferlab}-seaweedfs-volume
-    restart: unless-stopped
-    profiles:
-      - storage
-      - llmops
-    command: volume -ip=seaweedfs-volume -master=seaweedfs-master:9333 -ip.bind=0.0.0.0 -port=8080 -dir=/data -metricsPort=9325
-    volumes:
-      - seaweedfs-volume:/data
-    networks:
-      - internal-nw
-    depends_on:
-      seaweedfs-master:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9325/metrics > /dev/null" ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/seaweedfs.labels
-    labels:
-      - homepage.group=12-storage
-      - homepage.name=SeaweedFS-Volume
-      - homepage.description=Object storage volume service
-
-  seaweedfs-filer:
-    image: docker.io/chrislusf/seaweedfs:4.40
-    container_name: ${STACK_NAME:-inferlab}-seaweedfs-filer
-    restart: unless-stopped
-    profiles:
-      - storage
-      - llmops
-    command: filer -ip=seaweedfs-filer -master=seaweedfs-master:9333 -ip.bind=0.0.0.0 -defaultStoreDir=/data -metricsPort=9326
-    volumes:
-      - seaweedfs-filer:/data
-    networks:
-      - internal-nw
-    depends_on:
-      seaweedfs-master:
-        condition: service_healthy
-      seaweedfs-volume:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9326/metrics > /dev/null" ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/seaweedfs.labels
-    labels:
-      - homepage.group=12-storage
-      - homepage.name=SeaweedFS-Filer
-      - homepage.description=Object storage filer service
-
-  seaweedfs-s3:
-    image: docker.io/chrislusf/seaweedfs:4.40
-    container_name: ${STACK_NAME:-inferlab}-seaweedfs-s3
-    restart: unless-stopped
-    profiles:
-      - storage
-      - llmops
-    command: s3 -filer=seaweedfs-filer:8888 -ip.bind=0.0.0.0 -metricsPort=9327
     environment:
-      AWS_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY_ID:-seaweedfs_admin}
-      AWS_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_ACCESS_KEY:-seaweedfs_secret_key}
+      RUSTFS_ACCESS_KEY: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      RUSTFS_SECRET_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
     ports:
-      - 31202:8333
+      - 31203:9000
+      - 31204:9001
+    volumes:
+      - oikb-rustfs-data:/data
     networks:
       - internal-nw
-    depends_on:
-      seaweedfs-filer:
-        condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9327/metrics > /dev/null" ]
+      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/minio/health/ready > /dev/null" ]
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/seaweedfs.labels
     labels:
       - homepage.group=12-storage
-      - homepage.name=SeaweedFS-S3
-      - homepage.href=http://${PUBLIC_HOST}:31202
-      - homepage.description=S3-compatible object storage
+      - homepage.name=OIKB-RustFS
+      - homepage.href=http://${PUBLIC_HOST}:31203
+      - homepage.description=OIKB data source object storage
 
-  seaweedfs-bucket-init:
-    image: docker.io/chrislusf/seaweedfs:4.40
-    container_name: ${STACK_NAME:-inferlab}-seaweedfs-bucket-init
+  oikb-rustfs-bucket-init:
+    build:
+      context: ./oikb
+      dockerfile: Containerfile
+    image: inferlab/oikb-s3:0.3.6
+    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
       - storage
-      - llmops
     entrypoint:
       - /bin/sh
       - -euc
     command:
-      - >-
-        for bucket in "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}" "$${OIKB_SEAWEEDFS_BUCKET}"; do
-          printf 's3.bucket.create -name %s -owner seaweedfs_admin\n' "$$bucket" | weed shell -master=seaweedfs-master:9333 -filer=seaweedfs-filer:8888 || true;
-        done
+      - |
+        python - <<'PY'
+        import os
+
+        import boto3
+        import botocore
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="http://oikb-rustfs:9000",
+            aws_access_key_id=os.environ["OIKB_RUSTFS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["OIKB_RUSTFS_SECRET_ACCESS_KEY"],
+            region_name="us-east-1",
+        )
+        try:
+            s3.create_bucket(Bucket=os.environ["OIKB_RUSTFS_BUCKET"])
+        except botocore.exceptions.ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") not in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+                raise
+        PY
     environment:
-      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
-      OIKB_SEAWEEDFS_BUCKET: ${OIKB_SEAWEEDFS_BUCKET:-oikb}
+      OIKB_RUSTFS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      OIKB_RUSTFS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      OIKB_RUSTFS_BUCKET: ${OIKB_RUSTFS_BUCKET:-oikb}
     networks:
       - internal-nw
     depends_on:
-      seaweedfs-s3:
+      oikb-rustfs:
         condition: service_healthy
 
   oikb:
@@ -277,16 +209,15 @@ services:
       NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
       OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
       OIKB_NEXTCLOUD_INTERVAL: 1h
-      AWS_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY_ID:-seaweedfs_admin}
-      AWS_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_ACCESS_KEY:-seaweedfs_secret_key}
+      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
       AWS_DEFAULT_REGION: us-east-1
       AWS_REGION: us-east-1
-      AWS_ENDPOINT_URL: http://seaweedfs-s3:8333
-      AWS_ENDPOINT_URL_S3: http://seaweedfs-s3:8333
-      OIKB_SEAWEEDFS_BUCKET: ${OIKB_SEAWEEDFS_BUCKET:-oikb}
-      OIKB_SEAWEEDFS_SOURCE: ${OIKB_SEAWEEDFS_SOURCE:-s3://oikb/documents}
-      OIKB_SEAWEEDFS_INTERVAL: 1h
-      SEAWEEDFS_OPENWEBUI_KB_ID: ${SEAWEEDFS_OPENWEBUI_KB_ID:-}
+      AWS_ENDPOINT_URL: http://oikb-rustfs:9000
+      AWS_ENDPOINT_URL_S3: http://oikb-rustfs:9000
+      OIKB_RUSTFS_BUCKET: ${OIKB_RUSTFS_BUCKET:-oikb}
+      OIKB_RUSTFS_SOURCE: ${OIKB_RUSTFS_SOURCE:-s3://oikb/documents}
+      OIKB_RUSTFS_INTERVAL: 1h
     ports:
       - 31201:8080
     volumes:
@@ -297,7 +228,7 @@ services:
     depends_on:
       nextcloud:
         condition: service_healthy
-      seaweedfs-bucket-init:
+      oikb-rustfs-bucket-init:
         condition: service_completed_successfully
     healthcheck:
       test: [ "CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8080/health', timeout=3).read()" ]
@@ -316,9 +247,7 @@ services:
 volumes:
   nextcloud:
   nextcloud-postgres:
-  seaweedfs-master:
-  seaweedfs-volume:
-  seaweedfs-filer:
+  oikb-rustfs-data:
 
 networks:
   internal-nw:

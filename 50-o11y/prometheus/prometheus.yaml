@@ -166,12 +166,3 @@ scrape_configs:
     static_configs:
       - targets:
           - langfuse-clickhouse:9363
-
-  - job_name: seaweedfs
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - seaweedfs-master:9324
-          - seaweedfs-volume:9325
-          - seaweedfs-filer:9326
-          - seaweedfs-s3:9327
