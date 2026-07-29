@@ -246,6 +246,31 @@ services:
   #     - homepage.name=Keycloak PostgreSQL Exporter
   #     - homepage.description=Keycloak database metrics exporter
 
+  # nextcloud-postgres-exporter:
+  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-postgres-exporter
+  #   restart: unless-stopped
+  #   profiles:
+  #     - o11y
+  #   environment:
+  #     DATA_SOURCE_URI: nextcloud-postgres:5432/nextcloud_db?sslmode=disable
+  #     DATA_SOURCE_USER: nextcloud_user
+  #     DATA_SOURCE_PASS: nextcloud_password
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
+  #   label_file:
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
+  #   labels:
+  #     - homepage.group=50-o11y
+  #     - homepage.name=Nextcloud PostgreSQL Exporter
+  #     - homepage.description=Nextcloud database metrics exporter
+
   # langfuse-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
   #   container_name: ${STACK_NAME:-inferlab}-langfuse-postgres-exporter
@@ -371,14 +396,14 @@ services:
   #     - homepage.name=Pulp PostgreSQL Exporter
   #     - homepage.description=Pulp database metrics exporter
 
-  # nextcloud-redis-exporter:
+  # nextcloud-valkey-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-redis-exporter
+  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-valkey-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
   #   environment:
-  #     REDIS_ADDR: redis://nextcloud-redis:6379
+  #     REDIS_ADDR: redis://nextcloud-valkey:6379
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -388,20 +413,20 @@ services:
   #     retries: 3
   #     start_period: 10s
   #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
   #   labels:
   #     - homepage.group=50-o11y
-  #     - homepage.name=Nextcloud Redis Exporter
+  #     - homepage.name=Nextcloud Valkey Exporter
   #     - homepage.description=Nextcloud cache metrics exporter
 
-  # langfuse-redis-exporter:
+  # langfuse-valkey-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-langfuse-redis-exporter
+  #   container_name: ${STACK_NAME:-inferlab}-langfuse-valkey-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
   #   environment:
-  #     REDIS_ADDR: redis://langfuse-redis:6379
+  #     REDIS_ADDR: redis://langfuse-valkey:6379
   #     REDIS_PASSWORD: sk-langfuse-redis-secret-key
   #   networks:
   #     - internal-nw
@@ -412,10 +437,10 @@ services:
   #     retries: 3
   #     start_period: 10s
   #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
   #   labels:
   #     - homepage.group=50-o11y
-  #     - homepage.name=Langfuse Redis Exporter
+  #     - homepage.name=Langfuse Valkey Exporter
   #     - homepage.description=Langfuse cache metrics exporter
 
   # dify-redis-exporter:
@@ -489,32 +514,6 @@ services:
   #     - homepage.group=50-o11y
   #     - homepage.name=Pulp Redis Exporter
   #     - homepage.description=Pulp cache metrics exporter
-
-  # nextcloud-mysqld-exporter:
-  #   image: docker.io/prom/mysqld-exporter:v0.19.0
-  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-mysqld-exporter
-  #   restart: unless-stopped
-  #   profiles:
-  #     - o11y
-  #   command:
-  #     - --mysqld.address=nextcloud-mariadb:3306
-  #     - --mysqld.username=root
-  #   environment:
-  #     MYSQLD_EXPORTER_PASSWORD: nextcloud_root_password
-  #   networks:
-  #     - internal-nw
-  #   healthcheck:
-  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9104/metrics || exit 1" ]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
-  #   labels:
-  #     - homepage.group=50-o11y
-  #     - homepage.name=Nextcloud MariaDB Exporter
-  #     - homepage.description=Nextcloud database metrics exporter
 
   # leantime-mysqld-exporter:
   #   image: docker.io/prom/mysqld-exporter:v0.19.0

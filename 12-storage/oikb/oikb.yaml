@@ -11,3 +11,13 @@ sources:
         - "**/.DS_Store"
         - "**/Thumbs.db"
         - "**/*.url"
+
+  - name: seaweedfs-documents
+    source: "${OIKB_SEAWEEDFS_SOURCE:-s3://oikb/documents}"
+    kb-id: "${SEAWEEDFS_OPENWEBUI_KB_ID:-}"
+    interval: "${OIKB_SEAWEEDFS_INTERVAL:-1h}"
+    filter:
+      exclude:
+        - "**/.DS_Store"
+        - "**/Thumbs.db"
+        - "**/*.url"

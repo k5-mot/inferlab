@@ -133,6 +133,7 @@ scrape_configs:
     static_configs:
       - targets:
           - keycloak-postgres-exporter:9187
+          - nextcloud-postgres-exporter:9187
           - langfuse-postgres-exporter:9187
           - gitea-postgres-exporter:9187
           - dify-postgres-exporter:9187
@@ -143,8 +144,6 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - nextcloud-redis-exporter:9121
-          - langfuse-redis-exporter:9121
           - dify-redis-exporter:9121
           - zulip-redis-exporter:9121
           - pulp-redis-exporter:9121
@@ -153,7 +152,6 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - nextcloud-mysqld-exporter:9104
           - leantime-mysqld-exporter:9104
           - bookstack-mysqld-exporter:9104
 
@@ -169,8 +167,11 @@ scrape_configs:
       - targets:
           - langfuse-clickhouse:9363
 
-  - job_name: minio
-    metrics_path: /minio/metrics/v3
+  - job_name: seaweedfs
+    metrics_path: /metrics
     static_configs:
       - targets:
-          - langfuse-minio:9000
+          - seaweedfs-master:9324
+          - seaweedfs-volume:9325
+          - seaweedfs-filer:9326
+          - seaweedfs-s3:9327

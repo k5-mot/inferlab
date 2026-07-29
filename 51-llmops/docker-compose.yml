@@ -13,9 +13,9 @@ services:
     depends_on: &langfuse-depends-on
       langfuse-postgres:
         condition: service_healthy
-      langfuse-minio:
-        condition: service_healthy
-      langfuse-redis:
+      seaweedfs-bucket-init:
+        condition: service_completed_successfully
+      langfuse-valkey:
         condition: service_healthy
       langfuse-clickhouse:
         condition: service_healthy
@@ -36,32 +36,32 @@ services:
       LANGFUSE_USE_AZURE_BLOB: false
       LANGFUSE_USE_OCI_NATIVE_OBJECT_STORAGE: false
       # LANGFUSE_OCI_AUTH_TYPE: ${LANGFUSE_OCI_AUTH_TYPE:-workload_identity}
-      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse-bucket
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
-      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio_user
-      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret # CHANGEME
-      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY_ID:-seaweedfs_admin}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_ACCESS_KEY:-seaweedfs_secret_key}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://seaweedfs-s3:8333
       LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: true
       LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
-      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse-bucket
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
       LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
-      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio_user
-      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret # CHANGEME
-      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY_ID:-seaweedfs_admin}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_ACCESS_KEY:-seaweedfs_secret_key}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://seaweedfs-s3:8333
       LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: true
       LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
       LANGFUSE_S3_BATCH_EXPORT_ENABLED: false
-      LANGFUSE_S3_BATCH_EXPORT_BUCKET: langfuse-bucket
+      LANGFUSE_S3_BATCH_EXPORT_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
       LANGFUSE_S3_BATCH_EXPORT_PREFIX: exports/
       LANGFUSE_S3_BATCH_EXPORT_REGION: auto
-      LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: http://langfuse-minio:9000
-      LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT: http://langfuse-minio:9000
-      LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: minio_user
-      LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY: miniosecret # CHANGEME
+      LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: http://seaweedfs-s3:8333
+      LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT: http://seaweedfs-s3:8333
+      LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY_ID:-seaweedfs_admin}
+      LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_ACCESS_KEY:-seaweedfs_secret_key}
       LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: true
       LANGFUSE_INGESTION_QUEUE_DELAY_MS: ${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
       LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS: ${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
-      REDIS_HOST: langfuse-redis
+      REDIS_HOST: langfuse-valkey
       REDIS_PORT: 6379
       REDIS_AUTH: sk-langfuse-redis-secret-key # CHANGEME
       LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK: false
@@ -161,45 +161,13 @@ services:
       - homepage.name=Langfuse-ClickHouse
       - homepage.description=Columnar analytics database
 
-  langfuse-minio:
-    image: cgr.dev/chainguard/minio:latest
-    container_name: ${STACK_NAME:-inferlab}-langfuse-minio
-    restart: unless-stopped
-    entrypoint: sh
-    # create the Langfuse bucket before starting the service
-    command: -c 'mkdir -p /data/${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket} && minio server --address ":9000" --console-address ":9001" /data'
-    profiles:
-      - llmops
-    environment:
-      MINIO_ROOT_USER: minio_user
-      MINIO_ROOT_PASSWORD: miniosecret # CHANGEME
-      MINIO_UPDATE: "off"
-      MINIO_PROMETHEUS_AUTH_TYPE: public
-    networks:
-      - internal-nw
-    volumes:
-      - langfuse_minio_data:/data
-    healthcheck:
-      test: [ "CMD", "mc", "ready", "local" ]
-      interval: 1s
-      timeout: 5s
-      retries: 5
-      start_period: 1s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/minio.labels
-    labels:
-      - homepage.group=51-llmops
-      - homepage.name=Langfuse-MinIO
-      - homepage.description=S3-compatible object storage
-
-  langfuse-redis:
-    # image: docker.io/library/redis:7.4.9-bookworm
-    image: docker.io/library/redis:8.8.0-trixie
-    container_name: ${STACK_NAME:-inferlab}-langfuse-redis
+  langfuse-valkey:
+    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    container_name: ${STACK_NAME:-inferlab}-langfuse-valkey
     restart: unless-stopped
     profiles:
       - llmops
-    # CHANGEME: row below to secure redis password
+    # CHANGEME: 下の行でValkey passwordを設定する。
     command: >
       --requirepass sk-langfuse-redis-secret-key --maxmemory-policy noeviction
     environment:
@@ -207,17 +175,17 @@ services:
     networks:
       - internal-nw
     volumes:
-      - langfuse_redis_data:/data
+      - langfuse_valkey_data:/data
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a \"$${REDIS_AUTH}\" ping | grep -q PONG" ]
+      test: [ "CMD-SHELL", "valkey-cli -a \"$${REDIS_AUTH}\" ping | grep -q PONG" ]
       interval: 3s
       timeout: 10s
       retries: 10
     label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
+      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
     labels:
       - homepage.group=51-llmops
-      - homepage.name=Langfuse-Redis
+      - homepage.name=Langfuse-Valkey
       - homepage.description=Inmemory key-value NoSQL database
 
   langfuse-postgres:
@@ -253,8 +221,7 @@ services:
 volumes:
   langfuse_clickhouse_data:
   langfuse_clickhouse_logs:
-  langfuse_minio_data:
-  langfuse_redis_data:
+  langfuse_valkey_data:
   langfuse_postgres_data:
 
 networks:

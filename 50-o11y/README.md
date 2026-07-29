@@ -68,22 +68,23 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `qdrant:6333`
 - `dify-qdrant:6333`
 - `keycloak-postgres-exporter:9187`
+- `nextcloud-postgres-exporter:9187`
 - `langfuse-postgres-exporter:9187`
 - `gitea-postgres-exporter:9187`
 - `dify-postgres-exporter:9187`
 - `zulip-postgres-exporter:9187`
 - `pulp-postgres-exporter:9187`
-- `nextcloud-redis-exporter:9121`
-- `langfuse-redis-exporter:9121`
 - `dify-redis-exporter:9121`
 - `zulip-redis-exporter:9121`
 - `pulp-redis-exporter:9121`
-- `nextcloud-mysqld-exporter:9104`
 - `leantime-mysqld-exporter:9104`
 - `bookstack-mysqld-exporter:9104`
 - `zulip-rabbitmq:15692`
 - `langfuse-clickhouse:9363`
-- `langfuse-minio:9000`
+- `seaweedfs-master:9324`
+- `seaweedfs-volume:9325`
+- `seaweedfs-filer:9326`
+- `seaweedfs-s3:9327`
 
 一部の対象は該当profileが起動していない場合にdownになる。これはstack分割されたCompose構成では許容する。
 
@@ -103,7 +104,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 | MariaDB/MySQL | `mysqld_exporter` serviceを用意している。初期状態ではコメントアウト。 |
 | RabbitMQ | `rabbitmq_prometheus` pluginを有効化し、`15692`の`/metrics`をscrapeする。 |
 | ClickHouse | Prometheus protocolを`9363`で有効化し、`/metrics`をscrapeする。 |
-| MinIO | 内部network限定前提でPrometheus metrics認証をpublicにし、`/minio/metrics/v3`をscrapeする。 |
+| SeaweedFS | master、volume、filer、S3 gatewayのmetrics portをscrapeする。 |
 
 ## Dashboard
 
@@ -122,11 +123,11 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `grafana/dashboards/services/gitea.json`: GiteaのHTTP request、latency、process memoryを表示する。自作dashboard。
 - `grafana/dashboards/services/qdrant.json`: QdrantのREST/gRPC responseとapp infoを表示する。自作dashboard。
 - `grafana/dashboards/services/postgres-exporters.json`: PostgreSQL exporter群のup、connection、database sizeを表示する。自作dashboard。
-- `grafana/dashboards/services/redis-exporters.json`: Redis exporter群のup、client、memoryを表示する。自作dashboard。
+- `grafana/dashboards/services/redis-exporters.json`: Redis/Valkey exporter群のup、client、memoryを表示する。自作dashboard。
 - `grafana/dashboards/services/mysqld-exporters.json`: MySQL exporter群のup、connection、queryを表示する。自作dashboard。
 - `grafana/dashboards/services/rabbitmq.json`: RabbitMQのup、queue message、connectionを表示する。自作dashboard。
 - `grafana/dashboards/services/clickhouse.json`: ClickHouseのquery、uptime、memoryを表示する。自作dashboard。
-- `grafana/dashboards/services/minio.json`: MinIOのS3 request、usage、node数を表示する。自作dashboard。
+- `grafana/dashboards/services/minio.json`: MinIO互換storage移行前のdashboard。SeaweedFS用dashboardへ置き換えるまでは参照用として残す。
 - `grafana/dashboards/services/http-probes.json`: Blackbox ExporterのHTTP probe結果を表示する。自作dashboard。
 - `grafana/dashboards/services/amd-dashboard_gpu.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_gpu.json>）。
 - `grafana/dashboards/services/amd-dashboard_job.json`: ROCm Device Metrics Exporter公式dashboard（<https://github.com/ROCm/device-metrics-exporter/blob/main/grafana/dashboard_job.json>）。
@@ -157,7 +158,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - [SearXNG general settings](https://docs.searxng.org/admin/settings/settings_general.html)
 - [RabbitMQ Prometheus plugin](https://www.rabbitmq.com/docs/prometheus)
 - [ClickHouse Prometheus protocol](https://clickhouse.com/docs/interfaces/prometheus)
-- [MinIO metrics and alerts](https://min.io/docs/minio/linux/operations/monitoring/metrics-and-alerts.html)
+- [SeaweedFS](https://github.com/seaweedfs/seaweedfs)
 - [Open WebUI OpenTelemetry](https://docs.openwebui.com/reference/monitoring/otel/)
 - [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)

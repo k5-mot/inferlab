@@ -42,7 +42,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `infra` | `01-infra/docker-compose.yml` | Cloudflare Tunnel、CouchDB |
 | `inference` | `10-inference/docker-compose.yml` | LiteLLM、Ollama、Text Embeddings Inference、Hermes-Agent |
 | `webui` | `11-webui/docker-compose.yml` | Open-WebUI、Open-Terminal、Docling、SearXNG、VOICEVOX、Qdrant |
-| `storage` | `12-storage/docker-compose.yml` | Nextcloud、OIKB |
+| `storage` | `12-storage/docker-compose.yml` | Nextcloud、SeaweedFS、OIKB |
 | `automation` | `13-automation/docker-compose.yml` | Dify |
 | `team-chat` | `20-team-chat/docker-compose.yml` | Zulip |
 | `team-project` | `21-team-project/docker-compose.yml` | Leantime |
@@ -50,7 +50,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `team-git` | `23-team-git/docker-compose.yml` | Gitea |
 | `developer` | `30-developer/docker-compose.yml` | pypiserver、Verdaccio、createrepo_c、reprepro、Harbor |
 | `o11y` | `50-o11y/docker-compose.yml` | Grafana、Prometheus、Node Exporter、cAdvisor、Blackbox Exporter |
-| `llmops` | `51-llmops/docker-compose.yml` | Langfuse、ClickHouse、MinIO、Redis、PostgreSQL |
+| `llmops` | `51-llmops/docker-compose.yml` | Langfuse、ClickHouse、SeaweedFS、Valkey、PostgreSQL |
 
 `amd-gpu`と`nvidia-gpu`はGPU exporter用の任意profile。対応hostで`50-o11y/docker-compose.yml`と`50-o11y/prometheus/prometheus.yaml`の該当コメントを解除して使う。
 
@@ -74,7 +74,8 @@ sudo ./dc.sh up-full --remove-orphans
 - VOICEVOX OpenAI TTS: `ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0`
 - Qdrant: `docker.io/qdrant/qdrant:v1.18.2`
 - Nextcloud: `docker.io/library/nextcloud:34.0.1-apache`
-- OIKB: `ghcr.io/open-webui/oikb:0.3.6`
+- SeaweedFS: `docker.io/chrislusf/seaweedfs:4.40`
+- OIKB: `inferlab/oikb-s3:0.3.6`（`ghcr.io/open-webui/oikb:0.3.6`にS3 connector依存を追加）
 - pypiserver: `pypiserver/pypiserver:latest`
 - Verdaccio: `verdaccio/verdaccio:6`
 - createrepo_c: `docker.io/openitcockpit/createrepo_c:bullseye-0.17.0`
@@ -87,7 +88,7 @@ sudo ./dc.sh up-full --remove-orphans
 - Langfuse: `docker.io/langfuse/langfuse:3.212.0`
 - Langfuse Worker: `docker.io/langfuse/langfuse-worker:3.212.0`
 - ClickHouse: `docker.io/clickhouse/clickhouse-server:25.8.28.1`
-- MinIO: `cgr.dev/chainguard/minio:latest`
+- Valkey: `docker.io/valkey/valkey:8.1.9-alpine3.24`
 
 任意profileのimage一覧は`script/download-stack-images.ps1`も参照する。
 
@@ -114,7 +115,7 @@ sudo docker compose --env-file .env --profile o11y up -d
 
 ## Offline Images
 
-`script/download-stack-images.ps1`は、現在のCompose構成で使う外部imageを`images/`へ保存する。ローカルbuild imageは対象外。
+`script/download-stack-images.ps1`は、現在のCompose構成で使う外部imageとローカルbuild imageを`images/`へ保存する。
 
 ```powershell
 # 現在のstack imageをimages/へ保存する。

@@ -3,7 +3,7 @@ $Platform = "linux/amd64"
 $Overwrite = $true
 
 $Images = @(
-    "cgr.dev/chainguard/minio:latest",
+    "docker.io/chrislusf/seaweedfs:4.40",
     "docker.gitea.com/gitea:1.27.0",
     "docker.io/clickhouse/clickhouse-server:25.8.28.1",
     "docker.io/cloudflare/cloudflared:2026.6.0",
@@ -19,7 +19,6 @@ $Images = @(
     "docker.io/leantime/leantime:3.9.8",
     "docker.io/library/busybox:latest",
     "docker.io/library/couchdb:3.5.2.1",
-    "docker.io/library/mariadb:12.3.2-noble",
     "docker.io/library/memcached:1.6.45-alpine",
     "docker.io/library/mysql:8.4.10",
     "docker.io/library/nextcloud:34.0.1-apache",
@@ -29,7 +28,6 @@ $Images = @(
     "docker.io/library/postgres:18.4-trixie",
     "docker.io/library/rabbitmq:4.2",
     "docker.io/library/redis:8.8.0-alpine",
-    "docker.io/library/redis:8.8.0-trixie",
     "docker.io/litellm/litellm:v1.91.0",
     "docker.io/nousresearch/hermes-agent:main",
     "docker.io/ollama/ollama:0.31.1",
@@ -37,6 +35,7 @@ $Images = @(
     "docker.io/qdrant/qdrant:v1.18.2",
     "docker.io/searxng/searxng:2026.7.3-80c9806de",
     "docker.io/ubuntu/squid:latest",
+    "docker.io/valkey/valkey:8.1.9-alpine3.24",
     "docker.io/voicevox/voicevox_engine:cpu-0.25.2",
     "ghcr.io/gethomepage/homepage:v1.13.2",
     "ghcr.io/google/cadvisor:v0.60.5",
@@ -53,6 +52,14 @@ $Images = @(
     "quay.io/prometheus/blackbox-exporter:v0.28.0",
     "quay.io/prometheus/node-exporter:v1.12.1",
     "zulip/zulip-postgresql:14"
+)
+
+$LocalImages = @(
+    @{
+        Image = "inferlab/oikb-s3:0.3.6"
+        Context = Join-Path $PSScriptRoot "..\12-storage\oikb"
+        Dockerfile = "Containerfile"
+    }
 )
 
 <#
@@ -84,6 +91,10 @@ if (-not (Get-Command crane -ErrorAction SilentlyContinue)) {
     throw "crane が見つかりません。https://github.com/google/go-containerregistry を参照して crane をインストールしてください。"
 }
 
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    throw "docker が見つかりません。local build imageを保存するため、Docker CLIをインストールしてください。"
+}
+
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
 foreach ($Image in $Images) {
@@ -99,5 +110,32 @@ foreach ($Image in $Images) {
 
     if ($LASTEXITCODE -ne 0) {
         throw "ダウンロードに失敗しました: $Image"
+    }
+}
+
+foreach ($LocalImage in $LocalImages) {
+    $Image = $LocalImage["Image"]
+    $Context = $LocalImage["Context"]
+    $DockerfileName = $LocalImage["Dockerfile"]
+    $Dockerfile = Join-Path $Context $DockerfileName
+    $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)
+
+    if ((Test-Path $ArchivePath) -and -not $Overwrite) {
+        Write-Host "Skip $Image"
+        continue
+    }
+
+    Write-Host "Build $Image"
+    docker build --platform $Platform -t $Image -f $Dockerfile $Context
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "ビルドに失敗しました: $Image"
+    }
+
+    Write-Host "Save $Image"
+    docker save -o $ArchivePath $Image
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "保存に失敗しました: $Image"
     }
 }
