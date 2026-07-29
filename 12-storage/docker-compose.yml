@@ -148,7 +148,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: inferlab/oikb-s3:0.3.6
+    image: inferlab/oikb-s3:latest
     container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
@@ -191,7 +191,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: inferlab/oikb-s3:0.3.6
+    image: inferlab/oikb-s3:latest
     container_name: ${STACK_NAME:-inferlab}-oikb
     restart: unless-stopped
     command: daemon --config /app/.oikb.yaml

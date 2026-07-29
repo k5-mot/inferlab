@@ -1,9 +1,38 @@
 from pathlib import Path
 
+import oikb.cli as cli_module
 
-path = Path("/usr/local/lib/python3.12/site-packages/oikb/cli.py")
-source = path.read_text()
-old = """def _make_client(url: str | None, token: str | None):
+
+def _load_cli_path() -> Path:
+    """patch対象のcli.pyをimport結果から解決する。
+
+    Args:
+        なし。
+
+    Returns:
+        Path: install済みのoikb.cli module file pathです。
+
+    Raises:
+        RuntimeError: module file pathを解決できない場合に送出します。
+    """
+    if cli_module.__file__ is None:
+        raise RuntimeError("oikb.cli module path was not found")
+    return Path(cli_module.__file__)
+
+
+def _patch_source(source: str) -> str:
+    """Open WebUI client作成時にtimeout環境変数を反映する。
+
+    Args:
+        source: patch前のoikb.cli source codeです。
+
+    Returns:
+        str: timeout設定を追加したsource codeです。
+
+    Raises:
+        RuntimeError: 想定したpatch対象が存在しない場合に送出します。
+    """
+    old = """def _make_client(url: str | None, token: str | None):
     \"\"\"Create an OikbClient from resolved config.\"\"\"
     from oikb.client import OikbClient
 
@@ -12,7 +41,7 @@ old = """def _make_client(url: str | None, token: str | None):
         token=resolve_token(token),
     )
 """
-new = """def _make_client(url: str | None, token: str | None):
+    new = """def _make_client(url: str | None, token: str | None):
     \"\"\"Open WebUI clientを設定値から作成する。
 
     Args:
@@ -32,7 +61,12 @@ new = """def _make_client(url: str | None, token: str | None):
     )
 """
 
-if old not in source:
-    raise RuntimeError("oikb.client timeout patch target was not found")
+    if old not in source:
+        raise RuntimeError("oikb.client timeout patch target was not found")
 
-path.write_text(source.replace(old, new))
+    return source.replace(old, new)
+
+
+path = _load_cli_path()
+source = path.read_text()
+path.write_text(_patch_source(source))

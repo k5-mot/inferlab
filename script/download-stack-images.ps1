@@ -41,7 +41,7 @@ $Images = @(
     "ghcr.io/google/cadvisor:v0.60.5",
     "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3",
     "ghcr.io/k5-mot/docling-serve-jp:v1.26.0",
-    "ghcr.io/open-webui/oikb:0.3.6",
+    "ghcr.io/open-webui/oikb:latest",
     "ghcr.io/open-webui/open-terminal:0.11.33",
     "ghcr.io/open-webui/open-webui:0.10.2",
     "ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0",
@@ -56,7 +56,7 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "inferlab/oikb-s3:0.3.6"
+        Image = "inferlab/oikb-s3:latest"
         Context = Join-Path $PSScriptRoot "..\12-storage\oikb"
         Dockerfile = "Containerfile"
     }

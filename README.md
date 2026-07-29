@@ -75,7 +75,7 @@ sudo ./dc.sh up-full --remove-orphans
 - Qdrant: `docker.io/qdrant/qdrant:v1.18.2`
 - Nextcloud: `docker.io/library/nextcloud:34.0.1-apache`
 - SeaweedFS: `docker.io/chrislusf/seaweedfs:4.40`
-- OIKB: `inferlab/oikb-s3:0.3.6`（`ghcr.io/open-webui/oikb:0.3.6`にS3 connector依存を追加）
+- OIKB: `inferlab/oikb-s3:latest`（`ghcr.io/open-webui/oikb:latest`にOpen-WebUI API timeout patchを追加）
 - pypiserver: `pypiserver/pypiserver:latest`
 - Verdaccio: `verdaccio/verdaccio:6`
 - createrepo_c: `docker.io/openitcockpit/createrepo_c:bullseye-0.17.0`

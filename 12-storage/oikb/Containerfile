@@ -1,6 +1,4 @@
-FROM ghcr.io/open-webui/oikb:0.3.6
+FROM ghcr.io/open-webui/oikb:latest
 
-RUN python -m pip install --no-cache-dir boto3==1.43.58
-
-COPY patch-openwebui-timeout.py /tmp/patch-openwebui-timeout.py
+COPY --chown=appuser:appuser patch-openwebui-timeout.py /tmp/patch-openwebui-timeout.py
 RUN python /tmp/patch-openwebui-timeout.py && rm /tmp/patch-openwebui-timeout.py
