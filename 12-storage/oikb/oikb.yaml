@@ -3,19 +3,18 @@ defaults:
   concurrency: 1
 
 sources:
-  # Nextcloud連携はRustFS検証中のため無効化する。
-  # - name: nextcloud-documents
-  #   source: "/nextcloud/data/admin/files/oikb"
-  #   kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
-  #   filter:
-  #     exclude:
-  #       - "**/.DS_Store"
-  #       - "**/Thumbs.db"
-  #       - "**/*.url"
+  - name: nextcloud-documents
+    source: "/nextcloud/data/admin/files/oikb"
+    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    filter:
+      exclude:
+        - "**/.DS_Store"
+        - "**/Thumbs.db"
+        - "**/*.url"
 
   - name: rustfs-documents
     source: "${OIKB_RUSTFS_SOURCE:-s3://oikb/documents}"
-    kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    kb-id: "${RUSTFS_OPENWEBUI_KB_ID:-}"
     interval: "${OIKB_RUSTFS_INTERVAL:-1h}"
     filter:
       exclude:
