@@ -1,4 +1,4 @@
-"""ゲートウェイ起動時に InferLab の初期化スクリプトを実行する。"""
+"""ゲートウェイ起動時に初期化スクリプトを実行する。"""
 
 import logging
 import os
@@ -34,7 +34,7 @@ def _trim_output(output: str | bytes | None) -> str:
 
 
 def _run_bootstrap() -> None:
-    """InferLab の初期化スクリプトを一度だけ実行する。
+    """初期化スクリプトを一度だけ実行する。
 
     引数:
         なし。

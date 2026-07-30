@@ -19,10 +19,14 @@ mkdir -p \
   "${HERMES_HOME}/.local/bin" \
   "${HERMES_HOME}/lazy-packages"
 
+# 起動後に使うスキル定義をデータ領域へ導入する。
 npx --yes skills@latest add mattpocock/skills -y
 npx --yes skills@latest add k5-mot/agent-skills -y
+
+# コンテナイメージを作り直さずに追加依存を読み込める場所へ配置する。
 uv pip install --target "${HERMES_HOME}/lazy-packages" langfuse "docling-mcp[local]"
 npm install --global --prefix "${HERMES_HOME}/.local" mcp-searxng
 
+# 再起動ごとの重複導入を避けるため、成功後にマーカーを残す。
 date -u +"%Y-%m-%dT%H:%M:%SZ" > "${BOOTSTRAP_STAMP}"
 echo "bootstrap completed: ${BOOTSTRAP_STAMP}"
