@@ -297,7 +297,6 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
-      CODEX_HOME: /opt/config/.codex
       HERMES_HOME: /opt/data
       HERMES_UID: ${HERMES_UID:-1000}
       HERMES_GID: ${HERMES_GID:-1000}
@@ -305,7 +304,6 @@ services:
       - 31001:9119
     volumes:
       - ./hermes-agent:/opt/data
-      - ~/.codex:/opt/config/.codex:ro
     networks:
       - internal-nw
     extra_hosts:

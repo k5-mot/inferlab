@@ -1,29 +1,72 @@
+providers:
+  ollama-gemma4:
+    api: http://ollama:11434/v1
+    default_model: gemma4:31b-cloud
+    transport: chat_completions
+  cerebras-gemma4:
+    api: https://api.cerebras.ai/v1
+    key_env: CEREBRAS_API_KEY
+    default_model: gemma-4-31b
+    transport: chat_completions
 model:
-  provider: openai-codex
-  default: gpt-5.5
+  provider: custom:ollama-gemma4
+  default: gemma4:31b-cloud
 fallback_providers:
-  - provider: custom
-    model: gemma4:31b-cloud
-    base_url: http://ollama:11434/v1
-  - provider: custom
-    model: gpt-oss:20b-cloud
-    base_url: http://ollama:11434/v1
-  - provider: custom
-    model: nemotron-3-nano:30b-cloud
-    base_url: http://ollama:11434/v1
-  - provider: openrouter
-    model: google/gemma-4-31b-it:free
-  - provider: openrouter
-    model: openai/gpt-oss-20b:free
-  - provider: openrouter
-    model: nvidia/nemotron-3-nano-30b-a3b:free
+  - provider: custom:cerebras-gemma4
+    model: gemma-4-31b
   - provider: gemini
     model: gemma-4-31b-it
     base_url: https://generativelanguage.googleapis.com/v1beta
-  - provider: custom
+  - provider: openrouter
+    model: google/gemma-4-31b-it:free
+provider_routing:
+  require_parameters: false
+  data_collection: deny
+auxiliary:
+  compression:
+    provider: custom:cerebras-gemma4
     model: gemma-4-31b
-    base_url: https://api.cerebras.ai/v1
-    key_env: CEREBRAS_API_KEY
+    fallback_chain:
+      - provider: gemini
+        model: gemma-4-31b-it
+        base_url: https://generativelanguage.googleapis.com/v1beta
+      - provider: openrouter
+        model: google/gemma-4-31b-it:free
+      - provider: custom:ollama-gemma4
+        model: gemma4:31b-cloud
+  web_extract:
+    provider: gemini
+    model: gemma-4-31b-it
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    fallback_chain:
+      - provider: openrouter
+        model: google/gemma-4-31b-it:free
+      - provider: custom:cerebras-gemma4
+        model: gemma-4-31b
+      - provider: custom:ollama-gemma4
+        model: gemma4:31b-cloud
+  skills_hub:
+    provider: openrouter
+    model: google/gemma-4-31b-it:free
+    fallback_chain:
+      - provider: custom:ollama-gemma4
+        model: gemma4:31b-cloud
+      - provider: custom:cerebras-gemma4
+        model: gemma-4-31b
+      - provider: gemini
+        model: gemma-4-31b-it
+        base_url: https://generativelanguage.googleapis.com/v1beta
+  mcp:
+    provider: custom:ollama-gemma4
+    model: gemma4:31b-cloud
+    fallback_chain:
+      - provider: custom:cerebras-gemma4
+        model: gemma-4-31b
+      - provider: gemini
+        model: gemma-4-31b-it
+        base_url: https://generativelanguage.googleapis.com/v1beta
+      - provider: openrouter
+        model: google/gemma-4-31b-it:free
 tts:
   provider: openai
   speed: 1.0
