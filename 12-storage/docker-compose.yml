@@ -141,7 +141,7 @@ services:
     labels:
       - homepage.group=12-storage
       - homepage.name=OIKB-RustFS
-      - homepage.href=http://${PUBLIC_HOST}:31203
+      - homepage.href=http://${PUBLIC_HOST}:31204
       - homepage.description=OIKB data source object storage
 
   oikb-rustfs-bucket-init:
