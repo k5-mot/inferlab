@@ -6,7 +6,7 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 
 ## 影響
 
-- 文書変換中にCPU、memory、network I/Oが集中する。
+- 文書変換中にCPU、memory、disk I/Oが集中する。
 - 画像説明APIへのrequestが重なると、LiteLLM、model backend、Doclingの負荷が連鎖する。
 - host resourceに余力がない場合、SSHと他のDocker serviceが不安定になる。
 
@@ -15,7 +15,7 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 - OpenWebUIのfile upload直後にSSH切断が再現した。
 - Doclingの画像説明はLiteLLM経由でmodel APIを呼び出す構成だった。
 - 画像説明を無効化する案は要件を満たさないため採用しなかった。
-- network側ではARP/L2障害とresource枯渇を別々に確認する必要があった。
+- host resource枯渇の有無を同時刻のlogとmetricsで確認する必要があった。
 
 ## 実施した対応
 
@@ -33,9 +33,8 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 
 1. hostのOOM、swap、PSI、Docker resourceを採取する。
 2. Docling、OpenWebUI、LiteLLM、model backendのlog時刻を比較する。
-3. ARPが正常でresource pressureが高い場合は、Doclingの同時処理とmodel backend負荷を優先する。
-4. gateway neighbourが`FAILED`の場合は、Docling負荷をtriggerまたは増幅要因とし、ARP/L2障害を別途調査する。
-5. 画像説明が必要な検証期間だけfull設定を使用し、通常構成へ戻す。
+3. resource pressureが高い場合は、Doclingの同時処理とmodel backend負荷を優先して確認する。
+4. 画像説明が必要な検証期間だけfull設定を使用し、通常構成へ戻す。
 
 ## 残存risk
 

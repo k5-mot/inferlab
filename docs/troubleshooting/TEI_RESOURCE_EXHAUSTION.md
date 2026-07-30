@@ -2,14 +2,14 @@
 
 ## 概要
 
-Text Embeddings Inference（TEI）のembedding serviceとreranking serviceを起動した際、SSH接続が不安定になった。network障害と同じ時間帯にhostのmemory pressure、swap使用量増加、OOM kill、container再起動が確認された。
+Text Embeddings Inference（TEI）のembedding serviceとreranking serviceを起動した際、hostのmemory pressure、swap使用量増加、OOM kill、container再起動が確認された。
 
 ## 影響
 
 - SSHとCodexの応答が遅延または切断する。
 - host上の複数processがOOM killerの対象になる可能性がある。
 - TEI containerが再起動を繰り返し、resource pressureが継続する。
-- network処理とDocker内蔵resolverの応答も遅延し、L2障害に似た見え方になる。
+- Docker内蔵resolverの応答も遅延し、依存serviceの名前解決に失敗する可能性がある。
 
 ## 確認された事実
 
@@ -22,7 +22,7 @@ Text Embeddings Inference（TEI）のembedding serviceとreranking serviceを起
 
 TEI 2サービスの合計resource要求がhostの余力を超え、swapとOOMを発生させた。restart loopが同じmodel loadとmemory確保を繰り返し、SSHを含むhost全体の応答性を低下させた。
 
-この原因はgateway neighbourが`FAILED`になるARP/L2障害とは別に扱う。両者が同時に発生する可能性があるため、再発時はnetwork状態とresource状態を同じ時刻で採取する。
+再発時はresource状態とcontainer logを同じ時刻で採取し、TEI起動によるhost負荷として扱う。
 
 ## 実施した対応
 
