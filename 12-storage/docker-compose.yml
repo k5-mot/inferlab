@@ -43,10 +43,12 @@ services:
       NEXTCLOUD_OIDC_GROUP_PROVISIONING: 1
       NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: true
       NEXTCLOUD_ALLOW_LOCAL_REMOTE_SERVERS: true
+      NEXTCLOUD_USER_OIDC_ARCHIVE: /opt/inferlab/nextcloud-apps/user_oidc-v8.10.1.tar.gz
     ports:
       - 31200:80
     volumes:
       - nextcloud:/var/www/html
+      - ./nextcloud/apps:/opt/inferlab/nextcloud-apps:ro
       - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
       - ./nextcloud/post-installation-hooks:/docker-entrypoint-hooks.d/post-installation:ro
     networks:

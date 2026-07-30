@@ -1,4 +1,5 @@
 $OutputDirectory = Join-Path $PSScriptRoot "..\images"
+$NextcloudAppsDirectory = Join-Path $PSScriptRoot "..\12-storage\nextcloud\apps"
 $Platform = "linux/amd64"
 $Overwrite = $true
 
@@ -62,6 +63,15 @@ $LocalImages = @(
     }
 )
 
+$FileArtifacts = @(
+    @{
+        Url = "https://github.com/nextcloud-releases/user_oidc/releases/download/v8.10.1/user_oidc-v8.10.1.tar.gz"
+        FileName = "user_oidc-v8.10.1.tar.gz"
+        Sha256 = "49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd"
+        OutputDirectory = $NextcloudAppsDirectory
+    }
+)
+
 <#
 .SYNOPSIS
 コンテナイメージ参照から保存用アーカイブ名を生成します。
@@ -96,6 +106,28 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 }
 
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+New-Item -ItemType Directory -Path $NextcloudAppsDirectory -Force | Out-Null
+
+foreach ($FileArtifact in $FileArtifacts) {
+    $Url = $FileArtifact["Url"]
+    $FileName = $FileArtifact["FileName"]
+    $ExpectedSha256 = $FileArtifact["Sha256"]
+    $ArtifactDirectory = $FileArtifact["OutputDirectory"]
+    $ArtifactPath = Join-Path $ArtifactDirectory $FileName
+
+    if ((Test-Path $ArtifactPath) -and -not $Overwrite) {
+        Write-Host "Skip $FileName"
+        continue
+    }
+
+    Write-Host "Download $FileName"
+    Invoke-WebRequest -Uri $Url -OutFile $ArtifactPath
+
+    $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $ArtifactPath).Hash.ToLowerInvariant()
+    if ($ActualSha256 -ne $ExpectedSha256) {
+        throw "チェックサムが一致しません: $FileName"
+    }
+}
 
 foreach ($Image in $Images) {
     $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)

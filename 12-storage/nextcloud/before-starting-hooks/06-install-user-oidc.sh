@@ -7,6 +7,7 @@ fi
 
 : "${NEXTCLOUD_USER_OIDC_VERSION:=8.10.1}"
 : "${NEXTCLOUD_USER_OIDC_SHA256:=49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd}"
+: "${NEXTCLOUD_USER_OIDC_ARCHIVE:=/opt/inferlab/nextcloud-apps/user_oidc-v${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz}"
 : "${NEXTCLOUD_USER_OIDC_URL:=https://github.com/nextcloud-releases/user_oidc/releases/download/v${NEXTCLOUD_USER_OIDC_VERSION}/user_oidc-v${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz}"
 
 app_dir=/var/www/html/custom_apps/user_oidc
@@ -21,8 +22,13 @@ if [ ! -d "${app_dir}" ]; then
   rm -rf "${archive}" "${extract_dir}"
   mkdir -p "${extract_dir}"
 
-  # Nextcloudのappstore検索に出ない場合でも公式releaseからOIDC appを復元する。
-  curl -fsSL "${NEXTCLOUD_USER_OIDC_URL}" -o "${archive}"
+  if [ -f "${NEXTCLOUD_USER_OIDC_ARCHIVE}" ]; then
+    # airgap環境ではbind mountした事前取得済みarchiveからOIDC appを復元する。
+    cp "${NEXTCLOUD_USER_OIDC_ARCHIVE}" "${archive}"
+  else
+    # online環境では公式releaseからOIDC appを復元する。
+    curl -fsSL "${NEXTCLOUD_USER_OIDC_URL}" -o "${archive}"
+  fi
   echo "${NEXTCLOUD_USER_OIDC_SHA256}  ${archive}" | sha256sum -c -
 
   tar -xzf "${archive}" -C "${extract_dir}"
