@@ -2,34 +2,35 @@ model:
   provider: openai-codex
   default: gpt-5.5
 fallback_providers:
-  - provider: custom:litellm
-    model: google/gemma4:31b
-  - provider: custom:litellm
-    model: openai/gpt-oss:20b
-  - provider: custom:litellm
-    model: nvidia/nemotron-3-nano:30b
-custom_providers:
-  - name: litellm
-    base_url: http://litellm:4000/v1
-    key_env: LITELLM_MASTER_KEY
-    extra_headers:
-      x-litellm-disable-callbacks: langfuse_otel,langfuse
-    extra_body:
-      no-log: true
-      metadata:
-        caller: hermes-agent
-        litellm_langfuse_disabled: true
-    models:
-      - google/gemma4:31b
-      - openai/gpt-oss:20b
-      - nvidia/nemotron-3-nano:30b
+  - provider: custom
+    model: gemma4:31b-cloud
+    base_url: http://ollama:11434/v1
+  - provider: custom
+    model: gpt-oss:20b-cloud
+    base_url: http://ollama:11434/v1
+  - provider: custom
+    model: nemotron-3-nano:30b-cloud
+    base_url: http://ollama:11434/v1
+  - provider: openrouter
+    model: google/gemma-4-31b-it:free
+  - provider: openrouter
+    model: openai/gpt-oss-20b:free
+  - provider: openrouter
+    model: nvidia/nemotron-3-nano-30b-a3b:free
+  - provider: gemini
+    model: gemma-4-31b-it
+    base_url: https://generativelanguage.googleapis.com/v1beta
+  - provider: custom
+    model: gemma-4-31b
+    base_url: https://api.cerebras.ai/v1
+    key_env: CEREBRAS_API_KEY
 tts:
   provider: openai
   speed: 1.0
   openai:
-    model: voicevox/tts
-    voice: '3'
-    base_url: http://litellm:4000/v1
+    model: kokoro
+    voice: jf_alpha
+    base_url: http://kokoro:8880/v1
     speed: 1.0
 discord:
   require_mention: true

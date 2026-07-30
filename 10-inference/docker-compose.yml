@@ -284,7 +284,7 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      VOICE_TOOLS_OPENAI_KEY: ${VOICE_TOOLS_OPENAI_KEY:-not-needed}
       ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
       SEARXNG_SECRET_KEY: "sk-searxng-secret-key"
@@ -296,6 +296,7 @@ services:
       OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
       CODEX_HOME: /opt/config/.codex
       HERMES_HOME: /opt/data
       HERMES_UID: ${HERMES_UID:-1000}
