@@ -57,9 +57,8 @@ services:
       timeout: 10s
       retries: 10
       start_period: 90s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/nextcloud.labels
     labels:
+      - homepage.icon=/icons/nextcloud.png
       - homepage.group=12-storage
       - homepage.name=Nextcloud
       - homepage.href=http://${PUBLIC_HOST}:31200/apps/files/files
@@ -89,9 +88,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=12-storage
       - homepage.name=Nextcloud-Postgres
       - homepage.description=Relational database
@@ -109,9 +107,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=12-storage
       - homepage.name=Nextcloud-Valkey
       - homepage.description=Inmemory key-value NoSQL database
@@ -143,6 +140,7 @@ services:
       - homepage.name=OIKB-RustFS
       - homepage.href=http://${PUBLIC_HOST}:31204
       - homepage.description=OIKB data source object storage
+      - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-bucket-init:
     build:
@@ -237,9 +235,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
+      - homepage.icon=/icons/open-webui.png
       - homepage.group=12-storage
       - homepage.name=Open-WebUI-Knowledge-Bases
       - homepage.href=http://${PUBLIC_HOST}:31201

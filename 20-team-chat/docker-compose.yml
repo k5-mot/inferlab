@@ -102,9 +102,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=20-team-chat
       - homepage.name=Zulip-Postgres
       - homepage.description=Relational database
@@ -163,9 +162,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/rabbitmq.labels
     labels:
+      - homepage.icon=/icons/rabbitmq.png
       - homepage.group=20-team-chat
       - homepage.name=Zulip-RabbitMQ
       - homepage.description=Reliable message broker
@@ -196,9 +194,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 5s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=20-team-chat
       - homepage.name=Zulip-Redis
       - homepage.description=In-memory data store

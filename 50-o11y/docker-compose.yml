@@ -68,9 +68,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/grafana.labels
     labels:
+      - homepage.icon=/icons/grafana.png
       - homepage.group=50-o11y
       - homepage.name=Grafana
       - homepage.href=http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}
@@ -137,9 +136,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
     labels:
+      - homepage.icon=/icons/prometheus.png
       - homepage.group=50-o11y
       - homepage.name=Prometheus
       - homepage.href=http://${PUBLIC_HOST}:${PROMETHEUS_HTTP_HOST_PORT:-35001}
@@ -165,9 +163,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
     labels:
+      - homepage.icon=/icons/prometheus.png
       - homepage.group=50-o11y
       - homepage.name=Node Exporter
       - homepage.description=Host metrics exporter
@@ -189,8 +186,6 @@ services:
       - /dev/disk:/dev/disk:ro
     networks:
       - internal-nw
-    # label_file:
-    #   - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
     labels:
       - homepage.group=50-o11y
       - homepage.name=cAdvisor
@@ -215,9 +210,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
     labels:
+      - homepage.icon=/icons/prometheus.png
       - homepage.group=50-o11y
       - homepage.name=Blackbox Exporter
       - homepage.description=Endpoint probe exporter
@@ -239,9 +233,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Keycloak PostgreSQL Exporter
   #     - homepage.description=Keycloak database metrics exporter
@@ -264,9 +257,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Nextcloud PostgreSQL Exporter
   #     - homepage.description=Nextcloud database metrics exporter
@@ -289,9 +281,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Langfuse PostgreSQL Exporter
   #     - homepage.description=Langfuse database metrics exporter
@@ -314,9 +305,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Gitea PostgreSQL Exporter
   #     - homepage.description=Gitea database metrics exporter
@@ -339,9 +329,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Dify PostgreSQL Exporter
   #     - homepage.description=Dify database metrics exporter
@@ -364,9 +353,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Zulip PostgreSQL Exporter
   #     - homepage.description=Zulip database metrics exporter
@@ -389,9 +377,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
   #   labels:
+  #     - homepage.icon=/icons/postgresql.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Pulp PostgreSQL Exporter
   #     - homepage.description=Pulp database metrics exporter
@@ -412,9 +399,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
   #   labels:
+  #     - homepage.icon=/icons/redis.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Nextcloud Valkey Exporter
   #     - homepage.description=Nextcloud cache metrics exporter
@@ -436,9 +422,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
   #   labels:
+  #     - homepage.icon=/icons/redis.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Langfuse Valkey Exporter
   #     - homepage.description=Langfuse cache metrics exporter
@@ -460,9 +445,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
   #   labels:
+  #     - homepage.icon=/icons/redis.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Dify Redis Exporter
   #     - homepage.description=Dify cache metrics exporter
@@ -484,9 +468,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
   #   labels:
+  #     - homepage.icon=/icons/redis.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Zulip Redis Exporter
   #     - homepage.description=Zulip cache metrics exporter
@@ -508,9 +491,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
   #   labels:
+  #     - homepage.icon=/icons/redis.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Pulp Redis Exporter
   #     - homepage.description=Pulp cache metrics exporter
@@ -534,9 +516,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
   #   labels:
+  #     - homepage.icon=/icons/mariadb.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Leantime MySQL Exporter
   #     - homepage.description=Leantime database metrics exporter
@@ -560,9 +541,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 10s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
   #   labels:
+  #     - homepage.icon=/icons/mariadb.png
   #     - homepage.group=50-o11y
   #     - homepage.name=BookStack MariaDB Exporter
   #     - homepage.description=BookStack database metrics exporter
@@ -587,9 +567,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 30s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
   #   labels:
+  #     - homepage.icon=/icons/prometheus.png
   #     - homepage.group=50-o11y
   #     - homepage.name=AMD Device Metrics Exporter
   #     - homepage.description=AMD GPU metrics exporter
@@ -612,9 +591,8 @@ services:
   #     timeout: 5s
   #     retries: 3
   #     start_period: 30s
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/prometheus.labels
   #   labels:
+  #     - homepage.icon=/icons/prometheus.png
   #     - homepage.group=50-o11y
   #     - homepage.name=NVIDIA DCGM Exporter
   #     - homepage.description=NVIDIA GPU metrics exporter

@@ -82,9 +82,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
     labels:
+      - homepage.icon=/icons/langfuse.png
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Worker
       - homepage.description=LLMOps platform
@@ -123,9 +122,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/langfuse.labels
     labels:
+      - homepage.icon=/icons/langfuse.png
       - homepage.group=51-llmops
       - homepage.name=Langfuse
       - homepage.href=http://${PUBLIC_HOST}:35100
@@ -154,9 +152,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 1s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/clickhouse.labels
     labels:
+      - homepage.icon=/icons/clickhouse.png
       - homepage.group=51-llmops
       - homepage.name=Langfuse-ClickHouse
       - homepage.description=Columnar analytics database
@@ -181,9 +178,8 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/valkey.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Valkey
       - homepage.description=Inmemory key-value NoSQL database
@@ -215,6 +211,7 @@ services:
       - homepage.name=Langfuse-RustFS
       - homepage.href=http://${PUBLIC_HOST}:35102
       - homepage.description=S3-compatible object storage
+      - homepage.icon=/icons/rustfs.png
 
   langfuse-rustfs-bucket-init:
     image: docker.io/amazon/aws-cli:latest
@@ -265,9 +262,8 @@ services:
     volumes:
       # - langfuse_postgres_data:/var/lib/postgresql/data
       - langfuse_postgres_data:/var/lib/postgresql
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=51-llmops
       - homepage.name=Langfuse-Postgres
       - homepage.description=Relational database

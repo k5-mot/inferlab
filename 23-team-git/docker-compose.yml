@@ -53,9 +53,8 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/gitea.labels
     labels:
+      - homepage.icon=/icons/gitea.png
       - homepage.group=23-team-git
       - homepage.name=Gitea
       - homepage.href=http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-32300}
@@ -83,9 +82,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=23-team-git
       - homepage.name=Gitea-Postgres
       - homepage.description=Relational database

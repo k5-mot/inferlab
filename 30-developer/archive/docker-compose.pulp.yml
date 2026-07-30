@@ -30,9 +30,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=30-developer
       - homepage.name=Pulp-PostgreSQL
       - homepage.description=Relational database
@@ -63,9 +62,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=30-developer
       - homepage.name=Pulp-Redis
       - homepage.description=In-memory data store

@@ -35,9 +35,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/cloudflare.labels
     labels:
+      - homepage.icon=/icons/cloudflared.png
       - homepage.group=01-infra
       - homepage.name=Cloudflare
       - homepage.description=Secure outband tunnel
@@ -66,9 +65,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/couchdb.labels
     labels:
+      - homepage.icon=/icons/couchdb.png
       - homepage.group=01-infra
       - homepage.name=CouchDB
       - homepage.description=Document NoSQL database for Obsidian

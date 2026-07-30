@@ -64,9 +64,8 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/litellm.labels
     labels:
+      - homepage.icon=/icons/litlellm.png
       - homepage.group=10-inference
       - homepage.name=LiteLLM
       - homepage.href=http://${PUBLIC_HOST}:31000/ui
@@ -98,9 +97,8 @@ services:
       timeout: 10s
       retries: 20
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/ollama.labels
     labels:
+      - homepage.icon=/icons/ollama.png
       - homepage.group=10-inference
       - homepage.name=Ollama
       - homepage.description=Inference engine
@@ -177,9 +175,8 @@ services:
       timeout: 10s
       retries: 60
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
     labels:
+      - homepage.icon=/icons/hugging-face.png
       - homepage.group=10-inference
       - homepage.name=TEI_Embedding
       - homepage.description=Embedding inference engine
@@ -229,9 +226,8 @@ services:
       timeout: 10s
       retries: 60
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hugging-face.labels
     labels:
+      - homepage.icon=/icons/hugging-face.png
       - homepage.group=10-inference
       - homepage.name=TEI_Reranking
       - homepage.description=Embedding inference engine
@@ -318,9 +314,8 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/hermes.labels
     labels:
+      - homepage.icon=/icons/hermes-icon.png
       - homepage.group=10-inference
       - homepage.name=Hermes-Agent
       - homepage.description=AI agent

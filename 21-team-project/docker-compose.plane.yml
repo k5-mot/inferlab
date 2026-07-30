@@ -20,9 +20,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Web
       - homepage.description=Project management tool
@@ -46,9 +45,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Space
       - homepage.description=Project management tool
@@ -72,9 +70,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Admin
       - homepage.description=Project management tool
@@ -142,9 +139,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-API
       - homepage.description=Project management tool
@@ -171,9 +167,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Worker
       - homepage.description=Project management tool
@@ -200,9 +195,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Beat-Worker
       - homepage.description=Project management tool
@@ -231,9 +225,8 @@ services:
       timeout: 5s
       retries: 1
       start_period: 5s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Migrator
       - homepage.description=Project management tool
@@ -264,9 +257,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Live
       - homepage.description=Project management tool
@@ -306,9 +298,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/plane.labels
     labels:
+      - homepage.icon=/icons/plane.png
       - homepage.group=21-team-project
       - homepage.name=Plane
       - homepage.href=http://${PUBLIC_HOST}:32001
@@ -341,9 +332,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Postgres
       - homepage.description=Relational database
@@ -367,9 +357,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 5s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=21-team-project
       - homepage.name=Plane-Redis
       - homepage.description=Inmemory key-value NoSQL database
@@ -398,9 +387,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 20s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/rabbitmq.labels
     labels:
+      - homepage.icon=/icons/rabbitmq.png
       - homepage.group=21-team-project
       - homepage.name=Plane-RabbitMQ
       - homepage.description=Reliable multi-protocol message broker
@@ -434,9 +422,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/minio.labels
     labels:
+      - homepage.icon=/icons/minio.png
       - homepage.group=21-team-project
       - homepage.name=Plane-MinIO
       - homepage.description=S3-compatible object storage

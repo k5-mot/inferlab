@@ -109,9 +109,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-API
       - homepage.description=AI workflow platform
@@ -157,9 +156,8 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Worker
       - homepage.description=AI workflow platform
@@ -197,9 +195,8 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Worker-Beat
       - homepage.description=AI workflow platform
@@ -233,9 +230,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Web
       - homepage.description=AI workflow platform
@@ -288,9 +284,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Plugin
       - homepage.description=AI workflow platform
@@ -326,9 +321,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Sandbox
       - homepage.description=AI workflow platform
@@ -352,9 +346,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Local-Sandbox
       - homepage.description=AI workflow platform
@@ -396,9 +389,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify-Agent-Backend
       - homepage.description=AI workflow platform
@@ -423,9 +415,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/squid.labels
     labels:
+      - homepage.icon=/icons/squidex.png
       - homepage.group=13-automation
       - homepage.name=Dify-SSRF-Proxy
       - homepage.description=Forward proxy
@@ -454,9 +445,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=13-automation
       - homepage.name=Dify-Postgres
       - homepage.description=Relational database
@@ -485,9 +475,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 5s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/redis.labels
     labels:
+      - homepage.icon=/icons/redis.png
       - homepage.group=13-automation
       - homepage.name=Dify-Redis
       - homepage.description=Inmemory key-value NoSQL database
@@ -515,9 +504,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/qdrant.labels
     labels:
+      - homepage.icon=/icons/qdrant.png
       - homepage.group=13-automation
       - homepage.name=Dify-Qdrant
       - homepage.description=Vector search database
@@ -549,9 +537,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/dify.labels
     labels:
+      - homepage.icon=/icons/dify.png
       - homepage.group=13-automation
       - homepage.name=Dify
       - homepage.href=http://${PUBLIC_HOST}:31300

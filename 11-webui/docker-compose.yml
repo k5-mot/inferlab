@@ -230,9 +230,8 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
+      - homepage.icon=/icons/open-webui.png
       - homepage.group=11-webui
       - homepage.name=Open-WebUI
       - homepage.href=http://${PUBLIC_HOST}:31100
@@ -270,9 +269,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
+      - homepage.icon=/icons/open-webui.png
       - homepage.group=11-webui
       - homepage.name=Open-Terminal
       - homepage.href=http://${PUBLIC_HOST}:31103/docs
@@ -311,9 +309,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/open-webui.labels
     labels:
+      - homepage.icon=/icons/open-webui.png
       - homepage.group=11-webui
       - homepage.name=mcpo
       - homepage.href=http://${PUBLIC_HOST}:31104/docs
@@ -362,9 +359,8 @@ services:
     mem_limit: ${DOCLING_MEM_LIMIT:-8g}
     memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
     pids_limit: 512
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/docling.labels
     labels:
+      - homepage.icon=/icons/docling.png
       - homepage.group=11-webui
       - homepage.name=docling-serve
       - homepage.href=http://${PUBLIC_HOST}:31101/ui
@@ -391,9 +387,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/searxng.labels
     labels:
+      - homepage.icon=/icons/searxng.png
       - homepage.group=11-webui
       - homepage.name=SearXNG
       - homepage.href=http://${PUBLIC_HOST}:31102
@@ -420,13 +415,12 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
     labels:
       - homepage.group=11-webui
       - homepage.name=Kokoro-TTS
       - homepage.description=Text-to-Speech Engine
       - homepage.href=http://${PUBLIC_HOST}:31105/web
+      - homepage.icon=/icons/kokoro-web.png
 
   # kokoro:
   #   image: hwdsl2/kokoro-server
@@ -466,9 +460,8 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 3
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
   #   labels:
+  #     - homepage.icon=/icons/volume-high.png
   #     - homepage.group=11-webui
   #     - homepage.name=Irodori-TTS
   #     - homepage.description=Text-to-Speech Engine
@@ -486,9 +479,8 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 3
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
   #   labels:
+  #     - homepage.icon=/icons/volume-high.png
   #     - homepage.group=11-webui
   #     - homepage.name=VOICEVOX-Engine
   #     - homepage.description=Text-to-Speech Engine
@@ -512,9 +504,8 @@ services:
   #     interval: 30s
   #     timeout: 10s
   #     retries: 3
-  #   label_file:
-  #     - ../00-common/homepage/icon-labels/${AIRGAP:-false}/voicevox.labels
   #   labels:
+  #     - homepage.icon=/icons/volume-high.png
   #     - homepage.group=11-webui
   #     - homepage.name=VOICEVOX-API
   #     - homepage.description=Text-to-Speech API
@@ -546,9 +537,8 @@ services:
         hard: 65535
     mem_limit: 8g
     memswap_limit: 9g
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/qdrant.labels
     labels:
+      - homepage.icon=/icons/qdrant.png
       - homepage.group=11-webui
       - homepage.name=Qdrant
       - homepage.description=Vector search database

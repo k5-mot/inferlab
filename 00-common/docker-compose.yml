@@ -91,9 +91,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ./homepage/icon-labels/${AIRGAP:-false}/keycloak.labels
     labels:
+      - homepage.icon=/icons/keycloak.png
       - homepage.group=00-common
       - homepage.name=Keycloak
       - homepage.href=http://${PUBLIC_HOST}:30001
@@ -146,9 +145,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ./homepage/icon-labels/${AIRGAP:-false}/keycloak.labels
     labels:
+      - homepage.icon=/icons/keycloak.png
       - homepage.group=00-common
       - homepage.name=Keycloak HTTPS
       - homepage.href=https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
@@ -176,9 +174,8 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    label_file:
-      - ./homepage/icon-labels/${AIRGAP:-false}/postgres.labels
     labels:
+      - homepage.icon=/icons/postgresql.png
       - homepage.group=00-common
       - homepage.name=Keycloak-Postgres
       - homepage.description=Relational database

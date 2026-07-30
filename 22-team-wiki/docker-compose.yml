@@ -83,9 +83,8 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
-    label_file:
-      - ../00-common/homepage/icon-labels/${AIRGAP:-false}/mariadb.labels
     labels:
+      - homepage.icon=/icons/mariadb.png
       - homepage.group=22-team-wiki
       - homepage.name=BookStack-MariaDB
       - homepage.description=MySQL-compatible relational database
