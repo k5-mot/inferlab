@@ -46,6 +46,8 @@ sudo ./dc.sh up-full --remove-orphans
 
 ## Profile
 
+`dc.sh up` の標準起動に含まれる profile は `common`、`infra`、`inference`、`webui`、`storage`、`developer`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
+
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
 | `common` | `00-common/docker-compose.yml` | 共通入口と認証 |

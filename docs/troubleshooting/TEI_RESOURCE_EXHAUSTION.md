@@ -29,13 +29,13 @@ TEI 2サービスの合計resource要求がhostの余力を超え、swapとOOM�
 TEIのembedding serviceとreranking serviceへ、次の制限を適用した。
 
 - restart policyを`on-failure:3`へ変更した。
-- `--max-batch-tokens`を`512`に制限した。
+- `--max-batch-tokens`を`1024`に制限した。
 - `--max-client-batch-size`を`2`に制限した。
 - `--max-concurrent-requests`を`2`に制限した。
 - `--tokenization-workers`を`1`に制限した。
 - `--auto-truncate true`を有効化した。
 - 各serviceへmemory `6g`、memoryとswapの合計`7g`、CPU `4.0`の上限を設定した。
-- `nwchk.sh triage`へOOM、swap、PSI、Docker resource、restart count、TEI logの採取を追加した。
+- 再発時はOOM、swap、PSI、Docker resource、restart count、TEI logを同じ時刻で採取する運用にした。
 
 ## 復旧確認
 
@@ -50,5 +50,3 @@ TEIのembedding serviceとreranking serviceへ、次の制限を適用した。
 ## References
 
 - [TEIのCompose設定](../../10-inference/docker-compose.yml)
-- [ネットワーク障害時のresource確認手順](../NETWORK_SETUP.md)
-- [障害解析スクリプト](../../nwchk.sh)

@@ -8,7 +8,7 @@ Keycloakの初回ログインから、Open-WebUIのKnowledge作成、OIKB連携�
 - `STACK_NAME`を未指定にした場合、Keycloak realm名は`inferlab`になる。
 - 初期値のまま起動した場合、Keycloak管理者とrealm内admin userのpasswordはどちらも`admin`。
 - Open-WebUI用Keycloak clientは`open-webui`、client secretは`OPEN_WEBUI_OIDC_CLIENT_SECRET`で上書きできる。
-- OIKBはNextcloud volumeの`admin/files/oikb`をOpen-WebUI Knowledgeへ同期する。
+- OIKBはNextcloud volumeの`admin/files/oikb`とRustFS bucketの`s3://oikb/documents`をOpen-WebUI Knowledgeへ同期する。
 - 既存のKeycloak realmがある環境では`--import-realm`だけではclient secretが更新されない場合がある。その場合はKeycloak管理consoleで`open-webui` clientのsecretを`OPEN_WEBUI_OIDC_CLIENT_SECRET`と一致させる。
 
 ## 1. 基本stackを起動する
@@ -24,6 +24,7 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
 - Open-WebUIが`http://${PUBLIC_HOST}:31100`で応答する。
 - Nextcloudが`http://${PUBLIC_HOST}:31200`で応答する。
 - OIKBが`http://${PUBLIC_HOST}:31201`で応答する。
+- RustFS consoleが`http://${PUBLIC_HOST}:31204`で応答する。
 
 失敗条件:
 
@@ -32,7 +33,7 @@ sudo docker compose --env-file .env --profile common --profile infra --profile i
 
 ```bash
 # 初回設定に必要な主要serviceの状態を確認する。
-sudo docker compose --env-file .env --profile common --profile webui --profile storage ps keycloak open-webui nextcloud oikb
+sudo docker compose --env-file .env --profile common --profile webui --profile storage ps keycloak open-webui nextcloud oikb-rustfs oikb
 ```
 
 ## 2. Keycloakへ初回ログインする
@@ -74,26 +75,30 @@ sudo docker compose --env-file .env --profile common --profile webui --profile s
 ## 4. Open-WebUI Knowledgeを作成する
 
 1. Open-WebUIで`Workspace`から`Knowledge`を開く。
-2. 新しいKnowledgeを作成し、名前を`Nextcloud OIKB`などにする。
-3. 作成後のURLまたは画面表示からKnowledge IDを控える。
+2. Nextcloud同期用とRustFS同期用のKnowledgeを作成する。
+3. 作成後のURLまたは画面表示から、それぞれのKnowledge IDを控える。
 4. `.env`に次の値を設定する。
 
 ```dotenv
 OPEN_WEBUI_API_KEY=<Open-WebUIで作成したAPI key>
 NEXTCLOUD_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
+RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 ```
 
 期待結果:
 
 - OIKBがOpen-WebUI APIへ接続するためのAPI keyを持つ。
-- OIKBが同期先Knowledge IDを参照できる。
+- OIKBがNextcloud同期先とRustFS同期先のKnowledge IDを参照できる。
 
 失敗条件:
 
 - `OPEN_WEBUI_API_KEY`が空のままになっている。
 - `NEXTCLOUD_OPENWEBUI_KB_ID`が空のままになっている。
+- `RUSTFS_OPENWEBUI_KB_ID`が空のままになっている。
 
-## 5. NextcloudにOIKB同期対象を用意する
+## 5. OIKB同期対象を用意する
+
+### Nextcloud
 
 1. `http://${PUBLIC_HOST}:31200`を開く。
 2. `admin` / `admin`でログインする。
@@ -111,6 +116,23 @@ NEXTCLOUD_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - Nextcloud上のfolderが`admin/files/oikb`以外に作成されている。
 - PDF以外の不要なURL markerやサンプルfileが同期対象に残っている。
 
+### RustFS
+
+1. `http://${PUBLIC_HOST}:31204`を開く。
+2. `.env`の`OIKB_RUSTFS_ACCESS_KEY_ID` / `OIKB_RUSTFS_SECRET_ACCESS_KEY`、または既定値の`rustfs_admin` / `rustfs_secret_key`でログインする。
+3. `oikb` bucketが存在することを確認する。
+4. `documents/` prefix配下へ同期対象fileを配置する。
+
+期待結果:
+
+- OIKB containerから`s3://oikb/documents`として読み取れる。
+- `12-storage/oikb/oikb.yaml`の`rustfs-documents` sourceと一致する。
+
+失敗条件:
+
+- `documents/`以外のprefixへfileを配置している。
+- `.env`のRustFS認証情報とRustFS containerの認証情報が一致しない。
+
 ## 6. OIKBを再起動して同期する
 
 ```bash
@@ -121,8 +143,8 @@ sudo docker compose --env-file .env --profile storage up -d --force-recreate oik
 期待結果:
 
 - OIKBがhealthyになる。
-- OIKB logにNextcloud sourceのscanとOpen-WebUI Knowledgeへの同期が出る。
-- Open-WebUIのKnowledgeにNextcloudへ配置したfileが登録される。
+- OIKB logにNextcloud sourceまたはRustFS sourceのscanとOpen-WebUI Knowledgeへの同期が出る。
+- Open-WebUIのKnowledgeに配置したfileが登録される。
 
 失敗条件:
 
@@ -131,7 +153,7 @@ sudo docker compose --env-file .env --profile storage up -d --force-recreate oik
 - Open-WebUIのKnowledgeにfileが増えない。
 
 ```bash
-# OIKBの同期logを確認する。
+# 既定のSTACK_NAMEでOIKBの同期logを確認する。
 sudo docker logs --tail 200 inferlab-oikb
 ```
 

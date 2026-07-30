@@ -29,13 +29,13 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 
 ## 現在の運用
 
-通常運用では画像説明を有効にしたfull設定を使用する。再発時は機能を直ちに削除せず、次の順序で切り分ける。
+通常運用ではComposeで`docling_params_slim.json`をmountし、画像説明を無効にした設定を使用する。画像説明を検証する場合だけ`docling_params_full.json`へ切り替える。再発時は機能を直ちに削除せず、次の順序で切り分ける。
 
-1. `nwchk.sh triage`でgateway neighbour、OOM、swap、PSI、Docker resourceを採取する。
+1. hostのOOM、swap、PSI、Docker resourceを採取する。
 2. Docling、OpenWebUI、LiteLLM、model backendのlog時刻を比較する。
 3. ARPが正常でresource pressureが高い場合は、Doclingの同時処理とmodel backend負荷を優先する。
 4. gateway neighbourが`FAILED`の場合は、Docling負荷をtriggerまたは増幅要因とし、ARP/L2障害を別途調査する。
-5. 切り分けが必要な期間だけslim設定を使用し、画像説明を必要とする通常構成へ戻す。
+5. 画像説明が必要な検証期間だけfull設定を使用し、通常構成へ戻す。
 
 ## 残存risk
 
@@ -47,4 +47,3 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 - [Docling full parameter](../../11-webui/open-webui/docling_params_full.json)
 - [Docling slim parameter](../../11-webui/open-webui/docling_params_slim.json)
 - [TEI起動時のhost resource枯渇](TEI_RESOURCE_EXHAUSTION.md)
-- [host管理NICのgateway ARP到達不能](HOST_GATEWAY_ARP_FAILURE.md)
