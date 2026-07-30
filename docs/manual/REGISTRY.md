@@ -1,6 +1,6 @@
 # Registry利用ガイド
 
-利用者端末からInferLabのRPM repository、APT repository、PyPIserver、Verdaccioを使う手順。
+利用者端末からInferLabのRPM repository、APT repository、PyPIserver、Verdaccio、Code Marketplaceを使う手順。
 
 ## 前提
 
@@ -14,6 +14,7 @@
 - `<REGISTRY_HOST>`: Registry serverのhost名またはIP。
 - `<PYPI_PORT>`: PyPIserverのHTTP port。既定値は`33100`。
 - `<NPM_PORT>`: VerdaccioのHTTP port。既定値は`33200`。
+- `<CODE_MARKETPLACE_PORT>`: Code MarketplaceのHTTP port。既定値は`33300`。
 - `<RPM_PORT>`: RPM repositoryのHTTP port。既定値は`33400`。
 - `<DEB_PORT>`: APT repositoryのHTTP port。既定値は`33500`。
 
@@ -25,6 +26,9 @@ curl -fsS "http://<REGISTRY_HOST>:<PYPI_PORT>/simple/" >/dev/null
 
 # Verdaccioへ接続できることを確認する。
 curl -fsS "http://<REGISTRY_HOST>:<NPM_PORT>/" >/dev/null
+
+# Code Marketplaceへ接続できることを確認する。
+curl -fsS "http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/healthz" >/dev/null
 
 # RPM repository metadataへ接続できることを確認する。
 curl -fsS "http://<REGISTRY_HOST>:<RPM_PORT>/repodata/repomd.xml" >/dev/null
@@ -125,7 +129,65 @@ rollback:
 npm config delete registry
 ```
 
-## 4. RPM repositoryを使う
+## 4. Code Marketplaceを使う
+
+code-serverで使う場合:
+
+```bash
+# code-serverのextension marketplace接続先をCode Marketplaceへ変更する。
+export EXTENSIONS_GALLERY='{"serviceUrl":"http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/api","itemUrl":"http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/item","resourceUrlTemplate":"http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/files/{publisher}/{name}/{version}/{path}"}'
+
+# Code Marketplace設定を反映してcode-serverを起動する。
+code-server
+```
+
+VSCodiumで使う場合:
+
+```bash
+# VSCodiumのgallery API接続先をCode Marketplaceへ変更する。
+export VSCODE_GALLERY_SERVICE_URL="http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/api"
+
+# VSCodiumのextension item URLをCode Marketplaceへ変更する。
+export VSCODE_GALLERY_ITEM_URL="http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/item"
+
+# VSCodiumを起動する。
+codium
+```
+
+登録済みextensionをAPIで確認する場合:
+
+```bash
+# Code Marketplaceのextension query APIで登録済みVSIXを検索する。
+curl -fsS "http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/api/extensionquery" \
+  -H "Accept: application/json;api-version=3.0-preview.1" \
+  -H "Content-Type: application/json" \
+  --data-raw '{"filters":[{"criteria":[{"filterType":8,"value":"Microsoft.VisualStudio.Code"}],"pageSize":20}],"flags":439}' >/dev/null
+```
+
+期待結果:
+
+- code-serverまたはVSCodiumのextension検索がCode Marketplaceを参照する。
+- `code-marketplace-importer`が`30-developer/registry/vsix`に配置済みのVSIXを登録し、検索対象になる。
+
+失敗条件:
+
+- Code MarketplaceへHTTP接続できない。
+- client側が外部marketplaceを参照している。
+- VSIXが`30-developer/registry/vsix`へ配置されていない。
+- `code-marketplace-importer`が失敗して、VSIXが`code-marketplace-extensions` volumeへ登録されていない。
+- HTTPSが必須のclient構成で、HTTPのCode Marketplaceが拒否される。
+
+rollback:
+
+```bash
+# code-server向けのCode Marketplace設定を削除する。
+unset EXTENSIONS_GALLERY
+
+# VSCodium向けのCode Marketplace設定を削除する。
+unset VSCODE_GALLERY_SERVICE_URL VSCODE_GALLERY_ITEM_URL
+```
+
+## 5. RPM repositoryを使う
 
 利用者端末がRHEL互換distributionの場合に使う。
 
@@ -169,7 +231,7 @@ sudo rm -f /etc/yum.repos.d/inferlab.repo
 sudo dnf makecache
 ```
 
-## 5. APT repositoryを使う
+## 6. APT repositoryを使う
 
 利用者端末がDebian系distributionの場合に使う。
 
@@ -207,7 +269,7 @@ sudo rm -f /etc/apt/sources.list.d/inferlab.list
 sudo apt-get update
 ```
 
-## 6. 利用時の切り分け
+## 7. 利用時の切り分け
 
 ```bash
 # Registry serviceの公開portへTCP接続できることを確認する。
@@ -218,6 +280,15 @@ python -m pip config list
 
 # npmが参照しているregistryを確認する。
 npm config get registry
+
+# Code Marketplaceのhealth endpointへ接続できることを確認する。
+curl -v "http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/healthz" 2>&1 | head
+
+# code-serverが参照するextension marketplace設定を確認する。
+printf '%s\n' "$EXTENSIONS_GALLERY"
+
+# VSCodiumが参照するextension marketplace設定を確認する。
+printf '%s\n' "$VSCODE_GALLERY_SERVICE_URL"
 
 # dnfに登録済みrepositoryを確認する。
 dnf repolist

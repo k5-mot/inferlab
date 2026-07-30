@@ -8,6 +8,8 @@
 #   - https://github.com/rpm-software-management/createrepo_c
 # - reprepro
 #   - https://salsa.debian.org/debian/reprepro
+# - code-marketplace
+#   - https://github.com/coder/code-marketplace
 #
 name: ${STACK_NAME:-inferlab}
 
@@ -72,6 +74,61 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-33200}/
       - homepage.description=npm registry
       - homepage.icon=/icons/verdaccio.png
+
+  code-marketplace:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace
+    restart: unless-stopped
+    profiles:
+      - developer
+    command:
+      - --address=0.0.0.0:3000
+      - --extensions-dir=/extensions
+    ports:
+      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}:3000
+    volumes:
+      - code-marketplace-extensions:/extensions:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - code-marketplace-importer
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=30-developer
+      - homepage.name=Code Marketplace
+      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-33300}/api
+      - homepage.description=VS Code extension marketplace
+      - homepage.icon=/icons/mdi-file-code.png
+
+  code-marketplace-importer:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace-importer
+    restart: unless-stopped
+    profiles:
+      - developer
+    entrypoint: []
+    environment:
+      CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS: ${CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS:-300}
+    command:
+      - sh
+      - /usr/local/bin/import-vsix-extensions
+    volumes:
+      - ./registry/vsix:/imports:ro
+      - code-marketplace-extensions:/extensions
+      - ./code-marketplace-importer/import-vsix-extensions.sh:/usr/local/bin/import-vsix-extensions:ro
+    networks:
+      - internal-nw
 
   npm-importer:
     image: node:${NODE_IMAGE_TAG:-22-alpine}
@@ -217,6 +274,7 @@ services:
       - homepage.icon=/icons/debian-linux.png
 
 volumes:
+  code-marketplace-extensions:
   verdaccio-storage:
 
 networks:

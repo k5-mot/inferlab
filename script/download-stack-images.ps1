@@ -38,6 +38,7 @@ $Images = @(
     "docker.io/ubuntu/squid:latest",
     "docker.io/valkey/valkey:8.1.9-alpine3.24",
     "docker.io/voicevox/voicevox_engine:cpu-0.25.2",
+    "ghcr.io/coder/code-marketplace:v2.4.2",
     "ghcr.io/gethomepage/homepage:v1.13.2",
     "ghcr.io/google/cadvisor:v0.60.5",
     "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3",
