@@ -1,4 +1,5 @@
 providers:
+  # Hermesが対応していないモデルをOpenAI-Compatible APIとして設定.
   ollama-gemma4:
     api: http://ollama:11434/v1
     default_model: gemma4:31b-cloud
@@ -9,9 +10,11 @@ providers:
     default_model: gemma-4-31b
     transport: chat_completions
 model:
+  # メインモデル.
   provider: custom:ollama-gemma4
   default: gemma4:31b-cloud
 fallback_providers:
+  # メインモデルが失敗した場合の候補.
   - provider: custom:cerebras-gemma4
     model: gemma-4-31b
   - provider: gemini
@@ -20,9 +23,11 @@ fallback_providers:
   - provider: openrouter
     model: google/gemma-4-31b-it:free
 provider_routing:
+  # データ収集を不許可.
   require_parameters: false
   data_collection: deny
 auxiliary:
+  # 会話履歴の圧縮と要約を担当.
   compression:
     provider: custom:cerebras-gemma4
     model: gemma-4-31b
@@ -35,6 +40,7 @@ auxiliary:
       - provider: custom:ollama-gemma4
         model: gemma4:31b-cloud
   web_extract:
+    # Web ページ抽出結果の要約を担当.
     provider: gemini
     model: gemma-4-31b-it
     base_url: https://generativelanguage.googleapis.com/v1beta
@@ -46,6 +52,7 @@ auxiliary:
       - provider: custom:ollama-gemma4
         model: gemma4:31b-cloud
   skills_hub:
+    # スキル検索とスキル関連の補助判断を担当.
     provider: openrouter
     model: google/gemma-4-31b-it:free
     fallback_chain:
@@ -57,6 +64,7 @@ auxiliary:
         model: gemma-4-31b-it
         base_url: https://generativelanguage.googleapis.com/v1beta
   mcp:
+    # MCP helper 操作と軽量な補助判断を担当.
     provider: custom:ollama-gemma4
     model: gemma4:31b-cloud
     fallback_chain:
@@ -68,6 +76,7 @@ auxiliary:
       - provider: openrouter
         model: google/gemma-4-31b-it:free
 tts:
+  # 音声合成を担当.
   provider: openai
   speed: 1.0
   openai:
@@ -75,6 +84,7 @@ tts:
     voice: jf_alpha
     base_url: http://kokoro:8880/v1
     speed: 1.0
+
 discord:
   require_mention: true
 plugins:
