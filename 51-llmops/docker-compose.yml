@@ -224,10 +224,7 @@ services:
       - -euc
     command:
       - >-
-        aws --endpoint-url http://langfuse-rustfs:9000 s3api create-bucket
-        --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}" ||
-        aws --endpoint-url http://langfuse-rustfs:9000 s3api head-bucket
-        --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}"
+        aws --endpoint-url http://langfuse-rustfs:9000 s3api create-bucket --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}" || aws --endpoint-url http://langfuse-rustfs:9000 s3api head-bucket --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}"
     environment:
       AWS_ACCESS_KEY_ID: ${LANGFUSE_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
       AWS_SECRET_ACCESS_KEY: ${LANGFUSE_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
