@@ -403,6 +403,8 @@ services:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
     container_name: ${STACK_NAME:-inferlab}-kokoro
     restart: unless-stopped
+    profiles:
+      - webui
     environment:
       DEFAULT_VOICE: jf_alpha
       DEFAULT_VOICE_CODE: j
