@@ -306,8 +306,6 @@ services:
       - ./hermes-agent:/opt/data
     networks:
       - internal-nw
-    extra_hosts:
-      - host.docker.internal:host-gateway
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:${HERMES_AGENT_PORT:-8642}/health >/dev/null || exit 1" ]
       interval: 10s
