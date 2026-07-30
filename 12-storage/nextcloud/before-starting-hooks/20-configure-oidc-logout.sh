@@ -22,12 +22,22 @@ fi
 : "${NEXTCLOUD_OIDC_MAPPING_GROUPS:=groups}"
 : "${NEXTCLOUD_OIDC_UNIQUE_UID:=0}"
 : "${NEXTCLOUD_OIDC_GROUP_PROVISIONING:=1}"
+: "${NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP:=false}"
 
 if [ -z "${NEXTCLOUD_OIDC_DISCOVERY_URL}" ] ||
   [ -z "${NEXTCLOUD_OIDC_END_SESSION_ENDPOINT}" ] ||
   [ -z "${NEXTCLOUD_OIDC_POST_LOGOUT_URI}" ]; then
   exit 0
 fi
+
+# 開発用HTTP公開hostでもOIDC login flowを使えるようにする。
+allow_insecure_http=false
+case "${NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP}" in
+  1 | true | TRUE | yes | YES | on | ON)
+    allow_insecure_http=true
+    ;;
+esac
+php /var/www/html/occ config:app:set user_oidc allow_insecure_http --type boolean --value "${allow_insecure_http}"
 
 # Nextcloud側のログアウト時にKeycloakのSSOセッションも閉じる。
 php /var/www/html/occ user_oidc:provider "${NEXTCLOUD_OIDC_PROVIDER_ID}" \
