@@ -16,3 +16,25 @@
 #     - YouTube:
 #         - abbr: YT
 #           href: https://youtube.com/
+
+- LLM_Providers:
+  - Google_AI_Studio:
+    - abbr: GS
+      icon: /icons/google-gemini.png
+      href: https://aistudio.google.com/rate-limit?timeRange=last-90-days
+  - Ollama:
+    - abbr: OL
+      icon: /icons/ollama.png
+      href: https://ollama.com/settings
+  - OpenRouter:
+    - abbr: OR
+      icon: /icons/open-router.png
+      href: https://openrouter.ai/activity?date_preset=past_1_month
+  - Cerebras:
+    - abbr: CB
+      icon: /icons/cerebras.png
+      href: https://cloud.cerebras.ai/platform/
+- Resources:
+  - homarr_icons:
+    - abbr: HI
+      href: https://github.com/homarr-labs/dashboard-icons
