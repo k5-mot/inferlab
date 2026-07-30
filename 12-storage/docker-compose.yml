@@ -192,6 +192,7 @@ services:
     image: inferlab/oikb-s3:latest
     container_name: ${STACK_NAME:-inferlab}-oikb
     restart: unless-stopped
+    user: "1000:33"
     command: daemon --config /app/.oikb.yaml
     profiles:
       - storage
