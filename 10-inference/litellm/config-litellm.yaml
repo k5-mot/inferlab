@@ -40,28 +40,18 @@ model_list:
     litellm_params:
       model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
       api_key: os.environ/OPENROUTER_API_KEY
-  # - model_name: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
-  #   litellm_params:
-  #     model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
-  #     api_key: os.environ/OPENROUTER_API_KEY
-  # - model_name: openrouter/openrouter/free-router
-  #   litellm_params:
-  #     model: openrouter/openrouter/free
-  #     api_key: os.environ/OPENROUTER_API_KEY
 
   ### Google AI Studio
   - model_name: google/gemma4:31b
     litellm_params:
       model: gemini/gemma-4-31b-it
       api_key: os.environ/GEMINI_API_KEY
-  # - model_name: google/gemini-3.5-flash
-  #   litellm_params:
-  #     model: gemini/gemini-3.5-flash
-  #     api_key: os.environ/GEMINI_API_KEY
-  # - model_name: google/gemini-embedding-2
-  #   litellm_params:
-  #     model: gemini/gemini-embedding-2
-  #     api_key: os.environ/GEMINI_API_KEY
+
+  ### Cerebras
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: cerebras/gemma-4-31b
+      api_key: os.environ/CEREBRAS_API_KEY
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m
