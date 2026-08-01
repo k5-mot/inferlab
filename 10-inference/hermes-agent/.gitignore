@@ -21,7 +21,7 @@ workspace/
 
 # 認証情報・状態・ロック・DB
 .env
-.inferlab-bootstrap-*
+.bootstrap-v1
 auth.json
 auth.lock
 *.db

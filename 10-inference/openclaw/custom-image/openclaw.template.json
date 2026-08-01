@@ -1,0 +1,378 @@
+{
+    "$schema": "./openclaw.schema.json",
+    "gateway": {
+        "mode": "local",
+        "bind": "lan",
+        "port": 18789,
+        "controlUi": {
+            "allowInsecureAuth": true,
+            "dangerouslyDisableDeviceAuth": true,
+            "dangerouslyAllowHostHeaderOriginFallback": true,
+            "allowedOrigins": [
+                "http://localhost:18789",
+                "http://127.0.0.1:18789",
+                "http://localhost:31002",
+                "http://127.0.0.1:31002"
+            ]
+        }
+    },
+    "models": {
+        "mode": "merge",
+        "providers": {
+            "openai": {
+                "auth": "oauth",
+                "api": "openai-chatgpt-responses",
+                "models": [
+                    {
+                        "id": "GPT 5.5",
+                        "name": "gpt-5.5",
+                        "reasoning": true,
+                        "params": {
+                            "reasoning": {
+                                "effort": "high"
+                            },
+                            "reasoning_effort": "high"
+                        }
+                    }
+                ]
+            },
+            "ollama": {
+                "baseUrl": "http://ollama:11434/v1",
+                "api": "openai-completions",
+                "apiKey": {
+                    "source": "env",
+                    "provider": "default",
+                    "id": "OLLAMA_API_KEY"
+                },
+                "models": [
+                    {
+                        "id": "gemma4:31b-cloud",
+                        "name": "Gemma 4 31B Cloud",
+                        "contextWindow": 195000,
+                        "maxTokens": 8192,
+                        "reasoning": true,
+                        "params": {
+                            "think": "high",
+                            "thinking": "high"
+                        }
+                    }
+                ]
+            },
+            "cerebras": {
+                "baseUrl": "https://api.cerebras.ai/v1",
+                "api": "openai-completions",
+                "apiKey": {
+                    "source": "env",
+                    "provider": "default",
+                    "id": "CEREBRAS_API_KEY"
+                },
+                "models": [
+                    {
+                        "id": "gemma-4-31b",
+                        "name": "Gemma 4 31B",
+                        "contextWindow": 195000,
+                        "maxTokens": 8192,
+                        "reasoning": true,
+                        "params": {
+                            "reasoning": {
+                                "effort": "high"
+                            },
+                            "reasoning_effort": "high"
+                        }
+                    }
+                ]
+            },
+            "gemini": {
+                "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+                "api": "google-generative-ai",
+                "apiKey": {
+                    "source": "env",
+                    "provider": "default",
+                    "id": "GEMINI_API_KEY"
+                },
+                "models": [
+                    {
+                        "id": "gemma-4-31b-it",
+                        "name": "Gemma 4 31B IT",
+                        "contextWindow": 195000,
+                        "maxTokens": 8192,
+                        "reasoning": true,
+                        "params": {
+                            "thinking": {
+                                "enabled": true,
+                                "level": "high"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "agents": {
+        "defaults": {
+            "model": {
+                "primary": "openai/gpt-5.5",
+                "fallbacks": [
+                    "ollama/gemma4:31b-cloud",
+                    "cerebras/gemma-4-31b",
+                    "gemini/gemma-4-31b-it",
+                    "openrouter/google/gemma-4-31b-it:free"
+                ]
+            },
+            "models": {
+                "openai/gpt-5.5": {
+                    "params": {
+                        "reasoning": {
+                            "effort": "high"
+                        },
+                        "reasoning_effort": "high"
+                    }
+                },
+                "ollama/gemma4:31b-cloud": {
+                    "params": {
+                        "think": "high",
+                        "thinking": "high"
+                    }
+                },
+                "cerebras/gemma-4-31b": {
+                    "params": {
+                        "reasoning": {
+                            "effort": "high"
+                        },
+                        "reasoning_effort": "high"
+                    }
+                },
+                "gemini/gemma-4-31b-it": {
+                    "params": {
+                        "thinking": {
+                            "enabled": true,
+                            "level": "high"
+                        }
+                    }
+                },
+                "openrouter/google/gemma-4-31b-it:free": {
+                    "params": {
+                        "reasoning": {
+                            "effort": "high"
+                        },
+                        "reasoning_effort": "high"
+                    }
+                }
+            },
+            "utilityModel": "gemini/gemma-4-31b-it",
+            "imageModel": {
+                "primary": "ollama/gemma4:31b-cloud",
+                "fallbacks": [
+                    "ollama/gemma4:31b-cloud",
+                    "cerebras/gemma-4-31b",
+                    "gemini/gemma-4-31b-it",
+                    "openrouter/google/gemma-4-31b-it:free"
+                ]
+            },
+            "imageGenerationModel": {},
+            "videoGenerationModel": {},
+            "musicGenerationModel": {},
+            "voiceModel": {
+                "primary": "cerebras/gemma-4-31b",
+                "fallbacks": [
+                    "ollama/gemma4:31b-cloud",
+                    "cerebras/gemma-4-31b",
+                    "gemini/gemma-4-31b-it",
+                    "openrouter/google/gemma-4-31b-it:free"
+                ]
+            },
+            "pdfModel": {
+                "primary": "openrouter/google/gemma-4-31b-it:free",
+                "fallbacks": [
+                    "ollama/gemma4:31b-cloud",
+                    "cerebras/gemma-4-31b",
+                    "gemini/gemma-4-31b-it",
+                    "openrouter/google/gemma-4-31b-it:free"
+                ]
+            },
+            "mediaGenerationAutoProviderFallback": false,
+            "subagents": {
+                "model": {
+                    "primary": "gemini/gemma-4-31b-it",
+                    "fallbacks": [
+                        "ollama/gemma4:31b-cloud",
+                        "cerebras/gemma-4-31b",
+                        "gemini/gemma-4-31b-it",
+                        "openrouter/google/gemma-4-31b-it:free"
+                    ]
+                }
+            }
+        }
+    },
+    "tools": {
+        "media": {
+            "models": [
+                {
+                    "provider": "gemini",
+                    "model": "gemma-4-31b-it",
+                    "capabilities": [
+                        "image",
+                        "video",
+                        "audio"
+                    ],
+                    "type": "provider"
+                },
+                {
+                    "provider": "openrouter",
+                    "model": "google/gemma-4-31b-it:free",
+                    "capabilities": [
+                        "image",
+                        "video",
+                        "audio"
+                    ],
+                    "type": "provider"
+                }
+            ]
+        },
+        "exec": {
+            "reviewer": {
+                "model": {
+                    "primary": "openrouter/google/gemma-4-31b-it:free",
+                    "fallbacks": [
+                        "ollama/gemma4:31b-cloud",
+                        "cerebras/gemma-4-31b",
+                        "gemini/gemma-4-31b-it"
+                    ]
+                }
+            }
+        }
+    },
+    "mcp": {
+        "servers": {
+            "searxng": {
+                "enabled": true,
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "mcp-searxng@1.14.0"
+                ],
+                "env": {
+                    "SEARXNG_URL": "http://searxng:8080",
+                    "SEARXNG_DEFAULT_LANGUAGE": "all",
+                    "SEARXNG_MAX_RESULTS": "10",
+                    "SEARXNG_MAX_RESULT_CHARS": "500",
+                    "URL_READ_MAX_CHARS": "4000",
+                    "NPM_CONFIG_CACHE": "/home/node/.openclaw/cache/npm"
+                },
+                "timeout": 30,
+                "connect_timeout": 10,
+                "keepalive_interval": 120
+            },
+            "docling": {
+                "enabled": true,
+                "command": "uvx",
+                "args": [
+                    "--from",
+                    "docling-mcp==3.0.0",
+                    "docling-mcp-server",
+                    "--transport",
+                    "stdio"
+                ],
+                "env": {
+                    "DOCLING_MCP_CONVERSION_MODE": "remote",
+                    "DOCLING_MCP_SERVICE_URL": "http://docling:5001",
+                    "DOCLING_MCP_SERVICE_API_KEY": "sk-docling-serve-api-key",
+                    "DOCLING_MCP_SERVICE_TIMEOUT": "300.0",
+                    "DOCLING_MCP_SERVICE_MAX_RETRIES": "3",
+                    "DOCLING_MCP_FALLBACK_TO_LOCAL": "false",
+                    "UV_CACHE_DIR": "/home/node/.openclaw/cache/uv"
+                },
+                "timeout": 300,
+                "connect_timeout": 30,
+                "keepalive_interval": 120
+            }
+        }
+    },
+    "messages": {
+        "tts": {
+            "enabled": true,
+            "auto": "off",
+            "mode": "final",
+            "provider": "openai",
+            "summaryModel": "gemini/gemma-4-31b-it",
+            "providers": {
+                "openai": {
+                    "baseUrl": "http://kokoro:8880/v1",
+                    "model": "kokoro",
+                    "voice": "jf_alpha",
+                    "speed": 1.0,
+                    "apiKey": "not-needed"
+                }
+            }
+        }
+    },
+    "talk": {
+        "realtime": {
+            "provider": "google",
+            "model": "gemma-4-31b-it",
+            "mode": "stt-tts",
+            "brain": "agent-consult",
+            "providers": {
+                "google": {
+                    "apiKey": {
+                        "source": "env",
+                        "provider": "default",
+                        "id": "GEMINI_API_KEY"
+                    }
+                }
+            }
+        }
+    },
+    "plugins": {
+        "bundledDiscovery": "compat",
+        "allow": [
+            "browser",
+            "canvas",
+            "cerebras",
+            "device-pair",
+            "discord",
+            "file-transfer",
+            "google",
+            "langfuse-bridge",
+            "memory-core",
+            "ollama",
+            "openrouter",
+            "phone-control",
+            "talk-voice"
+        ],
+        "entries": {
+            "discord": {
+                "enabled": true
+            },
+            "langfuse-bridge": {
+                "enabled": true
+            }
+        }
+    },
+    "channels": {
+        "discord": {
+            "enabled": true,
+            "token": {
+                "source": "env",
+                "provider": "default",
+                "id": "DISCORD_BOT_TOKEN"
+            },
+            "dmPolicy": "disabled",
+            "dm": {
+                "enabled": false
+            },
+            "groupPolicy": "allowlist",
+            "guilds": {
+                "${DISCORD_GUILD_ID}": {
+                    "requireMention": true,
+                    "ignoreOtherMentions": true,
+                    "channels": {
+                        "${DISCORD_CHANNEL_ID}": {
+                            "enabled": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

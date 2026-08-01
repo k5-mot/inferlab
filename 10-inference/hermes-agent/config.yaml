@@ -1,5 +1,7 @@
+model:
+  provider: openai-codex
+  default: gpt-5.5
 providers:
-  # Hermesが対応していないモデルをOpenAI-Compatible APIとして設定.
   ollama-gemma4:
     api: http://ollama:11434/v1
     default_model: gemma4:31b-cloud
@@ -9,12 +11,9 @@ providers:
     key_env: CEREBRAS_API_KEY
     default_model: gemma-4-31b
     transport: chat_completions
-model:
-  # メインモデル.
-  provider: custom:ollama-gemma4
-  default: gemma4:31b-cloud
 fallback_providers:
-  # メインモデルが失敗した場合の候補.
+  - provider: custom:ollama-gemma4
+    model: gemma4:31b-cloud
   - provider: custom:cerebras-gemma4
     model: gemma-4-31b
   - provider: gemini
@@ -22,12 +21,20 @@ fallback_providers:
     base_url: https://generativelanguage.googleapis.com/v1beta
   - provider: openrouter
     model: google/gemma-4-31b-it:free
-provider_routing:
-  # データ収集を不許可.
-  require_parameters: false
-  data_collection: deny
+agent:
+  verify_on_stop: false
 auxiliary:
-  # 会話履歴の圧縮と要約を担当.
+  web_extract:
+    provider: gemini
+    model: gemma-4-31b-it
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    fallback_chain:
+      - provider: openrouter
+        model: google/gemma-4-31b-it:free
+      - provider: custom:cerebras-gemma4
+        model: gemma-4-31b
+      - provider: custom:ollama-gemma4
+        model: gemma4:31b-cloud
   compression:
     provider: custom:cerebras-gemma4
     model: gemma-4-31b
@@ -39,20 +46,7 @@ auxiliary:
         model: google/gemma-4-31b-it:free
       - provider: custom:ollama-gemma4
         model: gemma4:31b-cloud
-  web_extract:
-    # Web ページ抽出結果の要約を担当.
-    provider: gemini
-    model: gemma-4-31b-it
-    base_url: https://generativelanguage.googleapis.com/v1beta
-    fallback_chain:
-      - provider: openrouter
-        model: google/gemma-4-31b-it:free
-      - provider: custom:cerebras-gemma4
-        model: gemma-4-31b
-      - provider: custom:ollama-gemma4
-        model: gemma4:31b-cloud
   skills_hub:
-    # スキル検索とスキル関連の補助判断を担当.
     provider: openrouter
     model: google/gemma-4-31b-it:free
     fallback_chain:
@@ -64,7 +58,6 @@ auxiliary:
         model: gemma-4-31b-it
         base_url: https://generativelanguage.googleapis.com/v1beta
   mcp:
-    # MCP helper 操作と軽量な補助判断を担当.
     provider: custom:ollama-gemma4
     model: gemma4:31b-cloud
     fallback_chain:
@@ -75,26 +68,68 @@ auxiliary:
         base_url: https://generativelanguage.googleapis.com/v1beta
       - provider: openrouter
         model: google/gemma-4-31b-it:free
+mcp_servers:
+  searxng:
+    command: npx
+    args:
+      - -y
+      - mcp-searxng@1.14.0
+    env:
+      SEARXNG_URL: http://searxng:8080
+      SEARXNG_DEFAULT_LANGUAGE: all
+      SEARXNG_MAX_RESULTS: "10"
+      SEARXNG_MAX_RESULT_CHARS: "500"
+      URL_READ_MAX_CHARS: "4000"
+    timeout: 30
+    connect_timeout: 10
+    keepalive_interval: 120
+  docling:
+    command: uvx
+    args:
+      - --from
+      - docling-mcp==3.0.0
+      - docling-mcp-server
+      - --transport
+      - stdio
+    env:
+      DOCLING_MCP_CONVERSION_MODE: remote
+      DOCLING_MCP_SERVICE_URL: http://docling:5001
+      DOCLING_MCP_SERVICE_API_KEY: sk-docling-serve-api-key
+      DOCLING_MCP_SERVICE_TIMEOUT: "300.0"
+      DOCLING_MCP_SERVICE_MAX_RETRIES: "3"
+      DOCLING_MCP_FALLBACK_TO_LOCAL: "false"
+    timeout: 300
+    connect_timeout: 30
+    keepalive_interval: 120
+terminal:
+  backend: local
+  cwd: /opt/data
+  timeout: 180
+  home_mode: real
+  shell_init_files:
+    - /opt/hermes/.venv/bin/activate
+  auto_source_bashrc: false
+display:
+  tool_progress: all
+dashboard:
+  theme: default
 tts:
-  # 音声合成を担当.
   provider: openai
-  speed: 1.0
   openai:
     model: kokoro
     voice: jf_alpha
     base_url: http://kokoro:8880/v1
     speed: 1.0
-
+  speed: 1.0
 discord:
   require_mention: true
-plugins:
-  enabled:
-    - observability/langfuse
-display:
-  tool_progress: all
-agent:
-  verify_on_stop: false
-_config_version: 33
 onboarding:
   seen:
     profile_build_offered: true
+_config_version: 33
+provider_routing:
+  require_parameters: false
+  data_collection: deny
+plugins:
+  enabled:
+    - observability/langfuse

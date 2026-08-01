@@ -236,6 +236,32 @@ services:
     memswap_limit: 7g
     cpus: 4.0
 
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: ${STACK_NAME:-inferlab}-kokoro
+    restart: unless-stopped
+    profiles:
+      - inference
+    environment:
+      DEFAULT_VOICE: jf_alpha
+      DEFAULT_VOICE_CODE: j
+      USE_GPU: "false"
+      DEVICE_TYPE: cpu
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8880/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=Kokoro-TTS
+      - homepage.description=Text-to-Speech Engine
+      - homepage.href=http://${PUBLIC_HOST}:31005/web
+      - homepage.icon=/icons/kokoro-web.png
+
   hermes-agent:
     <<: *external-dns-stabilizer
     image: docker.io/nousresearch/hermes-agent:main
@@ -245,9 +271,15 @@ services:
     profiles:
       - inference
       - hermes-agent
+    entrypoint:
+      - /bin/sh
+      - -lc
     command:
-      - gateway
-      - run
+      - |
+        set -eu
+        cd /opt/hermes
+        uv add "langfuse==4.14.1" || true
+        exec /init /opt/hermes/docker/main-wrapper.sh gateway run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
@@ -280,10 +312,11 @@ services:
       DISCORD_ALLOWED_CHANNELS: ${DISCORD_ALLOWED_CHANNELS:-}
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
+      DISCORD_AUTO_THREAD: false
       ### Langfuse
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-http://langfuse-web:3000}
       VOICE_TOOLS_OPENAI_KEY: ${VOICE_TOOLS_OPENAI_KEY:-not-needed}
       ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
@@ -298,6 +331,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
       HERMES_HOME: /opt/data
+      UV_LINK_MODE: copy
       HERMES_UID: ${HERMES_UID:-1000}
       HERMES_GID: ${HERMES_GID:-1000}
     ports:
@@ -323,32 +357,33 @@ services:
   # https://docs.openclaw.ai/install/docker
   openclaw:
     <<: *external-dns-stabilizer
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    build:
+      context: ./openclaw/custom-image
+      dockerfile: Dockerfile
+      args:
+        OPENCLAW_BASE_IMAGE: ${OPENCLAW_BASE_IMAGE:-ghcr.io/openclaw/openclaw:2026.7.1-browser}
+    image: ${OPENCLAW_IMAGE:-inferlab/openclaw:2026.7.1-browser}
     container_name: ${STACK_NAME:-inferlab}-openclaw
     restart: unless-stopped
     profiles:
       - inference
-      - hermes-agent
+      - openclaw
     env_file:
       - path: .env
         required: false
-    command:
-      - node
-      - dist/index.js
-      - gateway
-      - --bind
-      - ${OPENCLAW_GATEWAY_BIND:-lan}
-      - --port
-      - "18789"
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
       TERM: xterm-256color
       # host側.envのpathをcontainer内の実行時pathへ漏らさない。
       OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_TEMPLATE_SOURCE_PATH: /usr/local/share/openclaw/openclaw.template.json
+      OPENCLAW_CONFIG_SCHEMA_SOURCE_PATH: /usr/local/share/openclaw/openclaw.schema.json
+      OPENCLAW_CONFIG_TEMPLATE_PATH: /home/node/.openclaw/openclaw.template.json
+      OPENCLAW_CONFIG_SCHEMA_PATH: /home/node/.openclaw/openclaw.schema.json
       OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
-      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspaces
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-gateway-token}
       OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
       OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
@@ -357,29 +392,27 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
-      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
-      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-}
-      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
-      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
-      OTEL_SEMCONV_STABILITY_OPT_IN: ${OTEL_SEMCONV_STABILITY_OPT_IN:-}
-      OPENCLAW_OTEL_PRELOADED: ${OPENCLAW_OTEL_PRELOADED:-}
+      DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
+      DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
+      DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
+      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
     ports:
       - 31002:18789
     volumes:
-      - ./openclaw:/home/node/.openclaw
-      - ./openclaw-auth-profile-secrets:/home/node/.config/openclaw
+      - openclaw-data:/home/node/.openclaw
+      - ./openclaw/workspaces:/home/node/.openclaw/workspaces
     networks:
       - internal-nw
-    cap_drop:
-      - NET_RAW
-      - NET_ADMIN
+    # cap_drop:
+    #   - NET_RAW
+    #   - NET_ADMIN
     security_opt:
       - no-new-privileges:true
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
     init: true
     healthcheck:
       test: [ "CMD", "node", "dist/index.js", "health" ]
@@ -388,57 +421,15 @@ services:
       retries: 12
       start_period: 30s
     labels:
-      - homepage.icon=/icons/mdi-robot.png
+      - homepage.icon=/icons/openclaw.png
       - homepage.group=10-inference
       - homepage.name=OpenClaw
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31002
 
-  kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
-    container_name: ${STACK_NAME:-inferlab}-kokoro
-    restart: unless-stopped
-    profiles:
-      - inference
-    environment:
-      DEFAULT_VOICE: jf_alpha
-      DEFAULT_VOICE_CODE: j
-      USE_GPU: "false"
-      DEVICE_TYPE: cpu
-    ports:
-      - 31005:8880
-    networks:
-      - internal-nw
-    healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8880/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    labels:
-      - homepage.group=10-inference
-      - homepage.name=Kokoro-TTS
-      - homepage.description=Text-to-Speech Engine
-      - homepage.href=http://${PUBLIC_HOST}:31005/web
-      - homepage.icon=/icons/kokoro-web.png
-
-  # kokoro:
-  #   image: hwdsl2/kokoro-server
-  #   container_name: ${STACK_NAME:-inferlab}-kokoro
-  #   restart: always
-  #   environment:
-  #     KOKORO_API_KEY: sk-kokoro-api-secret-key
-  #     KOKORO_VOICE: jf_alpha
-  #     KOKORO_LANG_CODE: "j"
-  #     # ports:
-  #     #   - 8880:8880 # For a host-based reverse proxy, change to "127.0.0.1:8880:8880/tcp"
-  #   volumes:
-  #     - kokoro-data:/var/lib/kokoro
-  #   networks:
-  #     - internal-nw
-
 volumes:
   ollama-cache:
+  openclaw-data:
   tei-cache:
 
 networks:

@@ -43,7 +43,7 @@ def _run_bootstrap() -> None:
         None。成功時と失敗時の詳細は hook のログに出力される。
 
     副作用:
-        npm/uv を使ったスキル追加と Python/Node パッケージ導入を実行する。
+        起動後に使うスキル定義の導入を実行する。
     """
     if not BOOTSTRAP_SCRIPT.exists():
         logger.warning("boot-md bootstrap script is missing: %s", BOOTSTRAP_SCRIPT)
@@ -53,7 +53,6 @@ def _run_bootstrap() -> None:
     hermes_home = str(get_hermes_home())
     env["HERMES_HOME"] = hermes_home
     env["HOME"] = hermes_home
-    env["PATH"] = f"{hermes_home}/.local/bin:{hermes_home}/bin:{env.get('PATH', '')}"
     env.setdefault("npm_config_prefix", f"{hermes_home}/.local")
     env.setdefault("UV_LINK_MODE", "copy")
 

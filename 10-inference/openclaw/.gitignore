@@ -1,4 +1,6 @@
 # OpenClawの実行時生成物
 *
 !.gitignore
-!openclaw.json
+!custom-image/
+!custom-image/**
+workspaces/

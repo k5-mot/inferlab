@@ -213,3 +213,10 @@ sudo docker compose --env-file .env --profile owui stop oikb
 
 - 再実行後も同じ認証エラーが続く。
 - rollback後もOIKB containerがrunningのまま残る。
+
+## 9. OpenClawをセットアップする
+
+```bash
+# OpenClawのOpenAI provider認証をdevice code flowで設定する。
+sudo docker compose exec -it openclaw openclaw models auth login --provider openai --device-code
+```
