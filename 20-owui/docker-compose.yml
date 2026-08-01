@@ -206,14 +206,14 @@ services:
     networks:
       - internal-nw
     depends_on:
-      docling:
-        condition: service_started
+      # docling:
+      #   condition: service_started
       searxng:
         condition: service_started
-      kokoro:
-        condition: service_started
-      qdrant:
-        condition: service_started
+      # kokoro:
+      #   condition: service_started
+      # qdrant:
+      #   condition: service_started
     ulimits:
       nofile:
         soft: 65535
@@ -430,8 +430,6 @@ services:
     networks:
       - internal-nw
     depends_on:
-      nextcloud:
-        condition: service_healthy
       oikb-rustfs-bucket-init:
         condition: service_completed_successfully
     healthcheck:

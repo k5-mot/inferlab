@@ -37,7 +37,7 @@ services:
       - homepage.name=Kaneo
       - homepage.href=http://${PUBLIC_HOST}:33200
       - homepage.description=Project management tool
-      - homepage.icon=/icons/mdi-bulletin-board.png
+      - homepage.icon=/icons/kaneo.png
 
   kaneo-postgres:
     image: docker.io/library/postgres:16-alpine
