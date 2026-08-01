@@ -47,7 +47,11 @@ services:
       - homepage.name=whoami
       - homepage.href=http://${PUBLIC_HOST}:${WHOAMI_HTTP_HOST_PORT:-30003}
       - homepage.description=HTTP request echo endpoint
-      - homepage.icon=/icons/docker.png
-
+      - homepage.icon=/icons/traefik.png
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "80" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 networks:
   internal-nw:

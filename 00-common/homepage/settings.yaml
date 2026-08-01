@@ -20,7 +20,7 @@ layout:
       style: row
       columns: 4
   - 10-inference:
-      icon: /icons/litellm.png
+      icon: /icons/litlellm.png
       style: row
       columns: 4
   - 11-rag:

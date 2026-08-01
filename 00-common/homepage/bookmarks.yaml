@@ -34,6 +34,29 @@
     - abbr: CB
       icon: /icons/cerebras.png
       href: https://cloud.cerebras.ai/platform/
+
+- Recommendation:
+  - ChatGPT:
+    - abbr: CP
+      icon: /icons/chatgpt.png
+      href: https://chatgpt.com/
+  - Claude:
+    - abbr: AC
+      icon: /icons/claude-ai.png
+      href: https://claude.ai/
+  - Cloudflare:
+    - abbr: CF
+      icon: /icons/cloudflare.png
+      href: https://dash.cloudflare.com/
+  - Gemini:
+    - abbr: GG
+      icon: /icons/google-gemini.png
+      href: https://gemini.google.com/
+  - Discord:
+    - abbr: DC
+      icon: /icons/discord.png
+      href: https://discord.com/developers/home
+
 - Resources:
   - homarr_icons:
     - abbr: HI
