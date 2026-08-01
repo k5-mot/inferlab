@@ -3,48 +3,93 @@
  * 画面全体のwidthやflexには触れず、Zulip本体のresponsive挙動を優先する。
  */
 :root {
+  /*
+   * Zulip本体のlayout変数を上書きし、window端とsidebarの余白を詰める。
+   * 変数名はZulip標準に合わせる必要があるため、custom prefixへ変更しない。
+   */
+  /* 左サイドバー：window左端とビュー一覧の間にあるZulip標準paddingを消す。 */
   --left-sidebar-padding-left: 0px;
+  /* 左サイドバー：左サイドバーとコンテンツエリアの間にあるZulip標準marginを消す。 */
   --left-sidebar-right-margin: 0px;
+  /* 右サイドバー：コンテンツエリアとユーザー一覧の間にあるZulip標準spacingを消す。 */
   --right-sidebar-left-spacing: 0px;
-  --zulip-custom-window-edge-padding-x: 0px;
-  --zulip-custom-sidebar-padding-x: 2px;
-  --zulip-custom-content-padding-x: 6px;
-  --zulip-custom-row-divider: rgba(0, 0, 0, 0.08);
-  --zulip-custom-column-divider: rgba(0, 0, 0, 0.08);
-  --zulip-custom-horizontal-divider-inline-inset: 8px;
-  --zulip-custom-column-divider-block-inset: 10px;
-  --zulip-custom-channel-row-height: 39px;
-  --zulip-custom-channel-row-padding-x: 4px;
-  --zulip-custom-topic-row-height: 4px;
-  --zulip-custom-topic-row-padding-x: 1px;
-  --zulip-custom-message-padding-y: 1px;
-  --zulip-custom-message-content-line-height: 1.0;
-  --zulip-custom-compose-min-height: 84px;
-  --zulip-custom-closed-compose-min-height: 66px;
-  --zulip-custom-compose-max-height: 264px;
-  --zulip-custom-compose-padding-y: 8px;
-  --zulip-custom-compose-padding-x: 10px;
-  --line-height-compose-buttons: 2.4em;
+
+  /* 全体layout：window端、左右sidebar、content columnの余白と縦線を調整する。 */
+  --zulip-custom-layout-window-edge-padding-x: 0px;
+  --zulip-custom-layout-column-divider-color: rgba(0, 0, 0, 0.08);
+  --zulip-custom-layout-column-divider-offset-block: 5vh;
+
+  /* 左サイドバー：ビュー、ダイレクトメッセージ、チャンネルの区切り線を揃える。 */
+  --zulip-custom-left-sidebar-inner-padding-x: 2px;
+  --zulip-custom-left-sidebar-item-divider-color: rgba(0, 0, 0, 0.08);
+  --zulip-custom-left-sidebar-section-divider-color: rgba(0, 0, 0, 0.20);
+  --zulip-custom-left-sidebar-section-divider-inset-x: 8px;
+  --zulip-custom-left-sidebar-view-dm-divider-gap-before: 10px;
+  --zulip-custom-left-sidebar-view-dm-divider-gap-after: 8px;
+  --zulip-custom-left-sidebar-dm-channel-divider-gap: 1px;
+  --zulip-custom-left-sidebar-channel-item-height: 39px;
+  --zulip-custom-left-sidebar-channel-item-padding-x: 4px;
+  --zulip-custom-left-sidebar-topic-item-height: 4px;
+  --zulip-custom-left-sidebar-topic-item-padding-x: 1px;
+
+  /* コンテンツエリア：チャット履歴の横余白とメッセージ入力フォームの高さを調整する。 */
+  --zulip-custom-content-chat-history-padding-x: 6px;
+  --zulip-custom-content-compose-panel-margin-x: 24px;
+  --zulip-custom-content-compose-panel-margin-bottom: 8px;
+  --zulip-custom-content-compose-focused-min-height: 84px;
+  --zulip-custom-content-compose-closed-min-height: 50px;
+  --zulip-custom-content-compose-focused-max-height: 264px;
+  --zulip-custom-content-compose-textarea-padding-y: 8px;
+  --zulip-custom-content-compose-textarea-padding-x: 10px;
+
+  /* 右サイドバー：ユーザー一覧の横余白を調整する。 */
+  --zulip-custom-right-sidebar-user-list-padding-x: 2px;
+
+  /*
+   * Zulip本体の高さ計算に使われる変数を上書きする。
+   * 左サイドバーの行と、閉じたメッセージ入力フォームのbutton高さに効く。
+   */
+  /* メッセージ入力フォーム：非focus時のbutton text行高を広げ、click targetを確保する。 */
+  --line-height-compose-buttons: 2.00em;
+  /* 左サイドバー：ビューやチャンネル見出しなど強調行の高さを広げる。 */
   --line-height-sidebar-row-prominent: 2.45em;
+  /* 左サイドバー：ビュー、ダイレクトメッセージ、チャンネルの通常行高を広げる。 */
   --line-height-sidebar-row: 2.25em;
+  /* 左サイドバー：avatarを含むダイレクトメッセージ行の高さを通常行に近づける。 */
   --line-height-sidebar-row-with-avatars: 2.06em;
+  /* 左サイドバー：チャンネル配下のtopic行だけ低く保つ。 */
   --line-height-sidebar-topic-inner: 1.05em;
 }
 
-.column-left,
-#column-left {
-  background-image: linear-gradient(var(--zulip-custom-column-divider), var(--zulip-custom-column-divider)) !important;
-  background-position: right var(--zulip-custom-column-divider-block-inset) !important;
-  background-repeat: no-repeat !important;
-  background-size: 1px calc(100% - (2 * var(--zulip-custom-column-divider-block-inset))) !important;
+/* 全体layout：左右sidebarとcontent areaの境界を示す縦線を表示する。 */
+.app::before,
+.app::after {
+  background-color: var(--zulip-custom-layout-column-divider-color) !important;
+  bottom: var(--zulip-custom-layout-column-divider-offset-block) !important;
+  content: "" !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  top: calc(var(--navbar-fixed-height, 38px) + var(--zulip-custom-layout-column-divider-offset-block)) !important;
+  width: 1px !important;
+  z-index: 5 !important;
 }
 
-.column-right,
-#column-right {
-  background-image: linear-gradient(var(--zulip-custom-column-divider), var(--zulip-custom-column-divider)) !important;
-  background-position: left var(--zulip-custom-column-divider-block-inset) !important;
-  background-repeat: no-repeat !important;
-  background-size: 1px calc(100% - (2 * var(--zulip-custom-column-divider-block-inset))) !important;
+.app::before {
+  left: var(--left-sidebar-width, 326px) !important;
+}
+
+.app::after {
+  right: var(--right-sidebar-width, 326px) !important;
+}
+
+/* 全体layout：左サイドバー折り畳み時は、content上に残る左境界線を消す。 */
+body.hide-left-sidebar .app::before {
+  display: none !important;
+}
+
+/* 全体layout：右サイドバー折り畳み時は、content上に残る右境界線を消す。 */
+body.hide-right-sidebar .app::after {
+  display: none !important;
 }
 
 #left-sidebar,
@@ -53,64 +98,92 @@
 .left-sidebar-container,
 .left-sidebar-vflex {
   box-sizing: border-box !important;
-  padding-left: var(--zulip-custom-window-edge-padding-x) !important;
-  padding-right: var(--zulip-custom-sidebar-padding-x) !important;
+  padding-left: var(--zulip-custom-layout-window-edge-padding-x) !important;
+  padding-right: var(--zulip-custom-left-sidebar-inner-padding-x) !important;
 }
 
+/* 左サイドバー：チャンネル一覧の内側余白をwindow端に寄せる。 */
 #left-sidebar .stream-list,
 #left_sidebar .stream-list,
 .left-sidebar .stream-list {
   margin-left: 0 !important;
-  padding-left: var(--zulip-custom-sidebar-padding-x) !important;
-  padding-right: var(--zulip-custom-sidebar-padding-x) !important;
+  padding-left: var(--zulip-custom-left-sidebar-inner-padding-x) !important;
+  padding-right: var(--zulip-custom-left-sidebar-inner-padding-x) !important;
 }
 
+/* 右サイドバー：ユーザー一覧の外側余白を左サイドバーと同じ密度へ揃える。 */
 #right-sidebar,
 #right_sidebar,
 .right-sidebar,
 .right-sidebar-container {
   box-sizing: border-box !important;
-  padding-left: var(--zulip-custom-sidebar-padding-x) !important;
-  padding-right: var(--zulip-custom-window-edge-padding-x) !important;
+  padding-left: var(--zulip-custom-right-sidebar-user-list-padding-x) !important;
+  padding-right: var(--zulip-custom-layout-window-edge-padding-x) !important;
 }
 
+/* コンテンツエリア：チャット履歴columnの横余白だけを調整する。 */
 #message_feed_container,
 #message-feed-container,
 .message-feed-container,
 .message-list {
   box-sizing: border-box !important;
-  padding-left: var(--zulip-custom-content-padding-x) !important;
-  padding-right: var(--zulip-custom-content-padding-x) !important;
+  padding-left: var(--zulip-custom-content-chat-history-padding-x) !important;
+  padding-right: var(--zulip-custom-content-chat-history-padding-x) !important;
 }
 
-#left-sidebar-navigation-list,
-#left_sidebar_navigation_list {
-  background-image: linear-gradient(var(--zulip-custom-row-divider), var(--zulip-custom-row-divider)) !important;
-  background-position: center bottom !important;
-  background-repeat: no-repeat !important;
-  background-size: calc(100% - (2 * var(--zulip-custom-horizontal-divider-inline-inset))) 1px !important;
-}
-
-#direct-messages-section-header,
-#direct-messages-modal-section-header {
-  background-image: linear-gradient(var(--zulip-custom-row-divider), var(--zulip-custom-row-divider)) !important;
-  background-position: center top !important;
-  background-repeat: no-repeat !important;
-  background-size: calc(100% - (2 * var(--zulip-custom-horizontal-divider-inline-inset))) 1px !important;
-}
-
+/* 左サイドバー：ビュー、ダイレクトメッセージ、チャンネルの通常行を読みやすい高さへ揃える。 */
 .stream-list .stream-row,
 .stream-row,
 .top_left_row,
 .bottom_left_row {
   align-items: center !important;
-  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
+  border-bottom: 1px solid var(--zulip-custom-left-sidebar-item-divider-color) !important;
   box-sizing: border-box !important;
-  min-height: var(--zulip-custom-channel-row-height) !important;
+  min-height: var(--zulip-custom-left-sidebar-channel-item-height) !important;
   padding-bottom: 4px !important;
   padding-top: 4px !important;
 }
 
+/* 左サイドバー：ビューとダイレクトメッセージの間にsection dividerを描く。 */
+#left-sidebar-navigation-list,
+#left_sidebar_navigation_list {
+  background-image: linear-gradient(var(--zulip-custom-left-sidebar-section-divider-color), var(--zulip-custom-left-sidebar-section-divider-color)) !important;
+  background-position: left var(--zulip-custom-left-sidebar-section-divider-inset-x) bottom !important;
+  background-repeat: no-repeat !important;
+  background-size: calc(100% - (2 * var(--zulip-custom-left-sidebar-section-divider-inset-x))) 1px !important;
+  margin-bottom: var(--zulip-custom-left-sidebar-view-dm-divider-gap-after) !important;
+  padding-bottom: var(--zulip-custom-left-sidebar-view-dm-divider-gap-before) !important;
+}
+
+/* 左サイドバー：Zulip標準のsection背景線は濃さが揃わないため無効化する。 */
+#direct-messages-list,
+#modal-direct-messages-list,
+#direct-messages-section-header,
+#direct-messages-modal-section-header {
+  background-image: none !important;
+}
+
+/* 左サイドバー：section末尾の行罫線はsection dividerと重ならないよう透明にする。 */
+#left-sidebar-navigation-list .top_left_row:last-child,
+#left-sidebar-navigation-list .bottom_left_row:last-child,
+#direct-messages-list .top_left_row,
+#direct-messages-list .bottom_left_row,
+#direct-messages-list .dm-box {
+  border-bottom-color: transparent !important;
+}
+
+/* 左サイドバー：ダイレクトメッセージとチャンネルの間にsection dividerを描く。 */
+.direct-message-section-bottom-divider {
+  border: 0 !important;
+  border-top: 1px solid var(--zulip-custom-left-sidebar-section-divider-color) !important;
+  box-sizing: border-box !important;
+  height: 0 !important;
+  margin: var(--zulip-custom-left-sidebar-dm-channel-divider-gap) var(--zulip-custom-left-sidebar-section-divider-inset-x) var(--zulip-custom-left-sidebar-dm-channel-divider-gap) !important;
+  opacity: 1 !important;
+  width: calc(100% - (2 * var(--zulip-custom-left-sidebar-section-divider-inset-x))) !important;
+}
+
+/* 左サイドバー：行内textの高さも行heightに合わせ、click targetを安定させる。 */
 .stream-list .stream-row a,
 .stream-row a,
 .stream-name,
@@ -118,35 +191,37 @@
 .left-sidebar-navigation-label-container,
 .subscription_block,
 .dm-box {
-  line-height: calc(var(--zulip-custom-channel-row-height) - 8px) !important;
-  min-height: calc(var(--zulip-custom-channel-row-height) - 8px) !important;
+  line-height: calc(var(--zulip-custom-left-sidebar-channel-item-height) - 8px) !important;
+  min-height: calc(var(--zulip-custom-left-sidebar-channel-item-height) - 8px) !important;
 }
 
+/* 左サイドバー：チャンネル行の左右paddingを詰め、長い名前でも横幅を確保する。 */
 .stream-list .stream-row,
 .stream-list .stream-name,
 .stream-name {
-  padding-left: var(--zulip-custom-channel-row-padding-x) !important;
-  padding-right: var(--zulip-custom-channel-row-padding-x) !important;
+  padding-left: var(--zulip-custom-left-sidebar-channel-item-padding-x) !important;
+  padding-right: var(--zulip-custom-left-sidebar-channel-item-padding-x) !important;
 }
 
+/* 左サイドバー：チャンネル配下のtopicだけはチャンネル行より低くして階層を分ける。 */
 .topic-row,
 .topic-list-item,
 .topic_sidebar_row,
 .topic-sidebar-row,
 .topic-box {
   align-items: center !important;
-  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
+  border-bottom: 1px solid var(--zulip-custom-left-sidebar-item-divider-color) !important;
   box-sizing: border-box !important;
-  min-height: var(--zulip-custom-topic-row-height) !important;
+  min-height: var(--zulip-custom-left-sidebar-topic-item-height) !important;
   padding-bottom: 1px !important;
   padding-top: 1px !important;
 }
 
-/* channel配下のtopic行だけ、Zulip標準に近い高さへ戻す。 */
+/* 左サイドバー：topic行はチャンネル行の調整に巻き込まれないよう個別に固定する。 */
 #stream_filters .topic-list .bottom_left_row,
 #more-topics-modal .topic-list .bottom_left_row,
 .topic-list .bottom_left_row {
-  min-height: var(--zulip-custom-topic-row-height) !important;
+  min-height: var(--zulip-custom-left-sidebar-topic-item-height) !important;
   padding-bottom: 1px !important;
   padding-top: 1px !important;
 }
@@ -156,10 +231,11 @@
 .topic_sidebar_row,
 .topic-sidebar-row,
 .topic-name {
-  padding-left: var(--zulip-custom-topic-row-padding-x) !important;
-  padding-right: var(--zulip-custom-topic-row-padding-x) !important;
+  padding-left: var(--zulip-custom-left-sidebar-topic-item-padding-x) !important;
+  padding-right: var(--zulip-custom-left-sidebar-topic-item-padding-x) !important;
 }
 
+/* 左サイドバー：topic名の本文高さを抑え、topicだけ小さく見える状態を維持する。 */
 .topic-name,
 .topic-row a,
 .topic-list-item a,
@@ -168,63 +244,87 @@
 .sidebar-topic-name,
 .sidebar-topic-name-inner {
   line-height: var(--line-height-sidebar-topic-inner) !important;
-  min-height: calc(var(--zulip-custom-topic-row-height) - 2px) !important;
+  min-height: calc(var(--zulip-custom-left-sidebar-topic-item-height) - 2px) !important;
 }
 
-.message_row,
-.message-row,
-.recipient_row,
-.recipient-row {
-  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
-  padding-bottom: var(--zulip-custom-message-padding-y) !important;
-  padding-left: var(--zulip-custom-content-padding-x) !important;
-  padding-right: var(--zulip-custom-content-padding-x) !important;
-  padding-top: var(--zulip-custom-message-padding-y) !important;
-}
-
-.message_content,
-.message-content,
-.message_body,
-.message-body,
-.rendered_markdown {
-  line-height: var(--zulip-custom-message-content-line-height) !important;
-}
-
+/* コンテンツエリア：focus時のメッセージ入力フォームを高めにし、複数行入力を見やすくする。 */
 .new_message_textarea,
 .compose-textarea,
 #compose textarea,
 #compose-container textarea {
   box-sizing: border-box !important;
   line-height: 1.4 !important;
-  max-height: var(--zulip-custom-compose-max-height) !important;
-  min-height: var(--zulip-custom-compose-min-height) !important;
-  padding: var(--zulip-custom-compose-padding-y) var(--zulip-custom-compose-padding-x) !important;
+  max-height: var(--zulip-custom-content-compose-focused-max-height) !important;
+  min-height: var(--zulip-custom-content-compose-focused-min-height) !important;
+  padding: var(--zulip-custom-content-compose-textarea-padding-y) var(--zulip-custom-content-compose-textarea-padding-x) !important;
   resize: vertical !important;
 }
 
+/* コンテンツエリア：message edit formはcomposeとは別UIのため最低限の高さだけ確保する。 */
 .message_edit_form textarea,
 .message-edit-form textarea {
   line-height: 1.4 !important;
   min-height: 72px !important;
 }
 
+/* コンテンツエリア：非focus時のメッセージ入力フォームを開きやすい高さへ広げる。 */
 #legacy-closed-compose-box {
-  min-height: var(--zulip-custom-closed-compose-min-height) !important;
+  min-height: var(--zulip-custom-content-compose-closed-min-height) !important;
 }
 
+/* コンテンツエリア：チャット履歴と同じcolumn幅へ収めつつ、下端に余白を残す。 */
+#compose {
+  bottom: var(--zulip-custom-content-compose-panel-margin-bottom) !important;
+  left: calc(var(--left-sidebar-width, 326px) + var(--zulip-custom-content-compose-panel-margin-x)) !important;
+  right: calc(var(--right-sidebar-width, 326px) + var(--zulip-custom-content-compose-panel-margin-x)) !important;
+  width: auto !important;
+}
+
+/* コンテンツエリア：左サイドバーを畳んだ時もcomposeの外側余白を維持する。 */
+body.hide-left-sidebar #compose {
+  left: var(--zulip-custom-content-compose-panel-margin-x) !important;
+}
+
+/* コンテンツエリア：右サイドバーを畳んだ時もcomposeの外側余白を維持する。 */
+body.hide-right-sidebar #compose {
+  right: var(--zulip-custom-content-compose-panel-margin-x) !important;
+}
+
+/* コンテンツエリア：Zulip標準のmax-widthを外し、composeをcontent columnに合わせる。 */
+#compose-container {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* コンテンツエリア：compose内部の左右marginは外側位置指定と二重にしない。 */
+#compose-content {
+  box-sizing: border-box !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* コンテンツエリア：非focus時composeの内部余白はbutton側の高さに任せる。 */
+#closed-compose-controls {
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* コンテンツエリア：非focus時composeの各buttonを同じ高さに揃える。 */
 #legacy-closed-compose-box .reply_button_container,
 #legacy-closed-compose-box .compose_mobile_button,
 #legacy-closed-compose-box .new_direct_message_button_container,
 #legacy-closed-compose-box #new_direct_message_button {
   align-items: center !important;
   box-sizing: border-box !important;
-  min-height: var(--zulip-custom-closed-compose-min-height) !important;
+  min-height: var(--zulip-custom-content-compose-closed-min-height) !important;
 }
 
+/* コンテンツエリア：非focus時composeの主buttonを中央揃えし、click targetを確保する。 */
 #legacy-closed-compose-box .reply_button_container .compose-reply-button-wrapper,
 #legacy-closed-compose-box .reply_button_container #left_bar_compose_reply_button_big,
 #legacy-closed-compose-box .reply_button_container #new_conversation_button {
   align-items: center !important;
   display: flex !important;
-  min-height: calc(var(--zulip-custom-closed-compose-min-height) - 10px) !important;
+  min-height: calc(var(--zulip-custom-content-compose-closed-min-height) - 10px) !important;
 }

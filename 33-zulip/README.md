@@ -15,7 +15,7 @@ docker compose --profile zulip up -d zulip
 
 期待結果:
 
-- `https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/local-static/themes/usability.css?v=20260802-dividers-bg`がHTTP 200を返す。
+- `https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/local-static/themes/usability.css?v=20260802-collapse-divider`がHTTP 200を返す。
 - Zulipの通常画面HTMLに`/local-static/themes/usability.css`のstylesheet linkが含まれる。
 - sidebarとcontent areaの横余白が最小化される。
 - window端と左右sidebarの横余白が最小化される。
