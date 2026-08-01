@@ -31,6 +31,22 @@
   --line-height-sidebar-topic-inner: 1.05em;
 }
 
+.column-left,
+#column-left {
+  background-image: linear-gradient(var(--zulip-custom-column-divider), var(--zulip-custom-column-divider)) !important;
+  background-position: right var(--zulip-custom-column-divider-block-inset) !important;
+  background-repeat: no-repeat !important;
+  background-size: 1px calc(100% - (2 * var(--zulip-custom-column-divider-block-inset))) !important;
+}
+
+.column-right,
+#column-right {
+  background-image: linear-gradient(var(--zulip-custom-column-divider), var(--zulip-custom-column-divider)) !important;
+  background-position: left var(--zulip-custom-column-divider-block-inset) !important;
+  background-repeat: no-repeat !important;
+  background-size: 1px calc(100% - (2 * var(--zulip-custom-column-divider-block-inset))) !important;
+}
+
 #left-sidebar,
 #left_sidebar,
 .left-sidebar,
@@ -65,6 +81,22 @@
   box-sizing: border-box !important;
   padding-left: var(--zulip-custom-content-padding-x) !important;
   padding-right: var(--zulip-custom-content-padding-x) !important;
+}
+
+#left-sidebar-navigation-list,
+#left_sidebar_navigation_list {
+  background-image: linear-gradient(var(--zulip-custom-row-divider), var(--zulip-custom-row-divider)) !important;
+  background-position: center bottom !important;
+  background-repeat: no-repeat !important;
+  background-size: calc(100% - (2 * var(--zulip-custom-horizontal-divider-inline-inset))) 1px !important;
+}
+
+#direct-messages-section-header,
+#direct-messages-modal-section-header {
+  background-image: linear-gradient(var(--zulip-custom-row-divider), var(--zulip-custom-row-divider)) !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-size: calc(100% - (2 * var(--zulip-custom-horizontal-divider-inline-inset))) 1px !important;
 }
 
 .stream-list .stream-row,
