@@ -132,7 +132,7 @@ services:
     networks:
       - internal-nw
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/minio/health/ready > /dev/null" ]
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:9000/health" ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -145,42 +145,30 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-bucket-init:
-    build:
-      context: ./oikb
-      dockerfile: Containerfile
-    image: inferlab/oikb-s3:latest
+    image: docker.io/amazon/aws-cli:latest
     container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
       - storage
+    environment:
+      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://oikb-rustfs:9000
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_PAGER: ""
+      RUSTFS_DEFAULT_BUCKET: oikb-bucket
     entrypoint:
       - /bin/sh
       - -euc
     command:
       - |
-        python - <<'PY'
-        import os
-
-        import boto3
-        import botocore
-
-        s3 = boto3.client(
-            "s3",
-            endpoint_url="http://oikb-rustfs:9000",
-            aws_access_key_id=os.environ["OIKB_RUSTFS_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["OIKB_RUSTFS_SECRET_ACCESS_KEY"],
-            region_name="us-east-1",
-        )
-        try:
-            s3.create_bucket(Bucket=os.environ["OIKB_RUSTFS_BUCKET"])
-        except botocore.exceptions.ClientError as exc:
-            if exc.response.get("Error", {}).get("Code") not in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
-                raise
-        PY
-    environment:
-      OIKB_RUSTFS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
-      OIKB_RUSTFS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
-      OIKB_RUSTFS_BUCKET: ${OIKB_RUSTFS_BUCKET:-oikb}
+        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
+          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
+        else
+          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
+          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
+        fi
     networks:
       - internal-nw
     depends_on:
@@ -191,7 +179,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: inferlab/oikb-s3:latest
+    image: ghcr.io/k5-mot/oikb:latest
     container_name: ${STACK_NAME:-inferlab}-oikb
     restart: unless-stopped
     user: "1000:33"
@@ -204,22 +192,18 @@ services:
       OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-21600}
       OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
       LOG_FORMAT: json
+      NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
+      NEXTCLOUD_SOURCE: nextcloud:/oikb
       NEXTCLOUD_URL: http://nextcloud
       NEXTCLOUD_USER: admin
       NEXTCLOUD_PASSWORD: admin
-      NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
+      # OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
       RUSTFS_OPENWEBUI_KB_ID: ${RUSTFS_OPENWEBUI_KB_ID:-}
-      OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
-      OIKB_NEXTCLOUD_INTERVAL: 1h
+      OIKB_RUSTFS_SOURCE: ${OIKB_RUSTFS_SOURCE:-s3://oikb-bucket/documents}
       AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
       AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
       AWS_DEFAULT_REGION: us-east-1
-      AWS_REGION: us-east-1
-      AWS_ENDPOINT_URL: http://oikb-rustfs:9000
       AWS_ENDPOINT_URL_S3: http://oikb-rustfs:9000
-      OIKB_RUSTFS_BUCKET: ${OIKB_RUSTFS_BUCKET:-oikb}
-      OIKB_RUSTFS_SOURCE: ${OIKB_RUSTFS_SOURCE:-s3://oikb/documents}
-      OIKB_RUSTFS_INTERVAL: 1h
     ports:
       - 31201:8080
     volumes:

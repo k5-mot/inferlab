@@ -3,9 +3,19 @@ defaults:
   concurrency: 1
 
 sources:
+  # - name: nextcloud-documents
+  #   source: "/nextcloud/data/admin/files/oikb"
+  #   kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+  #   filter:
+  #     exclude:
+  #       - "**/.DS_Store"
+  #       - "**/Thumbs.db"
+  #       - "**/*.url"
+
   - name: nextcloud-documents
-    source: "/nextcloud/data/admin/files/oikb"
+    source: ${NEXTCLOUD_SOURCE:-}
     kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
+    interval: 6h
     filter:
       exclude:
         - "**/.DS_Store"
@@ -13,9 +23,9 @@ sources:
         - "**/*.url"
 
   - name: rustfs-documents
-    source: "${OIKB_RUSTFS_SOURCE:-s3://oikb/documents}"
+    source: "${OIKB_RUSTFS_SOURCE:-s3://oikb-bucket/documents}"
     kb-id: "${RUSTFS_OPENWEBUI_KB_ID:-}"
-    interval: "${OIKB_RUSTFS_INTERVAL:-1h}"
+    interval: 6h
     filter:
       exclude:
         - "**/.DS_Store"
