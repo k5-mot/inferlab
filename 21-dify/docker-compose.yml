@@ -272,8 +272,8 @@ services:
     networks:
       - internal-nw
     depends_on:
-      dify-postgres:
-        condition: service_healthy
+      dify-postgres-init:
+        condition: service_completed_successfully
       dify-redis:
         condition: service_healthy
     healthcheck:
@@ -434,7 +434,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - dify-postgres-data:/var/lib/postgresql/data
-      - ./dify/postgres/initdb:/docker-entrypoint-initdb.d:ro
     networks:
       - internal-nw
     healthcheck:
@@ -450,6 +449,29 @@ services:
       - homepage.group=21-dify
       - homepage.name=Dify-Postgres
       - homepage.description=Relational database
+
+  dify-postgres-init:
+    image: docker.io/library/postgres:15-alpine
+    container_name: ${STACK_NAME:-inferlab}-dify-postgres-init
+    restart: "no"
+    profiles:
+      - dify
+    environment:
+      PGPASSWORD: dify_password
+    command:
+      - sh
+      - -euc
+      - |
+        if psql -h dify-postgres -U dify_user -d dify_db -tAc "SELECT 1 FROM pg_database WHERE datname = 'dify_plugin'" | grep -q '^1$'; then
+          echo "dify_plugin database already exists."
+          exit 0
+        fi
+        psql -h dify-postgres -U dify_user -d dify_db -c "CREATE DATABASE dify_plugin OWNER dify_user;"
+    networks:
+      - internal-nw
+    depends_on:
+      dify-postgres:
+        condition: service_healthy
 
   dify-redis:
     image: docker.io/library/redis:8.8.0-alpine
