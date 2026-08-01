@@ -61,6 +61,9 @@ services:
       # Prometheus metricsを管理ポートで公開する。
       KC_METRICS_ENABLED: "true"
       KC_HTTP_MANAGEMENT_SCHEME: http
+      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_LIST_SIZE:-524288}
     ports:
       - 30001:8080
     volumes:
@@ -109,7 +112,9 @@ services:
       # HTTPS終端設定.
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
-      JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
+      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_LIST_SIZE:-524288}
       # ヘルスチェックエンドポイントの有効化.
       KC_HEALTH_ENABLED: "true"
       # Prometheus metricsを管理ポートでHTTP公開する。
