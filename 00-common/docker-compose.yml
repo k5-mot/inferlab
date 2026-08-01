@@ -16,6 +16,7 @@ services:
     volumes:
       - ./homepage:/app/config # Make sure your local config directory exists
       - ./homepage/icons:/app/public/icons:ro # 外部アイコン取得を避ける設定でローカル配信する
+      - ../docs/assets:/app/public/assets:ro # D2で生成した構成図をHomepageから参照する
       - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
     networks:
       - internal-nw
