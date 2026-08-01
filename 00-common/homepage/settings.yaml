@@ -11,7 +11,7 @@ layout:
       icon: /icons/mdi-home.png
       style: row
       columns: 4
-  - 01-infra:
+  - 01-pubnet:
       icon: /icons/mdi-cloud.png
       style: row
       columns: 4
@@ -19,36 +19,44 @@ layout:
       icon: /icons/mdi-brain.png
       style: row
       columns: 4
-  - 11-webui:
+  - 11-rag:
       icon: /icons/mdi-web.png
       style: row
       columns: 4
-  - 12-storage:
-      icon: /icons/mdi-nas.png
+  - 12-registry:
+      icon: /icons/mdi-warehouse.png
       style: row
       columns: 4
-  - 13-automation:
+  - 20-owui:
+      icon: /icons/mdi-web.png
+      style: row
+      columns: 4
+  - 21-dify:
       icon: /icons/mdi-robot.png
       style: row
       columns: 4
-  - 20-team-chat:
-      icon: /icons/mdi-chat.png
+  - 30-nextcloud:
+      icon: /icons/mdi-nas.png
       style: row
       columns: 4
-  - 21-team-project:
-      icon: /icons/mdi-bulletin-board.png
-      style: row
-      columns: 4
-  - 22-team-wiki:
+  - 31-bookstack:
       icon: /icons/mdi-book.png
       style: row
       columns: 4
-  - 23-team-git:
+  - 32-leantime:
+      icon: /icons/mdi-bulletin-board.png
+      style: row
+      columns: 4
+  - 33-zulip:
+      icon: /icons/mdi-chat.png
+      style: row
+      columns: 4
+  - 34-gitea:
       icon: /icons/mdi-file-code.png
       style: row
       columns: 4
-  - 30-developer:
-      icon: /icons/mdi-warehouse.png
+  - 40-obsidian:
+      icon: /icons/mdi-database.png
       style: row
       columns: 4
   - 50-o11y:

@@ -38,7 +38,7 @@ service_catalog: {
   row_1: {
     label: "Infrastructure Layer"
     direction: right
-    grid-columns: 3
+    grid-columns: 4
     style: {
       fill: "#ffffff"
       stroke: "#cbd5e1"
@@ -72,9 +72,9 @@ service_catalog: {
       }
     }
 
-    01_infra: {
-      label: "01-infra"
-      grid-columns: 2
+    01_pubnet: {
+      label: "01-pubnet"
+      grid-columns: 1
       style: {
         fill: "#eef2ff"
         stroke: "#4f46e5"
@@ -89,19 +89,10 @@ service_catalog: {
           stroke: "#4f46e5"
         }
       }
-
-      couchdb: {
-        label: "CouchDB\n30100"
-        icon: "../../00-common/homepage/icons/couchdb.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#4f46e5"
-        }
-      }
     }
 
-    30_developer: {
-      label: "30-developer"
+    12_registry: {
+      label: "12-registry"
       grid-columns: 3
       style: {
         fill: "#f0f9ff"
@@ -110,7 +101,7 @@ service_catalog: {
       }
 
       pypiserver: {
-        label: "PyPI\n33100"
+        label: "PyPI\n31200"
         icon: "../../00-common/homepage/icons/pypi.png"
         style: {
           fill: "#ffffff"
@@ -119,7 +110,7 @@ service_catalog: {
       }
 
       verdaccio: {
-        label: "Verdaccio\n33200"
+        label: "Verdaccio\n31201"
         icon: "../../00-common/homepage/icons/verdaccio.png"
         style: {
           fill: "#ffffff"
@@ -128,7 +119,7 @@ service_catalog: {
       }
 
       harbor: {
-        label: "Harbor\n33600"
+        label: "Code Marketplace\n31202"
         icon: "../../00-common/homepage/icons/mdi-warehouse.png"
         style: {
           fill: "#ffffff"
@@ -137,7 +128,7 @@ service_catalog: {
       }
 
       rpm_repo: {
-        label: "RPM Repository\n33400"
+        label: "RPM Repository\n31203"
         icon: "../../00-common/homepage/icons/redhat-linux.png"
         style: {
           fill: "#ffffff"
@@ -146,11 +137,30 @@ service_catalog: {
       }
 
       deb_repo: {
-        label: "APT Repository\n33500"
+        label: "APT Repository\n31204"
         icon: "../../00-common/homepage/icons/debian-linux.png"
         style: {
           fill: "#ffffff"
           stroke: "#0284c7"
+        }
+      }
+    }
+
+    40_obsidian: {
+      label: "40-obsidian"
+      grid-columns: 1
+      style: {
+        fill: "#f8fafc"
+        stroke: "#475569"
+        stroke-width: 2
+      }
+
+      couchdb: {
+        label: "CouchDB\n34000"
+        icon: "../../00-common/homepage/icons/couchdb.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#475569"
         }
       }
     }
@@ -210,6 +220,15 @@ service_catalog: {
         }
       }
 
+      kokoro: {
+        label: "Kokoro-TTS\n31005"
+        icon: "../../00-common/homepage/icons/kokoro-web.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
       openrouter: {
         label: "OpenRouter\n外部サービス"
         icon: "../../00-common/homepage/icons/open-router.png"
@@ -233,45 +252,18 @@ service_catalog: {
       }
     }
 
-    11_webui: {
-      label: "11-webui"
-      grid-columns: 3
+    11_rag: {
+      label: "11-rag"
+      grid-columns: 2
       style: {
         fill: "#eff6ff"
         stroke: "#2563eb"
         stroke-width: 2
       }
 
-      open_terminal: {
-        label: "Open Terminal\n31103"
-        icon: "../../00-common/homepage/icons/open-webui.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#2563eb"
-        }
-      }
-
       docling: {
-        label: "docling-serve\n31101"
+        label: "docling-serve\n31100"
         icon: "../../00-common/homepage/icons/docling.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#2563eb"
-        }
-      }
-
-      open_webui: {
-        label: "Open WebUI\n31100"
-        icon: "../../00-common/homepage/icons/open-webui.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#2563eb"
-        }
-      }
-
-      searxng: {
-        label: "SearXNG\n31102"
-        icon: "../../00-common/homepage/icons/searxng.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -286,10 +278,65 @@ service_catalog: {
           stroke: "#2563eb"
         }
       }
+    }
 
-      voicevox_tts: {
-        label: "VOICEVOX TTS"
-        icon: "../../00-common/homepage/icons/volume-high.png"
+    20_owui: {
+      label: "20-owui"
+      grid-columns: 3
+      style: {
+        fill: "#eff6ff"
+        stroke: "#2563eb"
+        stroke-width: 2
+      }
+
+      open_webui: {
+        label: "Open WebUI\n32000"
+        icon: "../../00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      oikb: {
+        label: "Open-WebUI Knowledge Bases\n32001"
+        icon: "../../00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      searxng: {
+        label: "SearXNG\n32002"
+        icon: "../../00-common/homepage/icons/searxng.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      open_terminal: {
+        label: "Open Terminal\n32003"
+        icon: "../../00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      mcpo: {
+        label: "mcpo\n32004"
+        icon: "../../00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      oikb_rustfs: {
+        label: "OIKB-RustFS\n32005 / 32006"
+        icon: "../../00-common/homepage/icons/rustfs.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -297,26 +344,17 @@ service_catalog: {
       }
     }
 
-    12_storage: {
-      label: "12-storage"
-      grid-columns: 2
+    30_nextcloud: {
+      label: "30-nextcloud"
+      grid-columns: 1
       style: {
         fill: "#ecfdf5"
         stroke: "#059669"
         stroke-width: 2
       }
 
-      oikb: {
-        label: "Open-WebUI Knowledge Bases\n31201"
-        icon: "../../00-common/homepage/icons/open-webui.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#059669"
-        }
-      }
-
       nextcloud: {
-        label: "Nextcloud\n31200"
+        label: "Nextcloud\n33000"
         icon: "../../00-common/homepage/icons/nextcloud.png"
         style: {
           fill: "#ffffff"
@@ -325,8 +363,8 @@ service_catalog: {
       }
     }
 
-    13_automation: {
-      label: "13-automation"
+    21_dify: {
+      label: "21-dify"
       style: {
         fill: "#fff7ed"
         stroke: "#ea580c"
@@ -334,7 +372,7 @@ service_catalog: {
       }
 
       dify: {
-        label: "Dify\n31300"
+        label: "Dify\n32100"
         icon: "../../00-common/homepage/icons/dify.png"
         style: {
           fill: "#ffffff"
@@ -343,8 +381,8 @@ service_catalog: {
       }
     }
 
-    20_team_chat: {
-      label: "20-team-chat"
+    33_zulip: {
+      label: "33-zulip"
       style: {
         fill: "#fdf2f8"
         stroke: "#db2777"
@@ -352,7 +390,7 @@ service_catalog: {
       }
 
       zulip: {
-        label: "Zulip\n32000 / 32002 / 32025"
+        label: "Zulip\n33300 / 33302 / 33325"
         icon: "../../00-common/homepage/icons/zulip.png"
         style: {
           fill: "#ffffff"
@@ -361,8 +399,8 @@ service_catalog: {
       }
     }
 
-    21_team_project: {
-      label: "21-team-project"
+    32_leantime: {
+      label: "32-leantime"
       style: {
         fill: "#f5f3ff"
         stroke: "#7c3aed"
@@ -370,7 +408,7 @@ service_catalog: {
       }
 
       leantime: {
-        label: "Leantime\n32001"
+        label: "Leantime\n33200"
         icon: "../../00-common/homepage/icons/leantime.png"
         style: {
           fill: "#ffffff"
@@ -379,8 +417,8 @@ service_catalog: {
       }
     }
 
-    22_team_wiki: {
-      label: "22-team-wiki"
+    31_bookstack: {
+      label: "31-bookstack"
       style: {
         fill: "#f8fafc"
         stroke: "#475569"
@@ -388,7 +426,7 @@ service_catalog: {
       }
 
       bookstack: {
-        label: "BookStack\n32200"
+        label: "BookStack\n33100"
         icon: "../../00-common/homepage/icons/bookstack.png"
         style: {
           fill: "#ffffff"
@@ -397,8 +435,8 @@ service_catalog: {
       }
     }
 
-    23_team_git: {
-      label: "23-team-git"
+    34_gitea: {
+      label: "34-gitea"
       style: {
         fill: "#fef2f2"
         stroke: "#dc2626"
@@ -406,7 +444,7 @@ service_catalog: {
       }
 
       gitea: {
-        label: "Gitea\n32300 / 32322"
+        label: "Gitea\n33400 / 33422"
         icon: "../../00-common/homepage/icons/gitea.png"
         style: {
           fill: "#ffffff"
@@ -485,44 +523,46 @@ service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
 service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm
 
-service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.open_terminal
-service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.docling
-service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.searxng
-service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.qdrant
-service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.voicevox_tts
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.open_terminal
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.mcpo
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.searxng
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.oikb
+service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.20_owui.oikb_rustfs
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.11_rag.docling
+service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.11_rag.qdrant
 
-service_catalog.row_2.12_storage.oikb -> service_catalog.row_2.12_storage.nextcloud
+service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.30_nextcloud.nextcloud
 
 service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheus
 
 # service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.00_common.oidc: "auth"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.11_webui.open_webui: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.12_storage.nextcloud: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_team_chat.zulip: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.21_team_project.leantime: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.22_team_wiki.bookstack: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.30_nextcloud.nextcloud: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.33_zulip.zulip: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.32_leantime.leantime: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
 
 # service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_1.01_infra.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_1.40_obsidian.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
 # service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
+# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_2.11_webui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_2.20_owui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_2.12_storage.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_2.30_nextcloud.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_2.23_team_git.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_2.34_gitea.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
 # service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
@@ -540,11 +580,11 @@ service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheu
 # service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
 # service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm: "LLM API"
 
-# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
-# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.10_inference.hermes_agent: "agent API"
-# service_catalog.row_2.11_webui.open_webui -> service_catalog.row_2.11_webui.integrations: "uses"
-# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.open_terminal: "terminal"
-# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.docling: "content extraction"
-# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.searxng: "web search"
-# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.qdrant: "vector store"
-# service_catalog.row_2.11_webui.integrations -> service_catalog.row_2.11_webui.voicevox_tts: "TTS"
+# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
+# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.10_inference.hermes_agent: "agent API"
+# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.integrations: "uses"
+# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.20_owui.open_terminal: "terminal"
+# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.11_rag.docling: "content extraction"
+# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.20_owui.searxng: "web search"
+# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.11_rag.qdrant: "vector store"
+# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.10_inference.kokoro: "TTS"

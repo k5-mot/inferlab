@@ -67,10 +67,10 @@ model_list:
       encoding_format: float
 
   ### TTS
-  - model_name: voicevox/tts
+  - model_name: kokoro
     litellm_params:
-      model: openai/tts-1
-      api_base: http://voicevox-openai-tts:8000/v1
-      api_key: EMPTY
+      model: openai/kokoro
+      api_base: http://kokoro:8880/v1
+      api_key: not-needed
     model_info:
       mode: audio_speech

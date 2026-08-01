@@ -1,0 +1,456 @@
+#
+# 参考資料
+#
+# - LiteLLM
+#   - Langfuse連携
+#     - https://docs.openwebui.com/reference/env-configuration/#custom-forwarded-headers-per-connection
+#     - https://docs.litellm.ai/docs/proxy/request_headers#litellm-headers
+#     - https://docs.litellm.ai/docs/observability/langfuse_integration#trace--generation-parameters
+#
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
+services:
+  open-webui:
+    <<: *external-dns-stabilizer
+    # image: ghcr.io/open-webui/open-webui:0.11.0-slim
+    image: ghcr.io/open-webui/open-webui:0.11.0
+    # image: ghcr.io/open-webui/open-webui:0.10.2
+    container_name: ${STACK_NAME:-inferlab}-open-webui
+    restart: unless-stopped
+    profiles:
+      - owui
+    environment:
+      ### General
+      SCARF_NO_ANALYTICS: "true"
+      DO_NOT_TRACK: "true"
+      ANONYMIZED_TELEMETRY: "false"
+      WEBUI_URL: http://${PUBLIC_HOST}:32000
+      WEBUI_SECRET_KEY: sk-open-webui-secret-key
+      ### OpenTelemetry設定
+      ENABLE_OTEL: "true"
+      ENABLE_OTEL_TRACES: "false"
+      ENABLE_OTEL_METRICS: "true"
+      ENABLE_OTEL_LOGS: "false"
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_METRICS_EXPORTER_OTLP_INSECURE: "true"
+      OTEL_METRICS_EXPORTER_OTLP_ENDPOINT: http://prometheus:9090/api/v1/otlp/v1/metrics
+      OTEL_METRICS_OTLP_SPAN_EXPORTER: http
+      OTEL_SERVICE_NAME: open-webui
+      OTEL_METRICS_EXPORT_INTERVAL_MILLIS: "15000"
+      # ENABLE_TITLE_GENERATION: "false"
+      ENABLE_CALENDAR: "true"
+      ENABLE_CHANNELS: "true"
+      ENABLE_FOLDERS: "true"
+      ENABLE_AUTOMATIONS: "true"
+      ENABLE_NOTES: "true"
+      ENABLE_API_KEYS: "true"
+      ENABLE_PERSISTENT_CONFIG: "false"
+      ENABLE_FORWARD_USER_INFO_HEADERS: "true"
+      API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
+      ### Tasks
+      TASK_MODEL: "google/gemma4:31b"
+      ENABLE_CONTEXT_COMPACTION: "true"
+      ENABLE_FOLLOW_UP_GENERATION: "false"
+      ### MCPO
+      ENABLE_DIRECT_CONNECTIONS: "true"
+      TOOL_SERVER_CONNECTIONS: >-
+        [
+          {
+            "type": "openapi",
+            "url": "http://mcpo:8000",
+            "spec_type": "url",
+            "spec": "",
+            "path": "openapi.json",
+            "auth_type": "bearer",
+            "key": "sk-mcpo-api-secret-key",
+            "config": { "enable": true },
+            "info": {
+              "id": "open-webui",
+              "name": "Open-WebUI",
+              "description": "MCP server description."
+            }
+          }
+        ]
+      ### For Keycloak
+      ENABLE_SIGNUP: "false"
+      ENABLE_OAUTH_SIGNUP: "true"
+      DEFAULT_USER_ROLE: "user"
+      OAUTH_CLIENT_ID: "open-webui"
+      OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
+      OPENID_PROVIDER_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: http://${PUBLIC_HOST}:32000/oauth/oidc/callback
+      OAUTH_SCOPES: openid
+      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
+      OAUTH_PROVIDER_NAME: Keycloak
+      ### Arena Model
+      ENABLE_EVALUATION_ARENA_MODELS: "false"
+      ### For LLM on LiteLLM
+      DEFAULT_MODELS: "google/gemma4:31b"
+      DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
+      OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
+      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
+      OPENAI_API_CONFIGS: >-
+        {
+          "0": {
+            "enable": true,
+            "auth_type": "bearer",
+            "headers": {
+              "X-OpenWebUI-Chat-Id": "{{CHAT_ID}}",
+              "X-OpenWebUI-Message-Id": "{{MESSAGE_ID}}",
+              "X-OpenWebUI-User-Message-Id": "{{USER_MESSAGE_ID}}",
+              "X-OpenWebUI-User-Message-Parent-Id": "{{USER_MESSAGE_PARENT_ID}}",
+              "X-OpenWebUI-File-Id": "{{FILE_ID}}",
+              "X-OpenWebUI-File-Name": "{{FILE_NAME}}",
+              "X-OpenWebUI-File-Content-Type": "{{FILE_CONTENT_TYPE}}",
+              "X-OpenWebUI-Task": "{{TASK}}",
+              "X-OpenWebUI-User-Id": "{{USER_ID}}",
+              "X-OpenWebUI-User-Name": "{{USER_NAME}}",
+              "X-OpenWebUI-User-Email": "{{USER_EMAIL}}",
+              "X-OpenWebUI-User-Role": "{{USER_ROLE}}",
+              "X-OpenWebUI-User-Agent": "{{USER_AGENT}}",
+              "x-litellm-trace-id": "{{MESSAGE_ID}}",
+              "x-litellm-session-id": "{{CHAT_ID}}",
+              "x-litellm-customer-id": "{{USER_ID}}",
+              "x-litellm-end-user-id": "{{USER_ID}}",
+              "x-litellm-tags": "[\"open-webui\"]",
+              "langfuse_trace_id": "{{MESSAGE_ID}}",
+              "langfuse_trace_name": "Open WebUI",
+              "langfuse_session_id": "{{CHAT_ID}}",
+              "langfuse_trace_user_id": "{{USER_ID}}",
+              "langfuse_tags": "[\"open-webui\"]",
+              "langfuse_generation_id": "{{MESSAGE_ID}}",
+              "langfuse_generation_name": "Open WebUI"
+            }
+          }
+        }
+      ### Open-Terminal
+      TERMINAL_SERVER_CONNECTIONS: >-
+        [
+          {
+            "id": "open-terminal",
+            "url": "http://open-terminal:8000",
+            "key": "sk-open-terminal-api-key",
+            "name": "Open-Terminal",
+            "auth_type": "bearer",
+            "config": {
+              "access_grants": []
+            }
+          }
+        ]
+      ### For Embedding model on LiteLLM
+      RAG_EMBEDDING_ENGINE: openai
+      RAG_EMBEDDING_MODEL: "cl-nagoya/ruri-v3:310m"
+      RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
+      RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      RAG_EMBEDDING_BATCH_SIZE: "2"
+      RAG_EMBEDDING_CONCURRENT_REQUESTS: "1"
+      RAG_TEXT_SPLITTER: token
+      CHUNK_SIZE: 1500
+      CHUNK_OVERLAP: 150
+      ### For Reranking model on LiteLLM
+      ENABLE_RAG_HYBRID_SEARCH: "true"
+      RAG_RERANKING_ENGINE: "external"
+      RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000"
+      RAG_EXTERNAL_RERANKER_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      RAG_RERANKING_MODEL: "cl-nagoya/ruri-v3-reranker:310m"
+      RAG_TOP_K: 12
+      RAG_TOP_K_RERANKER: 6
+      ### For Docling (Content Extraction)
+      # https://github.com/docling-project/docling/blob/main/docling/datamodel/vlm_engine_options.py
+      # https://github.com/docling-project/docling/blob/main/docling/datamodel/stage_model_specs.py
+      CONTENT_EXTRACTION_ENGINE: docling
+      DOCLING_SERVER_URL: http://docling:5001
+      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_PARAMS: >-
+        {
+          "to_formats": [ "md" ],
+          "do_ocr": true,
+          "force_ocr": false,
+          "ocr_engine": "tesseract_cli",
+          "ocr_preset": "tesseract",
+          "ocr_lang": [ "jpn", "jpn_vert", "eng" ]
+        }
+      ### For Qdrant (Vector DB)
+      VECTOR_DB: qdrant
+      QDRANT_API_KEY: "sk-qdrant-api-key"
+      QDRANT_URI: http://qdrant:6333
+      ### For SearXNG (Web Search)
+      ENABLE_WEB_SEARCH: "true"
+      WEB_SEARCH_ENGINE: searxng
+      SEARXNG_QUERY_URL: "http://searxng:8080/search?q=<query>"
+      ### For Edge-TTS (Text-to-Speech)
+      AUDIO_TTS_ENGINE: openai
+      AUDIO_TTS_OPENAI_API_BASE_URL: http://kokoro:8880/v1
+      AUDIO_TTS_OPENAI_API_KEY: "not-needed"
+      AUDIO_TTS_MODEL: "kokoro"
+      AUDIO_TTS_VOICE: "jf_alpha"
+    entrypoint:
+      - bash
+      - /run/scripts/entrypoint_patch.sh
+    ports:
+      - 32000:8080
+    volumes:
+      - open-webui-data:/app/backend/data
+      - ./open-webui/docling_params_slim.json:/run/config/docling_params.json:ro
+      - ./open-webui/entrypoint_patch.sh:/run/scripts/entrypoint_patch.sh:ro
+      - ./open-webui/export_docling_params.py:/run/scripts/export_docling_params.py:ro
+    networks:
+      - internal-nw
+    depends_on:
+      docling:
+        condition: service_started
+      searxng:
+        condition: service_started
+      kokoro:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    labels:
+      - homepage.icon=/icons/open-webui.png
+      - homepage.group=20-owui
+      - homepage.name=Open-WebUI
+      - homepage.href=http://${PUBLIC_HOST}:32000
+      - homepage.description=AI chat platform
+
+  # https://github.com/open-webui/open-terminal
+  # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
+
+  open-terminal:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/open-webui/open-terminal:0.11.33
+    container_name: ${STACK_NAME:-inferlab}-open-terminal
+    restart: unless-stopped
+    profiles:
+      - owui
+    environment:
+      OPEN_TERMINAL_PACKAGES: "cowsay figlet"
+      OPEN_TERMINAL_PIP_PACKAGES: "httpx polars"
+      OPEN_TERMINAL_NPM_PACKAGES: "typescript tsx"
+      OPEN_TERMINAL_MULTI_USER: "true"
+      OPEN_TERMINAL_API_KEY: "sk-open-terminal-api-key"
+      NPM_CONFIG_PREFIX: /home/user/.npm-global
+      PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    ports:
+      - 32003:8000
+    volumes:
+      - open-terminal-data:/home/user
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/files/list"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      - homepage.icon=/icons/open-webui.png
+      - homepage.group=20-owui
+      - homepage.name=Open-Terminal
+      - homepage.href=http://${PUBLIC_HOST}:32003/docs
+      - homepage.description=Terminal support tool
+
+  mcpo:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: ${STACK_NAME:-inferlab}-mcpo
+    restart: unless-stopped
+    profiles:
+      - owui
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      # - --api-key
+      # - sk-mcpo-api-secret-key
+      - --config
+      - /config/config.json
+      - --hot-reload
+      - --
+      - mcp-proxy-server
+    ports:
+      - 32004:8000
+    volumes:
+      - ./mcpo/config.json:/config/config.json
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/openapi.json"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      - homepage.icon=/icons/open-webui.png
+      - homepage.group=20-owui
+      - homepage.name=mcpo
+      - homepage.href=http://${PUBLIC_HOST}:32004/docs
+      - homepage.description=MCP support tool
+
+  searxng:
+    <<: *external-dns-stabilizer
+    image: docker.io/searxng/searxng:2026.7.3-80c9806de
+    container_name: ${STACK_NAME:-inferlab}-searxng
+    restart: unless-stopped
+    profiles:
+      - owui
+    ports:
+      - 32002:8080
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "python -c \"import urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer sk-searxng-secret-key'}); print(urllib.request.urlopen(req).read().decode())\""
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - homepage.icon=/icons/searxng.png
+      - homepage.group=20-owui
+      - homepage.name=SearXNG
+      - homepage.href=http://${PUBLIC_HOST}:32002
+      - homepage.description=Metasearch engine
+
+  oikb-rustfs:
+    image: docker.io/rustfs/rustfs:latest
+    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs
+    restart: unless-stopped
+    profiles:
+      - owui
+    environment:
+      RUSTFS_ACCESS_KEY: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      RUSTFS_SECRET_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+    ports:
+      - 32005:9000
+      - 32006:9001
+    volumes:
+      - oikb-rustfs-data:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:9000/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    labels:
+      - homepage.group=20-owui
+      - homepage.name=OIKB-RustFS
+      - homepage.href=http://${PUBLIC_HOST}:32006
+      - homepage.description=OIKB data source object storage
+      - homepage.icon=/icons/rustfs.png
+
+  oikb-rustfs-bucket-init:
+    image: docker.io/amazon/aws-cli:latest
+    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
+    restart: "no"
+    profiles:
+      - owui
+    environment:
+      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://oikb-rustfs:9000
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_PAGER: ""
+      RUSTFS_DEFAULT_BUCKET: oikb-bucket
+    entrypoint:
+      - /bin/sh
+      - -euc
+    command:
+      - |
+        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
+          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
+        else
+          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
+          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
+        fi
+    networks:
+      - internal-nw
+    depends_on:
+      oikb-rustfs:
+        condition: service_healthy
+
+  oikb:
+    build:
+      context: ./oikb
+      dockerfile: Containerfile
+    image: ghcr.io/k5-mot/oikb:latest
+    container_name: ${STACK_NAME:-inferlab}-oikb
+    restart: unless-stopped
+    user: "1000:33"
+    command: daemon --config /app/.oikb.yaml
+    profiles:
+      - owui
+    environment:
+      OPEN_WEBUI_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
+      OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-21600}
+      OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
+      LOG_FORMAT: json
+      NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
+      NEXTCLOUD_SOURCE: nextcloud:/oikb
+      NEXTCLOUD_URL: http://nextcloud
+      NEXTCLOUD_USER: admin
+      NEXTCLOUD_PASSWORD: admin
+      # OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
+      RUSTFS_OPENWEBUI_KB_ID: ${RUSTFS_OPENWEBUI_KB_ID:-}
+      OIKB_RUSTFS_SOURCE: ${OIKB_RUSTFS_SOURCE:-s3://oikb-bucket/documents}
+      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
+      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL_S3: http://oikb-rustfs:9000
+    ports:
+      - 32001:8080
+    volumes:
+      - ./oikb/oikb.yaml:/app/.oikb.yaml:ro
+      - nextcloud:/nextcloud:ro
+    networks:
+      - internal-nw
+    depends_on:
+      nextcloud:
+        condition: service_healthy
+      oikb-rustfs-bucket-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8080/health', timeout=3).read()" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    labels:
+      - homepage.icon=/icons/open-webui.png
+      - homepage.group=20-owui
+      - homepage.name=Open-WebUI-Knowledge-Bases
+      - homepage.href=http://${PUBLIC_HOST}:32001
+      - homepage.description=Knowledge bases for Open-WebUI
+
+volumes:
+  open-webui-data:
+  open-terminal-data:
+  oikb-rustfs-data:
+
+networks:
+  internal-nw:

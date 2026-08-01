@@ -10,8 +10,8 @@
 - 取得対象platformはscript既定値の`linux/amd64`。
 - 再実行すると既存archiveを上書きする。
 - 取得済みcontainer image archiveは`images/`へ保存される。
-- Nextcloud OIDC app archiveは`12-storage/nextcloud/apps/user_oidc-v8.10.1.tar.gz`へ保存される。
-- `12-storage/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
+- Nextcloud OIDC app archiveは`30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`へ保存される。
+- `30-nextcloud/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
 
 置換する値:
 
@@ -32,7 +32,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 期待結果:
 
 - `images/*.tar`が作成される。
-- `12-storage/nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
+- `30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
 
 失敗条件:
@@ -48,7 +48,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 Get-ChildItem .\images\*.tar | Measure-Object
 
 # Nextcloud OIDC app archiveのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 .\12-storage\nextcloud\apps\user_oidc-v8.10.1.tar.gz
+Get-FileHash -Algorithm SHA256 .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz
 ```
 
 期待結果:
@@ -68,13 +68,13 @@ Get-FileHash -Algorithm SHA256 .\12-storage\nextcloud\apps\user_oidc-v8.10.1.tar
 scp -r .\images <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/
 
 # Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
-scp .\12-storage\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-storage/nextcloud/apps/
+scp .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/
 ```
 
 期待結果:
 
 - airgap server上に`<AIRGAP_REPO_DIR>/images/*.tar`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-storage/nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
 
 失敗条件:
 
@@ -94,7 +94,7 @@ for archive in images/*.tar; do sudo docker load -i "$archive"; done
 期待結果:
 
 - `sudo docker image ls`でstackが参照するimageが表示される。
-- `inferlab/oikb-s3:latest`も表示される。
+- `ghcr.io/k5-mot/oikb:latest`も表示される。
 
 失敗条件:
 
@@ -105,7 +105,7 @@ for archive in images/*.tar; do sudo docker load -i "$archive"; done
 
 ```bash
 # OIDC app archiveのchecksumを確認する。
-sha256sum 12-storage/nextcloud/apps/user_oidc-v8.10.1.tar.gz
+sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 ```
 
 期待結果:
@@ -122,11 +122,11 @@ sha256sum 12-storage/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 ## 6. stackを起動する
 
 ```bash
-# storage profileを含めてstackを起動する。
-sudo docker compose --env-file .env --profile common --profile storage up -d
+# nextcloud profileとowui profileを含めてstackを起動する。
+sudo docker compose --env-file .env --profile common --profile nextcloud --profile owui up -d
 
 # NextcloudとOIKBの状態を確認する。
-sudo docker compose --env-file .env --profile storage ps nextcloud oikb
+sudo docker compose --env-file .env --profile nextcloud --profile owui ps nextcloud oikb
 ```
 
 期待結果:
@@ -144,7 +144,7 @@ sudo docker compose --env-file .env --profile storage ps nextcloud oikb
 
 ```bash
 # 起動済みstackを停止する。
-sudo docker compose --env-file .env --profile common --profile storage down
+sudo docker compose --env-file .env --profile common --profile nextcloud --profile owui down
 ```
 
 期待結果:

@@ -1,0 +1,281 @@
+#
+# 参考資料
+# - pypiserver
+#   - https://github.com/pypiserver/pypiserver
+# - Verdaccio
+#   - https://verdaccio.org/docs/docker/
+# - createrepo_c
+#   - https://github.com/rpm-software-management/createrepo_c
+# - reprepro
+#   - https://salsa.debian.org/debian/reprepro
+# - code-marketplace
+#   - https://github.com/coder/code-marketplace
+#
+name: ${STACK_NAME:-inferlab}
+
+services:
+  pypiserver:
+    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
+    container_name: ${STACK_NAME:-inferlab}-pypiserver
+    restart: unless-stopped
+    profiles:
+      - registry
+    command:
+      - run
+    ports:
+      - ${PYPISERVER_HTTP_HOST_PORT:-31200}:8080
+    volumes:
+      - ./registry/pypi:/data/packages
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/simple/', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=PyPIserver
+      - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-31200}/simple/
+      - homepage.description=Python package registry
+      - homepage.icon=/icons/pypi.png
+
+  verdaccio:
+    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6}
+    container_name: ${STACK_NAME:-inferlab}-verdaccio
+    restart: unless-stopped
+    profiles:
+      - registry
+    ports:
+      - ${VERDACCIO_HTTP_HOST_PORT:-31201}:4873
+    volumes:
+      - verdaccio-storage:/verdaccio/storage
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "const http=require('http'); const req=http.get('http://127.0.0.1:4873/', res => process.exit(res.statusCode < 500 ? 0 : 1)); req.on('error', () => process.exit(1)); req.setTimeout(3000, () => req.destroy());"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=Verdaccio
+      - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-31201}/
+      - homepage.description=npm registry
+      - homepage.icon=/icons/verdaccio.png
+
+  code-marketplace:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace
+    restart: unless-stopped
+    profiles:
+      - registry
+    command:
+      - --address=0.0.0.0:3000
+      - --extensions-dir=/extensions
+    ports:
+      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}:3000
+    volumes:
+      - code-marketplace-extensions:/extensions:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - code-marketplace-importer
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:3000/healthz
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=Code Marketplace
+      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}/api
+      - homepage.description=VS Code extension marketplace
+      - homepage.icon=/icons/mdi-file-code.png
+
+  code-marketplace-importer:
+    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    container_name: ${STACK_NAME:-inferlab}-code-marketplace-importer
+    restart: unless-stopped
+    profiles:
+      - registry
+    entrypoint: []
+    environment:
+      CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS: ${CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS:-300}
+    command:
+      - sh
+      - /usr/local/bin/import-vsix-extensions
+    volumes:
+      - ./registry/vsix:/imports:ro
+      - code-marketplace-extensions:/extensions
+      - ./code-marketplace-importer/import-vsix-extensions.sh:/usr/local/bin/import-vsix-extensions:ro
+    networks:
+      - internal-nw
+
+  npm-importer:
+    image: node:${NODE_IMAGE_TAG:-22-alpine}
+    container_name: ${STACK_NAME:-inferlab}-npm-importer
+    profiles:
+      - registry
+    restart: unless-stopped
+    working_dir: /work
+    environment:
+      NPM_IMPORT_ENABLED: ${NPM_IMPORT_ENABLED:-true}
+      NPM_IMPORT_INTERVAL_SECONDS: ${NPM_IMPORT_INTERVAL_SECONDS:-30}
+      NPM_PUBLISH_TOKEN: ${NPM_PUBLISH_TOKEN:-local-publish-token}
+    command:
+      - sh
+      - /usr/local/bin/import-npm-packages
+    volumes:
+      - ./registry/npm-packages:/imports:ro
+      - ./npm-importer/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
+    networks:
+      - internal-nw
+    depends_on:
+      verdaccio:
+        condition: service_healthy
+
+  createrepo_c:
+    image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
+    container_name: ${STACK_NAME:-inferlab}-createrepo_c
+    profiles:
+      - registry
+    restart: unless-stopped
+    user: "0:0"
+    entrypoint: []
+    environment:
+      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
+    command:
+      - bash
+      - /usr/local/bin/sync-rpm-repository
+    volumes:
+      - ./registry/rpm:/repo
+      - ./rpm-repository-sync/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
+      - ./rpm-repository-sync/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
+    networks:
+      - internal-nw
+
+  rpm-dist:
+    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-rpm-dist
+    restart: unless-stopped
+    profiles:
+      - registry
+    ports:
+      - ${RPM_REPO_HTTP_HOST_PORT:-31203}:8080
+    volumes:
+      - ./registry/rpm:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - createrepo_c
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=createrepo_c
+      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-31203}/
+      - homepage.description=RPM source repository for dnf/yum
+      - homepage.icon=/icons/redhat-linux.png
+
+  reprepro:
+    image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro:latest}
+    container_name: ${STACK_NAME:-inferlab}-reprepro
+    profiles:
+      - registry
+    restart: unless-stopped
+    user: "0:0"
+    entrypoint: []
+    environment:
+      DEB_ARCHITECTURES: ${DEB_ARCHITECTURES:-amd64 arm64}
+      DEB_CODENAME: ${DEB_CODENAME:-stable}
+      DEB_COMPONENT: ${DEB_COMPONENT:-main}
+      DEB_DISTRIBUTION: ${DEB_DISTRIBUTION:-stable}
+      DEB_LABEL: ${DEB_LABEL:-InferLab}
+      DEB_ORIGIN: ${DEB_ORIGIN:-InferLab}
+      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
+    command:
+      - bash
+      - /usr/local/bin/sync-deb-repository
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f "/repo/public/dists/$${DEB_CODENAME:-stable}/Release"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./registry/deb:/repo
+      - ./deb-repository-sync/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
+      - ./deb-repository-sync/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
+    networks:
+      - internal-nw
+
+  deb-dist:
+    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    container_name: ${STACK_NAME:-inferlab}-deb-dist
+    restart: unless-stopped
+    profiles:
+      - registry
+    ports:
+      - ${DEB_REPO_HTTP_HOST_PORT:-31204}:8080
+    volumes:
+      - ./registry/deb/public:/usr/share/nginx/html:ro
+    networks:
+      - internal-nw
+    depends_on:
+      - reprepro
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8080/
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=reprepro
+      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-31204}/
+      - homepage.description=APT repository
+      - homepage.icon=/icons/debian-linux.png
+
+volumes:
+  code-marketplace-extensions:
+  verdaccio-storage:
+
+networks:
+  internal-nw:

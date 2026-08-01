@@ -1,0 +1,124 @@
+#
+# 参考資料:
+#
+
+services:
+  nextcloud:
+    image: docker.io/library/nextcloud:34.0.1-apache
+    container_name: ${STACK_NAME:-inferlab}-nextcloud
+    restart: unless-stopped
+    profiles:
+      - nextcloud
+    depends_on:
+      nextcloud-postgres:
+        condition: service_healthy
+      nextcloud-valkey:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: nextcloud_db
+      POSTGRES_USER: nextcloud_user
+      POSTGRES_PASSWORD: nextcloud_password
+      POSTGRES_HOST: nextcloud-postgres
+      REDIS_HOST: nextcloud-valkey
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: admin
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 ${PUBLIC_HOST} nextcloud"
+      NEXTCLOUD_DATA_DIR: /var/www/html/data
+      NEXTCLOUD_INIT_HTACCESS: "true"
+      OVERWRITECLIURL: http://${PUBLIC_HOST}:33000
+      PHP_MEMORY_LIMIT: 1024M
+      PHP_UPLOAD_LIMIT: 2G
+      APACHE_BODY_LIMIT: 0
+      NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
+      NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
+      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
+      NEXTCLOUD_OIDC_SCOPE: "openid profile email"
+      NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
+      NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
+      NEXTCLOUD_OIDC_MAPPING_EMAIL: email
+      NEXTCLOUD_OIDC_MAPPING_GROUPS: groups
+      NEXTCLOUD_OIDC_UNIQUE_UID: 0
+      NEXTCLOUD_OIDC_GROUP_PROVISIONING: 1
+      NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: true
+      NEXTCLOUD_ALLOW_LOCAL_REMOTE_SERVERS: true
+      NEXTCLOUD_USER_OIDC_ARCHIVE: /opt/inferlab/nextcloud-apps/user_oidc-v8.10.1.tar.gz
+    ports:
+      - 33000:80
+    volumes:
+      - nextcloud:/var/www/html
+      - ./nextcloud/apps:/opt/inferlab/nextcloud-apps:ro
+      - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
+      - ./nextcloud/post-installation-hooks:/docker-entrypoint-hooks.d/post-installation:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD-SHELL", "php -r 'exit(@file_get_contents(\"http://127.0.0.1/status.php\") === false ? 1 : 0);'" ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    labels:
+      - homepage.icon=/icons/nextcloud.png
+      - homepage.group=30-nextcloud
+      - homepage.name=Nextcloud
+      - homepage.href=http://${PUBLIC_HOST}:33000/apps/files/files
+      - homepage.description=Cloud storage platform
+
+  nextcloud-postgres:
+    image: docker.io/library/postgres:18.4-trixie
+    container_name: ${STACK_NAME:-inferlab}-nextcloud-postgres
+    restart: unless-stopped
+    profiles:
+      - nextcloud
+    environment:
+      POSTGRES_DB: nextcloud_db
+      POSTGRES_USER: nextcloud_user
+      POSTGRES_PASSWORD: nextcloud_password
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - nextcloud-postgres:/var/lib/postgresql
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U nextcloud_user -d nextcloud_db
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    labels:
+      - homepage.icon=/icons/postgresql.png
+      - homepage.group=30-nextcloud
+      - homepage.name=Nextcloud-Postgres
+      - homepage.description=Relational database
+
+  nextcloud-valkey:
+    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    container_name: ${STACK_NAME:-inferlab}-nextcloud-valkey
+    restart: unless-stopped
+    profiles:
+      - nextcloud
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    labels:
+      - homepage.icon=/icons/redis.png
+      - homepage.group=30-nextcloud
+      - homepage.name=Nextcloud-Valkey
+      - homepage.description=Inmemory key-value NoSQL database
+
+volumes:
+  nextcloud:
+  nextcloud-postgres:
+
+networks:
+  internal-nw:

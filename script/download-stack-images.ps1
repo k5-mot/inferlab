@@ -1,5 +1,5 @@
 $OutputDirectory = Join-Path $PSScriptRoot "..\images"
-$NextcloudAppsDirectory = Join-Path $PSScriptRoot "..\12-storage\nextcloud\apps"
+$NextcloudAppsDirectory = Join-Path $PSScriptRoot "..\30-nextcloud\nextcloud\apps"
 $Platform = "linux/amd64"
 $Overwrite = $true
 
@@ -34,10 +34,10 @@ $Images = @(
     "docker.io/ollama/ollama:0.31.1",
     "docker.io/prom/prometheus:v3.13.1",
     "docker.io/qdrant/qdrant:v1.18.2",
+    "ghcr.io/remsky/kokoro-fastapi-cpu:latest",
     "docker.io/searxng/searxng:2026.7.3-80c9806de",
     "docker.io/ubuntu/squid:latest",
     "docker.io/valkey/valkey:8.1.9-alpine3.24",
-    "docker.io/voicevox/voicevox_engine:cpu-0.25.2",
     "ghcr.io/coder/code-marketplace:v2.4.2",
     "ghcr.io/gethomepage/homepage:v1.13.2",
     "ghcr.io/google/cadvisor:v0.60.5",
@@ -45,8 +45,7 @@ $Images = @(
     "ghcr.io/k5-mot/docling-serve-jp:v1.26.0",
     "ghcr.io/open-webui/oikb:latest",
     "ghcr.io/open-webui/open-terminal:0.11.33",
-    "ghcr.io/open-webui/open-webui:0.10.2",
-    "ghcr.io/sunwood-ai-labs/voicevox-openai-tts:0.2.0",
+    "ghcr.io/open-webui/open-webui:0.11.0",
     "ghcr.io/zulip/zulip-server:12.1-0",
     "lscr.io/linuxserver/bookstack:26.05.2",
     "lscr.io/linuxserver/mariadb:11.4.12",
@@ -58,8 +57,8 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "inferlab/oikb-s3:latest"
-        Context = Join-Path $PSScriptRoot "..\12-storage\oikb"
+        Image = "ghcr.io/k5-mot/oikb:latest"
+        Context = Join-Path $PSScriptRoot "..\20-owui\oikb"
         Dockerfile = "Containerfile"
     }
 )

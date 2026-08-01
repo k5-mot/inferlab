@@ -1,0 +1,111 @@
+#
+# 参考資料
+#
+# - LiteLLM
+#   - Langfuse連携
+#     - https://docs.openwebui.com/reference/env-configuration/#custom-forwarded-headers-per-connection
+#     - https://docs.litellm.ai/docs/proxy/request_headers#litellm-headers
+#     - https://docs.litellm.ai/docs/observability/langfuse_integration#trace--generation-parameters
+#
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
+services:
+  docling:
+    <<: *external-dns-stabilizer
+    # image: quay.io/docling-project/docling-serve:v1.18.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.26.0
+    container_name: ${STACK_NAME:-inferlab}-docling
+    restart: unless-stopped
+    profiles:
+      - rag
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      GRADIO_ANALYTICS_ENABLED: "false"
+      DOCLING_SERVE_HOST: 0.0.0.0
+      DOCLING_SERVE_PORT: 5001
+      DOCLING_SERVE_ENABLE_UI: "true"
+      DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
+      DOCLING_SERVE_MAX_SYNC_WAIT: 36000
+      DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
+      DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG: "true"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: 1
+      DOCLING_SERVE_OPTIONS_CACHE_SIZE: 1
+      DOCLING_SERVE_QUEUE_MAX_SIZE: 1
+      OMP_NUM_THREADS: 2
+    ports:
+      - 31100:5001
+    volumes:
+      - docling-data:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:5001/readyz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: ${DOCLING_MEM_LIMIT:-8g}
+    memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
+    pids_limit: 512
+    labels:
+      - homepage.icon=/icons/docling.png
+      - homepage.group=11-rag
+      - homepage.name=docling-serve
+      - homepage.href=http://${PUBLIC_HOST}:31100/ui
+      - homepage.description=Document processing engine
+
+  qdrant:
+    <<: *external-dns-stabilizer
+    image: docker.io/qdrant/qdrant:v1.18.2
+    container_name: ${STACK_NAME:-inferlab}-qdrant
+    restart: unless-stopped
+    profiles:
+      - rag
+    environment:
+      QDRANT__TELEMETRY_DISABLED: "true"
+    volumes:
+      - qdrant-storage:/qdrant/storage
+      - qdrant-snapshots:/qdrant/snapshots
+      - ./qdrant/config.yaml:/qdrant/config/production.yaml
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && printf 'GET /readyz HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: 8g
+    memswap_limit: 9g
+    labels:
+      - homepage.icon=/icons/qdrant.png
+      - homepage.group=11-rag
+      - homepage.name=Qdrant
+      - homepage.description=Vector search database
+
+volumes:
+  docling-data:
+  qdrant-storage:
+  qdrant-snapshots:
+
+networks:
+  internal-nw:

@@ -319,6 +319,49 @@ services:
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31001
 
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    container_name: ${STACK_NAME:-inferlab}-kokoro
+    restart: unless-stopped
+    profiles:
+      - inference
+    environment:
+      DEFAULT_VOICE: jf_alpha
+      DEFAULT_VOICE_CODE: j
+      USE_GPU: "false"
+      DEVICE_TYPE: cpu
+    ports:
+      - 31005:8880
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8880/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=Kokoro-TTS
+      - homepage.description=Text-to-Speech Engine
+      - homepage.href=http://${PUBLIC_HOST}:31005/web
+      - homepage.icon=/icons/kokoro-web.png
+
+  # kokoro:
+  #   image: hwdsl2/kokoro-server
+  #   container_name: ${STACK_NAME:-inferlab}-kokoro
+  #   restart: always
+  #   environment:
+  #     KOKORO_API_KEY: sk-kokoro-api-secret-key
+  #     KOKORO_VOICE: jf_alpha
+  #     KOKORO_LANG_CODE: "j"
+  #     # ports:
+  #     #   - 8880:8880 # For a host-based reverse proxy, change to "127.0.0.1:8880:8880/tcp"
+  #   volumes:
+  #     - kokoro-data:/var/lib/kokoro
+  #   networks:
+  #     - internal-nw
+
 volumes:
   ollama-cache:
   tei-cache:

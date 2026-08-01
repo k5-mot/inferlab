@@ -4,19 +4,19 @@
 
 ## 前提
 
-- Registry serverで`developer` profileの対象serviceが起動している。
+- Registry serverで`registry` profileの対象serviceが起動している。
 - 利用者端末からRegistry serverの各portへ到達できる。
 - この手順はpackageの利用者向けで、registryへの資材投入手順は対象外。
-- install例のpackage名は、`30-developer/LIST.md`とregistry投入済み資材に合わせて置き換える。
+- install例のpackage名は、`12-registry/LIST.md`とregistry投入済み資材に合わせて置き換える。
 
 置換する値:
 
 - `<REGISTRY_HOST>`: Registry serverのhost名またはIP。
-- `<PYPI_PORT>`: PyPIserverのHTTP port。既定値は`33100`。
-- `<NPM_PORT>`: VerdaccioのHTTP port。既定値は`33200`。
-- `<CODE_MARKETPLACE_PORT>`: Code MarketplaceのHTTP port。既定値は`33300`。
-- `<RPM_PORT>`: RPM repositoryのHTTP port。既定値は`33400`。
-- `<DEB_PORT>`: APT repositoryのHTTP port。既定値は`33500`。
+- `<PYPI_PORT>`: PyPIserverのHTTP port。既定値は`31200`。
+- `<NPM_PORT>`: VerdaccioのHTTP port。既定値は`31201`。
+- `<CODE_MARKETPLACE_PORT>`: Code MarketplaceのHTTP port。既定値は`31202`。
+- `<RPM_PORT>`: RPM repositoryのHTTP port。既定値は`31203`。
+- `<DEB_PORT>`: APT repositoryのHTTP port。既定値は`31204`。
 
 ## 1. 接続先を確認する
 
@@ -167,13 +167,13 @@ curl -fsS "http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/api/extensionquery" \
 期待結果:
 
 - code-serverまたはVSCodiumのextension検索がCode Marketplaceを参照する。
-- `code-marketplace-importer`が`30-developer/registry/vsix`に配置済みのVSIXを登録し、検索対象になる。
+- `code-marketplace-importer`が`12-registry/registry/vsix`に配置済みのVSIXを登録し、検索対象になる。
 
 失敗条件:
 
 - Code MarketplaceへHTTP接続できない。
 - client側が外部marketplaceを参照している。
-- VSIXが`30-developer/registry/vsix`へ配置されていない。
+- VSIXが`12-registry/registry/vsix`へ配置されていない。
 - `code-marketplace-importer`が失敗して、VSIXが`code-marketplace-extensions` volumeへ登録されていない。
 - HTTPSが必須のclient構成で、HTTPのCode Marketplaceが拒否される。
 

@@ -1,0 +1,38 @@
+
+
+services:
+  couchdb:
+    image: docker.io/library/couchdb:3.5.2.1
+    container_name: ${STACK_NAME:-inferlab}-couchdb
+    restart: unless-stopped
+    profiles:
+      - obsidian
+    ports:
+      - 34000:5984
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-couchdb_user}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-couchdb_password}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - ./couchdb/local.ini:/opt/couchdb/etc/local.ini
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -sf -u "$$COUCHDB_USER:$$COUCHDB_PASSWORD" http://127.0.0.1:5984/_up
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.icon=/icons/couchdb.png
+      - homepage.group=40-obsidian
+      - homepage.name=CouchDB
+      - homepage.description=Document NoSQL database for Obsidian
+
+volumes:
+  couchdb_data:
+
+networks:
+  internal-nw:

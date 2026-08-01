@@ -46,101 +46,103 @@ sudo ./dc.sh up-full --remove-orphans
 
 ## Profile
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`infra`、`inference`、`webui`、`storage`、`developer`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
 | `common` | `00-common/docker-compose.yml` | 共通入口と認証 |
-| `infra` | `01-infra/docker-compose.yml` | 外部接続と基盤 |
-| `inference` | `10-inference/docker-compose.yml` | 推論、埋め込み、エージェント |
-| `webui` | `11-webui/docker-compose.yml` | Web UI、検索、音声、ベクトル検索 |
-| `storage` | `12-storage/docker-compose.yml` | ファイル保存と知識ベース |
-| `automation` | `13-automation/docker-compose.yml` | 自動化 |
-| `team-chat` | `20-team-chat/docker-compose.yml` | チャット |
-| `team-project` | `21-team-project/docker-compose.yml` | プロジェクト管理 |
-| `team-wiki` | `22-team-wiki/docker-compose.yml` | Wiki |
-| `team-git` | `23-team-git/docker-compose.yml` | Git 管理 |
-| `developer` | `30-developer/docker-compose.yml` | 開発用パッケージ配布 |
+| `pubnet` | `01-pubnet/docker-compose.yml` | 外部公開ネットワーク |
+| `inference` | `10-inference/docker-compose.yml` | 推論、埋め込み、エージェント、音声合成 |
+| `rag` | `11-rag/docker-compose.yml` | 文書処理とベクトル検索 |
+| `registry` | `12-registry/docker-compose.yml` | 開発用パッケージ配布 |
+| `owui` | `20-owui/docker-compose.yml` | Open WebUI、検索、ツール連携、Knowledge同期 |
+| `dify` | `21-dify/docker-compose.yml` | 自動化 |
+| `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
+| `bookstack` | `31-bookstack/docker-compose.yml` | Wiki |
+| `leantime` | `32-leantime/docker-compose.yml` | プロジェクト管理 |
+| `zulip` | `33-zulip/docker-compose.yml` | チャット |
+| `gitea` | `34-gitea/docker-compose.yml` | Git 管理 |
+| `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `llmops` | `51-llmops/docker-compose.yml` | LLM 観測 |
 
 ### Service 一覧
 
-ルートの `docker-compose.yml` が include する Compose ファイルに定義された有効な service は次のとおりです。`Profile` が `なし` の service は、Compose 実行時に常に対象になります。
+ルートの `docker-compose.yml` が include する Compose ファイルに定義された有効な service は次のとおりです。`Port` が `-` の service は host へ公開していません。
 
-| Profile | Service | Compose file |
-| --- | --- | --- |
-| なし | `homepage` | `00-common/docker-compose.yml` |
-| `common` | `keycloak` | `00-common/docker-compose.yml` |
-| `common` | `keycloak-https` | `00-common/docker-compose.yml` |
-| `common` | `keycloak-postgres` | `00-common/docker-compose.yml` |
-| `infra` | `cloudflare` | `01-infra/docker-compose.yml` |
-| `infra` | `couchdb` | `01-infra/docker-compose.yml` |
-| `inference` | `litellm` | `10-inference/docker-compose.yml` |
-| `inference` | `ollama` | `10-inference/docker-compose.yml` |
-| `inference` | `ollama-init` | `10-inference/docker-compose.yml` |
-| `inference` | `tei-embedding` | `10-inference/docker-compose.yml` |
-| `inference` | `tei-reranking` | `10-inference/docker-compose.yml` |
-| `inference`, `hermes-agent` | `hermes-agent` | `10-inference/docker-compose.yml` |
-| `webui` | `open-webui` | `11-webui/docker-compose.yml` |
-| `webui` | `open-terminal` | `11-webui/docker-compose.yml` |
-| `webui` | `mcpo` | `11-webui/docker-compose.yml` |
-| `webui` | `docling` | `11-webui/docker-compose.yml` |
-| `webui` | `searxng` | `11-webui/docker-compose.yml` |
-| `webui` | `kokoro` | `11-webui/docker-compose.yml` |
-| `webui` | `qdrant` | `11-webui/docker-compose.yml` |
-| `storage` | `nextcloud` | `12-storage/docker-compose.yml` |
-| `storage` | `nextcloud-postgres` | `12-storage/docker-compose.yml` |
-| `storage` | `nextcloud-valkey` | `12-storage/docker-compose.yml` |
-| `storage` | `oikb-rustfs` | `12-storage/docker-compose.yml` |
-| `storage` | `oikb-rustfs-bucket-init` | `12-storage/docker-compose.yml` |
-| `storage` | `oikb` | `12-storage/docker-compose.yml` |
-| `automation` | `dify-init-permissions` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-api` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-worker` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-worker-beat` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-web` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-plugin-daemon` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-sandbox` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-local-sandbox` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-agent-backend` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-ssrf-proxy` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-postgres` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-redis` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-qdrant` | `13-automation/docker-compose.yml` |
-| `automation` | `dify-nginx` | `13-automation/docker-compose.yml` |
-| `team-chat` | `zulip` | `20-team-chat/docker-compose.yml` |
-| `team-chat` | `zulip-postgres` | `20-team-chat/docker-compose.yml` |
-| `team-chat` | `zulip-memcached` | `20-team-chat/docker-compose.yml` |
-| `team-chat` | `zulip-rabbitmq` | `20-team-chat/docker-compose.yml` |
-| `team-chat` | `zulip-redis` | `20-team-chat/docker-compose.yml` |
-| `team-project` | `leantime` | `21-team-project/docker-compose.yml` |
-| `team-project` | `leantime-db` | `21-team-project/docker-compose.yml` |
-| `team-wiki` | `bookstack` | `22-team-wiki/docker-compose.yml` |
-| `team-wiki` | `bookstack-mariadb` | `22-team-wiki/docker-compose.yml` |
-| `team-git` | `gitea` | `23-team-git/docker-compose.yml` |
-| `team-git` | `gitea-postgres` | `23-team-git/docker-compose.yml` |
-| `developer` | `pypiserver` | `30-developer/docker-compose.yml` |
-| `developer` | `verdaccio` | `30-developer/docker-compose.yml` |
-| `developer` | `code-marketplace` | `30-developer/docker-compose.yml` |
-| `developer` | `code-marketplace-importer` | `30-developer/docker-compose.yml` |
-| `developer` | `npm-importer` | `30-developer/docker-compose.yml` |
-| `developer` | `createrepo_c` | `30-developer/docker-compose.yml` |
-| `developer` | `rpm-dist` | `30-developer/docker-compose.yml` |
-| `developer` | `reprepro` | `30-developer/docker-compose.yml` |
-| `developer` | `deb-dist` | `30-developer/docker-compose.yml` |
-| `o11y` | `grafana` | `50-o11y/docker-compose.yml` |
-| `o11y` | `prometheus` | `50-o11y/docker-compose.yml` |
-| `o11y` | `node-exporter` | `50-o11y/docker-compose.yml` |
-| `o11y` | `cadvisor` | `50-o11y/docker-compose.yml` |
-| `o11y` | `blackbox-exporter` | `50-o11y/docker-compose.yml` |
-| `llmops` | `langfuse-worker` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-web` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-clickhouse` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-valkey` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-rustfs` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-rustfs-bucket-init` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-postgres` | `51-llmops/docker-compose.yml` |
+| Profile | Service | Port | Compose file |
+| --- | --- | --- | --- |
+| なし | `homepage` | `30000` | `00-common/docker-compose.yml` |
+| `common` | `keycloak` | `30001` | `00-common/docker-compose.yml` |
+| `common` | `keycloak-https` | `${KEYCLOAK_HTTPS_HOST_PORT:-30002}` | `00-common/docker-compose.yml` |
+| `common` | `keycloak-postgres` | - | `00-common/docker-compose.yml` |
+| `pubnet` | `cloudflare` | - | `01-pubnet/docker-compose.yml` |
+| `inference` | `litellm` | `31000` | `10-inference/docker-compose.yml` |
+| `inference` | `ollama` | - | `10-inference/docker-compose.yml` |
+| `inference` | `ollama-init` | - | `10-inference/docker-compose.yml` |
+| `inference` | `tei-embedding` | - | `10-inference/docker-compose.yml` |
+| `inference` | `tei-reranking` | - | `10-inference/docker-compose.yml` |
+| `inference`, `hermes-agent` | `hermes-agent` | `31001` | `10-inference/docker-compose.yml` |
+| `inference` | `kokoro` | `31005` | `10-inference/docker-compose.yml` |
+| `rag` | `docling` | `31100` | `11-rag/docker-compose.yml` |
+| `rag` | `qdrant` | - | `11-rag/docker-compose.yml` |
+| `registry` | `pypiserver` | `${PYPISERVER_HTTP_HOST_PORT:-31200}` | `12-registry/docker-compose.yml` |
+| `registry` | `verdaccio` | `${VERDACCIO_HTTP_HOST_PORT:-31201}` | `12-registry/docker-compose.yml` |
+| `registry` | `code-marketplace` | `${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}` | `12-registry/docker-compose.yml` |
+| `registry` | `code-marketplace-importer` | - | `12-registry/docker-compose.yml` |
+| `registry` | `npm-importer` | - | `12-registry/docker-compose.yml` |
+| `registry` | `createrepo_c` | - | `12-registry/docker-compose.yml` |
+| `registry` | `rpm-dist` | `${RPM_REPO_HTTP_HOST_PORT:-31203}` | `12-registry/docker-compose.yml` |
+| `registry` | `reprepro` | - | `12-registry/docker-compose.yml` |
+| `registry` | `deb-dist` | `${DEB_REPO_HTTP_HOST_PORT:-31204}` | `12-registry/docker-compose.yml` |
+| `owui` | `open-webui` | `32000` | `20-owui/docker-compose.yml` |
+| `owui` | `open-terminal` | `32003` | `20-owui/docker-compose.yml` |
+| `owui` | `mcpo` | `32004` | `20-owui/docker-compose.yml` |
+| `owui` | `searxng` | `32002` | `20-owui/docker-compose.yml` |
+| `owui` | `oikb-rustfs` | `32005`, `32006` | `20-owui/docker-compose.yml` |
+| `owui` | `oikb-rustfs-bucket-init` | - | `20-owui/docker-compose.yml` |
+| `owui` | `oikb` | `32001` | `20-owui/docker-compose.yml` |
+| `dify` | `dify-init-permissions` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-api` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-worker` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-worker-beat` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-web` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-plugin-daemon` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-sandbox` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-local-sandbox` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-agent-backend` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-ssrf-proxy` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-postgres` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-redis` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-qdrant` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-nginx` | `32100` | `21-dify/docker-compose.yml` |
+| `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
+| `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
+| `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
+| `bookstack` | `bookstack` | `${BOOKSTACK_HOST_PORT:-33100}` | `31-bookstack/docker-compose.yml` |
+| `bookstack` | `bookstack-mariadb` | - | `31-bookstack/docker-compose.yml` |
+| `leantime` | `leantime` | `33200` | `32-leantime/docker-compose.yml` |
+| `leantime` | `leantime-db` | - | `32-leantime/docker-compose.yml` |
+| `zulip` | `zulip` | `${ZULIP_HTTP_HOST_PORT:-33302}`, `${ZULIP_HTTPS_HOST_PORT:-33300}`, `${ZULIP_SMTP_HOST_PORT:-33325}` | `33-zulip/docker-compose.yml` |
+| `zulip` | `zulip-postgres` | - | `33-zulip/docker-compose.yml` |
+| `zulip` | `zulip-memcached` | - | `33-zulip/docker-compose.yml` |
+| `zulip` | `zulip-rabbitmq` | - | `33-zulip/docker-compose.yml` |
+| `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
+| `gitea` | `gitea` | `${GITEA_HTTP_HOST_PORT:-33400}`, `${GITEA_SSH_HOST_PORT:-33422}` | `34-gitea/docker-compose.yml` |
+| `gitea` | `gitea-postgres` | - | `34-gitea/docker-compose.yml` |
+| `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
+| `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
+| `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |
+| `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
+| `o11y` | `cadvisor` | - | `50-o11y/docker-compose.yml` |
+| `o11y` | `blackbox-exporter` | - | `50-o11y/docker-compose.yml` |
+| `llmops` | `langfuse-worker` | - | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-web` | `35100` | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-clickhouse` | - | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-valkey` | - | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-rustfs` | `35102`, `35103` | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-rustfs-bucket-init` | - | `51-llmops/docker-compose.yml` |
+| `llmops` | `langfuse-postgres` | - | `51-llmops/docker-compose.yml` |
 
 GPU 監視用 profile は任意です。対応するホストで、監視用 Compose と設定ファイルの該当コメントを解除して使います。
 
