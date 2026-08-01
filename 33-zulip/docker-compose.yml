@@ -7,7 +7,9 @@ services:
       - zulip
     environment:
       CERTIFICATES: self-signed
+      TZ: Asia/Tokyo
       SETTING_EXTERNAL_HOST: ${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}}
+      SETTING_TIME_ZONE: Asia/Tokyo
       SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
       SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
       SETTING_EMAIL_HOST_USER: ${ZULIP_EMAIL_HOST_USER:-noreply@example.com}
@@ -24,11 +26,23 @@ services:
       SETTING_REDIS_HOST: zulip-redis
       SETTING_OPEN_REALM_CREATION: ${ZULIP_OPEN_REALM_CREATION:-True}
       SETTING_FAKE_EMAIL_DOMAIN: ${ZULIP_FAKE_EMAIL_DOMAIN:-zulip.local}
+      ZULIP_DEFAULT_COLOR_SCHEME: ${ZULIP_DEFAULT_COLOR_SCHEME:-light}
+      ZULIP_APPLY_DEFAULT_COLOR_SCHEME_TO_EXISTING_USERS: ${ZULIP_APPLY_DEFAULT_COLOR_SCHEME_TO_EXISTING_USERS:-True}
+      ZULIP_FLUID_LAYOUT_WIDTH: ${ZULIP_FLUID_LAYOUT_WIDTH:-True}
+      ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS: ${ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS:-True}
       ZULIP_AUTO_CREATE_REALM_ID: ${ZULIP_AUTO_CREATE_REALM_ID:-}
       ZULIP_AUTO_CREATE_REALM_NAME: ${ZULIP_AUTO_CREATE_REALM_NAME:-InferLab}
       ZULIP_AUTO_CREATE_ADMIN_EMAIL: ${ZULIP_AUTO_CREATE_ADMIN_EMAIL:-admin@example.com}
       ZULIP_AUTO_CREATE_ADMIN_NAME: ${ZULIP_AUTO_CREATE_ADMIN_NAME:-InferLab Admin}
       ZULIP_AUTO_CREATE_ADMIN_PASSWORD: ${ZULIP_AUTO_CREATE_ADMIN_PASSWORD:-}
+      ZULIP_OIDC_ENABLED: ${ZULIP_OIDC_ENABLED:-True}
+      ZULIP_OIDC_IDP_KEY: ${ZULIP_OIDC_IDP_KEY:-keycloak}
+      ZULIP_OIDC_DISPLAY_NAME: ${ZULIP_OIDC_DISPLAY_NAME:-Keycloak}
+      ZULIP_OIDC_DISPLAY_ICON: ${ZULIP_OIDC_DISPLAY_ICON:-}
+      ZULIP_OIDC_URL: ${ZULIP_OIDC_URL:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}}
+      ZULIP_OIDC_CLIENT_ID: ${ZULIP_OIDC_CLIENT_ID:-zulip}
+      ZULIP_OIDC_AUTO_SIGNUP: ${ZULIP_OIDC_AUTO_SIGNUP:-True}
+      ZULIP_OIDC_FULL_NAME_VALIDATED: ${ZULIP_OIDC_FULL_NAME_VALIDATED:-True}
       SECRETS_email_password: ${ZULIP_EMAIL_PASSWORD:-123456789}
       SECRETS_rabbitmq_password: ${ZULIP_RABBITMQ_PASSWORD:-zulip_password}
       SECRETS_postgres_password: ${ZULIP_POSTGRES_PASSWORD:-zulip_password}
@@ -37,25 +51,49 @@ services:
       SECRETS_secret_key: ${ZULIP_SECRET_KEY:-sk-zulip-secret-key}
       SECRETS_social_auth_oidc_secret: ${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}
       REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
-      ZULIP_AUTH_BACKENDS: EmailAuthBackend,GenericOpenIdConnectBackend
+      ZULIP_AUTH_BACKENDS: ${ZULIP_AUTH_BACKENDS:-EmailAuthBackend,GenericOpenIdConnectBackend}
       ZULIP_CUSTOM_SETTINGS: |
-        SOCIAL_AUTH_OIDC_ENABLED_IDPS = {
-            "keycloak": {
-                "oidc_url": "https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}",
-                "display_name": "Keycloak",
-                "display_icon": None,
-                "client_id": "zulip",
-                "secret": get_secret("social_auth_oidc_secret"),
-                "auto_signup": True,
-            },
+        import os
+
+        _zulip_oidc_enabled = os.environ.get("ZULIP_OIDC_ENABLED", "True").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
         }
-        SOCIAL_AUTH_OIDC_FULL_NAME_VALIDATED = True
+        _zulip_oidc_auto_signup = os.environ.get("ZULIP_OIDC_AUTO_SIGNUP", "True").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        SOCIAL_AUTH_OIDC_ENABLED_IDPS = {}
+        if _zulip_oidc_enabled:
+            SOCIAL_AUTH_OIDC_ENABLED_IDPS[os.environ.get("ZULIP_OIDC_IDP_KEY", "keycloak")] = {
+                "oidc_url": os.environ.get("ZULIP_OIDC_URL"),
+                "display_name": os.environ.get("ZULIP_OIDC_DISPLAY_NAME", "Keycloak"),
+                "display_icon": os.environ.get("ZULIP_OIDC_DISPLAY_ICON") or None,
+                "client_id": os.environ.get("ZULIP_OIDC_CLIENT_ID", "zulip"),
+                "secret": get_secret("social_auth_oidc_secret"),
+                "auto_signup": _zulip_oidc_auto_signup,
+            }
+        SOCIAL_AUTH_OIDC_FULL_NAME_VALIDATED = os.environ.get(
+            "ZULIP_OIDC_FULL_NAME_VALIDATED",
+            "True",
+        ).lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
     ports:
       - "${ZULIP_HTTP_HOST_PORT:-33302}:80"
       - "${ZULIP_HTTPS_HOST_PORT:-33300}:443"
       - "${ZULIP_SMTP_HOST_PORT:-33325}:25"
     volumes:
       - zulip-data:/data
+      - ./local-static:/home/zulip/local-static:ro
+      - ./nginx/app.d/usability-css.conf:/etc/nginx/zulip-include/app.d/usability-css.conf:ro
       - ./post-setup.d:/data/post-setup.d:ro
       - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
     ulimits:

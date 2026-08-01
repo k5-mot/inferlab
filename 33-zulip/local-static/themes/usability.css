@@ -1,0 +1,198 @@
+/*
+ * Zulip標準のlayoutと配色を維持し、操作性に直結する局所的な余白だけを調整する。
+ * 画面全体のwidthやflexには触れず、Zulip本体のresponsive挙動を優先する。
+ */
+:root {
+  --left-sidebar-padding-left: 0px;
+  --left-sidebar-right-margin: 0px;
+  --right-sidebar-left-spacing: 0px;
+  --zulip-custom-window-edge-padding-x: 0px;
+  --zulip-custom-sidebar-padding-x: 2px;
+  --zulip-custom-content-padding-x: 6px;
+  --zulip-custom-row-divider: rgba(0, 0, 0, 0.08);
+  --zulip-custom-column-divider: rgba(0, 0, 0, 0.08);
+  --zulip-custom-horizontal-divider-inline-inset: 8px;
+  --zulip-custom-column-divider-block-inset: 10px;
+  --zulip-custom-channel-row-height: 39px;
+  --zulip-custom-channel-row-padding-x: 4px;
+  --zulip-custom-topic-row-height: 4px;
+  --zulip-custom-topic-row-padding-x: 1px;
+  --zulip-custom-message-padding-y: 1px;
+  --zulip-custom-message-content-line-height: 1.0;
+  --zulip-custom-compose-min-height: 84px;
+  --zulip-custom-closed-compose-min-height: 66px;
+  --zulip-custom-compose-max-height: 264px;
+  --zulip-custom-compose-padding-y: 8px;
+  --zulip-custom-compose-padding-x: 10px;
+  --line-height-compose-buttons: 2.4em;
+  --line-height-sidebar-row-prominent: 2.45em;
+  --line-height-sidebar-row: 2.25em;
+  --line-height-sidebar-row-with-avatars: 2.06em;
+  --line-height-sidebar-topic-inner: 1.05em;
+}
+
+#left-sidebar,
+#left_sidebar,
+.left-sidebar,
+.left-sidebar-container,
+.left-sidebar-vflex {
+  box-sizing: border-box !important;
+  padding-left: var(--zulip-custom-window-edge-padding-x) !important;
+  padding-right: var(--zulip-custom-sidebar-padding-x) !important;
+}
+
+#left-sidebar .stream-list,
+#left_sidebar .stream-list,
+.left-sidebar .stream-list {
+  margin-left: 0 !important;
+  padding-left: var(--zulip-custom-sidebar-padding-x) !important;
+  padding-right: var(--zulip-custom-sidebar-padding-x) !important;
+}
+
+#right-sidebar,
+#right_sidebar,
+.right-sidebar,
+.right-sidebar-container {
+  box-sizing: border-box !important;
+  padding-left: var(--zulip-custom-sidebar-padding-x) !important;
+  padding-right: var(--zulip-custom-window-edge-padding-x) !important;
+}
+
+#message_feed_container,
+#message-feed-container,
+.message-feed-container,
+.message-list {
+  box-sizing: border-box !important;
+  padding-left: var(--zulip-custom-content-padding-x) !important;
+  padding-right: var(--zulip-custom-content-padding-x) !important;
+}
+
+.stream-list .stream-row,
+.stream-row,
+.top_left_row,
+.bottom_left_row {
+  align-items: center !important;
+  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
+  box-sizing: border-box !important;
+  min-height: var(--zulip-custom-channel-row-height) !important;
+  padding-bottom: 4px !important;
+  padding-top: 4px !important;
+}
+
+.stream-list .stream-row a,
+.stream-row a,
+.stream-name,
+.stream-name a,
+.left-sidebar-navigation-label-container,
+.subscription_block,
+.dm-box {
+  line-height: calc(var(--zulip-custom-channel-row-height) - 8px) !important;
+  min-height: calc(var(--zulip-custom-channel-row-height) - 8px) !important;
+}
+
+.stream-list .stream-row,
+.stream-list .stream-name,
+.stream-name {
+  padding-left: var(--zulip-custom-channel-row-padding-x) !important;
+  padding-right: var(--zulip-custom-channel-row-padding-x) !important;
+}
+
+.topic-row,
+.topic-list-item,
+.topic_sidebar_row,
+.topic-sidebar-row,
+.topic-box {
+  align-items: center !important;
+  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
+  box-sizing: border-box !important;
+  min-height: var(--zulip-custom-topic-row-height) !important;
+  padding-bottom: 1px !important;
+  padding-top: 1px !important;
+}
+
+/* channel配下のtopic行だけ、Zulip標準に近い高さへ戻す。 */
+#stream_filters .topic-list .bottom_left_row,
+#more-topics-modal .topic-list .bottom_left_row,
+.topic-list .bottom_left_row {
+  min-height: var(--zulip-custom-topic-row-height) !important;
+  padding-bottom: 1px !important;
+  padding-top: 1px !important;
+}
+
+.topic-row,
+.topic-list-item,
+.topic_sidebar_row,
+.topic-sidebar-row,
+.topic-name {
+  padding-left: var(--zulip-custom-topic-row-padding-x) !important;
+  padding-right: var(--zulip-custom-topic-row-padding-x) !important;
+}
+
+.topic-name,
+.topic-row a,
+.topic-list-item a,
+.topic_sidebar_row a,
+.topic-sidebar-row a,
+.sidebar-topic-name,
+.sidebar-topic-name-inner {
+  line-height: var(--line-height-sidebar-topic-inner) !important;
+  min-height: calc(var(--zulip-custom-topic-row-height) - 2px) !important;
+}
+
+.message_row,
+.message-row,
+.recipient_row,
+.recipient-row {
+  border-bottom: 1px solid var(--zulip-custom-row-divider) !important;
+  padding-bottom: var(--zulip-custom-message-padding-y) !important;
+  padding-left: var(--zulip-custom-content-padding-x) !important;
+  padding-right: var(--zulip-custom-content-padding-x) !important;
+  padding-top: var(--zulip-custom-message-padding-y) !important;
+}
+
+.message_content,
+.message-content,
+.message_body,
+.message-body,
+.rendered_markdown {
+  line-height: var(--zulip-custom-message-content-line-height) !important;
+}
+
+.new_message_textarea,
+.compose-textarea,
+#compose textarea,
+#compose-container textarea {
+  box-sizing: border-box !important;
+  line-height: 1.4 !important;
+  max-height: var(--zulip-custom-compose-max-height) !important;
+  min-height: var(--zulip-custom-compose-min-height) !important;
+  padding: var(--zulip-custom-compose-padding-y) var(--zulip-custom-compose-padding-x) !important;
+  resize: vertical !important;
+}
+
+.message_edit_form textarea,
+.message-edit-form textarea {
+  line-height: 1.4 !important;
+  min-height: 72px !important;
+}
+
+#legacy-closed-compose-box {
+  min-height: var(--zulip-custom-closed-compose-min-height) !important;
+}
+
+#legacy-closed-compose-box .reply_button_container,
+#legacy-closed-compose-box .compose_mobile_button,
+#legacy-closed-compose-box .new_direct_message_button_container,
+#legacy-closed-compose-box #new_direct_message_button {
+  align-items: center !important;
+  box-sizing: border-box !important;
+  min-height: var(--zulip-custom-closed-compose-min-height) !important;
+}
+
+#legacy-closed-compose-box .reply_button_container .compose-reply-button-wrapper,
+#legacy-closed-compose-box .reply_button_container #left_bar_compose_reply_button_big,
+#legacy-closed-compose-box .reply_button_container #new_conversation_button {
+  align-items: center !important;
+  display: flex !important;
+  min-height: calc(var(--zulip-custom-closed-compose-min-height) - 10px) !important;
+}
