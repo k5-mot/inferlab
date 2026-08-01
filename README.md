@@ -59,9 +59,10 @@ sudo ./dc.sh up-full --remove-orphans
 | `dify` | `21-dify/docker-compose.yml` | 自動化 |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
 | `bookstack` | `31-bookstack/docker-compose.yml` | Wiki |
-| `leantime` | `32-leantime/docker-compose.yml` | プロジェクト管理 |
+| `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
 | `zulip` | `33-zulip/docker-compose.yml` | チャット |
 | `gitea` | `34-gitea/docker-compose.yml` | Git 管理 |
+| `leantime` | `39-leantime/docker-compose.yml` | プロジェクト管理 |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `llmops` | `51-llmops/docker-compose.yml` | LLM 観測 |
@@ -121,8 +122,8 @@ sudo ./dc.sh up-full --remove-orphans
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
 | `bookstack` | `bookstack` | `${BOOKSTACK_HOST_PORT:-33100}` | `31-bookstack/docker-compose.yml` |
 | `bookstack` | `bookstack-mariadb` | - | `31-bookstack/docker-compose.yml` |
-| `leantime` | `leantime` | `33200` | `32-leantime/docker-compose.yml` |
-| `leantime` | `leantime-db` | - | `32-leantime/docker-compose.yml` |
+| `kaneo` | `kaneo` | `33200` | `32-kaneo/docker-compose.yml` |
+| `kaneo` | `kaneo-postgres` | - | `32-kaneo/docker-compose.yml` |
 | `zulip` | `zulip` | `${ZULIP_HTTP_HOST_PORT:-33302}`, `${ZULIP_HTTPS_HOST_PORT:-33300}`, `${ZULIP_SMTP_HOST_PORT:-33325}` | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-postgres` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-memcached` | - | `33-zulip/docker-compose.yml` |
@@ -130,6 +131,8 @@ sudo ./dc.sh up-full --remove-orphans
 | `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
 | `gitea` | `gitea` | `${GITEA_HTTP_HOST_PORT:-33400}`, `${GITEA_SSH_HOST_PORT:-33422}` | `34-gitea/docker-compose.yml` |
 | `gitea` | `gitea-postgres` | - | `34-gitea/docker-compose.yml` |
+| `leantime` | `leantime` | `33900` | `39-leantime/docker-compose.yml` |
+| `leantime` | `leantime-db` | - | `39-leantime/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |

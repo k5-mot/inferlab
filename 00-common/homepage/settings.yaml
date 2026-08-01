@@ -43,7 +43,7 @@ layout:
       icon: /icons/mdi-book.png
       style: row
       columns: 4
-  - 32-leantime:
+  - 32-kaneo:
       icon: /icons/mdi-bulletin-board.png
       style: row
       columns: 4
@@ -53,6 +53,10 @@ layout:
       columns: 4
   - 34-gitea:
       icon: /icons/mdi-file-code.png
+      style: row
+      columns: 4
+  - 39-leantime:
+      icon: /icons/mdi-bulletin-board.png
       style: row
       columns: 4
   - 40-obsidian:

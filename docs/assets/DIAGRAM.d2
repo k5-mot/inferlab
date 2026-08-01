@@ -399,8 +399,26 @@ service_catalog: {
       }
     }
 
-    32_leantime: {
-      label: "32-leantime"
+    32_kaneo: {
+      label: "32-kaneo"
+      style: {
+        fill: "#f5f3ff"
+        stroke: "#7c3aed"
+        stroke-width: 2
+      }
+
+      kaneo: {
+        label: "Kaneo\n33200"
+        icon: "../../00-common/homepage/icons/mdi-bulletin-board.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#7c3aed"
+        }
+      }
+    }
+
+    39_leantime: {
+      label: "39-leantime"
       style: {
         fill: "#f5f3ff"
         stroke: "#7c3aed"
@@ -408,7 +426,7 @@ service_catalog: {
       }
 
       leantime: {
-        label: "Leantime\n33200"
+        label: "Leantime\n33900"
         icon: "../../00-common/homepage/icons/leantime.png"
         style: {
           fill: "#ffffff"
@@ -539,7 +557,7 @@ service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheu
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_2.30_nextcloud.nextcloud: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_2.33_zulip.zulip: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.32_leantime.leantime: "OIDC"
+# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.39_leantime.leantime: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
 # service_catalog.row_1.00_common.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"

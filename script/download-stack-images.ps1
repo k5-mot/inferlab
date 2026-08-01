@@ -9,6 +9,7 @@ $Images = @(
     "docker.io/clickhouse/clickhouse-server:25.8.28.1",
     "docker.io/cloudflare/cloudflared:2026.6.0",
     "docker.io/grafana/grafana:13.1.1",
+    "ghcr.io/usekaneo/kaneo:latest",
     "docker.io/langfuse/langfuse-worker:3.212.0",
     "docker.io/langfuse/langfuse:3.212.0",
     "docker.io/langgenius/dify-agent-backend:1.16.0-rc1",

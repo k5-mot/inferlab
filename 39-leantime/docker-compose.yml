@@ -14,7 +14,7 @@ services:
     environment:
       PUID: 1000
       PGID: 1000
-      LEAN_APP_URL: http://${PUBLIC_HOST}:33200
+      LEAN_APP_URL: http://${PUBLIC_HOST}:33900
       LEAN_APP_DIR: ""
       LEAN_DEBUG: 0
       LEAN_SITENAME: Leantime
@@ -36,7 +36,7 @@ services:
       LEAN_OIDC_CREATE_USER: ${LEANTIME_OIDC_CREATE_USER:-true}
       LEAN_OIDC_DEFAULT_ROLE: ${LEANTIME_OIDC_DEFAULT_ROLE:-20}
     ports:
-      - 33200:8080
+      - 33900:8080
     volumes:
       - leantime-public-userfiles:/var/www/html/public/userfiles
       - leantime-userfiles:/var/www/html/userfiles
@@ -56,9 +56,9 @@ services:
       retries: 10
       start_period: 60s
     labels:
-      - homepage.group=32-leantime
+      - homepage.group=39-leantime
       - homepage.name=Leantime
-      - homepage.href=http://${PUBLIC_HOST}:33200
+      - homepage.href=http://${PUBLIC_HOST}:33900
       - homepage.description=Project management tool
       - homepage.icon=/icons/leantime.png
 
@@ -89,7 +89,7 @@ services:
       retries: 20
       start_period: 30s
     labels:
-      - homepage.group=32-leantime
+      - homepage.group=39-leantime
       - homepage.name=Leantime-MySQL
       - homepage.description=Relational database
       - homepage.icon=/icons/mysql.png

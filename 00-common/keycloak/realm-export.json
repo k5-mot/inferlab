@@ -176,16 +176,16 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://${PUBLIC_HOST}:33200/",
+            "rootUrl": "http://${PUBLIC_HOST}:33900/",
             "redirectUris": [
-                "http://localhost:33200/oidc/callback",
-                "http://127.0.0.1:33200/oidc/callback",
-                "http://${PUBLIC_HOST}:33200/oidc/callback"
+                "http://localhost:33900/oidc/callback",
+                "http://127.0.0.1:33900/oidc/callback",
+                "http://${PUBLIC_HOST}:33900/oidc/callback"
             ],
             "webOrigins": [
-                "http://localhost:33200",
-                "http://127.0.0.1:33200",
-                "http://${PUBLIC_HOST}:33200"
+                "http://localhost:33900",
+                "http://127.0.0.1:33900",
+                "http://${PUBLIC_HOST}:33900"
             ],
             "protocolMappers": [
                 {
