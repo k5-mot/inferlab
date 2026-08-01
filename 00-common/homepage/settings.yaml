@@ -71,7 +71,7 @@ layout:
       icon: /icons/grafana.png
       style: row
       columns: 4
-  - 51-llmops:
+  - 51-langfuse:
       icon: /icons/langfuse.png
       style: row
       columns: 4

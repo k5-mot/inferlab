@@ -17,7 +17,7 @@ include:
   - ./39-leantime/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
   - ./50-o11y/docker-compose.yml
-  - ./51-llmops/docker-compose.yml
+  - ./51-langfuse/docker-compose.yml
 
 networks:
   internal-nw:

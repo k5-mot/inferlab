@@ -9,7 +9,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-langfuse-worker
     restart: unless-stopped
     profiles:
-      - llmops
+      - langfuse
     depends_on: &langfuse-depends-on
       langfuse-postgres:
         condition: service_healthy
@@ -84,16 +84,16 @@ services:
       start_period: 10s
     labels:
       - homepage.icon=/icons/langfuse.png
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse-Worker
-      - homepage.description=LLMOps platform
+      - homepage.description=Langfuse platform
 
   langfuse-web:
     image: docker.io/langfuse/langfuse:3.212.0
     container_name: ${STACK_NAME:-inferlab}-langfuse-web
     restart: unless-stopped
     profiles:
-      - llmops
+      - langfuse
     depends_on: *langfuse-depends-on
     environment:
       <<: *langfuse-worker-env
@@ -124,10 +124,10 @@ services:
       start_period: 10s
     labels:
       - homepage.icon=/icons/langfuse.png
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse
       - homepage.href=http://${PUBLIC_HOST}:35100
-      - homepage.description=LLMOps platform
+      - homepage.description=Langfuse platform
 
   langfuse-clickhouse:
     image: docker.io/clickhouse/clickhouse-server:25.8.28.1
@@ -135,7 +135,7 @@ services:
     restart: unless-stopped
     user: "101:101"
     profiles:
-      - llmops
+      - langfuse
     environment:
       CLICKHOUSE_DB: langfuse_chdb
       CLICKHOUSE_USER: clickhouse_user
@@ -154,7 +154,7 @@ services:
       start_period: 1s
     labels:
       - homepage.icon=/icons/clickhouse.png
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse-ClickHouse
       - homepage.description=Columnar analytics database
 
@@ -163,7 +163,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-langfuse-valkey
     restart: unless-stopped
     profiles:
-      - llmops
+      - langfuse
     # CHANGEME: 下の行でValkey passwordを設定する。
     command: >
       --requirepass sk-langfuse-redis-secret-key --maxmemory-policy noeviction
@@ -180,7 +180,7 @@ services:
       retries: 10
     labels:
       - homepage.icon=/icons/redis.png
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse-Valkey
       - homepage.description=Inmemory key-value NoSQL database
 
@@ -189,7 +189,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs
     restart: unless-stopped
     profiles:
-      - llmops
+      - langfuse
     environment:
       RUSTFS_ACCESS_KEY: ${LANGFUSE_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
       RUSTFS_SECRET_KEY: ${LANGFUSE_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
@@ -207,7 +207,7 @@ services:
       retries: 20
       start_period: 10s
     labels:
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse-RustFS
       - homepage.href=http://${PUBLIC_HOST}:35102
       - homepage.description=S3-compatible object storage
@@ -218,7 +218,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs-bucket-init
     restart: "no"
     profiles:
-      - llmops
+      - langfuse
     environment:
       AWS_ACCESS_KEY_ID: ${LANGFUSE_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
       AWS_SECRET_ACCESS_KEY: ${LANGFUSE_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
@@ -248,7 +248,7 @@ services:
     container_name: ${STACK_NAME:-inferlab}-langfuse-postgres
     restart: unless-stopped
     profiles:
-      - llmops
+      - langfuse
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 3s
@@ -267,7 +267,7 @@ services:
       - langfuse_postgres_data:/var/lib/postgresql
     labels:
       - homepage.icon=/icons/postgresql.png
-      - homepage.group=51-llmops
+      - homepage.group=51-langfuse
       - homepage.name=Langfuse-Postgres
       - homepage.description=Relational database
 

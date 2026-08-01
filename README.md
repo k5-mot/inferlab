@@ -46,7 +46,7 @@ sudo ./dc.sh up-full --remove-orphans
 
 ## Profile
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`langfuse` です。その他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `leantime` | `39-leantime/docker-compose.yml` | プロジェクト管理 |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
-| `llmops` | `51-llmops/docker-compose.yml` | LLM 観測 |
+| `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
 ### Service 一覧
 
@@ -144,13 +144,13 @@ sudo ./dc.sh up-full --remove-orphans
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `cadvisor` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `blackbox-exporter` | - | `50-o11y/docker-compose.yml` |
-| `llmops` | `langfuse-worker` | - | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-web` | `35100` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-clickhouse` | - | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-valkey` | - | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-rustfs` | `35102`, `35103` | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-rustfs-bucket-init` | - | `51-llmops/docker-compose.yml` |
-| `llmops` | `langfuse-postgres` | - | `51-llmops/docker-compose.yml` |
+| `langfuse` | `langfuse-worker` | - | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-web` | `35100` | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-clickhouse` | - | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-valkey` | - | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-rustfs` | `35102`, `35103` | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-rustfs-bucket-init` | - | `51-langfuse/docker-compose.yml` |
+| `langfuse` | `langfuse-postgres` | - | `51-langfuse/docker-compose.yml` |
 
 GPU 監視用 profile は任意です。対応するホストで、監視用 Compose と設定ファイルの該当コメントを解除して使います。
 

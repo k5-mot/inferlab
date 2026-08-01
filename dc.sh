@@ -25,7 +25,7 @@ readonly PROFILES=(
   "obsidian"
 #   "gitea"
   "o11y"
-  "llmops"
+  "langfuse"
 )
 
 # COMMANDを除く残りの引数をdocker-composeのオプションとして渡す.

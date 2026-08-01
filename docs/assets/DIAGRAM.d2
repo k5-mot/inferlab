@@ -555,8 +555,8 @@ service_catalog: {
       }
     }
 
-    51_llmops: {
-      label: "51-llmops"
+    51_langfuse: {
+      label: "51-langfuse"
       style: {
         fill: "#faf5ff"
         stroke: "#9333ea"
@@ -607,7 +607,7 @@ service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.llm_qu
 # service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.39_leantime.leantime: "OIDC"
 # service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
 # service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.51_langfuse.langfuse: "OIDC"
 
 # service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
@@ -630,7 +630,7 @@ service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.llm_qu
 # service_catalog.row_2.34_gitea.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
-# service_catalog.row_3.51_llmops.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_3.51_langfuse.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
 # service_catalog.row_3.50_o11y.metrics -> service_catalog.row_3.50_o11y.prometheus: "scrape / push" {
@@ -642,7 +642,7 @@ service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.llm_qu
 # service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei: "embedding / reranking"
 # service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter: "external LLM API"
 # service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio: "external LLM API"
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_llmops.langfuse: "LLM traces"
+# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_langfuse.langfuse: "LLM traces"
 # service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm: "LLM API"
 
 # service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
