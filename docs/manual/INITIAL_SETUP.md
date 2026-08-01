@@ -72,7 +72,38 @@ sudo docker compose --env-file .env --profile common --profile keycloak --profil
 - Keycloakログイン後にOpen-WebUIへredirectされない。
 - Open-WebUIにAPI key作成画面が表示されない。
 
-## 4. Open-WebUI Knowledgeを作成する
+## 4. Dify管理者アカウントを作成する
+
+Dify OSS版は、このstackの環境変数だけでは汎用OIDC/Keycloak SSOを有効化しない。管理者アカウントはDifyの初回セットアップ画面で作成する。
+
+```bash
+# Dify profileを起動する。
+sudo docker compose --env-file .env --profile dify up -d
+```
+
+1. `http://${PUBLIC_HOST}:32100/install`を開く。
+2. password入力を求められた場合は、`21-dify/docker-compose.yml`の`INIT_PASSWORD`、既定値では`admin`を入力する。
+3. 管理者のemail、username、passwordを設定して初回セットアップを完了する。
+4. `http://${PUBLIC_HOST}:32100/signin`を開き、作成した管理者アカウントでログインする。
+
+期待結果:
+
+- Difyの管理者アカウントが作成される。
+- Dify consoleへログインできる。
+- `dify-api`、`dify-web`、`dify-nginx`がhealthyになる。
+
+失敗条件:
+
+- `/install`で`INIT_PASSWORD`が通らない。
+- 管理者アカウント作成後に`/signin`へ遷移できない。
+- `dify-api`、`dify-web`、`dify-nginx`のいずれかがunhealthyになる。
+
+```bash
+# Dify主要serviceの状態を確認する。
+sudo docker compose --env-file .env --profile dify ps dify-api dify-web dify-nginx
+```
+
+## 5. Open-WebUI Knowledgeを作成する
 
 1. Open-WebUIで`Workspace`から`Knowledge`を開く。
 2. Nextcloud同期用とRustFS同期用のKnowledgeを作成する。
@@ -96,7 +127,7 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `NEXTCLOUD_OPENWEBUI_KB_ID`が空のままになっている。
 - `RUSTFS_OPENWEBUI_KB_ID`が空のままになっている。
 
-## 5. OIKB同期対象を用意する
+## 6. OIKB同期対象を用意する
 
 ### Nextcloud
 
@@ -133,7 +164,7 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `documents/`以外のprefixへfileを配置している。
 - `.env`のRustFS認証情報とRustFS containerの認証情報が一致しない。
 
-## 6. OIKBを再起動して同期する
+## 7. OIKBを再起動して同期する
 
 ```bash
 # .envに設定したOpen-WebUI API keyとKnowledge IDをOIKBへ反映する。
@@ -157,7 +188,7 @@ sudo docker compose --env-file .env --profile owui up -d --force-recreate oikb
 sudo docker logs --tail 200 inferlab-oikb
 ```
 
-## 7. 再実行とrollback
+## 8. 再実行とrollback
 
 再実行:
 
