@@ -18,6 +18,9 @@ sandboxes/
 sessions/
 skills/
 workspace/
+memories/USER.md
+tmp/
+scripts/
 
 # 認証情報・状態・ロック・DB
 .env
