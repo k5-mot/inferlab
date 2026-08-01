@@ -29,6 +29,7 @@
 | Nextcloud | `services/nextcloud.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenMetrics endpoint metricsとscrape状態を表示する。 |
 | Text Embeddings Inference | `services/text-embeddings-inference.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Inference endpoint metricsとscrape状態を表示する。 |
 | LiteLLM | `services/litellm.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | LiteLLM Prometheus metricsとscrape状態を表示する。 |
+| LLM Quota | `services/llm-quota-overview.json` | `llm-quota-grafana-starter.zip` | 自作starterをローカル構成へ統合 | 2026-08-01 | Prometheus datasourceとInferLabのo11y profileに合わせて組み込んだ。 |
 | SearXNG | `services/searxng.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | SearXNG metrics endpointのscrape状態を表示する。 |
 | Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Gitea metricsとscrape状態を表示する。 |
 | Qdrant | `services/qdrant.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | REST/gRPC metricsとscrape状態を表示する。 |

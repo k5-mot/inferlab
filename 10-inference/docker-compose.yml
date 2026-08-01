@@ -319,6 +319,81 @@ services:
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31001
 
+  # https://github.com/openclaw/openclaw/blob/main/docker-compose.yml
+  # https://docs.openclaw.ai/install/docker
+  openclaw:
+    <<: *external-dns-stabilizer
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    container_name: ${STACK_NAME:-inferlab}-openclaw
+    restart: unless-stopped
+    profiles:
+      - inference
+      - hermes-agent
+    env_file:
+      - path: .env
+        required: false
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      - ${OPENCLAW_GATEWAY_BIND:-lan}
+      - --port
+      - "18789"
+    environment:
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
+      TERM: xterm-256color
+      # host側.envのpathをcontainer内の実行時pathへ漏らさない。
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-gateway-token}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-}
+      OTEL_SEMCONV_STABILITY_OPT_IN: ${OTEL_SEMCONV_STABILITY_OPT_IN:-}
+      OPENCLAW_OTEL_PRELOADED: ${OPENCLAW_OTEL_PRELOADED:-}
+      TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
+    ports:
+      - 31002:18789
+    volumes:
+      - ./openclaw:/home/node/.openclaw
+      - ./openclaw-auth-profile-secrets:/home/node/.config/openclaw
+    networks:
+      - internal-nw
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    init: true
+    healthcheck:
+      test: [ "CMD", "node", "dist/index.js", "health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    labels:
+      - homepage.icon=/icons/mdi-robot.png
+      - homepage.group=10-inference
+      - homepage.name=OpenClaw
+      - homepage.description=AI agent
+      - homepage.href=http://${PUBLIC_HOST}:31002
+
   kokoro:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
     container_name: ${STACK_NAME:-inferlab}-kokoro

@@ -86,6 +86,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `inference` | `tei-embedding` | - | `10-inference/docker-compose.yml` |
 | `inference` | `tei-reranking` | - | `10-inference/docker-compose.yml` |
 | `inference`, `hermes-agent` | `hermes-agent` | `31001` | `10-inference/docker-compose.yml` |
+| `inference`, `hermes-agent` | `openclaw` | `31002` | `10-inference/docker-compose.yml` |
 | `inference` | `kokoro` | `31005` | `10-inference/docker-compose.yml` |
 | `rag` | `docling` | `31100` | `11-rag/docker-compose.yml` |
 | `rag` | `qdrant` | - | `11-rag/docker-compose.yml` |
@@ -139,6 +140,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |
+| `o11y` | `llm-quota-exporter` | `${LLM_QUOTA_EXPORTER_HTTP_HOST_PORT:-35002}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `cadvisor` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `blackbox-exporter` | - | `50-o11y/docker-compose.yml` |

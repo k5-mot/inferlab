@@ -9,6 +9,7 @@ GrafanaとPrometheusを中心にしたobservability stack。
 - Node Exporter
 - cAdvisor
 - Blackbox Exporter
+- LLM Quota Exporter
 - AMD Device Metrics Exporter（初期状態では無効）
 - NVIDIA DCGM Exporter（初期状態では無効）
 
@@ -63,6 +64,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `tei-embedding:8000`
 - `tei-reranking:8000`
 - `litellm:4000`
+- `llm-quota-exporter:9469`
 - `searxng:8080`
 - `gitea:3000`
 - `qdrant:6333`
@@ -93,6 +95,7 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 | Nextcloud | `openmetrics_allowed_clients`へDocker内部networkを追加し、`/metrics`をscrapeする。 |
 | CouchDB | `/_node/_local/_prometheus`をbasic auth付きでscrapeする。 |
 | LiteLLM | `prometheus` callbackを有効化し、`/metrics`をBearer認証付きでscrapeする。 |
+| LLM Quota Exporter | OpenRouterはAPI値、Google AI Studio/Cerebras/Ollama Cloudは設定値と`/ingest`の利用実績から無料枠残量を表示する。 |
 | SearXNG | `open_metrics`を有効化し、`/metrics`をBasic Auth付きでscrapeする。 |
 | Qdrant | `api-key` header付きで`/metrics`をscrapeする。 |
 | PostgreSQL | `postgres_exporter` serviceを用意している。初期状態ではコメントアウト。 |

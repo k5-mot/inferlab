@@ -221,6 +221,15 @@ service_catalog: {
         }
       }
 
+      openclaw: {
+        label: "OpenClaw\n31002"
+        icon: "../../00-common/homepage/icons/mdi-robot.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
       tei: {
         label: "TEI\nEmbedding / Reranking"
         icon: "../../00-common/homepage/icons/hugging-face.png"
@@ -535,6 +544,15 @@ service_catalog: {
           stroke: "#0891b2"
         }
       }
+
+      llm_quota_exporter: {
+        label: "LLM Quota Exporter\n35002"
+        icon: "../../00-common/homepage/icons/grafana.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0891b2"
+        }
+      }
     }
 
     51_llmops: {
@@ -568,6 +586,7 @@ service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
 service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm
+service_catalog.row_2.10_inference.openclaw -> service_catalog.row_2.10_inference.litellm
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.open_terminal
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.mcpo
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.searxng
@@ -579,6 +598,7 @@ service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.11_rag.qdrant
 service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.30_nextcloud.nextcloud
 
 service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheus
+service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.llm_quota_exporter
 
 # service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_1.01_keycloak.oidc: "auth"
 # service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"

@@ -1,0 +1,67 @@
+# このlimitは例であり、provider consoleに表示される有効な無料枠へ置き換える。
+# sourceはGrafanaに表示され、API由来・設定値・推定値を混同しないために使う。
+quotas:
+  # Google AI StudioのGemini API limitはproject、model、tierごとに変わる。
+  # RPDはPacific Timeの午前0時にresetされ、RPM/TPMはrolling windowとして扱う。
+  - provider: google_ai_studio
+    model: gemini-free-tier
+    dimension: requests
+    window: day
+    limit: 250
+    reset_timezone: America/Los_Angeles
+    rolling: false
+    source: configured
+
+  - provider: google_ai_studio
+    model: gemini-free-tier
+    dimension: input_tokens
+    window: minute
+    limit: 100000
+    rolling: true
+    source: configured
+
+  # OpenRouterはOPENROUTER_API_KEY設定時に/api/v1/key由来のapi値も表示する。
+  # free modelの日次request枠はaccount状態で変わるため、ここでは未課金keyの目安を置く。
+  - provider: openrouter
+    model: free-models
+    dimension: requests
+    window: day
+    limit: 50
+    reset_timezone: UTC
+    rolling: false
+    source: configured
+
+  # Cerebras free trialの正確なcredit残量はCloud Consoleで確認し、この値を更新する。
+  - provider: cerebras
+    model: gpt-oss-120b
+    dimension: requests
+    window: minute
+    limit: 5
+    rolling: true
+    source: configured
+
+  - provider: cerebras
+    model: gpt-oss-120b
+    dimension: tokens
+    window: minute
+    limit: 30000
+    rolling: true
+    source: configured
+
+  - provider: cerebras
+    model: gpt-oss-120b
+    dimension: tokens
+    window: day
+    limit: 1000000
+    rolling: true
+    source: estimated
+
+  # Ollama Cloudは固定token枠ではなくaccount固有のcloud usageとして扱う。
+  # UIまたはaccount情報で確認した無料枠をusage_unitsとして設定する。
+  - provider: ollamacloud
+    model: cloud-models
+    dimension: requests
+    window: week_7d
+    limit: 100
+    rolling: true
+    source: estimated
