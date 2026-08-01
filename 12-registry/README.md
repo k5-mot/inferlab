@@ -4,7 +4,7 @@
 
 - Python/pip: pypiserver
 - Node.js/npm: Verdaccio
-- Container image: Harbor
+- Container image: Docker Registry
 - rpm: createrepo_c + nginx
 - deb: reprepro + nginx
 
@@ -17,10 +17,10 @@ Windows Clientで資材を取得する場合は、DockerやWSLを使わず `12-r
 | `registry/deb` | `.deb` | reprepro が `registry/deb/public` へ APT repository を生成し、nginx が配信する。 |
 | `registry/wheel` | `.whl`、`.tar.gz`、`.zip` | pypiserver が配信する。 |
 | `registry/npm-packages` | `.tgz` | Verdaccio へ publish する。 |
-| `registry/docker-archive` | `docker save` 形式の `.tar` | Harbor へ push する。 |
+| `registry/docker-archive` | `docker save` 形式の `.tar` | Docker Registry へ手動 push するための入力資材。 |
 
-Harbor は公式 installer の `harbor.yml` から生成した `docker-compose.yml` を、起動時だけ root compose に重ねて使う。Docker archive の自動 push は Harbor と同じ Compose project 上で動くため、`12-registry/harbor/prepare-harbor-compose.sh` で生成した後に `12-registry/harbor/harbor-compose.sh up -d` で起動する。
+Container image registry は Docker 公式 `registry` image を使用する。
 
 ## References
 
-- [Harbor Installation and Configuration](https://goharbor.io/docs/2.14.0/install-config/)
+- [Docker Registry](https://hub.docker.com/_/registry)
