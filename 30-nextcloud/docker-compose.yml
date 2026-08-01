@@ -4,7 +4,7 @@
 
 services:
   nextcloud:
-    image: docker.io/library/nextcloud:34.0.1-apache
+    image: docker.io/library/nextcloud:34.0.2-apache
     container_name: ${STACK_NAME:-inferlab}-nextcloud
     restart: unless-stopped
     profiles:

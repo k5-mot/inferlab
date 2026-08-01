@@ -17,7 +17,7 @@ name: ${STACK_NAME:-inferlab}
 
 services:
   docker-registry:
-    image: docker.io/library/registry:${DOCKER_REGISTRY_IMAGE_TAG:-3}
+    image: docker.io/library/registry:${DOCKER_REGISTRY_IMAGE_TAG:-3.1.1}
     container_name: ${STACK_NAME:-inferlab}-docker-registry
     restart: unless-stopped
     profiles:
@@ -34,9 +34,18 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}/v2/
       - homepage.description=Container image registry
       - homepage.icon=/icons/docker.png
+    healthcheck:
+      test:
+        - CMD
+        - registry
+        - --version
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   pypiserver:
-    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
+    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-v2.4.1}
     container_name: ${STACK_NAME:-inferlab}-pypiserver
     restart: unless-stopped
     profiles:
@@ -67,7 +76,7 @@ services:
       - homepage.icon=/icons/pypi.png
 
   verdaccio:
-    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6}
+    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6.9.0}
     container_name: ${STACK_NAME:-inferlab}-verdaccio
     restart: unless-stopped
     profiles:
@@ -150,6 +159,14 @@ services:
       - ./code-marketplace-importer/import-vsix-extensions.sh:/usr/local/bin/import-vsix-extensions:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -r /proc/1/cmdline && grep -q import-vsix-extensions /proc/1/cmdline
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   npm-importer:
     image: node:${NODE_IMAGE_TAG:-22-alpine}
@@ -173,6 +190,14 @@ services:
     depends_on:
       verdaccio:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -r /proc/1/cmdline && grep -q import-npm-packages /proc/1/cmdline
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   createrepo_c:
     image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
@@ -193,9 +218,17 @@ services:
       - ./rpm-repository-sync/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -r /proc/1/cmdline && grep -q sync-rpm-repository /proc/1/cmdline
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   rpm-dist:
-    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
     container_name: ${STACK_NAME:-inferlab}-rpm-dist
     restart: unless-stopped
     profiles:
@@ -228,7 +261,7 @@ services:
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro:latest}
+    image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f}
     container_name: ${STACK_NAME:-inferlab}-reprepro
     profiles:
       - registry
@@ -262,7 +295,7 @@ services:
       - internal-nw
 
   deb-dist:
-    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.29-alpine}
+    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
     container_name: ${STACK_NAME:-inferlab}-deb-dist
     restart: unless-stopped
     profiles:

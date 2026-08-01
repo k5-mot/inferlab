@@ -1,6 +1,6 @@
 services:
   kaneo:
-    image: ghcr.io/usekaneo/kaneo:latest
+    image: ghcr.io/usekaneo/kaneo:2.12.1
     container_name: ${STACK_NAME:-inferlab}-kaneo
     restart: unless-stopped
     profiles:

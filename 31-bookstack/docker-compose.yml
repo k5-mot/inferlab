@@ -60,7 +60,7 @@ services:
       - homepage.icon=/icons/bookstack.png
 
   bookstack-custom-init:
-    image: alpine:3.22
+    image: alpine:3.24.1
     container_name: ${STACK_NAME:-inferlab}-bookstack-custom-init
     restart: "no"
     network_mode: none

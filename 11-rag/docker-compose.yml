@@ -71,7 +71,7 @@ services:
 
   qdrant:
     <<: *external-dns-stabilizer
-    image: docker.io/qdrant/qdrant:v1.18.2
+    image: docker.io/qdrant/qdrant:v1.18.3
     container_name: ${STACK_NAME:-inferlab}-qdrant
     restart: unless-stopped
     profiles:

@@ -112,7 +112,7 @@ services:
       - homepage.description=Observability dashboard
 
   prometheus:
-    image: docker.io/prom/prometheus:v3.13.1
+    image: docker.io/prom/prometheus:v3.13.2
     container_name: ${STACK_NAME:-inferlab}-prometheus
     restart: unless-stopped
     profiles:
@@ -224,6 +224,15 @@ services:
       - /dev/disk:/dev/disk:ro
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/cadvisor
+        - -version
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     labels:
       - homepage.group=50-o11y
       - homepage.name=cAdvisor

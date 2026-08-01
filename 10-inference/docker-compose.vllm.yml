@@ -9,7 +9,7 @@
 
 services:
   litellm:
-    image: docker.io/litellm/litellm:v1.91.0
+    image: docker.io/litellm/litellm:v1.94.1
     container_name: ${STACK_NAME:-inferlab}-litellm
     restart: unless-stopped
     profiles:
@@ -55,7 +55,7 @@ services:
         hard: 65535
 
   vllm-foundation:
-    image: docker.io/vllm/vllm-openai:v0.22.1
+    image: docker.io/vllm/vllm-openai:v0.26.0
     container_name: ${STACK_NAME:-inferlab}-vllm-foundation
     restart: unless-stopped
     profiles:
@@ -113,7 +113,7 @@ services:
               capabilities: [ gpu ]
 
   vllm-embedding:
-    image: docker.io/vllm/vllm-openai-cpu:v0.22.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.26.0
     container_name: ${STACK_NAME:-inferlab}-vllm-embedding
     restart: unless-stopped
     profiles:
@@ -149,7 +149,7 @@ services:
       start_period: 60s
 
   vllm-reranking:
-    image: docker.io/vllm/vllm-openai-cpu:v0.22.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.26.0
     container_name: ${STACK_NAME:-inferlab}-vllm-reranking
     restart: unless-stopped
     profiles:

@@ -11,7 +11,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 
 services:
   dify-init-permissions:
-    image: docker.io/library/busybox:latest
+    image: docker.io/library/busybox:1.38.0
     container_name: ${STACK_NAME:-inferlab}-dify-init-permissions
     restart: "no"
     profiles:
@@ -35,7 +35,7 @@ services:
 
   dify-api:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-api:1.16.0-rc1
+    image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-api
     restart: unless-stopped
     profiles:
@@ -117,7 +117,7 @@ services:
 
   dify-worker:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-api:1.16.0-rc1
+    image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-worker
     restart: unless-stopped
     profiles:
@@ -164,7 +164,7 @@ services:
 
   dify-worker-beat:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-api:1.16.0-rc1
+    image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-worker-beat
     restart: unless-stopped
     profiles:
@@ -203,7 +203,7 @@ services:
 
   dify-web:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-web:1.16.0-rc1
+    image: docker.io/langgenius/dify-web:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-web
     restart: unless-stopped
     profiles:
@@ -238,7 +238,7 @@ services:
 
   dify-plugin-daemon:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-plugin-daemon:0.6.3-local
+    image: docker.io/langgenius/dify-plugin-daemon:0.6.8-local
     container_name: ${STACK_NAME:-inferlab}-dify-plugin-daemon
     restart: unless-stopped
     profiles:
@@ -329,7 +329,7 @@ services:
 
   dify-local-sandbox:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-agent-local-sandbox:1.16.0-rc1
+    image: docker.io/langgenius/dify-agent-local-sandbox:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-local-sandbox
     restart: unless-stopped
     profiles:
@@ -354,7 +354,7 @@ services:
 
   dify-agent-backend:
     <<: *external-dns-stabilizer
-    image: docker.io/langgenius/dify-agent-backend:1.16.0-rc1
+    image: docker.io/langgenius/dify-agent-backend:1.16.1
     container_name: ${STACK_NAME:-inferlab}-dify-agent-backend
     restart: unless-stopped
     profiles:
@@ -397,7 +397,7 @@ services:
 
   dify-ssrf-proxy:
     <<: *external-dns-stabilizer
-    image: docker.io/ubuntu/squid:latest
+    image: docker.io/ubuntu/squid@sha256:6a097f68bae708cedbabd6188d68c7e2e7a38cedd05a176e1cc0ba29e3bbe029
     container_name: ${STACK_NAME:-inferlab}-dify-ssrf-proxy
     restart: unless-stopped
     profiles:
@@ -505,7 +505,7 @@ services:
 
   dify-qdrant:
     <<: *external-dns-stabilizer
-    image: docker.io/qdrant/qdrant:v1.18.2
+    image: docker.io/qdrant/qdrant:v1.18.3
     container_name: ${STACK_NAME:-inferlab}-dify-qdrant
     restart: unless-stopped
     profiles:
@@ -533,7 +533,7 @@ services:
       - homepage.description=Vector search database
 
   dify-nginx:
-    image: docker.io/library/nginx:latest
+    image: docker.io/library/nginx:1.31.3-alpine
     container_name: ${STACK_NAME:-inferlab}-dify-nginx
     restart: unless-stopped
     profiles:

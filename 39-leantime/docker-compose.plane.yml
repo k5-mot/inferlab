@@ -1,6 +1,6 @@
 services:
   plane-web:
-    image: docker.io/makeplane/plane-frontend:v1.3.1
+    image: docker.io/makeplane/plane-frontend:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-web
     restart: unless-stopped
     profiles:
@@ -27,7 +27,7 @@ services:
       - homepage.description=Project management tool
 
   plane-space:
-    image: docker.io/makeplane/plane-space:v1.3.1
+    image: docker.io/makeplane/plane-space:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-space
     restart: unless-stopped
     profiles:
@@ -52,7 +52,7 @@ services:
       - homepage.description=Project management tool
 
   plane-admin:
-    image: docker.io/makeplane/plane-admin:v1.3.1
+    image: docker.io/makeplane/plane-admin:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-admin
     restart: unless-stopped
     profiles:
@@ -77,7 +77,7 @@ services:
       - homepage.description=Project management tool
 
   plane-api:
-    image: docker.io/makeplane/plane-backend:v1.3.1
+    image: docker.io/makeplane/plane-backend:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-api
     restart: unless-stopped
     profiles:
@@ -146,7 +146,7 @@ services:
       - homepage.description=Project management tool
 
   plane-worker:
-    image: docker.io/makeplane/plane-backend:v1.3.1
+    image: docker.io/makeplane/plane-backend:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-worker
     restart: unless-stopped
     profiles:
@@ -174,7 +174,7 @@ services:
       - homepage.description=Project management tool
 
   plane-beat-worker:
-    image: docker.io/makeplane/plane-backend:v1.3.1
+    image: docker.io/makeplane/plane-backend:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-beat-worker
     restart: unless-stopped
     profiles:
@@ -202,7 +202,7 @@ services:
       - homepage.description=Project management tool
 
   plane-migrator:
-    image: docker.io/makeplane/plane-backend:v1.3.1
+    image: docker.io/makeplane/plane-backend:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-migrator
     restart: "no"
     profiles:
@@ -232,7 +232,7 @@ services:
       - homepage.description=Project management tool
 
   plane-live:
-    image: docker.io/makeplane/plane-live:v1.3.1
+    image: docker.io/makeplane/plane-live:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-live
     restart: unless-stopped
     profiles:
@@ -264,7 +264,7 @@ services:
       - homepage.description=Project management tool
 
   plane-proxy:
-    image: docker.io/makeplane/plane-proxy:v1.3.1
+    image: docker.io/makeplane/plane-proxy:v1.4.0
     container_name: ${STACK_NAME:-inferlab}-plane-proxy
     restart: unless-stopped
     profiles:

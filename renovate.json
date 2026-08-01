@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests"
+  ],
+  "enabledManagers": [
+    "docker-compose",
+    "dockerfile"
+  ],
+  "docker-compose": {
+    "managerFilePatterns": [
+      "/(^|/)docker-compose[^/]*\\.ya?ml$/"
+    ]
+  },
+  "dockerfile": {
+    "managerFilePatterns": [
+      "/(^|/)Dockerfile[^/]*$/"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Dify core images are kept on stable release tags.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.io/langgenius/dify-api",
+        "docker.io/langgenius/dify-web",
+        "docker.io/langgenius/dify-agent-backend",
+        "docker.io/langgenius/dify-agent-local-sandbox"
+      ],
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/"
+    },
+    {
+      "description": "Private local images are pinned manually because anonymous registry metadata is unavailable.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/k5-mot/oikb",
+        "docker.io/eilandert/reprepro",
+        "docker.io/ubuntu/squid"
+      ],
+      "enabled": false
+    }
+  ]
+}

@@ -23,7 +23,7 @@ sudo ./dc.sh up --remove-orphans
 - Compose 設定の解決に失敗する。
 - 必須コンテナが `unhealthy` になる。
 
-初回設定は [docs/INITIAL_SETUP.md](docs/INITIAL_SETUP.md) を参照してください。
+初回設定は [docs/manual/INITIAL_SETUP.md](docs/manual/INITIAL_SETUP.md) を参照してください。
 
 ## 一括起動
 
@@ -46,7 +46,7 @@ sudo ./dc.sh up-full --remove-orphans
 
 ## Profile
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`langfuse` です。その他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`bookstack`、`kaneo`、`zulip`、`obsidian`、`gitea`、`o11y`、`langfuse` です。`registry`、`dify`、`leantime` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |

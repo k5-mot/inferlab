@@ -5,7 +5,7 @@
 #
 services:
   langfuse-worker:
-    image: docker.io/langfuse/langfuse-worker:3.212.0
+    image: docker.io/langfuse/langfuse-worker:4.1.0
     container_name: ${STACK_NAME:-inferlab}-langfuse-worker
     restart: unless-stopped
     profiles:
@@ -89,7 +89,7 @@ services:
       - homepage.description=Langfuse platform
 
   langfuse-web:
-    image: docker.io/langfuse/langfuse:3.212.0
+    image: docker.io/langfuse/langfuse:4.1.0
     container_name: ${STACK_NAME:-inferlab}-langfuse-web
     restart: unless-stopped
     profiles:
@@ -185,7 +185,7 @@ services:
       - homepage.description=Inmemory key-value NoSQL database
 
   langfuse-rustfs:
-    image: docker.io/rustfs/rustfs:latest
+    image: docker.io/rustfs/rustfs:1.0.0-beta.12
     container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs
     restart: unless-stopped
     profiles:
@@ -214,7 +214,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   langfuse-rustfs-bucket-init:
-    image: docker.io/amazon/aws-cli:latest
+    image: docker.io/amazon/aws-cli:2.36.14
     container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs-bucket-init
     restart: "no"
     profiles:

@@ -224,6 +224,16 @@ services:
       - homepage.name=Open-WebUI
       - homepage.href=http://${PUBLIC_HOST}:32000
       - homepage.description=AI chat platform
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   # https://github.com/open-webui/open-terminal
   # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
@@ -267,7 +277,7 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/mcpo:main
+    image: ghcr.io/open-webui/mcpo:git-45c474e
     container_name: ${STACK_NAME:-inferlab}-mcpo
     restart: unless-stopped
     profiles:
@@ -334,7 +344,7 @@ services:
       - homepage.description=Metasearch engine
 
   oikb-rustfs:
-    image: docker.io/rustfs/rustfs:latest
+    image: docker.io/rustfs/rustfs:1.0.0-beta.12
     container_name: ${STACK_NAME:-inferlab}-oikb-rustfs
     restart: unless-stopped
     profiles:
@@ -363,7 +373,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-bucket-init:
-    image: docker.io/amazon/aws-cli:latest
+    image: docker.io/amazon/aws-cli:2.36.14
     container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
@@ -397,7 +407,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: ghcr.io/k5-mot/oikb:latest
+    image: ghcr.io/k5-mot/oikb@sha256:1fbff6b0d07c4e50446ec6fd2e38df4d2f23449d114883733852181b1cb96669
     container_name: ${STACK_NAME:-inferlab}-oikb
     restart: unless-stopped
     user: "1000:33"

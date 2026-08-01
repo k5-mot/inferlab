@@ -117,6 +117,14 @@ services:
       - homepage.href=https://${ZULIP_EXTERNAL_HOST:-${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}}/
       - homepage.description=Team chat platform
       - homepage.icon=/icons/zulip.png
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -kfsS https://127.0.0.1/ >/dev/null || curl -fsS http://127.0.0.1/ >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
 
   zulip-postgres:
     image: zulip/zulip-postgresql:14
@@ -166,6 +174,14 @@ services:
       MEMCACHED_PASSWORD: ${ZULIP_MEMCACHED_PASSWORD:-zulip_password}
     networks:
       - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pidof memcached >/dev/null
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     labels:
       - homepage.group=33-zulip
       - homepage.name=Zulip-Memcached
