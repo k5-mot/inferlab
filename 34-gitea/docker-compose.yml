@@ -25,7 +25,7 @@ services:
       GITEA__server__SSH_DOMAIN: ${PUBLIC_HOST}
       GITEA__server__SSH_PORT: ${GITEA_SSH_HOST_PORT:-33422}
       GITEA__server__SSH_LISTEN_PORT: "22"
-      GITEA__server__START_SSH_SERVER: "true"
+      GITEA__server__START_SSH_SERVER: "false"
       GITEA__security__INSTALL_LOCK: "true"
       GITEA__security__SECRET_KEY: ${GITEA_SECRET_KEY:-sk-gitea-secret-key-change-me}
       GITEA__security__INTERNAL_TOKEN: ${GITEA_INTERNAL_TOKEN:-sk-gitea-internal-token-change-me}
