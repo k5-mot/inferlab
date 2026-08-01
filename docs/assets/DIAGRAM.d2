@@ -36,7 +36,7 @@ service_catalog: {
   }
 
   row_1: {
-    label: "Infrastructure Layer"
+    label: "Infrastructure Layer\n(ポータル・認証・外部公開)"
     direction: right
     grid-columns: 4
     style: {
@@ -109,93 +109,10 @@ service_catalog: {
         }
       }
     }
-
-    12_registry: {
-      label: "12-registry"
-      grid-columns: 3
-      style: {
-        fill: "#f0f9ff"
-        stroke: "#0284c7"
-        stroke-width: 2
-      }
-
-      docker_registry: {
-        label: "Docker Registry\n31205"
-        icon: "../../00-common/homepage/icons/docker.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      pypiserver: {
-        label: "PyPI\n31200"
-        icon: "../../00-common/homepage/icons/pypi.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      verdaccio: {
-        label: "Verdaccio\n31201"
-        icon: "../../00-common/homepage/icons/verdaccio.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      harbor: {
-        label: "Code Marketplace\n31202"
-        icon: "../../00-common/homepage/icons/visual-studio-code.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      rpm_repo: {
-        label: "RPM Repository\n31203"
-        icon: "../../00-common/homepage/icons/redhat-linux.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-
-      deb_repo: {
-        label: "APT Repository\n31204"
-        icon: "../../00-common/homepage/icons/debian-linux.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0284c7"
-        }
-      }
-    }
-
-    40_obsidian: {
-      label: "40-obsidian"
-      grid-columns: 1
-      style: {
-        fill: "#f8fafc"
-        stroke: "#475569"
-        stroke-width: 2
-      }
-
-      couchdb: {
-        label: "CouchDB\n34000"
-        icon: "../../00-common/homepage/icons/couchdb.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#475569"
-        }
-      }
-    }
   }
 
   row_2: {
-    label: "Application Layer"
+    label: "Utility Layer"
     direction: right
     grid-columns: 4
     style: {
@@ -212,18 +129,9 @@ service_catalog: {
         stroke-width: 2
       }
 
-      hermes_agent: {
-        label: "Hermes-Agent\n31001"
-        icon: "../../00-common/homepage/icons/hermes-icon.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
-
-      openclaw: {
-        label: "OpenClaw\n31002"
-        icon: "../../00-common/homepage/icons/mdi-robot.png"
+      ollama: {
+        label: "Ollama"
+        icon: "../../00-common/homepage/icons/ollama.png"
         style: {
           fill: "#ffffff"
           stroke: "#a16207"
@@ -239,24 +147,6 @@ service_catalog: {
         }
       }
 
-      litellm: {
-        label: "LiteLLM\n31000"
-        icon: "../../00-common/homepage/icons/litlellm.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
-
-      ollama: {
-        label: "Ollama"
-        icon: "../../00-common/homepage/icons/ollama.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
-
       kokoro: {
         label: "Kokoro-TTS\n31005"
         icon: "../../00-common/homepage/icons/kokoro-web.png"
@@ -266,25 +156,57 @@ service_catalog: {
         }
       }
 
+      hermes_agent: {
+        label: "Hermes-Agent\n31001"
+        icon: "../../00-common/homepage/icons/hermes-icon.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      litellm: {
+        label: "LiteLLM\n31000"
+        icon: "../../00-common/homepage/icons/litlellm.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
+      openclaw: {
+        label: "OpenClaw\n31002"
+        icon: "../../00-common/homepage/icons/openclaw.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#a16207"
+        }
+      }
+
       openrouter: {
-        label: "OpenRouter\n外部サービス"
+        label: "OpenRouter"
         icon: "../../00-common/homepage/icons/open-router.png"
-        shape: cloud
         style: {
           fill: "#f8fafc"
           stroke: "#64748b"
-          stroke-dash: 4
         }
       }
 
       google_ai_studio: {
-        label: "Google AI Studio\n外部サービス"
+        label: "Google AI Studio"
         icon: "../../00-common/homepage/icons/google-gemini.png"
-        shape: cloud
         style: {
           fill: "#f8fafc"
           stroke: "#64748b"
-          stroke-dash: 4
+        }
+      }
+
+      cerebras: {
+        label: "Cerebras"
+        icon: "../../00-common/homepage/icons/cerebras.png"
+        style: {
+          fill: "#f8fafc"
+          stroke: "#64748b"
         }
       }
     }
@@ -317,6 +239,80 @@ service_catalog: {
       }
     }
 
+    12_registry: {
+      label: "12-registry"
+      grid-columns: 3
+      style: {
+        fill: "#f0f9ff"
+        stroke: "#0284c7"
+        stroke-width: 2
+      }
+
+      docker_registry: {
+        label: "Docker Registry\n31205"
+        icon: "../../00-common/homepage/icons/docker.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      code_marketplace: {
+        label: "Code Marketplace\n31202"
+        icon: "../../00-common/homepage/icons/visual-studio-code.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      pypiserver: {
+        label: "PyPI\n31200"
+        icon: "../../00-common/homepage/icons/pypi.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      verdaccio: {
+        label: "Verdaccio\n31201"
+        icon: "../../00-common/homepage/icons/verdaccio.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      rpm_repo: {
+        label: "RPM Repository\n31203"
+        icon: "../../00-common/homepage/icons/redhat-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
+      deb_repo: {
+        label: "APT Repository\n31204"
+        icon: "../../00-common/homepage/icons/debian-linux.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+    }
+  }
+
+  row_3: {
+    label: "Application Layer"
+    direction: right
+    grid-columns: 4
+    style: {
+      fill: "#ffffff"
+      stroke: "#cbd5e1"
+    }
+
     20_owui: {
       label: "20-owui"
       grid-columns: 3
@@ -325,9 +321,8 @@ service_catalog: {
         stroke: "#2563eb"
         stroke-width: 2
       }
-
-      open_webui: {
-        label: "Open WebUI\n32000"
+      mcpo: {
+        label: "mcpo\n32004"
         icon: "../../00-common/homepage/icons/open-webui.png"
         style: {
           fill: "#ffffff"
@@ -344,9 +339,18 @@ service_catalog: {
         }
       }
 
-      searxng: {
-        label: "SearXNG\n32002"
-        icon: "../../00-common/homepage/icons/searxng.png"
+      open_webui: {
+        label: "Open WebUI\n32000"
+        icon: "../../00-common/homepage/icons/open-webui.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#2563eb"
+        }
+      }
+
+      oikb_rustfs: {
+        label: "OIKB-RustFS\n32005 / 32006"
+        icon: "../../00-common/homepage/icons/rustfs.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -362,18 +366,9 @@ service_catalog: {
         }
       }
 
-      mcpo: {
-        label: "mcpo\n32004"
-        icon: "../../00-common/homepage/icons/open-webui.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#2563eb"
-        }
-      }
-
-      oikb_rustfs: {
-        label: "OIKB-RustFS\n32005 / 32006"
-        icon: "../../00-common/homepage/icons/rustfs.png"
+      searxng: {
+        label: "SearXNG\n32002"
+        icon: "../../00-common/homepage/icons/searxng.png"
         style: {
           fill: "#ffffff"
           stroke: "#2563eb"
@@ -446,7 +441,7 @@ service_catalog: {
 
       kaneo: {
         label: "Kaneo\n33200"
-        icon: "../../00-common/homepage/icons/mdi-bulletin-board.png"
+        icon: "../../00-common/homepage/icons/kaneo.png"
         style: {
           fill: "#ffffff"
           stroke: "#7c3aed"
@@ -507,9 +502,28 @@ service_catalog: {
         }
       }
     }
+
+    40_obsidian: {
+      label: "40-obsidian"
+      grid-columns: 1
+      style: {
+        fill: "#f8fafc"
+        stroke: "#475569"
+        stroke-width: 2
+      }
+
+      couchdb: {
+        label: "CouchDB\n34000"
+        icon: "../../00-common/homepage/icons/couchdb.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#475569"
+        }
+      }
+    }
   }
 
-  row_3: {
+  row_4: {
     label: "Observability Layer"
     direction: right
     grid-columns: 2
@@ -547,7 +561,7 @@ service_catalog: {
 
       llm_quota_exporter: {
         label: "LLM Quota Exporter\n35002"
-        icon: "../../00-common/homepage/icons/grafana.png"
+        icon: "../../00-common/homepage/icons/prometheus.png"
         style: {
           fill: "#ffffff"
           stroke: "#0891b2"
@@ -578,78 +592,26 @@ service_catalog: {
 users -> public_host: "access"
 public_host -> service_catalog: "published services"
 
-service_catalog.row_1 -> service_catalog.row_2: "認証・パッケージ提供"
-service_catalog.row_2 -> service_catalog.row_3: "観測"
+# service_catalog.row_1 -> service_catalog.row_3: "認証・パッケージ提供"
+# service_catalog.row_3 -> service_catalog.row_4: "観測"
 
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.kokoro
+service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.cerebras
 service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm
 service_catalog.row_2.10_inference.openclaw -> service_catalog.row_2.10_inference.litellm
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.open_terminal
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.mcpo
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.searxng
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.oikb
-service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.20_owui.oikb_rustfs
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.11_rag.docling
-service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.11_rag.qdrant
+service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.open_terminal
+service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.mcpo
+service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.searxng
+service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.oikb
+service_catalog.row_3.20_owui.oikb -> service_catalog.row_3.20_owui.oikb_rustfs
+# service_catalog.row_3.20_owui.open_webui -> service_catalog.row_2.11_rag.docling
+# service_catalog.row_3.20_owui.open_webui -> service_catalog.row_2.11_rag.qdrant
 
-service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.30_nextcloud.nextcloud
+service_catalog.row_3.20_owui.oikb -> service_catalog.row_3.30_nextcloud.nextcloud
 
-service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheus
-service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.llm_quota_exporter
-
-# service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_1.01_keycloak.oidc: "auth"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.30_nextcloud.nextcloud: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.33_zulip.zulip: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.39_leantime.leantime: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
-# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.51_langfuse.langfuse: "OIDC"
-
-# service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_1.40_obsidian.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_3.50_o11y.metrics: "OTLP metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_2.20_owui.searxng -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_2.30_nextcloud.nextcloud -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_2.34_gitea.gitea -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_3.51_langfuse.langfuse -> service_catalog.row_3.50_o11y.metrics: "metrics" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_3.50_o11y.metrics -> service_catalog.row_3.50_o11y.prometheus: "scrape / push" {
-#   style.stroke-dash: 4
-# }
-# service_catalog.row_3.50_o11y.prometheus -> service_catalog.row_3.50_o11y.grafana: "datasource"
-
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama: "chat models"
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei: "embedding / reranking"
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter: "external LLM API"
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio: "external LLM API"
-# service_catalog.row_2.10_inference.litellm -> service_catalog.row_3.51_langfuse.langfuse: "LLM traces"
-# service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm: "LLM API"
-
-# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.10_inference.litellm: "LLM / RAG API"
-# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.10_inference.hermes_agent: "agent API"
-# service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.integrations: "uses"
-# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.20_owui.open_terminal: "terminal"
-# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.11_rag.docling: "content extraction"
-# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.20_owui.searxng: "web search"
-# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.11_rag.qdrant: "vector store"
-# service_catalog.row_2.20_owui.integrations -> service_catalog.row_2.10_inference.kokoro: "TTS"
+service_catalog.row_4.50_o11y.grafana -> service_catalog.row_4.50_o11y.prometheus
+service_catalog.row_4.50_o11y.prometheus -> service_catalog.row_4.50_o11y.llm_quota_exporter
