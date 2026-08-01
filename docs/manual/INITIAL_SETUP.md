@@ -15,7 +15,7 @@ Keycloakの初回ログインから、Open-WebUIのKnowledge作成、OIKB連携�
 
 ```bash
 # 初回設定に必要なprofileを起動する。
-sudo docker compose --env-file .env --profile common --profile pubnet --profile inference --profile rag --profile owui --profile nextcloud up -d
+sudo docker compose --env-file .env --profile common --profile keycloak --profile pubnet --profile inference --profile rag --profile owui --profile nextcloud up -d
 ```
 
 期待結果:
@@ -33,7 +33,7 @@ sudo docker compose --env-file .env --profile common --profile pubnet --profile 
 
 ```bash
 # 初回設定に必要な主要serviceの状態を確認する。
-sudo docker compose --env-file .env --profile common --profile rag --profile owui --profile nextcloud ps keycloak open-webui nextcloud oikb-rustfs oikb
+sudo docker compose --env-file .env --profile common --profile keycloak --profile rag --profile owui --profile nextcloud ps keycloak open-webui nextcloud oikb-rustfs oikb
 ```
 
 ## 2. Keycloakへ初回ログインする

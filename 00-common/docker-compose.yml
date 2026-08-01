@@ -2,9 +2,8 @@
 # 参考資料:
 # - Homepage
 #   - https://gethomepage.dev/installation/docker/
-# - Keycloak
-#   - https://www.keycloak.org/getting-started/getting-started-docker
-#   - https://www.keycloak.org/server/supported-configurations
+# - whoami
+#   - https://hub.docker.com/r/traefik/whoami
 #
 services:
   homepage:
@@ -13,6 +12,8 @@ services:
     restart: unless-stopped
     ports:
       - 30000:3000
+    profiles:
+      - common
     volumes:
       - ./homepage:/app/config # Make sure your local config directory exists
       - ./homepage/icons:/app/public/icons:ro # 外部アイコン取得を避ける設定でローカル配信する
@@ -31,158 +32,22 @@ services:
       - homepage.description=Dashboard
       - homepage.icon=/icons/homepage.png
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.7.0
-    container_name: ${STACK_NAME:-inferlab}-keycloak
+  whoami:
+    image: docker.io/traefik/whoami:${WHOAMI_IMAGE_TAG:-v1.11}
+    container_name: ${STACK_NAME:-inferlab}-whoami
     restart: unless-stopped
     profiles:
       - common
-    entrypoint:
-      - /bin/sh
-      - -c
-    command:
-      - sh /opt/keycloak/import-realm.sh
-    environment:
-      # 全般.
-      STACK_NAME: ${STACK_NAME:-inferlab}
-      PUBLIC_HOST: ${PUBLIC_HOST}
-      # ホスト名設定.
-      KC_HOSTNAME: http://${PUBLIC_HOST}:30001
-      # DB接続.
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloak_password
-      # 初期管理者.
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      # inferlab realmのadminユーザー.
-      KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
-      # OIDCクライアント.
-      GRAFANA_HTTP_HOST_PORT: ${GRAFANA_HTTP_HOST_PORT:-35000}
-      OPEN_WEBUI_OIDC_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
-      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
-      LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
-      LEANTIME_OIDC_CLIENT_SECRET: ${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}
-      BOOKSTACK_OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
-      GRAFANA_OIDC_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}
-      # TLS終端設定.
-      KC_HTTP_ENABLED: "true"
-      # KC_PROXY_HEADERS: xforwarded
-      # ヘルスチェックエンドポイントの有効化.
-      KC_HEALTH_ENABLED: "true"
-      # Prometheus metricsを管理ポートで公開する。
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_SCHEME: http
     ports:
-      - 30001:8080
-    volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import-template/inferlab-realm.json:ro
-      - ./keycloak/import-realm.sh:/opt/keycloak/import-realm.sh:ro
+      - ${WHOAMI_HTTP_HOST_PORT:-30003}:80
     networks:
       - internal-nw
-    depends_on:
-      keycloak-postgres:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
     labels:
-      - homepage.icon=/icons/keycloak.png
       - homepage.group=00-common
-      - homepage.name=Keycloak
-      - homepage.href=http://${PUBLIC_HOST}:30001
-      - homepage.description=Identity and Access Management
-
-  keycloak-https:
-    image: quay.io/keycloak/keycloak:26.7.0
-    container_name: ${STACK_NAME:-inferlab}-keycloak-https
-    restart: unless-stopped
-    profiles:
-      - common
-    command:
-      - start
-    environment:
-      # ホスト名設定.
-      KC_HOSTNAME: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
-      # DB接続.
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloak_password
-      # 初期管理者.
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      # HTTPS終端設定.
-      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
-      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
-      JAVA_OPTS_APPEND: -Dquarkus.http.limits.max-header-size=${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
-      # ヘルスチェックエンドポイントの有効化.
-      KC_HEALTH_ENABLED: "true"
-      # Prometheus metricsを管理ポートでHTTP公開する。
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_SCHEME: http
-    ports:
-      - ${KEYCLOAK_HTTPS_HOST_PORT:-30002}:8443
-    volumes:
-      - ./keycloak/certs:/opt/keycloak/certs:ro
-    networks:
-      - internal-nw
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      keycloak-postgres:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8443'
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    labels:
-      - homepage.icon=/icons/keycloak.png
-      - homepage.group=00-common
-      - homepage.name=Keycloak HTTPS
-      - homepage.href=https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
-      - homepage.description=HTTPS issuer for OIDC clients
-
-  keycloak-postgres:
-    image: docker.io/library/postgres:18.4-trixie
-    container_name: ${STACK_NAME:-inferlab}-keycloak-postgres
-    restart: unless-stopped
-    profiles:
-      - common
-    environment:
-      POSTGRES_DB: keycloak_db
-      POSTGRES_USER: keycloak_user
-      POSTGRES_PASSWORD: keycloak_password
-    volumes:
-      - keycloak_postgres_data:/var/lib/postgresql
-    networks:
-      - internal-nw
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -U keycloak_user -d keycloak_db
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    labels:
-      - homepage.icon=/icons/postgresql.png
-      - homepage.group=00-common
-      - homepage.name=Keycloak-Postgres
-      - homepage.description=Relational database
-
-volumes:
-  keycloak_postgres_data:
+      - homepage.name=whoami
+      - homepage.href=http://${PUBLIC_HOST}:${WHOAMI_HTTP_HOST_PORT:-30003}
+      - homepage.description=HTTP request echo endpoint
+      - homepage.icon=/icons/docker.png
 
 networks:
   internal-nw:

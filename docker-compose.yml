@@ -2,7 +2,8 @@ name: ${STACK_NAME:-inferlab}
 
 include:
   - ./00-common/docker-compose.yml
-  - ./01-pubnet/docker-compose.yml
+  - ./01-keycloak/docker-compose.yml
+  - ./02-pubnet/docker-compose.yml
   - ./10-inference/docker-compose.yml
   - ./11-rag/docker-compose.yml
   - ./12-registry/docker-compose.yml

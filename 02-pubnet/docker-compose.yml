@@ -37,7 +37,7 @@ services:
       start_period: 10s
     labels:
       - homepage.icon=/icons/cloudflared.png
-      - homepage.group=01-pubnet
+      - homepage.group=02-pubnet
       - homepage.name=Cloudflare
       - homepage.description=Secure outband tunnel
 

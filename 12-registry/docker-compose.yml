@@ -10,10 +10,31 @@
 #   - https://salsa.debian.org/debian/reprepro
 # - code-marketplace
 #   - https://github.com/coder/code-marketplace
+# - registry
+#   - https://hub.docker.com/_/registry
 #
 name: ${STACK_NAME:-inferlab}
 
 services:
+  docker-registry:
+    image: docker.io/library/registry:${DOCKER_REGISTRY_IMAGE_TAG:-3}
+    container_name: ${STACK_NAME:-inferlab}-docker-registry
+    restart: unless-stopped
+    profiles:
+      - registry
+    ports:
+      - ${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}:5000
+    volumes:
+      - docker-registry-data:/var/lib/registry
+    networks:
+      - internal-nw
+    labels:
+      - homepage.group=12-registry
+      - homepage.name=Docker Registry
+      - homepage.href=http://${PUBLIC_HOST}:${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}/v2/
+      - homepage.description=Container image registry
+      - homepage.icon=/icons/docker.png
+
   pypiserver:
     image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-latest}
     container_name: ${STACK_NAME:-inferlab}-pypiserver
@@ -109,7 +130,7 @@ services:
       - homepage.name=Code Marketplace
       - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}/api
       - homepage.description=VS Code extension marketplace
-      - homepage.icon=/icons/mdi-file-code.png
+      - homepage.icon=/icons/visual-studio-code.png
 
   code-marketplace-importer:
     image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
@@ -275,6 +296,7 @@ services:
 
 volumes:
   code-marketplace-extensions:
+  docker-registry-data:
   verdaccio-storage:
 
 networks:

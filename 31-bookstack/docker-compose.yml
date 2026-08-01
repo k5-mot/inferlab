@@ -35,7 +35,7 @@ services:
       - "${BOOKSTACK_HOST_PORT:-33100}:80"
     volumes:
       - bookstack-config:/config
-      - ../00-common/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
+      - ../01-keycloak/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
       - ./custom-cont-init.d:/custom-cont-init.d:ro
     networks:
       - internal-nw

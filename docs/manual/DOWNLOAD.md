@@ -122,8 +122,8 @@ sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 ## 6. stackを起動する
 
 ```bash
-# nextcloud profileとowui profileを含めてstackを起動する。
-sudo docker compose --env-file .env --profile common --profile nextcloud --profile owui up -d
+# keycloak profile、nextcloud profile、owui profileを含めてstackを起動する。
+sudo docker compose --env-file .env --profile common --profile keycloak --profile nextcloud --profile owui up -d
 
 # NextcloudとOIKBの状態を確認する。
 sudo docker compose --env-file .env --profile nextcloud --profile owui ps nextcloud oikb
@@ -144,7 +144,7 @@ sudo docker compose --env-file .env --profile nextcloud --profile owui ps nextcl
 
 ```bash
 # 起動済みstackを停止する。
-sudo docker compose --env-file .env --profile common --profile nextcloud --profile owui down
+sudo docker compose --env-file .env --profile common --profile keycloak --profile nextcloud --profile owui down
 ```
 
 期待結果:

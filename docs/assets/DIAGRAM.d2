@@ -62,6 +62,25 @@ service_catalog: {
         }
       }
 
+      whoami: {
+        label: "whoami\n30003"
+        icon: "../../00-common/homepage/icons/docker.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0f766e"
+        }
+      }
+    }
+
+    01_keycloak: {
+      label: "01-keycloak"
+      grid-columns: 1
+      style: {
+        fill: "#f0fdfa"
+        stroke: "#0f766e"
+        stroke-width: 2
+      }
+
       keycloak: {
         label: "Keycloak\n30001 / 30002"
         icon: "../../00-common/homepage/icons/keycloak.png"
@@ -72,8 +91,8 @@ service_catalog: {
       }
     }
 
-    01_pubnet: {
-      label: "01-pubnet"
+    02_pubnet: {
+      label: "02-pubnet"
       grid-columns: 1
       style: {
         fill: "#eef2ff"
@@ -100,6 +119,15 @@ service_catalog: {
         stroke-width: 2
       }
 
+      docker_registry: {
+        label: "Docker Registry\n31205"
+        icon: "../../00-common/homepage/icons/docker.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0284c7"
+        }
+      }
+
       pypiserver: {
         label: "PyPI\n31200"
         icon: "../../00-common/homepage/icons/pypi.png"
@@ -120,7 +148,7 @@ service_catalog: {
 
       harbor: {
         label: "Code Marketplace\n31202"
-        icon: "../../00-common/homepage/icons/mdi-warehouse.png"
+        icon: "../../00-common/homepage/icons/visual-studio-code.png"
         style: {
           fill: "#ffffff"
           stroke: "#0284c7"
@@ -540,7 +568,6 @@ service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
 service_catalog.row_2.10_inference.hermes_agent -> service_catalog.row_2.10_inference.litellm
-
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.open_terminal
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.mcpo
 service_catalog.row_2.20_owui.open_webui -> service_catalog.row_2.20_owui.searxng
@@ -553,16 +580,16 @@ service_catalog.row_2.20_owui.oikb -> service_catalog.row_2.30_nextcloud.nextclo
 
 service_catalog.row_3.50_o11y.grafana -> service_catalog.row_3.50_o11y.prometheus
 
-# service_catalog.row_1.00_common.keycloak -> service_catalog.row_1.00_common.oidc: "auth"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.30_nextcloud.nextcloud: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.33_zulip.zulip: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.39_leantime.leantime: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
-# service_catalog.row_1.00_common.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
+# service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_1.01_keycloak.oidc: "auth"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.20_owui.open_webui: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.30_nextcloud.nextcloud: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.33_zulip.zulip: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.39_leantime.leantime: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_2.31_bookstack.bookstack: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.50_o11y.grafana: "OIDC"
+# service_catalog.row_1.01_keycloak.oidc -> service_catalog.row_3.51_llmops.langfuse: "OIDC"
 
-# service_catalog.row_1.00_common.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
+# service_catalog.row_1.01_keycloak.keycloak -> service_catalog.row_3.50_o11y.metrics: "metrics" {
 #   style.stroke-dash: 4
 # }
 # service_catalog.row_1.40_obsidian.couchdb -> service_catalog.row_3.50_o11y.metrics: "metrics" {

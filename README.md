@@ -46,12 +46,13 @@ sudo ./dc.sh up-full --remove-orphans
 
 ## Profile
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`registry`、`owui`、`nextcloud`、`o11y`、`llmops` です。その他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
-| `common` | `00-common/docker-compose.yml` | 共通入口と認証 |
-| `pubnet` | `01-pubnet/docker-compose.yml` | 外部公開ネットワーク |
+| `common` | `00-common/docker-compose.yml` | 共通入口と疎通確認 |
+| `keycloak` | `01-keycloak/docker-compose.yml` | 認証 |
+| `pubnet` | `02-pubnet/docker-compose.yml` | 外部公開ネットワーク |
 | `inference` | `10-inference/docker-compose.yml` | 推論、埋め込み、エージェント、音声合成 |
 | `rag` | `11-rag/docker-compose.yml` | 文書処理とベクトル検索 |
 | `registry` | `12-registry/docker-compose.yml` | 開発用パッケージ配布 |
@@ -73,11 +74,12 @@ sudo ./dc.sh up-full --remove-orphans
 
 | Profile | Service | Port | Compose file |
 | --- | --- | --- | --- |
-| なし | `homepage` | `30000` | `00-common/docker-compose.yml` |
-| `common` | `keycloak` | `30001` | `00-common/docker-compose.yml` |
-| `common` | `keycloak-https` | `${KEYCLOAK_HTTPS_HOST_PORT:-30002}` | `00-common/docker-compose.yml` |
-| `common` | `keycloak-postgres` | - | `00-common/docker-compose.yml` |
-| `pubnet` | `cloudflare` | - | `01-pubnet/docker-compose.yml` |
+| `common` | `homepage` | `30000` | `00-common/docker-compose.yml` |
+| `common` | `whoami` | `${WHOAMI_HTTP_HOST_PORT:-30003}` | `00-common/docker-compose.yml` |
+| `keycloak` | `keycloak` | `30001` | `01-keycloak/docker-compose.yml` |
+| `keycloak` | `keycloak-https` | `${KEYCLOAK_HTTPS_HOST_PORT:-30002}` | `01-keycloak/docker-compose.yml` |
+| `keycloak` | `keycloak-postgres` | - | `01-keycloak/docker-compose.yml` |
+| `pubnet` | `cloudflare` | - | `02-pubnet/docker-compose.yml` |
 | `inference` | `litellm` | `31000` | `10-inference/docker-compose.yml` |
 | `inference` | `ollama` | - | `10-inference/docker-compose.yml` |
 | `inference` | `ollama-init` | - | `10-inference/docker-compose.yml` |
@@ -96,6 +98,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `registry` | `rpm-dist` | `${RPM_REPO_HTTP_HOST_PORT:-31203}` | `12-registry/docker-compose.yml` |
 | `registry` | `reprepro` | - | `12-registry/docker-compose.yml` |
 | `registry` | `deb-dist` | `${DEB_REPO_HTTP_HOST_PORT:-31204}` | `12-registry/docker-compose.yml` |
+| `registry` | `docker-registry` | `${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}` | `12-registry/docker-compose.yml` |
 | `owui` | `open-webui` | `32000` | `20-owui/docker-compose.yml` |
 | `owui` | `open-terminal` | `32003` | `20-owui/docker-compose.yml` |
 | `owui` | `mcpo` | `32004` | `20-owui/docker-compose.yml` |

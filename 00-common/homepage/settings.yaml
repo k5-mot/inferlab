@@ -8,66 +8,70 @@
 
 layout:
   - 00-common:
-      icon: /icons/mdi-home.png
+      icon: /icons/homepage.png
       style: row
       columns: 4
-  - 01-pubnet:
+  - 01-keycloak:
+      icon: /icons/keycloak.png
+      style: row
+      columns: 4
+  - 02-pubnet:
       icon: /icons/mdi-cloud.png
       style: row
       columns: 4
   - 10-inference:
-      icon: /icons/mdi-brain.png
+      icon: /icons/litellm.png
       style: row
       columns: 4
   - 11-rag:
-      icon: /icons/mdi-web.png
+      icon: /icons/docling.png
       style: row
       columns: 4
   - 12-registry:
-      icon: /icons/mdi-warehouse.png
+      icon: /icons/docker.png
       style: row
       columns: 4
   - 20-owui:
-      icon: /icons/mdi-web.png
+      icon: /icons/open-webui.png
       style: row
       columns: 4
   - 21-dify:
-      icon: /icons/mdi-robot.png
+      icon: /icons/dify.png
       style: row
       columns: 4
   - 30-nextcloud:
-      icon: /icons/mdi-nas.png
+      icon: /icons/nextcloud.png
       style: row
       columns: 4
   - 31-bookstack:
-      icon: /icons/mdi-book.png
+      icon: /icons/bookstack.png
       style: row
       columns: 4
   - 32-kaneo:
-      icon: /icons/mdi-bulletin-board.png
+      icon: /icons/kaneo.png
       style: row
       columns: 4
   - 33-zulip:
-      icon: /icons/mdi-chat.png
+      icon: /icons/zulip.png
       style: row
       columns: 4
   - 34-gitea:
-      icon: /icons/mdi-file-code.png
+      icon: /icons/gitea.png
       style: row
       columns: 4
   - 39-leantime:
-      icon: /icons/mdi-bulletin-board.png
+      icon: /icons/leantime.png
       style: row
       columns: 4
   - 40-obsidian:
-      icon: /icons/mdi-database.png
+      icon: /icons/obsidian.png
       style: row
       columns: 4
   - 50-o11y:
-      icon: /icons/mdi-monitor-eye.png
+      icon: /icons/grafana.png
       style: row
       columns: 4
   - 51-llmops:
-      icon: /icons/mdi-monitor-shimmer.png
+      icon: /icons/langfuse.png
       style: row
       columns: 4

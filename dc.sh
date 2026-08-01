@@ -10,6 +10,7 @@ COMMAND="${1:-}"
 # down時、下のprofileから順に停止.
 readonly PROFILES=(
   "common"
+  "keycloak"
   "pubnet"
   "inference"
   "rag"
