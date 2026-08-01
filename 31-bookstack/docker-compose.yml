@@ -36,10 +36,12 @@ services:
     volumes:
       - bookstack-config:/config
       - ../01-keycloak/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
-      - ./custom-cont-init.d:/custom-cont-init.d:ro
+      - bookstack-custom-cont-init:/custom-cont-init.d:ro
     networks:
       - internal-nw
     depends_on:
+      bookstack-custom-init:
+        condition: service_completed_successfully
       bookstack-mariadb:
         condition: service_healthy
     healthcheck:
@@ -56,6 +58,26 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:33100
       - homepage.description=Team documentation wiki
       - homepage.icon=/icons/bookstack.png
+
+  bookstack-custom-init:
+    image: alpine:3.22
+    container_name: ${STACK_NAME:-inferlab}-bookstack-custom-init
+    restart: "no"
+    network_mode: none
+    profiles:
+      - bookstack
+    command:
+      - sh
+      - -ec
+      - |
+        rm -rf /target/*
+        cp -R /source/. /target/
+        chown -R root:root /target
+        find /target -type d -exec chmod 755 {} +
+        find /target -type f -exec chmod 755 {} +
+    volumes:
+      - ./custom-cont-init.d:/source:ro
+      - bookstack-custom-cont-init:/target
 
   bookstack-mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.12
@@ -91,6 +113,7 @@ services:
 
 volumes:
   bookstack-config:
+  bookstack-custom-cont-init:
   bookstack-mariadb-config:
 
 networks:
