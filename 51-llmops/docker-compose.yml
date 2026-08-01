@@ -201,7 +201,7 @@ services:
     volumes:
       - langfuse_rustfs_data:/data
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/minio/health/ready > /dev/null" ]
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:9000/health" ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -219,17 +219,23 @@ services:
     restart: "no"
     profiles:
       - llmops
-    entrypoint:
-      - /bin/sh
-      - -euc
-    command:
-      - >-
-        aws --endpoint-url http://langfuse-rustfs:9000 s3api create-bucket --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}" || aws --endpoint-url http://langfuse-rustfs:9000 s3api head-bucket --bucket "$${LANGFUSE_S3_EVENT_UPLOAD_BUCKET}"
     environment:
       AWS_ACCESS_KEY_ID: ${LANGFUSE_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
       AWS_SECRET_ACCESS_KEY: ${LANGFUSE_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
       AWS_DEFAULT_REGION: us-east-1
-      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse-bucket}
+      AWS_ENDPOINT_URL: http://langfuse-rustfs:9000
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_PAGER: ""
+      RUSTFS_DEFAULT_BUCKET: langfuse-bucket
+    entrypoint: [ "/bin/sh", "-euc" ]
+    command:
+      - |
+        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
+          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
+        else
+          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
+          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
+        fi
     networks:
       - internal-nw
     depends_on:
