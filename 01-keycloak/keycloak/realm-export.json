@@ -53,14 +53,16 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "http://${PUBLIC_HOST}:31100/",
+            "rootUrl": "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/",
             "redirectUris": [
-                "http://localhost:31100/oauth/oidc/callback",
-                "http://${PUBLIC_HOST}:31100/oauth/oidc/callback"
+                "http://localhost:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback",
+                "http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback",
+                "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback"
             ],
             "webOrigins": [
-                "http://localhost:31100",
-                "http://${PUBLIC_HOST}:31100"
+                "http://localhost:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}",
+                "http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}",
+                "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}"
             ],
             "protocolMappers": [
                 {
@@ -299,16 +301,16 @@
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": false,
             "serviceAccountsEnabled": false,
-            "rootUrl": "https://${PUBLIC_HOST}:33300/",
+            "rootUrl": "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/",
             "redirectUris": [
-                "https://localhost:33300/complete/oidc/",
-                "https://127.0.0.1:33300/complete/oidc/",
-                "https://${PUBLIC_HOST}:33300/complete/oidc/"
+                "https://localhost:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/",
+                "https://127.0.0.1:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/",
+                "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/"
             ],
             "webOrigins": [
-                "https://localhost:33300",
-                "https://127.0.0.1:33300",
-                "https://${PUBLIC_HOST}:33300"
+                "https://localhost:${ZULIP_HTTPS_HOST_PORT:-33300}",
+                "https://127.0.0.1:${ZULIP_HTTPS_HOST_PORT:-33300}",
+                "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}"
             ],
             "protocolMappers": [
                 {

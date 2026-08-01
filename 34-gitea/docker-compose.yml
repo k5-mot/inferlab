@@ -31,6 +31,9 @@ services:
       GITEA__security__INTERNAL_TOKEN: ${GITEA_INTERNAL_TOKEN:-sk-gitea-internal-token-change-me}
       GITEA__service__DISABLE_REGISTRATION: ${GITEA_DISABLE_REGISTRATION:-true}
       GITEA__service__REQUIRE_SIGNIN_VIEW: ${GITEA_REQUIRE_SIGNIN_VIEW:-false}
+      GITEA__oauth2_client__ENABLE_AUTO_REGISTRATION: ${GITEA_OAUTH2_ENABLE_AUTO_REGISTRATION:-true}
+      GITEA__oauth2_client__USERNAME: ${GITEA_OAUTH2_USERNAME:-preferred_username}
+      GITEA__oauth2_client__OPENID_CONNECT_SCOPES: ${GITEA_OAUTH2_OPENID_CONNECT_SCOPES:-email profile}
       GITEA__repository__DEFAULT_BRANCH: main
       GITEA__metrics__ENABLED: ${GITEA_METRICS_ENABLED:-true}
       GITEA__metrics__ENABLED_ISSUE_BY_LABEL: "false"
@@ -59,6 +62,55 @@ services:
       - homepage.name=Gitea
       - homepage.href=http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}
       - homepage.description=Git hosting platform
+
+  gitea-keycloak-init:
+    image: docker.gitea.com/gitea:1.27.0
+    container_name: ${STACK_NAME:-inferlab}-gitea-keycloak-init
+    restart: "no"
+    profiles:
+      - gitea
+    user: git
+    command:
+      - sh
+      - -euc
+      - |
+        auth_id="$$(gitea admin auth list --config /data/gitea/conf/app.ini | awk '$$2 == "keycloak" { print $$1; exit }')"
+        if [ -n "$${auth_id}" ]; then
+          gitea admin auth update-oauth \
+            --config /data/gitea/conf/app.ini \
+            --id "$${auth_id}" \
+            --name keycloak \
+            --provider openidConnect \
+            --key gitea \
+            --secret "$${GITEA_OIDC_CLIENT_SECRET}" \
+            --auto-discover-url "$${GITEA_OIDC_DISCOVERY_URL}" \
+            --scopes openid \
+            --scopes email \
+            --scopes profile \
+            --group-claim-name groups
+        else
+          gitea admin auth add-oauth \
+            --config /data/gitea/conf/app.ini \
+            --name keycloak \
+            --provider openidConnect \
+            --key gitea \
+            --secret "$${GITEA_OIDC_CLIENT_SECRET}" \
+            --auto-discover-url "$${GITEA_OIDC_DISCOVERY_URL}" \
+            --scopes openid \
+            --scopes email \
+            --scopes profile \
+            --group-claim-name groups
+        fi
+    environment:
+      GITEA_OIDC_CLIENT_SECRET: ${GITEA_OIDC_CLIENT_SECRET:-sk-gitea-oidc-client-secret-key}
+      GITEA_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+    volumes:
+      - gitea_data:/data
+    networks:
+      - internal-nw
+    depends_on:
+      gitea:
+        condition: service_healthy
 
   gitea-postgres:
     image: docker.io/library/postgres:18.4-trixie

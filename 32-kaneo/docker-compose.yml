@@ -6,14 +6,21 @@ services:
     profiles:
       - kaneo
     environment:
-      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:33200
+      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}
+      KANEO_API_URL: http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}
       POSTGRES_DB: kaneo
       POSTGRES_USER: kaneo
       POSTGRES_PASSWORD: ${KANEO_POSTGRES_PASSWORD:-kaneo_password}
       DATABASE_URL: postgresql://kaneo:${KANEO_POSTGRES_PASSWORD:-kaneo_password}@kaneo-postgres:5432/kaneo
       AUTH_SECRET: ${KANEO_AUTH_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+      CUSTOM_OAUTH_CLIENT_ID: kaneo
+      CUSTOM_OAUTH_CLIENT_SECRET: ${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}
+      CUSTOM_OAUTH_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      CUSTOM_OAUTH_LOGOUT_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      CUSTOM_OAUTH_SCOPES: openid,profile,email
+      DISABLE_PASSWORD_REGISTRATION: ${KANEO_DISABLE_PASSWORD_REGISTRATION:-true}
     ports:
-      - 33200:5173
+      - "${KANEO_HTTP_HOST_PORT:-33200}:5173"
     networks:
       - internal-nw
     depends_on:

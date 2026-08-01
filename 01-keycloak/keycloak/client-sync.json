@@ -1,0 +1,419 @@
+{
+    "ifResourceExists": "OVERWRITE",
+    "clients": [
+        {
+            "clientId": "open-webui",
+            "name": "Open WebUI",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/",
+            "redirectUris": [
+                "http://localhost:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback",
+                "http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback",
+                "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}",
+                "http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}",
+                "http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "dify",
+            "name": "Dify",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${DIFY_OIDC_CLIENT_SECRET:-sk-dify-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${DIFY_HTTP_HOST_PORT:-32100}/",
+            "redirectUris": [
+                "http://localhost:${DIFY_HTTP_HOST_PORT:-32100}/console/api/oauth/authorize/keycloak",
+                "http://127.0.0.1:${DIFY_HTTP_HOST_PORT:-32100}/console/api/oauth/authorize/keycloak",
+                "http://${PUBLIC_HOST}:${DIFY_HTTP_HOST_PORT:-32100}/console/api/oauth/authorize/keycloak"
+            ],
+            "webOrigins": [
+                "http://localhost:${DIFY_HTTP_HOST_PORT:-32100}",
+                "http://127.0.0.1:${DIFY_HTTP_HOST_PORT:-32100}",
+                "http://${PUBLIC_HOST}:${DIFY_HTTP_HOST_PORT:-32100}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "langfuse",
+            "name": "Langfuse",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "redirectUris": [
+                "http://localhost:${LANGFUSE_HTTP_HOST_PORT:-35100}/api/auth/callback/keycloak",
+                "http://localhost:${LANGFUSE_HTTP_HOST_PORT:-35100}/*",
+                "http://127.0.0.1:${LANGFUSE_HTTP_HOST_PORT:-35100}/api/auth/callback/keycloak",
+                "http://127.0.0.1:${LANGFUSE_HTTP_HOST_PORT:-35100}/*",
+                "http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT:-35100}/api/auth/callback/keycloak",
+                "http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT:-35100}/*"
+            ],
+            "webOrigins": [
+                "http://localhost:${LANGFUSE_HTTP_HOST_PORT:-35100}",
+                "http://127.0.0.1:${LANGFUSE_HTTP_HOST_PORT:-35100}",
+                "http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT:-35100}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "nextcloud",
+            "name": "Nextcloud",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/",
+            "attributes": {
+                "post.logout.redirect.uris": "+"
+            },
+            "redirectUris": [
+                "http://localhost:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/apps/user_oidc/code",
+                "http://127.0.0.1:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/apps/user_oidc/code",
+                "http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/apps/user_oidc/code",
+                "http://localhost:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/login",
+                "http://127.0.0.1:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/login",
+                "http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/login"
+            ],
+            "webOrigins": [
+                "http://localhost:${NEXTCLOUD_HTTP_HOST_PORT:-33000}",
+                "http://127.0.0.1:${NEXTCLOUD_HTTP_HOST_PORT:-33000}",
+                "http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "bookstack",
+            "name": "BookStack",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT:-33100}/",
+            "redirectUris": [
+                "http://localhost:${BOOKSTACK_HOST_PORT:-33100}/oidc/callback",
+                "http://127.0.0.1:${BOOKSTACK_HOST_PORT:-33100}/oidc/callback",
+                "http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT:-33100}/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:${BOOKSTACK_HOST_PORT:-33100}",
+                "http://127.0.0.1:${BOOKSTACK_HOST_PORT:-33100}",
+                "http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT:-33100}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "kaneo",
+            "name": "Kaneo",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}/",
+            "redirectUris": [
+                "http://localhost:${KANEO_HTTP_HOST_PORT:-33200}/api/auth/oauth2/callback/custom",
+                "http://127.0.0.1:${KANEO_HTTP_HOST_PORT:-33200}/api/auth/oauth2/callback/custom",
+                "http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}/api/auth/oauth2/callback/custom"
+            ],
+            "webOrigins": [
+                "http://localhost:${KANEO_HTTP_HOST_PORT:-33200}",
+                "http://127.0.0.1:${KANEO_HTTP_HOST_PORT:-33200}",
+                "http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "zulip",
+            "name": "Zulip",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/",
+            "redirectUris": [
+                "https://localhost:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/",
+                "https://127.0.0.1:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/",
+                "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/complete/oidc/"
+            ],
+            "webOrigins": [
+                "https://localhost:${ZULIP_HTTPS_HOST_PORT:-33300}",
+                "https://127.0.0.1:${ZULIP_HTTPS_HOST_PORT:-33300}",
+                "https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "gitea",
+            "name": "Gitea",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${GITEA_OIDC_CLIENT_SECRET:-sk-gitea-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}/",
+            "redirectUris": [
+                "http://localhost:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/keycloak/callback",
+                "http://127.0.0.1:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/keycloak/callback",
+                "http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/keycloak/callback",
+                "http://localhost:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/Keycloak/callback",
+                "http://127.0.0.1:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/Keycloak/callback",
+                "http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}/user/oauth2/Keycloak/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:${GITEA_HTTP_HOST_PORT:-33400}",
+                "http://127.0.0.1:${GITEA_HTTP_HOST_PORT:-33400}",
+                "http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "leantime",
+            "name": "Leantime",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${LEANTIME_HTTP_HOST_PORT:-33900}/",
+            "redirectUris": [
+                "http://localhost:${LEANTIME_HTTP_HOST_PORT:-33900}/oidc/callback",
+                "http://127.0.0.1:${LEANTIME_HTTP_HOST_PORT:-33900}/oidc/callback",
+                "http://${PUBLIC_HOST}:${LEANTIME_HTTP_HOST_PORT:-33900}/oidc/callback"
+            ],
+            "webOrigins": [
+                "http://localhost:${LEANTIME_HTTP_HOST_PORT:-33900}",
+                "http://127.0.0.1:${LEANTIME_HTTP_HOST_PORT:-33900}",
+                "http://${PUBLIC_HOST}:${LEANTIME_HTTP_HOST_PORT:-33900}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "clientId": "grafana",
+            "name": "Grafana",
+            "enabled": true,
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "clientAuthenticatorType": "client-secret",
+            "secret": "${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "rootUrl": "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/",
+            "attributes": {
+                "post.logout.redirect.uris": "+"
+            },
+            "redirectUris": [
+                "http://localhost:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth",
+                "http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth",
+                "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/login/generic_oauth"
+            ],
+            "webOrigins": [
+                "http://localhost:${GRAFANA_HTTP_HOST_PORT:-35000}",
+                "http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT:-35000}",
+                "http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}"
+            ],
+            "protocolMappers": [
+                {
+                    "name": "groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-group-membership-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "groups",
+                        "full.path": "false",
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
+        }
+    ]
+}

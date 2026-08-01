@@ -33,12 +33,25 @@ services:
       # inferlab realmのadminユーザー.
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       # OIDCクライアント.
+      OPEN_WEBUI_HTTP_HOST_PORT: ${OPEN_WEBUI_HTTP_HOST_PORT:-32000}
+      DIFY_HTTP_HOST_PORT: ${DIFY_HTTP_HOST_PORT:-32100}
+      NEXTCLOUD_HTTP_HOST_PORT: ${NEXTCLOUD_HTTP_HOST_PORT:-33000}
+      BOOKSTACK_HOST_PORT: ${BOOKSTACK_HOST_PORT:-33100}
+      KANEO_HTTP_HOST_PORT: ${KANEO_HTTP_HOST_PORT:-33200}
+      ZULIP_HTTPS_HOST_PORT: ${ZULIP_HTTPS_HOST_PORT:-33300}
+      GITEA_HTTP_HOST_PORT: ${GITEA_HTTP_HOST_PORT:-33400}
+      LEANTIME_HTTP_HOST_PORT: ${LEANTIME_HTTP_HOST_PORT:-33900}
       GRAFANA_HTTP_HOST_PORT: ${GRAFANA_HTTP_HOST_PORT:-35000}
+      LANGFUSE_HTTP_HOST_PORT: ${LANGFUSE_HTTP_HOST_PORT:-35100}
       OPEN_WEBUI_OIDC_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
+      DIFY_OIDC_CLIENT_SECRET: ${DIFY_OIDC_CLIENT_SECRET:-sk-dify-oidc-client-secret-key}
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
       LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
       LEANTIME_OIDC_CLIENT_SECRET: ${LEANTIME_OIDC_CLIENT_SECRET:-sk-leantime-oidc-client-secret-key}
       BOOKSTACK_OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
+      KANEO_OIDC_CLIENT_SECRET: ${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}
+      ZULIP_OIDC_CLIENT_SECRET: ${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}
+      GITEA_OIDC_CLIENT_SECRET: ${GITEA_OIDC_CLIENT_SECRET:-sk-gitea-oidc-client-secret-key}
       GRAFANA_OIDC_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}
       # TLS終端設定.
       KC_HTTP_ENABLED: "true"
@@ -52,6 +65,7 @@ services:
       - 30001:8080
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import-template/inferlab-realm.json:ro
+      - ./keycloak/client-sync.json:/opt/keycloak/data/import-template/client-sync.json:ro
       - ./keycloak/import-realm.sh:/opt/keycloak/import-realm.sh:ro
     networks:
       - internal-nw
