@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     profiles:
       - zulip
+    mem_limit: ${ZULIP_MEM_LIMIT:-4g}
+    memswap_limit: ${ZULIP_MEMSWAP_LIMIT:-4g}
     environment:
       CERTIFICATES: self-signed
       TZ: Asia/Tokyo
@@ -21,6 +23,8 @@ services:
       CONFIG_postgresql__database_user: zulip
       CONFIG_postgresql__database_name: zulip
       CONFIG_http_proxy__allow_addresses: ${PUBLIC_HOST}
+      CONFIG_application_server__uwsgi_processes: ${ZULIP_UWSGI_PROCESSES:-4}
+      CONFIG_application_server__queue_workers_multiprocess: ${ZULIP_QUEUE_WORKERS_MULTIPROCESS:-false}
       SETTING_MEMCACHED_LOCATION: zulip-memcached:11211
       SETTING_RABBITMQ_HOST: zulip-rabbitmq
       SETTING_REDIS_HOST: zulip-redis
