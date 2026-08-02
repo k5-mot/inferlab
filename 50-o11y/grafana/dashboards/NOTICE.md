@@ -11,35 +11,20 @@
 
 | 対象 | 配置先 | 提供元 | License | 取得日 | 変更内容 |
 | --- | --- | --- | --- | --- | --- |
-| AMD Device Metrics Exporter | `services/amd-dashboard_gpu.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `services/amd-dashboard_job.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `services/amd-dashboard_node.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `services/amd-dashboard_overview.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| AMD Device Metrics Exporter | `services/amd-dashboard_system.json` | ROCm/device-metrics-exporter | Apache-2.0 | 2026-07-26 | Grafana provisioning用にdatasource参照を`Prometheus`へ変更した。 |
-| NVIDIA DCGM Exporter | `services/nvidia-dcgm-exporter-dashboard.json` | NVIDIA/dcgm-exporter | Apache-2.0 | 2026-07-26 | 変更なし。 |
+| なし | - | - | - | - | Services folderは自作dashboardだけを配置する。 |
 
 ## 自作Dashboard
 
 | 対象 | 配置先 | 生成元 | License | 作成日 | 備考 |
 | --- | --- | --- | --- | --- | --- |
-| Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metricsとscrape状態を表示する。 |
 | Cloudflared | `services/cloudflared.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Tunnel metricsとscrape状態を表示する。 |
-| Keycloak | `services/keycloak.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | 管理port metricsとscrape状態を表示する。 |
 | CouchDB | `services/couchdb.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Prometheus endpoint metricsとscrape状態を表示する。 |
+| GPU | `services/gpu.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | NVIDIA DCGMとAMD Device Metrics Exporterの代表metricsを表示する。 |
+| Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | repository、issue、runtime metricsを表示する。 |
+| Keycloak | `services/keycloak.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | HTTP、DB pool、cache、JVM metricsを表示する。 |
+| LLM Free Quota | `services/llm-free-quota.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | OpenRouter、Ollama Cloud、Google AI Studio、Cerebrasの無料枠meterを表示する。 |
 | Nextcloud | `services/nextcloud.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenMetrics endpoint metricsとscrape状態を表示する。 |
-| Text Embeddings Inference | `services/text-embeddings-inference.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Inference endpoint metricsとscrape状態を表示する。 |
-| LiteLLM | `services/litellm.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | LiteLLM Prometheus metricsとscrape状態を表示する。 |
-| LLM Quota | `services/llm-quota-overview.json` | `llm-quota-grafana-starter.zip` | 自作starterをローカル構成へ統合 | 2026-08-01 | Prometheus datasourceとInferLabのo11y profileに合わせて組み込んだ。 |
-| SearXNG | `services/searxng.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | SearXNG metrics endpointのscrape状態を表示する。 |
-| Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Gitea metricsとscrape状態を表示する。 |
-| Qdrant | `services/qdrant.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | REST/gRPC metricsとscrape状態を表示する。 |
-| PostgreSQL Exporters | `services/postgres-exporters.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | postgres_exporter metricsとscrape状態を表示する。 |
-| Redis Exporters | `services/redis-exporters.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | redis_exporter metricsとscrape状態を表示する。 |
-| MySQL Exporters | `services/mysqld-exporters.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | mysqld_exporter metricsとscrape状態を表示する。 |
-| RabbitMQ | `services/rabbitmq.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | rabbitmq_prometheus metricsとscrape状態を表示する。 |
-| ClickHouse | `services/clickhouse.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | ClickHouse Prometheus protocol metricsとscrape状態を表示する。 |
-| MinIO | `services/minio.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | MinIO metricsとscrape状態を表示する。 |
-| HTTP Probes | `services/http-probes.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | blackbox exporterのprobe結果を表示する。 |
+| Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metrics、user数、route hotspotを表示する。 |
 
 ## 採用候補
 

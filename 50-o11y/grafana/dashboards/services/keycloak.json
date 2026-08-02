@@ -562,7 +562,7 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "eps"
         },
         "overrides": []
       },
@@ -586,29 +586,13 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "agroal_active_count{job=\"keycloak\"}",
+          "expr": "sum by (instance) (rate(http_server_errors_total{job=\"keycloak\"}[5m]))",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}} active"
-        },
-        {
-          "datasource": "Prometheus",
-          "editorMode": "code",
-          "expr": "agroal_available_count{job=\"keycloak\"}",
-          "range": true,
-          "refId": "B",
-          "legendFormat": "{{instance}} available"
-        },
-        {
-          "datasource": "Prometheus",
-          "editorMode": "code",
-          "expr": "agroal_awaiting_count{job=\"keycloak\"}",
-          "range": true,
-          "refId": "C",
-          "legendFormat": "{{instance}} awaiting"
+          "legendFormat": "{{instance}}"
         }
       ],
-      "title": "Database Pool",
+      "title": "HTTP Error Rate",
       "type": "timeseries",
       "id": 8,
       "gridPos": {
@@ -690,13 +674,29 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "sum by (cache, result) (rate(cache_gets_total{job=\"keycloak\"}[5m]))",
+          "expr": "agroal_active_count{job=\"keycloak\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{cache}} {{result}}"
+          "legendFormat": "{{instance}} active"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "agroal_available_count{job=\"keycloak\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "{{instance}} available"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "agroal_awaiting_count{job=\"keycloak\"}",
+          "range": true,
+          "refId": "C",
+          "legendFormat": "{{instance}} awaiting"
         }
       ],
-      "title": "Cache Gets",
+      "title": "Database Pool",
       "type": "timeseries",
       "id": 9,
       "gridPos": {
@@ -704,6 +704,278 @@
         "w": 8,
         "x": 16,
         "y": 16
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "sum by (cache) (cache_size{job=\"keycloak\"})",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{cache}}"
+        }
+      ],
+      "title": "Cache Size",
+      "type": "timeseries",
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "sum by (area) (jvm_memory_used_bytes{job=\"keycloak\"})",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{area}} used"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "sum by (area) (jvm_memory_max_bytes{job=\"keycloak\"})",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "{{area}} max"
+        }
+      ],
+      "title": "JVM Memory",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "sum by (provider) (rate(keycloak_credentials_password_hashing_validations_total{job=\"keycloak\"}[5m]))",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "title": "Password Hash Validations",
+      "type": "timeseries",
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 24
       }
     }
   ],

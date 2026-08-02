@@ -71,7 +71,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "sum(up{job=\"blackbox-http\"})",
+          "expr": "sum(up{job=\"node\"})",
           "range": true,
           "refId": "A"
         }
@@ -130,7 +130,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "count(up{job=\"blackbox-http\"})",
+          "expr": "count(up{job=\"node\"})",
           "range": true,
           "refId": "A"
         }
@@ -189,7 +189,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "sum(scrape_samples_scraped{job=\"blackbox-http\"})",
+          "expr": "sum(scrape_samples_scraped{job=\"node\"})",
           "range": true,
           "refId": "A"
         }
@@ -276,7 +276,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "scrape_duration_seconds{job=\"blackbox-http\"}",
+          "expr": "scrape_duration_seconds{job=\"node\"}",
           "range": true,
           "refId": "A",
           "legendFormat": "{{instance}}"
@@ -364,7 +364,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "scrape_samples_scraped{job=\"blackbox-http\"}",
+          "expr": "scrape_samples_scraped{job=\"node\"}",
           "range": true,
           "refId": "A",
           "legendFormat": "{{instance}}"
@@ -410,7 +410,7 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "up{job=\"blackbox-http\"}",
+          "expr": "up{job=\"node\"}",
           "range": true,
           "refId": "A"
         }
@@ -490,13 +490,13 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "probe_success{job=\"blackbox-http\"}",
+          "expr": "up{job=~\"nvidia-dcgm-exporter|amd-device-metrics-exporter\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "{{job}} {{instance}}"
         }
       ],
-      "title": "Probe Success",
+      "title": "GPU Exporter Up",
       "type": "timeseries",
       "id": 7,
       "gridPos": {
@@ -554,7 +554,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -578,13 +578,13 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "probe_duration_seconds{job=\"blackbox-http\"}",
+          "expr": "avg by (gpu, gpu_id) (DCGM_FI_DEV_GPU_UTIL) or avg by (gpu_uuid, gpu_id) (amd_gpu_gfx_busy_instantaneous)",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"
         }
       ],
-      "title": "Probe Duration",
+      "title": "GPU Utilization",
       "type": "timeseries",
       "id": 8,
       "gridPos": {
@@ -598,45 +598,352 @@
       "datasource": "Prometheus",
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
-          }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
       "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
+        "legend": {
+          "calcs": [
+            "lastNotNull"
           ],
-          "show": false
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "showHeader": true
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
       },
       "pluginVersion": "13.1.1",
       "targets": [
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "probe_success{job=\"blackbox-http\"}",
+          "expr": "DCGM_FI_DEV_FB_USED * 1024 * 1024 or amd_gpu_used_vram",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"
         }
       ],
-      "title": "Probe Targets",
-      "type": "table",
+      "title": "VRAM Used",
+      "type": "timeseries",
       "id": 9,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
         "y": 16
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_TEMP or amd_gpu_edge_temperature or amd_gpu_junction_temperature",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"
+        }
+      ],
+      "title": "GPU Temperature",
+      "type": "timeseries",
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_POWER_USAGE or amd_gpu_package_power or amd_gpu_average_package_power",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"
+        }
+      ],
+      "title": "GPU Power",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "node_hwmon_temp_celsius{job=\"node\"}",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{chip}} {{sensor}}"
+        }
+      ],
+      "title": "Host Thermal Sensors",
+      "type": "timeseries",
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 24
       }
     }
   ],
@@ -645,7 +952,7 @@
   "tags": [
     "o11y",
     "service",
-    "blackbox-http"
+    "node"
   ],
   "templating": {
     "list": []
@@ -656,8 +963,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "HTTP Probes",
-  "uid": "svc-http-probes",
+  "title": "GPU",
+  "uid": "svc-gpu",
   "version": 1,
   "weekStart": ""
 }

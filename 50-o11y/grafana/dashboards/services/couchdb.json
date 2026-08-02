@@ -490,13 +490,13 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "rate(couchdb_httpd_requests{job=\"couchdb\"}[5m])",
+          "expr": "sum by (method) (rate(couchdb_httpd_request_methods{job=\"couchdb\"}[5m]))",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "{{method}}"
         }
       ],
-      "title": "HTTP Requests",
+      "title": "HTTP Methods",
       "type": "timeseries",
       "id": 7,
       "gridPos": {
@@ -650,6 +650,102 @@
               }
             ]
           },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "rate(couchdb_document_inserts_total{job=\"couchdb\"}[5m])",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "inserts"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "rate(couchdb_document_writes_total{job=\"couchdb\"}[5m])",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "writes"
+        }
+      ],
+      "title": "Document Activity",
+      "type": "timeseries",
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
@@ -674,20 +770,220 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "couchdb_open_databases{job=\"couchdb\"}",
+          "expr": "couchdb_couch_replicator_jobs_running{job=\"couchdb\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "running"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "couchdb_couch_replicator_jobs_pending{job=\"couchdb\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "pending"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "couchdb_couch_replicator_jobs_crashed{job=\"couchdb\"}",
+          "range": true,
+          "refId": "C",
+          "legendFormat": "crashed"
         }
       ],
-      "title": "Open Databases",
+      "title": "Replication Jobs",
       "type": "timeseries",
-      "id": 9,
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "couchdb_erlang_memory_bytes{job=\"couchdb\"}",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{memory}}"
+        }
+      ],
+      "title": "Erlang Memory",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "couchdb_erlang_message_queues{job=\"couchdb\"}",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "queues"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "couchdb_global_changes_listener_pending_updates{job=\"couchdb\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "global changes pending"
+        }
+      ],
+      "title": "Message Queues",
+      "type": "timeseries",
+      "id": 12,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 16
+        "y": 24
       }
     }
   ],

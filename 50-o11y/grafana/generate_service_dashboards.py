@@ -50,7 +50,13 @@ def grid(panel_id: int) -> dict[str, int]:
     return {"h": 8, "w": 8, "x": col * 8, "y": row * 8}
 
 
-def stat_panel(panel_id: int, title: str, expr: str, unit: str = "short") -> dict[str, Any]:
+def stat_panel(
+    panel_id: int,
+    title: str,
+    expr: str,
+    unit: str = "short",
+    grid_pos: dict[str, int] | None = None,
+) -> dict[str, Any]:
     """stat panelを作成する。
 
     Args:
@@ -58,6 +64,7 @@ def stat_panel(panel_id: int, title: str, expr: str, unit: str = "short") -> dic
         title: panel title。
         expr: PromQL式。
         unit: Grafana field unit。
+        grid_pos: 明示的に配置する場合のgridPos。Noneの場合は標準配置。
 
     Returns:
         Grafana dashboard JSONのstat panel定義。
@@ -78,7 +85,7 @@ def stat_panel(panel_id: int, title: str, expr: str, unit: str = "short") -> dic
             },
             "overrides": [],
         },
-        "gridPos": grid(panel_id),
+        "gridPos": grid_pos or grid(panel_id),
         "id": panel_id,
         "options": {
             "colorMode": "background",
@@ -96,7 +103,67 @@ def stat_panel(panel_id: int, title: str, expr: str, unit: str = "short") -> dic
     }
 
 
-def timeseries_panel(panel_id: int, title: str, queries: list[dict[str, str]], unit: str = "short") -> dict[str, Any]:
+def gauge_panel(
+    panel_id: int,
+    title: str,
+    expr: str,
+    unit: str = "percent",
+    grid_pos: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    """gauge panelを作成する。
+
+    Args:
+        panel_id: Grafana panel ID。
+        title: panel title。
+        expr: PromQL式。
+        unit: Grafana field unit。
+        grid_pos: 明示的に配置する場合のgridPos。Noneの場合は標準配置。
+
+    Returns:
+        Grafana dashboard JSONのgauge panel定義。
+    """
+    return {
+        "datasource": DATASOURCE,
+        "fieldConfig": {
+            "defaults": {
+                "color": {"mode": "thresholds"},
+                "max": 100,
+                "min": 0,
+                "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                        {"color": "green", "value": None},
+                        {"color": "yellow", "value": 70},
+                        {"color": "red", "value": 90},
+                    ],
+                },
+                "unit": unit,
+            },
+            "overrides": [],
+        },
+        "gridPos": grid_pos or grid(panel_id),
+        "id": panel_id,
+        "options": {
+            "orientation": "auto",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
+            "showThresholdLabels": False,
+            "showThresholdMarkers": True,
+            "sizing": "auto",
+        },
+        "pluginVersion": "13.1.1",
+        "targets": [target(expr, "A")],
+        "title": title,
+        "type": "gauge",
+    }
+
+
+def timeseries_panel(
+    panel_id: int,
+    title: str,
+    queries: list[dict[str, str]],
+    unit: str = "short",
+    grid_pos: dict[str, int] | None = None,
+) -> dict[str, Any]:
     """time series panelを作成する。
 
     Args:
@@ -104,6 +171,7 @@ def timeseries_panel(panel_id: int, title: str, queries: list[dict[str, str]], u
         title: panel title。
         queries: `expr`と`legend`を含むquery定義の配列。
         unit: Grafana field unit。
+        grid_pos: 明示的に配置する場合のgridPos。Noneの場合は標準配置。
 
     Returns:
         Grafana dashboard JSONのtime series panel定義。
@@ -139,7 +207,7 @@ def timeseries_panel(panel_id: int, title: str, queries: list[dict[str, str]], u
             },
             "overrides": [],
         },
-        "gridPos": grid(panel_id),
+        "gridPos": grid_pos or grid(panel_id),
         "id": panel_id,
         "options": {
             "legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": True},
@@ -152,13 +220,19 @@ def timeseries_panel(panel_id: int, title: str, queries: list[dict[str, str]], u
     }
 
 
-def table_panel(panel_id: int, title: str, expr: str) -> dict[str, Any]:
+def table_panel(
+    panel_id: int,
+    title: str,
+    expr: str,
+    grid_pos: dict[str, int] | None = None,
+) -> dict[str, Any]:
     """table panelを作成する。
 
     Args:
         panel_id: Grafana panel ID。
         title: panel title。
         expr: PromQL式。
+        grid_pos: 明示的に配置する場合のgridPos。Noneの場合は標準配置。
 
     Returns:
         Grafana dashboard JSONのtable panel定義。
@@ -166,7 +240,7 @@ def table_panel(panel_id: int, title: str, expr: str) -> dict[str, Any]:
     return {
         "datasource": DATASOURCE,
         "fieldConfig": {"defaults": {"custom": {"align": "auto", "cellOptions": {"type": "auto"}}}, "overrides": []},
-        "gridPos": grid(panel_id),
+        "gridPos": grid_pos or grid(panel_id),
         "id": panel_id,
         "options": {
             "cellHeight": "sm",
@@ -218,11 +292,12 @@ def dashboard(config: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Grafana dashboard JSON。
     """
-    panels = base_panels(config["job"])
-    for offset, panel in enumerate(config.get("panels", []), start=7):
+    panels = base_panels(config["job"]) if config.get("base_panels", True) else []
+    start_id = len(panels) + 1
+    for offset, panel in enumerate(config.get("panels", []), start=start_id):
         panel = dict(panel)
-        panel["id"] = offset
-        panel["gridPos"] = grid(offset)
+        panel.setdefault("id", offset)
+        panel.setdefault("gridPos", grid(offset))
         panels.append(panel)
 
     return {
@@ -291,6 +366,117 @@ def service_table(title: str, expr: str) -> dict[str, Any]:
     return panel
 
 
+def service_gauge(title: str, expr: str, unit: str = "percent") -> dict[str, Any]:
+    """サービス固有のgauge panel雛形を作成する。
+
+    Args:
+        title: panel title。
+        expr: PromQL式。
+        unit: Grafana field unit。
+
+    Returns:
+        IDと配置を後で設定するgauge panel定義。
+    """
+    panel = gauge_panel(1, title, expr, unit)
+    panel.pop("id")
+    panel.pop("gridPos")
+    return panel
+
+
+def placed_panel(panel: dict[str, Any], panel_id: int, grid_pos: dict[str, int]) -> dict[str, Any]:
+    """panelへIDと明示grid位置を設定する。
+
+    Args:
+        panel: 位置未設定または仮設定のpanel定義。
+        panel_id: Grafana panel ID。
+        grid_pos: Grafana gridPos。
+
+    Returns:
+        IDとgridPosを設定したpanel定義。
+    """
+    result = dict(panel)
+    result["id"] = panel_id
+    result["gridPos"] = grid_pos
+    return result
+
+
+def quota_usage_expr(provider: str, window: str) -> str:
+    """quota使用率のPromQLを作成する。
+
+    Args:
+        provider: quota provider label。
+        window: quota window label。
+
+    Returns:
+        0から100のpercent値を返すPromQL式。
+    """
+    selector = f'provider="{provider}",window="{window}"'
+    return f"100 * sum(llm_quota_used{{{selector}}}) / clamp_min(sum(llm_quota_limit{{{selector}}}), 1)"
+
+
+def llm_quota_panels() -> list[dict[str, Any]]:
+    """LLM無料枠dashboard専用panelを作成する。
+
+    Args:
+        None。
+
+    Returns:
+        LLM無料枠dashboardのpanel定義配列。
+    """
+    providers = [
+        ("openrouter", "OpenRouter"),
+        ("ollamacloud", "Ollama Cloud"),
+        ("google_ai_studio", "Google AI Studio"),
+        ("cerebras", "Cerebras"),
+    ]
+    panels: list[dict[str, Any]] = []
+    panel_id = 1
+    for index, (provider, title) in enumerate(providers):
+        panels.append(
+            gauge_panel(
+                panel_id,
+                f"{title} weekly limit",
+                quota_usage_expr(provider, "week_7d"),
+                grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 0},
+            )
+        )
+        panel_id += 1
+    for index, (provider, title) in enumerate(providers):
+        panels.append(
+            gauge_panel(
+                panel_id,
+                f"{title} today limit",
+                quota_usage_expr(provider, "day"),
+                grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 7},
+            )
+        )
+        panel_id += 1
+    panels.append(
+        timeseries_panel(
+            panel_id,
+            "Provider request frequency",
+            [
+                {
+                    "expr": 'sum by (provider) (rate(llm_usage_requests_total{provider=~"openrouter|ollamacloud|google_ai_studio|cerebras"}[5m]))',
+                    "legend": "{{provider}}",
+                }
+            ],
+            "reqps",
+            {"h": 9, "w": 24, "x": 0, "y": 14},
+        )
+    )
+    panel_id += 1
+    panels.append(
+        table_panel(
+            panel_id,
+            "Quota details - source label shows api/configured/estimated",
+            'llm_quota_limit{provider=~"openrouter|ollamacloud|google_ai_studio|cerebras"}',
+            {"h": 8, "w": 24, "x": 0, "y": 23},
+        )
+    )
+    return panels
+
+
 def write_dashboard(config: dict[str, Any]) -> None:
     """dashboard JSONをファイルへ書き出す。
 
@@ -324,25 +510,59 @@ def main() -> None:
     """
     services = [
         {
-            "file": "open-webui.json",
-            "title": "Open-WebUI",
-            "uid": "svc-open-webui",
-            "job": "open-webui",
-            "panels": [
-                service_panel("HTTP Requests", [{"expr": 'sum by (http_method, http_route, http_status_code) (rate(http_server_requests_total{job="open-webui"}[5m]))', "legend": "{{http_method}} {{http_route}} {{http_status_code}}"}], "reqps"),
-                service_panel("HTTP Duration p95", [{"expr": 'histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_duration_milliseconds_bucket{job="open-webui"}[5m])))', "legend": "{{http_route}}"}], "ms"),
-                service_panel("Users", [{"expr": 'webui_users_total{job="open-webui"}', "legend": "total"}, {"expr": 'webui_users_active{job="open-webui"}', "legend": "active"}, {"expr": 'webui_users_active_today{job="open-webui"}', "legend": "active today"}], "short"),
-            ],
-        },
-        {
             "file": "cloudflared.json",
             "title": "Cloudflared",
             "uid": "svc-cloudflared",
             "job": "cloudflared",
             "panels": [
                 service_panel("Tunnel Connections", [{"expr": 'cloudflared_tunnel_ha_connections{job="cloudflared"}', "legend": "ha connections"}]),
-                service_panel("Tunnel Requests", [{"expr": 'rate(cloudflared_tunnel_total_requests{job="cloudflared"}[5m])', "legend": "requests"}, {"expr": 'rate(cloudflared_tunnel_request_errors{job="cloudflared"}[5m])', "legend": "errors"}], "reqps"),
+                service_panel("Tunnel Requests and Errors", [{"expr": 'rate(cloudflared_tunnel_total_requests{job="cloudflared"}[5m])', "legend": "requests"}, {"expr": 'rate(cloudflared_tunnel_request_errors{job="cloudflared"}[5m])', "legend": "errors"}], "reqps"),
+                service_panel("Response Codes", [{"expr": 'sum by (status_code) (rate(cloudflared_tunnel_response_by_code{job="cloudflared"}[5m]))', "legend": "{{status_code}}"}], "reqps"),
                 service_panel("Active Sessions", [{"expr": 'cloudflared_tcp_active_sessions{job="cloudflared"}', "legend": "tcp"}, {"expr": 'cloudflared_udp_active_sessions{job="cloudflared"}', "legend": "udp"}]),
+                service_panel("Proxy Connect Latency p95", [{"expr": 'histogram_quantile(0.95, sum by (le) (rate(cloudflared_proxy_connect_latency_bucket{job="cloudflared"}[5m])))', "legend": "p95"}], "s"),
+                service_panel("Process Resources", [{"expr": 'process_resident_memory_bytes{job="cloudflared"}', "legend": "rss"}, {"expr": 'go_goroutines{job="cloudflared"}', "legend": "goroutines"}], "short"),
+            ],
+        },
+        {
+            "file": "couchdb.json",
+            "title": "CouchDB",
+            "uid": "svc-couchdb",
+            "job": "couchdb",
+            "panels": [
+                service_panel("HTTP Methods", [{"expr": 'sum by (method) (rate(couchdb_httpd_request_methods{job="couchdb"}[5m]))', "legend": "{{method}}"}], "reqps"),
+                service_panel("Database Reads/Writes", [{"expr": 'rate(couchdb_database_reads{job="couchdb"}[5m])', "legend": "reads"}, {"expr": 'rate(couchdb_database_writes{job="couchdb"}[5m])', "legend": "writes"}]),
+                service_panel("Document Activity", [{"expr": 'rate(couchdb_document_inserts_total{job="couchdb"}[5m])', "legend": "inserts"}, {"expr": 'rate(couchdb_document_writes_total{job="couchdb"}[5m])', "legend": "writes"}], "ops"),
+                service_panel("Replication Jobs", [{"expr": 'couchdb_couch_replicator_jobs_running{job="couchdb"}', "legend": "running"}, {"expr": 'couchdb_couch_replicator_jobs_pending{job="couchdb"}', "legend": "pending"}, {"expr": 'couchdb_couch_replicator_jobs_crashed{job="couchdb"}', "legend": "crashed"}]),
+                service_panel("Erlang Memory", [{"expr": 'couchdb_erlang_memory_bytes{job="couchdb"}', "legend": "{{memory}}"}], "bytes"),
+                service_panel("Message Queues", [{"expr": 'couchdb_erlang_message_queues{job="couchdb"}', "legend": "queues"}, {"expr": 'couchdb_global_changes_listener_pending_updates{job="couchdb"}', "legend": "global changes pending"}]),
+            ],
+        },
+        {
+            "file": "gpu.json",
+            "title": "GPU",
+            "uid": "svc-gpu",
+            "job": "node",
+            "panels": [
+                service_panel("GPU Exporter Up", [{"expr": 'up{job=~"nvidia-dcgm-exporter|amd-device-metrics-exporter"}', "legend": "{{job}} {{instance}}"}]),
+                service_panel("GPU Utilization", [{"expr": 'avg by (gpu, gpu_id) (DCGM_FI_DEV_GPU_UTIL) or avg by (gpu_uuid, gpu_id) (amd_gpu_gfx_busy_instantaneous)', "legend": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"}], "percent"),
+                service_panel("VRAM Used", [{"expr": 'DCGM_FI_DEV_FB_USED * 1024 * 1024 or amd_gpu_used_vram', "legend": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"}], "bytes"),
+                service_panel("GPU Temperature", [{"expr": 'DCGM_FI_DEV_GPU_TEMP or amd_gpu_edge_temperature or amd_gpu_junction_temperature', "legend": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"}], "celsius"),
+                service_panel("GPU Power", [{"expr": 'DCGM_FI_DEV_POWER_USAGE or amd_gpu_package_power or amd_gpu_average_package_power', "legend": "{{gpu}}{{gpu_id}}{{gpu_uuid}}"}], "watt"),
+                service_panel("Host Thermal Sensors", [{"expr": 'node_hwmon_temp_celsius{job="node"}', "legend": "{{chip}} {{sensor}}"}], "celsius"),
+            ],
+        },
+        {
+            "file": "gitea.json",
+            "title": "Gitea",
+            "uid": "svc-gitea",
+            "job": "gitea",
+            "panels": [
+                service_panel("Repository and User Growth", [{"expr": 'gitea_repositories{job="gitea"}', "legend": "repositories"}, {"expr": 'gitea_users{job="gitea"}', "legend": "users"}, {"expr": 'gitea_organizations{job="gitea"}', "legend": "organizations"}]),
+                service_panel("Issue Flow", [{"expr": 'gitea_issues_open{job="gitea"}', "legend": "open"}, {"expr": 'gitea_issues_closed{job="gitea"}', "legend": "closed"}, {"expr": 'gitea_issues{job="gitea"}', "legend": "total"}]),
+                service_panel("Project Artifacts", [{"expr": 'gitea_releases{job="gitea"}', "legend": "releases"}, {"expr": 'gitea_milestones{job="gitea"}', "legend": "milestones"}, {"expr": 'gitea_projects{job="gitea"}', "legend": "projects"}]),
+                service_panel("Collaboration Signals", [{"expr": 'gitea_stars{job="gitea"}', "legend": "stars"}, {"expr": 'gitea_watches{job="gitea"}', "legend": "watches"}, {"expr": 'gitea_follows{job="gitea"}', "legend": "follows"}]),
+                service_panel("Runtime Memory", [{"expr": 'process_resident_memory_bytes{job="gitea"}', "legend": "rss"}, {"expr": 'go_memstats_heap_inuse_bytes{job="gitea"}', "legend": "heap in-use"}], "bytes"),
+                service_panel("Runtime Concurrency", [{"expr": 'go_goroutines{job="gitea"}', "legend": "goroutines"}, {"expr": 'process_open_fds{job="gitea"}', "legend": "open fds"}]),
             ],
         },
         {
@@ -352,20 +572,20 @@ def main() -> None:
             "job": "keycloak",
             "panels": [
                 service_panel("HTTP Activity", [{"expr": 'http_server_active_requests{job="keycloak"}', "legend": "{{instance}} requests"}, {"expr": 'http_server_active_connections{job="keycloak"}', "legend": "{{instance}} connections"}]),
+                service_panel("HTTP Error Rate", [{"expr": 'sum by (instance) (rate(http_server_errors_total{job="keycloak"}[5m]))', "legend": "{{instance}}"}], "eps"),
                 service_panel("Database Pool", [{"expr": 'agroal_active_count{job="keycloak"}', "legend": "{{instance}} active"}, {"expr": 'agroal_available_count{job="keycloak"}', "legend": "{{instance}} available"}, {"expr": 'agroal_awaiting_count{job="keycloak"}', "legend": "{{instance}} awaiting"}]),
-                service_panel("Cache Gets", [{"expr": 'sum by (cache, result) (rate(cache_gets_total{job="keycloak"}[5m]))', "legend": "{{cache}} {{result}}"}]),
+                service_panel("Cache Size", [{"expr": 'sum by (cache) (cache_size{job="keycloak"})', "legend": "{{cache}}"}]),
+                service_panel("JVM Memory", [{"expr": 'sum by (area) (jvm_memory_used_bytes{job="keycloak"})', "legend": "{{area}} used"}, {"expr": 'sum by (area) (jvm_memory_max_bytes{job="keycloak"})', "legend": "{{area}} max"}], "bytes"),
+                service_panel("Password Hash Validations", [{"expr": 'sum by (provider) (rate(keycloak_credentials_password_hashing_validations_total{job="keycloak"}[5m]))', "legend": "{{provider}}"}], "ops"),
             ],
         },
         {
-            "file": "couchdb.json",
-            "title": "CouchDB",
-            "uid": "svc-couchdb",
-            "job": "couchdb",
-            "panels": [
-                service_panel("HTTP Requests", [{"expr": 'rate(couchdb_httpd_requests{job="couchdb"}[5m])', "legend": "{{instance}}"}], "reqps"),
-                service_panel("Database Reads/Writes", [{"expr": 'rate(couchdb_database_reads{job="couchdb"}[5m])', "legend": "reads"}, {"expr": 'rate(couchdb_database_writes{job="couchdb"}[5m])', "legend": "writes"}]),
-                service_panel("Open Databases", [{"expr": 'couchdb_open_databases{job="couchdb"}', "legend": "{{instance}}"}]),
-            ],
+            "file": "llm-free-quota.json",
+            "title": "LLM Free Quota",
+            "uid": "svc-llm-free-quota",
+            "job": "llm-quota-exporter",
+            "base_panels": False,
+            "panels": llm_quota_panels(),
         },
         {
             "file": "nextcloud.json",
@@ -373,140 +593,26 @@ def main() -> None:
             "uid": "svc-nextcloud",
             "job": "nextcloud",
             "panels": [
-                service_panel("Users", [{"expr": 'nextcloud_users{job="nextcloud"}', "legend": "{{instance}}"}]),
-                service_panel("Shares", [{"expr": 'nextcloud_shares{job="nextcloud"}', "legend": "{{instance}}"}]),
-                service_panel("Storage", [{"expr": 'nextcloud_storage_free_bytes{job="nextcloud"}', "legend": "free"}, {"expr": 'nextcloud_storage_used_bytes{job="nextcloud"}', "legend": "used"}], "bytes"),
+                service_panel("Users and Sessions", [{"expr": 'nextcloud_users{job="nextcloud"}', "legend": "users"}, {"expr": 'nextcloud_active_users{job="nextcloud"}', "legend": "active users"}, {"expr": 'nextcloud_active_sessions{job="nextcloud"}', "legend": "active sessions"}]),
+                service_panel("Files and Shares", [{"expr": 'nextcloud_files{job="nextcloud"}', "legend": "files"}, {"expr": 'nextcloud_shares{job="nextcloud"}', "legend": "shares"}]),
+                service_panel("Collaboration", [{"expr": 'nextcloud_comments{job="nextcloud"}', "legend": "comments"}, {"expr": 'nextcloud_running_jobs{job="nextcloud"}', "legend": "running jobs"}]),
+                service_panel("App Enabled Count", [{"expr": 'sum(nextcloud_app_enabled{job="nextcloud"})', "legend": "enabled apps"}]),
+                service_panel("Maintenance and Log Level", [{"expr": 'nextcloud_maintenance{job="nextcloud"}', "legend": "maintenance"}, {"expr": 'nextcloud_log_level{job="nextcloud"}', "legend": "log level"}]),
+                service_table("Instance Info", 'nextcloud_instance_info{job="nextcloud"}'),
             ],
         },
         {
-            "file": "text-embeddings-inference.json",
-            "title": "Text Embeddings Inference",
-            "uid": "svc-tei",
-            "job": "text-embeddings-inference",
+            "file": "open-webui.json",
+            "title": "Open-WebUI",
+            "uid": "svc-open-webui",
+            "job": "open-webui",
             "panels": [
-                service_panel("HTTP Requests", [{"expr": 'sum by (instance) (rate(http_requests_total{job="text-embeddings-inference"}[5m]))', "legend": "{{instance}}"}], "reqps"),
-                service_panel("Request Duration", [{"expr": 'histogram_quantile(0.95, sum by (le, instance) (rate(http_request_duration_seconds_bucket{job="text-embeddings-inference"}[5m])))', "legend": "{{instance}} p95"}], "s"),
-                service_panel("Queue", [{"expr": 'queue_size{job="text-embeddings-inference"}', "legend": "{{instance}}"}]),
-            ],
-        },
-        {
-            "file": "litellm.json",
-            "title": "LiteLLM",
-            "uid": "svc-litellm",
-            "job": "litellm",
-            "panels": [
-                service_panel("Requests", [{"expr": 'sum(rate(litellm_requests_metric{job="litellm"}[5m]))', "legend": "requests"}], "reqps"),
-                service_panel("Tokens", [{"expr": 'sum(rate(litellm_total_tokens{job="litellm"}[5m]))', "legend": "tokens"}]),
-                service_panel("Responses", [{"expr": 'sum(rate(litellm_deployment_success_responses_total{job="litellm"}[5m]))', "legend": "success"}, {"expr": 'sum(rate(litellm_deployment_failure_responses_total{job="litellm"}[5m]))', "legend": "failure"}]),
-            ],
-        },
-        {
-            "file": "searxng.json",
-            "title": "SearXNG",
-            "uid": "svc-searxng",
-            "job": "searxng",
-            "panels": [
-                service_panel("Metric Handler Samples", [{"expr": 'scrape_samples_scraped{job="searxng"}', "legend": "{{instance}}"}]),
-                service_panel("Metric Handler Duration", [{"expr": 'scrape_duration_seconds{job="searxng"}', "legend": "{{instance}}"}], "s"),
-            ],
-        },
-        {
-            "file": "gitea.json",
-            "title": "Gitea",
-            "uid": "svc-gitea",
-            "job": "gitea",
-            "panels": [
-                service_panel("HTTP Requests", [{"expr": 'sum by (method, status) (rate(gitea_http_request_duration_seconds_count{job="gitea"}[5m]))', "legend": "{{method}} {{status}}"}], "reqps"),
-                service_panel("HTTP Duration p95", [{"expr": 'histogram_quantile(0.95, sum by (le, method) (rate(gitea_http_request_duration_seconds_bucket{job="gitea"}[5m])))', "legend": "{{method}}"}], "s"),
-                service_panel("Process", [{"expr": 'process_resident_memory_bytes{job="gitea"}', "legend": "rss"}], "bytes"),
-            ],
-        },
-        {
-            "file": "qdrant.json",
-            "title": "Qdrant",
-            "uid": "svc-qdrant",
-            "job": "qdrant",
-            "panels": [
-                service_panel("REST Responses", [{"expr": 'sum by (method, status) (rate(rest_responses_total{job="qdrant"}[5m]))', "legend": "{{method}} {{status}}"}], "reqps"),
-                service_panel("gRPC Responses", [{"expr": 'sum by (method, status) (rate(grpc_responses_total{job="qdrant"}[5m]))', "legend": "{{method}} {{status}}"}], "reqps"),
-                service_table("App Info", 'app_info{job="qdrant"}'),
-            ],
-        },
-        {
-            "file": "postgres-exporters.json",
-            "title": "PostgreSQL Exporters",
-            "uid": "svc-postgres-exporters",
-            "job": "postgres-exporters",
-            "panels": [
-                service_panel("PostgreSQL Up", [{"expr": 'pg_up{job="postgres-exporters"}', "legend": "{{instance}}"}]),
-                service_panel("Connections", [{"expr": 'sum by (instance, datname) (pg_stat_database_numbackends{job="postgres-exporters"})', "legend": "{{instance}} {{datname}}"}]),
-                service_panel("Database Size", [{"expr": 'pg_database_size_bytes{job="postgres-exporters"}', "legend": "{{instance}} {{datname}}"}], "bytes"),
-            ],
-        },
-        {
-            "file": "redis-exporters.json",
-            "title": "Redis Exporters",
-            "uid": "svc-redis-exporters",
-            "job": "redis-exporters",
-            "panels": [
-                service_panel("Redis Up", [{"expr": 'redis_up{job="redis-exporters"}', "legend": "{{instance}}"}]),
-                service_panel("Connected Clients", [{"expr": 'redis_connected_clients{job="redis-exporters"}', "legend": "{{instance}}"}]),
-                service_panel("Memory", [{"expr": 'redis_memory_used_bytes{job="redis-exporters"}', "legend": "{{instance}}"}], "bytes"),
-            ],
-        },
-        {
-            "file": "mysqld-exporters.json",
-            "title": "MySQL Exporters",
-            "uid": "svc-mysqld-exporters",
-            "job": "mysqld-exporters",
-            "panels": [
-                service_panel("MySQL Up", [{"expr": 'mysql_up{job="mysqld-exporters"}', "legend": "{{instance}}"}]),
-                service_panel("Connections", [{"expr": 'mysql_global_status_threads_connected{job="mysqld-exporters"}', "legend": "{{instance}}"}]),
-                service_panel("Queries", [{"expr": 'rate(mysql_global_status_queries{job="mysqld-exporters"}[5m])', "legend": "{{instance}}"}], "qps"),
-            ],
-        },
-        {
-            "file": "rabbitmq.json",
-            "title": "RabbitMQ",
-            "uid": "svc-rabbitmq",
-            "job": "rabbitmq",
-            "panels": [
-                service_panel("RabbitMQ Up", [{"expr": 'rabbitmq_up{job="rabbitmq"}', "legend": "{{instance}}"}]),
-                service_panel("Queue Messages", [{"expr": 'sum by (queue) (rabbitmq_queue_messages{job="rabbitmq"})', "legend": "{{queue}}"}]),
-                service_panel("Connections", [{"expr": 'rabbitmq_connections{job="rabbitmq"}', "legend": "{{instance}}"}]),
-            ],
-        },
-        {
-            "file": "clickhouse.json",
-            "title": "ClickHouse",
-            "uid": "svc-clickhouse",
-            "job": "clickhouse",
-            "panels": [
-                service_panel("Queries", [{"expr": 'ClickHouseMetrics_Query{job="clickhouse"}', "legend": "{{instance}}"}]),
-                service_panel("Uptime", [{"expr": 'ClickHouseAsyncMetrics_Uptime{job="clickhouse"}', "legend": "{{instance}}"}], "s"),
-                service_panel("Memory", [{"expr": 'ClickHouseMetrics_MemoryTracking{job="clickhouse"}', "legend": "{{instance}}"}], "bytes"),
-            ],
-        },
-        {
-            "file": "minio.json",
-            "title": "MinIO",
-            "uid": "svc-minio",
-            "job": "minio",
-            "panels": [
-                service_panel("S3 Requests", [{"expr": 'sum by (api) (rate(minio_s3_requests_total{job="minio"}[5m]))', "legend": "{{api}}"}], "reqps"),
-                service_panel("Usage", [{"expr": 'minio_cluster_usage_total_bytes{job="minio"}', "legend": "used"}, {"expr": 'minio_cluster_capacity_usable_total_bytes{job="minio"}', "legend": "usable"}], "bytes"),
-                service_panel("Online Disks", [{"expr": 'minio_cluster_nodes_online_total{job="minio"}', "legend": "nodes"}]),
-            ],
-        },
-        {
-            "file": "http-probes.json",
-            "title": "HTTP Probes",
-            "uid": "svc-http-probes",
-            "job": "blackbox-http",
-            "panels": [
-                service_panel("Probe Success", [{"expr": 'probe_success{job="blackbox-http"}', "legend": "{{instance}}"}]),
-                service_panel("Probe Duration", [{"expr": 'probe_duration_seconds{job="blackbox-http"}', "legend": "{{instance}}"}], "s"),
-                service_table("Probe Targets", 'probe_success{job="blackbox-http"}'),
+                service_panel("HTTP Requests", [{"expr": 'sum by (http_method, http_route, http_status_code) (rate(http_server_requests_total{job="open-webui"}[5m]))', "legend": "{{http_method}} {{http_route}} {{http_status_code}}"}], "reqps"),
+                service_panel("HTTP Duration p95", [{"expr": 'histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_duration_milliseconds_bucket{job="open-webui"}[5m])))', "legend": "{{http_route}}"}], "ms"),
+                service_panel("Users", [{"expr": 'webui_users_total{job="open-webui"}', "legend": "total"}, {"expr": 'webui_users_active{job="open-webui"}', "legend": "active"}, {"expr": 'webui_users_active_today{job="open-webui"}', "legend": "active today"}]),
+                service_panel("Status Code Mix", [{"expr": 'sum by (http_status_code) (rate(http_server_requests_total{job="open-webui"}[5m]))', "legend": "{{http_status_code}}"}], "reqps"),
+                service_panel("Route Hotspots", [{"expr": 'topk(10, sum by (http_route) (rate(http_server_requests_total{job="open-webui"}[5m])))', "legend": "{{http_route}}"}], "reqps"),
+                service_table("OpenTelemetry Target Info", 'target_info{job="open-webui"}'),
             ],
         },
     ]

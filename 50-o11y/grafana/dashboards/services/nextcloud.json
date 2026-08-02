@@ -493,10 +493,26 @@
           "expr": "nextcloud_users{job=\"nextcloud\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "users"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_active_users{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "active users"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_active_sessions{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "C",
+          "legendFormat": "active sessions"
         }
       ],
-      "title": "Users",
+      "title": "Users and Sessions",
       "type": "timeseries",
       "id": 7,
       "gridPos": {
@@ -578,13 +594,21 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "nextcloud_shares{job=\"nextcloud\"}",
+          "expr": "nextcloud_files{job=\"nextcloud\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "{{instance}}"
+          "legendFormat": "files"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_shares{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "shares"
         }
       ],
-      "title": "Shares",
+      "title": "Files and Shares",
       "type": "timeseries",
       "id": 8,
       "gridPos": {
@@ -642,7 +666,7 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -666,21 +690,21 @@
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "nextcloud_storage_free_bytes{job=\"nextcloud\"}",
+          "expr": "nextcloud_comments{job=\"nextcloud\"}",
           "range": true,
           "refId": "A",
-          "legendFormat": "free"
+          "legendFormat": "comments"
         },
         {
           "datasource": "Prometheus",
           "editorMode": "code",
-          "expr": "nextcloud_storage_used_bytes{job=\"nextcloud\"}",
+          "expr": "nextcloud_running_jobs{job=\"nextcloud\"}",
           "range": true,
           "refId": "B",
-          "legendFormat": "used"
+          "legendFormat": "running jobs"
         }
       ],
-      "title": "Storage",
+      "title": "Collaboration",
       "type": "timeseries",
       "id": 9,
       "gridPos": {
@@ -688,6 +712,235 @@
         "w": 8,
         "x": 16,
         "y": 16
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "sum(nextcloud_app_enabled{job=\"nextcloud\"})",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "enabled apps"
+        }
+      ],
+      "title": "App Enabled Count",
+      "type": "timeseries",
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_maintenance{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "maintenance"
+        },
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_log_level{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "B",
+          "legendFormat": "log level"
+        }
+      ],
+      "title": "Maintenance and Log Level",
+      "type": "timeseries",
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      }
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "13.1.1",
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "editorMode": "code",
+          "expr": "nextcloud_instance_info{job=\"nextcloud\"}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Instance Info",
+      "type": "table",
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 24
       }
     }
   ],
