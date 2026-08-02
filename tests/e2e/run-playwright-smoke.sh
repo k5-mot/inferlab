@@ -5,6 +5,20 @@ readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly E2E_ROOT="${REPO_ROOT}/tests/e2e"
 readonly COMPOSE_PLAYWRIGHT_FILE="${E2E_ROOT}/docker-compose.playwright.yml"
 readonly TEST_MANUAL="${REPO_ROOT}/docs/manual/TEST.md"
+readonly -a SMOKE_CASES=(
+  nextcloud
+  bookstack
+  kaneo
+  zulip
+  gitea
+  open-webui
+  grafana
+  langfuse
+)
+
+ACTIVE_SMOKE_CASE=""
+ACTIVE_PROFILES=()
+ACTIVE_SERVICES=()
 
 cd "${REPO_ROOT}"
 
@@ -20,6 +34,17 @@ print_usage() {
     /^## GitHub Actionsでの実行範囲$/q
     p
   }' "${TEST_MANUAL}"
+}
+
+# Playwright smokeの対象caseを表示する。
+# 引数:
+#   なし。
+# 戻り値:
+#   常に0を返す。
+# 副作用:
+#   対象caseを1行ずつ標準出力へ表示する。
+print_cases() {
+  printf '%s\n' "${SMOKE_CASES[@]}"
 }
 
 # 指定commandがPATHから実行できることを確認する。
@@ -147,84 +172,251 @@ generate_playwright_keycloak_cert() {
   chmod 644 "${PLAYWRIGHT_KEYCLOAK_CERT_DIR}/keycloak.crt"
 }
 
-# compose projectを終了してvolumeとnetworkを削除する。
+# Keycloak realmのdiscovery endpointが利用可能になるまで待機する。
 # 引数:
-#   $@: docker composeへ渡すprofile option群。
+#   なし。
 # 戻り値:
-#   cleanupに成功した場合は0、失敗した場合も呼び出し元を止めない。
+#   endpointがHTTP 200を返した場合は0、timeoutした場合は非0を返す。
 # 副作用:
-#   E2E用compose projectのcontainer、volume、networkを削除する。
-cleanup_compose_project() {
-  local compose_profiles=("$@")
+#   Keycloakのhost公開portへ2秒間隔でHTTP requestを送る。
+wait_for_keycloak_realm() {
+  local discovery_url="http://127.0.0.1:${KEYCLOAK_HTTP_HOST_PORT}/realms/${STACK_NAME}/.well-known/openid-configuration"
+  local timeout_seconds="${PLAYWRIGHT_KEYCLOAK_READY_TIMEOUT:-180}"
 
-  compose_for_playwright "${compose_profiles[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  python3 - "${discovery_url}" "${timeout_seconds}" <<'PY'
+import sys
+import time
+import urllib.error
+import urllib.request
+
+
+def wait_for_url(url: str, timeout_seconds: int) -> None:
+    """URLがHTTP 200を返すまで待機する。
+
+    Args:
+        url: 到達確認するdiscovery endpoint。
+        timeout_seconds: 最大待機秒数。
+
+    Returns:
+        None。
+
+    Raises:
+        RuntimeError: 制限時間内にHTTP 200を確認できなかった場合。
+    """
+    deadline = time.monotonic() + timeout_seconds
+    last_error = "応答なし"
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=3) as response:
+                if response.status == 200:
+                    return
+                last_error = f"HTTP {response.status}"
+        except (OSError, urllib.error.URLError) as error:
+            last_error = str(error)
+        time.sleep(2)
+    raise RuntimeError(f"Keycloak realmの準備待ちがtimeoutしました: {last_error}")
+
+
+wait_for_url(sys.argv[1], int(sys.argv[2]))
+PY
 }
 
-# BookStack E2E用の一時資源を削除する。
+# E2E用の一時資源を削除する。
 # 引数:
 #   なし。
 # 戻り値:
 #   cleanupに成功した場合は0、失敗した場合も呼び出し元を止めない。
 # 副作用:
 #   E2E用compose projectと一時証明書directoryを削除する。
-cleanup_bookstack_smoke() {
-  cleanup_compose_project --profile keycloak --profile bookstack
+cleanup_smoke() {
+  if ((${#ACTIVE_PROFILES[@]} > 0)); then
+    compose_for_playwright "${ACTIVE_PROFILES[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  fi
 
   if [[ -n "${PLAYWRIGHT_KEYCLOAK_CERT_DIR:-}" && -d "${PLAYWRIGHT_KEYCLOAK_CERT_DIR}" ]]; then
     rm -rf -- "${PLAYWRIGHT_KEYCLOAK_CERT_DIR}"
   fi
 }
 
-# BookStack E2Eに必要なprofileだけを起動する。
+# 全caseで共有するKeycloakとbrowser設定を準備する。
 # 引数:
-#   なし。
+#   $1: 実行するsmoke case名。
 # 戻り値:
-#   対象serviceが起動してhealthyになった場合は0、失敗した場合は非0を返す。
+#   設定に成功した場合は0、未知のcaseの場合は非0を返す。
 # 副作用:
-#   Keycloak、Keycloak HTTPS、BookStack、関連DBを含む一時compose projectを起動する。
-start_bookstack_stack() {
+#   E2E用環境変数、cleanup用profile、起動対象serviceを設定する。
+configure_smoke_case() {
+  local smoke_case="$1"
+
   export PUBLIC_HOST="${PUBLIC_HOST:-host.docker.internal}"
-  export STACK_NAME="${STACK_NAME:-inferlab-e2e-bookstack-$(date +%Y%m%d%H%M%S)}"
+  export STACK_NAME="${STACK_NAME:-inferlab-e2e-${smoke_case}-$(date +%Y%m%d%H%M%S)}"
   export KEYCLOAK_HTTP_HOST_PORT="${KEYCLOAK_HTTP_HOST_PORT:-$(allocate_port)}"
   export KEYCLOAK_HTTPS_HOST_PORT="${KEYCLOAK_HTTPS_HOST_PORT:-$(allocate_port)}"
-  export BOOKSTACK_HOST_PORT="${BOOKSTACK_HOST_PORT:-$(allocate_port)}"
-  export BOOKSTACK_PUBLIC_URL="${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT}}"
   export KEYCLOAK_REALM_ADMIN_PASSWORD="${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}"
-  export BOOKSTACK_SMOKE_BASE_URL="${BOOKSTACK_SMOKE_BASE_URL:-${BOOKSTACK_PUBLIC_URL}}"
-  export BOOKSTACK_SMOKE_READY_URL="${BOOKSTACK_SMOKE_READY_URL:-http://127.0.0.1:${BOOKSTACK_HOST_PORT}}"
-  export BOOKSTACK_SMOKE_USERNAME="${BOOKSTACK_SMOKE_USERNAME:-admin}"
-  export BOOKSTACK_SMOKE_PASSWORD="${BOOKSTACK_SMOKE_PASSWORD:-${KEYCLOAK_REALM_ADMIN_PASSWORD}}"
+  export PLAYWRIGHT_SMOKE_CASE="${smoke_case}"
+  export PLAYWRIGHT_SMOKE_USERNAME="${PLAYWRIGHT_SMOKE_USERNAME:-admin}"
+  export PLAYWRIGHT_SMOKE_PASSWORD="${PLAYWRIGHT_SMOKE_PASSWORD:-${KEYCLOAK_REALM_ADMIN_PASSWORD}}"
   export PLAYWRIGHT_HOST_RESOLVER_RULES="${PLAYWRIGHT_HOST_RESOLVER_RULES:-MAP host.docker.internal 127.0.0.1}"
 
-  local compose_profiles=(--profile keycloak --profile bookstack)
-  generate_playwright_keycloak_cert
-  trap 'cleanup_bookstack_smoke' EXIT
+  ACTIVE_SMOKE_CASE="${smoke_case}"
+  ACTIVE_PROFILES=(--profile keycloak)
+  ACTIVE_SERVICES=(keycloak)
 
-  compose_for_playwright "${compose_profiles[@]}" up -d --wait \
-    keycloak \
-    keycloak-https \
-    bookstack
+  case "${smoke_case}" in
+    nextcloud)
+      export NEXTCLOUD_HTTP_HOST_PORT="${NEXTCLOUD_HTTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${NEXTCLOUD_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile nextcloud)
+      ACTIVE_SERVICES+=(nextcloud)
+      ;;
+    bookstack)
+      export BOOKSTACK_HOST_PORT="${BOOKSTACK_HOST_PORT:-$(allocate_port)}"
+      export BOOKSTACK_PUBLIC_URL="${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT}}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="${BOOKSTACK_PUBLIC_URL}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${BOOKSTACK_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile bookstack)
+      ACTIVE_SERVICES+=(keycloak-https bookstack)
+      ;;
+    kaneo)
+      export KANEO_HTTP_HOST_PORT="${KANEO_HTTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${KANEO_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile kaneo)
+      ACTIVE_SERVICES+=(kaneo)
+      ;;
+    zulip)
+      export ZULIP_HTTP_HOST_PORT="${ZULIP_HTTP_HOST_PORT:-$(allocate_port)}"
+      export ZULIP_HTTPS_HOST_PORT="${ZULIP_HTTPS_HOST_PORT:-$(allocate_port)}"
+      export ZULIP_SMTP_HOST_PORT="${ZULIP_SMTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${ZULIP_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile zulip)
+      ACTIVE_SERVICES+=(keycloak-https zulip)
+      ;;
+    gitea)
+      export GITEA_HTTP_HOST_PORT="${GITEA_HTTP_HOST_PORT:-$(allocate_port)}"
+      export GITEA_SSH_HOST_PORT="${GITEA_SSH_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${GITEA_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile gitea)
+      ACTIVE_SERVICES+=(gitea)
+      ;;
+    open-webui)
+      export OPEN_WEBUI_HTTP_HOST_PORT="${OPEN_WEBUI_HTTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile owui)
+      ACTIVE_SERVICES+=(open-webui)
+      ;;
+    grafana)
+      export GRAFANA_HTTP_HOST_PORT="${GRAFANA_HTTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile o11y)
+      ACTIVE_SERVICES+=(grafana)
+      ;;
+    langfuse)
+      export LANGFUSE_HTTP_HOST_PORT="${LANGFUSE_HTTP_HOST_PORT:-$(allocate_port)}"
+      export PLAYWRIGHT_LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}"
+      export PLAYWRIGHT_LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${LANGFUSE_HTTP_HOST_PORT}"
+      ACTIVE_PROFILES+=(--profile langfuse)
+      ACTIVE_SERVICES+=(langfuse-web)
+      ;;
+    *)
+      echo "unknown smoke case: ${smoke_case}" >&2
+      return 2
+      ;;
+  esac
 }
 
-# BookStackの認証と新規Book作成をPlaywrightで検証する。
+# 対象caseに必要なprofileとserviceだけを起動する。
 # 引数:
 #   なし。
 # 戻り値:
-#   認証とBook作成が成功した場合は0、失敗した場合は非0を返す。
+#   対象serviceがhealthyになった場合は0、失敗した場合は非0を返す。
 # 副作用:
-#   BookStack上にsmoke検証用Bookを1件作成する。
-run_bookstack_smoke() {
+#   E2E用の一時Compose projectを起動し、GiteaではOAuth source同期も実行する。
+start_smoke_stack() {
+  generate_playwright_keycloak_cert
+  trap cleanup_smoke EXIT
+
+  # service名を明示すれば、そのserviceのprofileと依存だけが起動する。
+  # `--profile`は同じprofileの全serviceを起動するため、ここでは渡さない。
+  compose_for_playwright up -d --wait \
+    --wait-timeout "${PLAYWRIGHT_COMPOSE_WAIT_TIMEOUT:-600}" \
+    "${ACTIVE_SERVICES[@]}"
+
+  wait_for_keycloak_realm
+
+  if [[ "${ACTIVE_SMOKE_CASE}" == "gitea" ]]; then
+    compose_for_playwright up \
+      --no-deps \
+      --abort-on-container-exit \
+      --exit-code-from gitea-keycloak-init \
+      gitea-keycloak-init
+  fi
+}
+
+# Playwright失敗時に対象serviceの調査用logを表示する。
+# 引数:
+#   なし。
+# 戻り値:
+#   log取得に成功した場合は0、失敗した場合は非0を返す。
+# 副作用:
+#   起動対象serviceの直近logを標準エラーへ表示する。
+print_smoke_logs() {
+  compose_for_playwright logs --no-color --tail 200 "${ACTIVE_SERVICES[@]}" >&2
+}
+
+# 指定したサービスの認証と基本操作をPlaywrightで検証する。
+# 引数:
+#   $1: 実行するsmoke case名。
+# 戻り値:
+#   認証と基本操作が成功した場合は0、失敗した場合は非0を返す。
+# 副作用:
+#   対象service上にsmoke検証用dataを作成し、終了時に一時Compose projectを削除する。
+run_smoke() {
+  local smoke_case="$1"
+
   require_docker_compose
   require_command python3
   prepare_playwright
-  start_bookstack_stack
+  configure_smoke_case "${smoke_case}"
+  start_smoke_stack
 
-  node "${E2E_ROOT}/playwright-smoke.cjs" bookstack
+  if ! node "${E2E_ROOT}/playwright-smoke.cjs" "${smoke_case}"; then
+    print_smoke_logs || true
+    return 1
+  fi
+}
+
+# すべてのPlaywright smoke caseを1件ずつ独立実行する。
+# 引数:
+#   なし。
+# 戻り値:
+#   全caseが成功した場合は0、いずれかが失敗した場合は非0を返す。
+# 副作用:
+#   caseごとに子processを起動し、一時Compose projectを順番に作成・削除する。
+run_all_smokes() {
+  local smoke_case
+
+  for smoke_case in "${SMOKE_CASES[@]}"; do
+    "${BASH_SOURCE[0]}" "${smoke_case}"
+  done
 }
 
 case "${1:-bookstack}" in
-  bookstack)
-    run_bookstack_smoke
+  nextcloud | bookstack | kaneo | zulip | gitea | open-webui | grafana | langfuse)
+    run_smoke "$1"
+    ;;
+  all)
+    run_all_smokes
+    ;;
+  --list)
+    print_cases
     ;;
   -h | --help | help)
     print_usage

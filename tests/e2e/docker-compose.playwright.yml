@@ -1,6 +1,8 @@
 # Playwright smokeではhost port衝突を避けるため、外部公開portだけを動的化する。
 services:
   keycloak:
+    environment:
+      KC_HOSTNAME: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}
     ports: !override
       - "${KEYCLOAK_HTTP_HOST_PORT:-30001}:8080"
 
@@ -15,3 +17,99 @@ services:
       - bookstack-config:/config
       - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
       - bookstack-custom-cont-init:/custom-cont-init.d:ro
+
+  nextcloud:
+    environment:
+      OVERWRITECLIURL: http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT:-33000}/login
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports: !override
+      - "${NEXTCLOUD_HTTP_HOST_PORT:-33000}:80"
+
+  kaneo:
+    environment:
+      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}
+      KANEO_API_URL: http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT:-33200}
+      CUSTOM_OAUTH_DISCOVERY_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/.well-known/openid-configuration
+      CUSTOM_OAUTH_LOGOUT_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/protocol/openid-connect/logout
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  zulip:
+    mem_limit: ${PLAYWRIGHT_ZULIP_MEM_LIMIT:-3g}
+    memswap_limit: ${PLAYWRIGHT_ZULIP_MEMSWAP_LIMIT:-3g}
+    environment:
+      SETTING_EXTERNAL_HOST: ${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}
+      CONFIG_http_proxy__allow_addresses: ${PUBLIC_HOST}
+      CONFIG_application_server__uwsgi_processes: ${PLAYWRIGHT_ZULIP_UWSGI_PROCESSES:-3}
+      CONFIG_application_server__queue_workers_multiprocess: ${PLAYWRIGHT_ZULIP_QUEUE_WORKERS_MULTIPROCESS:-false}
+      ZULIP_OIDC_URL: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes: !override
+      - zulip-data:/data
+      - ./33-zulip/local-static:/home/zulip/local-static:ro
+      - ./33-zulip/nginx/app.d/usability-css.conf:/etc/nginx/zulip-include/app.d/usability-css.conf:ro
+      - ./33-zulip/post-setup.d:/data/post-setup.d:ro
+      - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
+
+  gitea:
+    environment:
+      GITEA__server__DOMAIN: ${PUBLIC_HOST}
+      GITEA__server__ROOT_URL: http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}/
+      GITEA__server__SSH_DOMAIN: ${PUBLIC_HOST}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  gitea-keycloak-init:
+    environment:
+      GITEA_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/.well-known/openid-configuration
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  open-webui:
+    environment:
+      WEBUI_URL: http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}
+      OPENID_PROVIDER_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/.well-known/openid-configuration
+      OPENID_REDIRECT_URI: http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}/oauth/oidc/callback
+      ENABLE_OTEL: "false"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports: !override
+      - "${OPEN_WEBUI_HTTP_HOST_PORT:-32000}:8080"
+    # 認証とNote操作には検索backendが不要なため、E2Eでは起動しない。
+    depends_on: !override {}
+
+  grafana:
+    environment:
+      GF_SERVER_ROOT_URL: http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/protocol/openid-connect/auth
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/protocol/openid-connect/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/protocol/openid-connect/userinfo
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    # 認証とdashboard操作にはmetrics収集系が不要なため、E2Eでは起動しない。
+    depends_on: !override {}
+
+  langfuse-worker:
+    environment:
+      NEXTAUTH_URL: http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT:-35100}
+      AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  langfuse-rustfs:
+    # browserから直接利用しないobject storageはhostへ公開しない。
+    ports: !override []
+
+  langfuse-web:
+    environment:
+      NEXTAUTH_URL: http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT:-35100}
+      AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports: !override
+      - "${LANGFUSE_HTTP_HOST_PORT:-35100}:3000"

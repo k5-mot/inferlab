@@ -141,4 +141,5 @@ verify_compose_config() {
 verify_shell_syntax
 verify_python_syntax
 verify_javascript_syntax
+tests/e2e/test-run-playwright-smoke.sh
 verify_compose_config
