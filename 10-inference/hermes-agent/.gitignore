@@ -21,6 +21,8 @@ workspace/
 memories/USER.md
 tmp/
 scripts/
+*.log
+state/
 
 # 認証情報・状態・ロック・DB
 .env
