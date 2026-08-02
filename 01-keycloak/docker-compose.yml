@@ -76,13 +76,14 @@ services:
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
+      # 初回起動時はrealm importとOIDC client同期が完了するまでreadyにしない。
       test:
         - CMD-SHELL
-        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
+        - test -f /tmp/keycloak-client-sync.ready && timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 10s
+      retries: 60
+      start_period: 30s
     labels:
       - homepage.icon=/icons/keycloak.png
       - homepage.group=01-keycloak

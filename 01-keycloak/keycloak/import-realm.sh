@@ -165,5 +165,8 @@ if [ "${synced}" != "1" ]; then
   exit 1
 fi
 
+# TCP listenだけではclient同期前に依存serviceが起動するため、同期完了をhealthcheckへ伝える。
+touch /tmp/keycloak-client-sync.ready
+
 trap - INT TERM EXIT
 wait "${keycloak_pid}"
