@@ -119,20 +119,13 @@ services:
       OLLAMA_INIT_MODELS: "gemma4:31b-cloud gpt-oss:20b-cloud nemotron-3-nano:30b-cloud"
     volumes:
       - ollama-cache:/root/.ollama
+      - ./ollama/init-models.sh:/usr/local/bin/init-models:ro
     networks:
       - internal-nw
     entrypoint:
       - /bin/sh
-      - -lc
     command:
-      - >-
-        ollama serve & OLLAMA_PID=$$!; until ollama list > /dev/null 2>&1; do
-          echo 'Waiting for Ollama to be ready...';
-          sleep 1;
-        done; echo 'Ollama is ready. Importing models sequentially...'; for model in $${OLLAMA_INIT_MODELS}; do
-          echo "Pulling $$model...";
-          ollama pull "$$model";
-        done; echo 'All models pulled.'; kill "$$OLLAMA_PID"
+      - /usr/local/bin/init-models
 
   tei-embedding:
     <<: *external-dns-stabilizer
@@ -274,11 +267,7 @@ services:
       - /bin/sh
       - -lc
     command:
-      - |
-        set -eu
-        cd /opt/hermes
-        uv add "langfuse==4.14.1" || true
-        exec /init /opt/hermes/docker/main-wrapper.sh gateway run
+      - /opt/data/docker/start-gateway.sh
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API

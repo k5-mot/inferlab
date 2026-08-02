@@ -8,9 +8,9 @@ Dify、plugin daemon、agent backend、sandbox、PostgreSQL、Redis、Qdrant、n
 
 | Service | 初期化内容 |
 | --- | --- |
-| `dify-init-permissions` | `dify-storage` volumeのownerをDify実行userへ変更し、`.init_permissions` stampを作成する。 |
+| `dify-init-permissions` | `init/ensure-storage-permissions.sh`で`dify-storage` volumeのownerをDify実行userへ変更し、`.init_permissions` stampを作成する。 |
 | `dify-api` | `MIGRATION_ENABLED=true`によりDify本体DB migrationを実行する。 |
-| `dify-postgres-init` | plugin daemon用の`dify_plugin` databaseを存在しなければ作成する。 |
+| `dify-postgres-init` | `init/ensure-plugin-database.sh`でplugin daemon用の`dify_plugin` databaseを存在しなければ作成する。 |
 | `dify-plugin-daemon` | `dify-postgres-init`完了後にplugin storageとplugin APIを起動する。 |
 | `dify-nginx` | API、Web、plugin daemonがhealthyになってから公開endpointを起動する。 |
 

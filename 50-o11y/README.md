@@ -22,7 +22,7 @@ Portainerは管理UIでありobservability基盤の中核ではないため、�
 | 対象 | 初期化内容 |
 | --- | --- |
 | `grafana` | `grafana/provisioning`と`grafana/dashboards`を読み込み、datasource、dashboard、folderを自動登録する。 |
-| `prometheus` | `prometheus/prometheus.yaml`内のplaceholderを環境変数で置換し、`/tmp/prometheus.yaml`を生成してから起動する。 |
+| `prometheus` | `prometheus/render-and-start-prometheus.sh`で`prometheus/prometheus.yaml`内のplaceholderを環境変数で置換し、`/tmp/prometheus.yaml`を生成してから起動する。 |
 | `llm-quota-exporter` | `llm-quota-config/quotas.yaml`を読み込み、LLM quota metricsを公開する。 |
 | `node-exporter` | host rootfsをread-only mountしてhost metricsを公開する。 |
 | `cadvisor` | Docker/host filesystemをread-only mountしてcontainer metricsを公開する。 |

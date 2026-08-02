@@ -72,40 +72,13 @@ services:
     user: git
     command:
       - sh
-      - -euc
-      - |
-        auth_id="$$(gitea admin auth list --config /data/gitea/conf/app.ini | awk '$$2 == "keycloak" { print $$1; exit }')"
-        if [ -n "$${auth_id}" ]; then
-          gitea admin auth update-oauth \
-            --config /data/gitea/conf/app.ini \
-            --id "$${auth_id}" \
-            --name keycloak \
-            --provider openidConnect \
-            --key gitea \
-            --secret "$${GITEA_OIDC_CLIENT_SECRET}" \
-            --auto-discover-url "$${GITEA_OIDC_DISCOVERY_URL}" \
-            --scopes openid \
-            --scopes email \
-            --scopes profile \
-            --group-claim-name groups
-        else
-          gitea admin auth add-oauth \
-            --config /data/gitea/conf/app.ini \
-            --name keycloak \
-            --provider openidConnect \
-            --key gitea \
-            --secret "$${GITEA_OIDC_CLIENT_SECRET}" \
-            --auto-discover-url "$${GITEA_OIDC_DISCOVERY_URL}" \
-            --scopes openid \
-            --scopes email \
-            --scopes profile \
-            --group-claim-name groups
-        fi
+      - /usr/local/bin/sync-keycloak-oauth
     environment:
       GITEA_OIDC_CLIENT_SECRET: ${GITEA_OIDC_CLIENT_SECRET:-sk-gitea-oidc-client-secret-key}
       GITEA_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
     volumes:
       - gitea_data:/data
+      - ./init/sync-keycloak-oauth.sh:/usr/local/bin/sync-keycloak-oauth:ro
     networks:
       - internal-nw
     depends_on:

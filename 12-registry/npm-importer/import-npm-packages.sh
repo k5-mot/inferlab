@@ -26,9 +26,11 @@ esac
 npm config set "//verdaccio:4873/:_authToken" "$NPM_PUBLISH_TOKEN"
 
 while true; do
+  # 後からtgzを追加する運用を許すため、importerは一度で終了せず定期的に走査する。
   set -- "$IMPORTS_DIR"/*.tgz
   if [ -e "$1" ]; then
     for file in "$IMPORTS_DIR"/*.tgz; do
+      # publish済みかどうかをpackage名とversionで判定し、Verdaccio側の重複エラーを避ける。
       package="$(
         tar -xOf "$file" package/package.json |
           node -e 'let s = ""; process.stdin.on("data", d => s += d); process.stdin.on("end", () => { const p = JSON.parse(s); console.log(p.name + "@" + p.version); });'

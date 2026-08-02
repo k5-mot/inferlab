@@ -388,17 +388,12 @@ services:
       RUSTFS_DEFAULT_BUCKET: oikb-bucket
     entrypoint:
       - /bin/sh
-      - -euc
-    command:
-      - |
-        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
-          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
-        else
-          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
-          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
-        fi
+      - /usr/local/bin/ensure-s3-bucket
+    command: []
     networks:
       - internal-nw
+    volumes:
+      - ../00-common/scripts/ensure-s3-bucket.sh:/usr/local/bin/ensure-s3-bucket:ro
     depends_on:
       oikb-rustfs:
         condition: service_healthy

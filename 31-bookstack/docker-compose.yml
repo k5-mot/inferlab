@@ -68,16 +68,11 @@ services:
       - bookstack
     command:
       - sh
-      - -ec
-      - |
-        rm -rf /target/*
-        cp -R /source/. /target/
-        chown -R root:root /target
-        find /target -type d -exec chmod 755 {} +
-        find /target -type f -exec chmod 755 {} +
+      - /usr/local/bin/copy-custom-cont-init
     volumes:
       - ./custom-cont-init.d:/source:ro
       - bookstack-custom-cont-init:/target
+      - ./init/copy-custom-cont-init.sh:/usr/local/bin/copy-custom-cont-init:ro
 
   bookstack-mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.12

@@ -119,34 +119,8 @@ services:
       - o11y
     entrypoint:
       - /bin/sh
-      - -ec
-    command:
-      - |
-        awk '
-        BEGIN {
-          couchdb_user = ENVIRON["COUCHDB_USER"]
-          couchdb_password = ENVIRON["COUCHDB_PASSWORD"]
-          litellm_master_key = ENVIRON["LITELLM_MASTER_KEY"]
-          gsub(/\\/, "\\\\", couchdb_user)
-          gsub(/&/, "\\&", couchdb_user)
-          gsub(/\\/, "\\\\", couchdb_password)
-          gsub(/&/, "\\&", couchdb_password)
-          gsub(/\\/, "\\\\", litellm_master_key)
-          gsub(/&/, "\\&", litellm_master_key)
-        }
-        {
-          gsub(/__COUCHDB_USER__/, couchdb_user)
-          gsub(/__COUCHDB_PASSWORD__/, couchdb_password)
-          gsub(/__LITELLM_MASTER_KEY__/, litellm_master_key)
-          print
-        }
-        ' /etc/prometheus/prometheus.yaml > /tmp/prometheus.yaml
-        exec /bin/prometheus \
-          --config.file=/tmp/prometheus.yaml \
-          --storage.tsdb.path=/prometheus \
-          --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d} \
-          --web.enable-lifecycle \
-          --web.enable-otlp-receiver
+      - /usr/local/bin/render-and-start-prometheus
+    command: []
     environment:
       COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
@@ -156,6 +130,7 @@ services:
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./prometheus/render-and-start-prometheus.sh:/usr/local/bin/render-and-start-prometheus:ro
       - ./prometheus/targets:/etc/prometheus/targets:ro
     networks:
       - internal-nw

@@ -20,6 +20,7 @@ php <<'PHP'
 
 declare(strict_types=1);
 
+// Nextcloudの共有APIはoccだけでは既存共有の権限更新が扱いづらいため、起動hook内でAPIを直接使う。
 require_once '/var/www/html/lib/base.php';
 
 $owner = getenv('NEXTCLOUD_OIKB_SHARE_OWNER') ?: 'admin';

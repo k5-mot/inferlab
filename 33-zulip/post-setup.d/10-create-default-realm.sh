@@ -4,6 +4,7 @@ set -euo pipefail
 # メール確認なしで使い始められるように、初期組織と管理者を直接作成する。
 password_file="/data/initial-admin-password"
 if [ -n "${ZULIP_AUTO_CREATE_ADMIN_PASSWORD:-}" ]; then
+  # 明示passwordは永続volumeに残さず、一時file経由でZulip管理commandへ渡す。
   password_file="/tmp/zulip-initial-admin-password"
   printf "%s" "$ZULIP_AUTO_CREATE_ADMIN_PASSWORD" > "$password_file"
 elif [ ! -s "$password_file" ]; then
@@ -46,6 +47,7 @@ apply_fluid_layout_width_to_existing_users = os.environ.get(
 
 realm = Realm.objects.filter(string_id=realm_id).first()
 if realm is None:
+    # 初回起動ではorganizationとownerを同時に作る。
     call_command(
         "create_realm",
         realm_name,
@@ -62,6 +64,7 @@ elif UserProfile.objects.filter(
 ).exists():
     print(f'Zulip admin user "{admin_email}" already exists. Skipping initial creation.')
 else:
+    # realmだけ存在する復旧・再実行時はowner userだけを補完する。
     call_command(
         "create_user",
         admin_email,

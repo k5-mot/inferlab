@@ -18,6 +18,7 @@ if php /var/www/html/occ list user_oidc >/dev/null 2>&1; then
   exit 0
 fi
 
+# Nextcloud本体imageにOIDC appを焼き込まず、volume初期化時だけcustom_appsへ配置する。
 if [ ! -d "${app_dir}" ]; then
   rm -rf "${archive}" "${extract_dir}"
   mkdir -p "${extract_dir}"
@@ -29,6 +30,7 @@ if [ ! -d "${app_dir}" ]; then
     # online環境では公式releaseからOIDC appを復元する。
     curl -fsSL "${NEXTCLOUD_USER_OIDC_URL}" -o "${archive}"
   fi
+  # 起動時downloadでも事前取得archiveでも、同じchecksumで固定して内容の漂流を防ぐ。
   echo "${NEXTCLOUD_USER_OIDC_SHA256}  ${archive}" | sha256sum -c -
 
   tar -xzf "${archive}" -C "${extract_dir}"

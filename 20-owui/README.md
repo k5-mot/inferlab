@@ -9,7 +9,7 @@ Open WebUI、Open Terminal、mcpo、SearXNG、OIKB、OIKB用RustFSをまとめ�
 | 対象 | 初期化内容 |
 | --- | --- |
 | `open-webui` | `open-webui/entrypoint_patch.sh`でDocling向けJSON設定をmultipart form用の文字列へ変換してからOpen WebUIを起動する。 |
-| `oikb-rustfs-bucket-init` | RustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
+| `oikb-rustfs-bucket-init` | `../00-common/scripts/ensure-s3-bucket.sh`でRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
 | `oikb` | Nextcloud volumeとRustFS bucketをsourceとしてOpen WebUI Knowledgeへ同期する。 |
 
 Open WebUIのKeycloak連携は、`OAUTH_CLIENT_SECRET`とKeycloak側`open-webui` client secretの一致が前提になる。
