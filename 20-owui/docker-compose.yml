@@ -277,7 +277,8 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/mcpo:git-45c474e
+    # 公式READMEのDocker usageが`ghcr.io/open-webui/mcpo:main`を指定しているため、mcpoのみ例外的にmain tagを採用する。
+    image: ghcr.io/open-webui/mcpo:main
     container_name: ${STACK_NAME:-inferlab}-mcpo
     restart: unless-stopped
     profiles:
