@@ -15,6 +15,20 @@ GrafanaとPrometheusを中心にしたobservability stack。
 
 Portainerは管理UIでありobservability基盤の中核ではないため、このstackには含めない。
 
+## 起動時初期化
+
+このstackでは、Grafana provisioningとPrometheus設定生成を起動時に行う。
+
+| 対象 | 初期化内容 |
+| --- | --- |
+| `grafana` | `grafana/provisioning`と`grafana/dashboards`を読み込み、datasource、dashboard、folderを自動登録する。 |
+| `prometheus` | `prometheus/prometheus.yaml`内のplaceholderを環境変数で置換し、`/tmp/prometheus.yaml`を生成してから起動する。 |
+| `llm-quota-exporter` | `llm-quota-config/quotas.yaml`を読み込み、LLM quota metricsを公開する。 |
+| `node-exporter` | host rootfsをread-only mountしてhost metricsを公開する。 |
+| `cadvisor` | Docker/host filesystemをread-only mountしてcontainer metricsを公開する。 |
+
+Prometheus templateでは、CouchDB scrape用user/passwordとLiteLLM scrape用Bearer tokenを実行時に注入する。repository内の`prometheus/prometheus.yaml`へsecretを直接書かない。
+
 ## 起動
 
 ```bash
@@ -47,6 +61,31 @@ NVIDIA GPU metricsを有効化する場合は、`docker-compose.yml`の`nvidia-d
 - `docker compose config --quiet`が失敗する。
 - GrafanaまたはPrometheusのcontainerがunhealthyになる。
 - Prometheusが`50-o11y/prometheus/prometheus.yaml`を読み込めない。
+
+## 確認手順
+
+```bash
+# o11y profileのcontainer状態を確認する。
+sudo docker compose --env-file .env --profile o11y ps
+
+# Prometheusのruntime設定検証結果を確認する。
+sudo docker compose --env-file .env --profile o11y exec prometheus promtool check config /tmp/prometheus.yaml
+
+# Grafana health endpointを確認する。
+curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api/health" >/dev/null
+```
+
+期待結果:
+
+- Prometheusのruntime設定検証が成功する。
+- Grafanaのhealth endpointが成功する。
+- Prometheus targetsに起動済みprofileのscrape対象が表示される。
+
+失敗条件:
+
+- placeholder置換後の`/tmp/prometheus.yaml`が不正になる。
+- Grafana provisioningのdatasourceまたはdashboard JSONが読み込めない。
+- host metrics用mountが権限不足で失敗する。
 
 ## 初期scrape対象
 

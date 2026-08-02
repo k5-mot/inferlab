@@ -9,6 +9,19 @@ Giteaを中心にしたteam git stack。
 
 Giteaは公式Docker imageを使用し、PostgreSQL接続は公式documentの`GITEA__database__*`環境変数方式に合わせる。
 
+## 起動時初期化
+
+`gitea`本体がhealthyになった後、`gitea-keycloak-init`がGitea CLIでKeycloak OAuth sourceを作成または更新する。
+
+初期化処理は次の通り。
+
+1. `/data/gitea/conf/app.ini`を使って既存auth sourceを確認する。
+2. `keycloak`という名前のauth sourceがあれば`update-oauth`で更新する。
+3. 無ければ`add-oauth`でOpenID Connect auth sourceを追加する。
+4. `openid`、`email`、`profile` scopeと`groups` claimを設定する。
+
+この処理はGitea管理者userの作成とは別である。管理者userは手動で作成する。
+
 ## 起動
 
 ```bash
@@ -54,6 +67,24 @@ sudo docker compose --env-file .env --profile gitea exec gitea gitea admin user 
 
 - 同名userが既に存在する。
 - Giteaのdatabase migrationが完了していない。
+
+## Keycloak連携の確認
+
+```bash
+# Keycloak OAuth sourceが登録されていることを確認する。
+sudo docker compose --env-file .env --profile gitea exec gitea gitea admin auth list --config /data/gitea/conf/app.ini
+```
+
+期待値:
+
+- `keycloak` auth sourceが表示される。
+- Gitea login画面にKeycloak loginが表示される。
+
+失敗条件:
+
+- `gitea-keycloak-init`が`exited (0)`にならない。
+- `GITEA_OIDC_CLIENT_SECRET`がKeycloak側client secretと一致しない。
+- discovery URLへ接続できない。
 
 ## References
 

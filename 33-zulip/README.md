@@ -1,5 +1,38 @@
 # Zulip
 
+Zulip、PostgreSQL、Memcached、RabbitMQ、Redisをまとめたchat stack。Keycloak OIDC loginと初期realm/user作成をCompose内で扱う。
+
+## 起動時初期化
+
+Zulip本体は`/data/post-setup.d`を実行する。Composeでは`33-zulip/post-setup.d`をbind mountし、起動後に次の処理を適用する。
+
+| Script | 初期化内容 |
+| --- | --- |
+| `10-create-default-realm.sh` | 初期組織、初期管理者、theme、fluid layout設定を作成または更新する。 |
+| `20-keycloak-ca.sh` | Keycloak HTTPS issuer用の自己署名証明書をcontainerのtrust storeへ追加する。 |
+
+Zulipの初期管理者passwordは、`ZULIP_AUTO_CREATE_ADMIN_PASSWORD`があればその値を使う。未指定の場合は`/data/initial-admin-password`へランダム値を生成する。
+
+## 起動
+
+```bash
+# Zulip stackを起動する。
+sudo docker compose --env-file .env --profile zulip up -d
+```
+
+期待結果:
+
+- `zulip-postgres`、`zulip-rabbitmq`、`zulip-redis`がhealthyになる。
+- `zulip`が`https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}`で応答する。
+- 初期組織と初期管理者が作成される。
+- Keycloak OIDC provider設定が有効になる。
+
+失敗条件:
+
+- `post-setup.d`のscriptが失敗し、Zulip containerが再起動を繰り返す。
+- Keycloak証明書が信頼されずOIDC discoveryに失敗する。
+- 初期管理者password fileを作成できない。
+
 ## 操作性調整CSS
 
 ZulipのWeb UIへ、操作性に直結する高さと余白だけを調整するCSSを適用する。`docker-compose.yml`は`/local-static/themes/usability.css`を配信し、nginxの`sub_filter`で通常HTMLの`</head>`直前にCSS linkを追加する。
@@ -80,6 +113,31 @@ docker compose --profile zulip up -d zulip
 `ZULIP_FLUID_LAYOUT_WIDTH=True`はZulip標準のfluid layout user settingを有効化する。`ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS=True`の場合、既存の通常userにも同じlayout設定を反映する。
 
 Keycloak連携はOIDC設定として扱う。`ZULIP_OIDC_ENABLED=False`でZulip側のOIDC provider定義を空にできる。providerのissuer、client ID、表示名、auto signupは`ZULIP_OIDC_URL`、`ZULIP_OIDC_CLIENT_ID`、`ZULIP_OIDC_DISPLAY_NAME`、`ZULIP_OIDC_AUTO_SIGNUP`で変更する。
+
+## 確認手順
+
+```bash
+# Zulip profileのcontainer状態を確認する。
+sudo docker compose --env-file .env --profile zulip ps
+
+# Zulip HTTPS endpointの応答を確認する。
+curl -kfsS "https://${PUBLIC_HOST:-localhost}:${ZULIP_HTTPS_HOST_PORT:-33300}/" >/dev/null
+
+# 自動生成された初期管理者password fileを確認する。
+sudo docker compose --env-file .env --profile zulip exec zulip test -s /data/initial-admin-password
+```
+
+期待結果:
+
+- `zulip`がhealthyになる。
+- 初期管理者password fileが存在する。
+- Keycloak OIDC loginが表示される。
+
+失敗条件:
+
+- `zulip` logにrealm作成失敗が出る。
+- `curl -kfsS`がTLSまたはHTTPエラーで失敗する。
+- 初期管理者password fileが空になる。
 
 ## References
 
