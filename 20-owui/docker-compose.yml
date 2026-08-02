@@ -282,18 +282,17 @@ services:
     restart: unless-stopped
     profiles:
       - owui
+    entrypoint:
+      - /app/.venv/bin/mcpo
     command:
       - --host
       - 0.0.0.0
       - --port
       - "8000"
-      # - --api-key
-      # - sk-mcpo-api-secret-key
+      - --api-key
+      - sk-mcpo-api-secret-key
       - --config
       - /config/config.json
-      - --hot-reload
-      - --
-      - mcp-proxy-server
     ports:
       - 32004:8000
     volumes:
@@ -303,7 +302,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/openapi.json"
+        - "curl -fsS -H \"Authorization: Bearer sk-mcpo-api-secret-key\" http://127.0.0.1:8000/openapi.json"
       interval: 10s
       timeout: 5s
       retries: 3
