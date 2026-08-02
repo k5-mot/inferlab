@@ -177,13 +177,35 @@ sudo docker compose --env-file .env --profile o11y up -d
 
 commit前の軽量検証は`.pre-commit-config.yaml`から実行する。Docker containerを起動しない静的検証として、shell/Python構文とCompose config解決を確認する。
 
+### pre-commit hookの登録
+
+`pre-commit install`は、このrepositoryをcloneした作業treeごとに1回実行する必要がある。`.pre-commit-config.yaml`はGitで共有されるが、`.git/hooks/pre-commit`は各cloneのローカルファイルであり、Git管理対象にはならない。
+
 ```bash
 # pre-commit hookをこのrepositoryへ登録する。
 pre-commit install
 
+# Git hook本体が作成され、実行可能になっていることを確認する。
+test -x .git/hooks/pre-commit
+
+# hook経由で静的検証が発火することを確認する。
+.git/hooks/pre-commit
+
 # commit前と同じ静的検証を手動実行する。
 pre-commit run --all-files
 ```
+
+期待結果:
+
+- `pre-commit installed at .git/hooks/pre-commit`と表示される。
+- `.git/hooks/pre-commit`が存在し、実行権限を持つ。
+- commit実行時に`InferLab init static validation`が`Passed`になる。
+
+失敗条件:
+
+- `pre-commit` commandが見つからない。
+- `.git/hooks/pre-commit`が存在しない、または実行権限を持たない。
+- commit時に`InferLab init static validation`が表示されない。
 
 GitHub Actionsでは、静的検証に加えて省リソースのCompose smoke検証を実行する。smoke検証は全stackを起動せず、初期化対象ごとに必要なprofileとserviceだけを起動する。
 
