@@ -87,6 +87,12 @@ scrape_configs:
       - targets:
           - nextcloud:80
 
+  - job_name: open-webui
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - open-webui:8080
+
   - job_name: text-embeddings-inference
     metrics_path: /metrics
     static_configs:

@@ -17,14 +17,14 @@
 
 | 対象 | 配置先 | 生成元 | License | 作成日 | 備考 |
 | --- | --- | --- | --- | --- | --- |
-| Cloudflared | `services/cloudflared.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Tunnel metricsとscrape状態を表示する。 |
+| Cloudflared | `services/cloudflared.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Cloudflare公式metricsとGrafana Labs dashboardの構成分類を参考に、Tunnel health、traffic、session、edge location、latency、process metricsを表示する。 |
 | CouchDB | `services/couchdb.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Prometheus endpoint metricsとscrape状態を表示する。 |
 | GPU | `services/gpu.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | NVIDIA DCGMとAMD Device Metrics Exporterの代表metricsを表示する。 |
 | Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | repository、issue、runtime metricsを表示する。 |
 | Keycloak | `services/keycloak.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | HTTP、DB pool、cache、JVM metricsを表示する。 |
 | LLM Free Quota | `services/llm-free-quota.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | OpenRouter、Ollama Cloud、Google AI Studio、Cerebrasの無料枠meterを表示する。 |
 | Nextcloud | `services/nextcloud.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenMetrics endpoint metricsとscrape状態を表示する。 |
-| Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metrics、user数、route hotspotを表示する。 |
+| Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metrics、user数、route hotspot、blackbox疎通状態を表示する。 |
 
 ## 採用候補
 
@@ -44,6 +44,9 @@
 
 - [Grafana dashboard provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards)
 - [Grafana licensing](https://grafana.com/licensing/)
+- [Cloudflare Tunnel metrics](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/monitor-tunnels/metrics/)
+- [Monitor Cloudflare Tunnel with Grafana](https://developers.cloudflare.com/cloudflare-one/tutorials/grafana/)
+- [Grafana Labs Cloudflare Tunnel dashboard](https://grafana.com/grafana/dashboards/24874-cloudflare-tunnel/)
 - [Prometheus exporters and integrations](https://prometheus.io/docs/instrumenting/exporters/)
 - [ROCm Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [AMD Device Metrics Exporter Prometheus and Grafana integration](https://instinct.docs.amd.com/projects/device-metrics-exporter/en/latest/integrations/prometheus-grafana.html)

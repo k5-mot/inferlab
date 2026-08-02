@@ -132,9 +132,9 @@ def gauge_panel(
                 "thresholds": {
                     "mode": "absolute",
                     "steps": [
-                        {"color": "green", "value": None},
-                        {"color": "yellow", "value": 70},
-                        {"color": "red", "value": 90},
+                        {"color": "red", "value": None},
+                        {"color": "yellow", "value": 30},
+                        {"color": "green", "value": 70},
                     ],
                 },
                 "unit": unit,
@@ -400,8 +400,8 @@ def placed_panel(panel: dict[str, Any], panel_id: int, grid_pos: dict[str, int])
     return result
 
 
-def quota_usage_expr(provider: str, window: str) -> str:
-    """quota使用率のPromQLを作成する。
+def quota_remaining_expr(provider: str, window: str) -> str:
+    """quota残量率のPromQLを作成する。
 
     Args:
         provider: quota provider label。
@@ -411,7 +411,7 @@ def quota_usage_expr(provider: str, window: str) -> str:
         0から100のpercent値を返すPromQL式。
     """
     selector = f'provider="{provider}",window="{window}"'
-    return f"100 * sum(llm_quota_used{{{selector}}}) / clamp_min(sum(llm_quota_limit{{{selector}}}), 1)"
+    return f"100 * sum(llm_quota_remaining{{{selector}}}) / clamp_min(sum(llm_quota_limit{{{selector}}}), 1)"
 
 
 def llm_quota_panels() -> list[dict[str, Any]]:
@@ -435,8 +435,8 @@ def llm_quota_panels() -> list[dict[str, Any]]:
         panels.append(
             gauge_panel(
                 panel_id,
-                f"{title} weekly limit",
-                quota_usage_expr(provider, "week_7d"),
+                f"{title} weekly remaining",
+                quota_remaining_expr(provider, "week_7d"),
                 grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 0},
             )
         )
@@ -445,8 +445,8 @@ def llm_quota_panels() -> list[dict[str, Any]]:
         panels.append(
             gauge_panel(
                 panel_id,
-                f"{title} today limit",
-                quota_usage_expr(provider, "day"),
+                f"{title} today remaining",
+                quota_remaining_expr(provider, "day"),
                 grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 7},
             )
         )
@@ -516,11 +516,20 @@ def main() -> None:
             "job": "cloudflared",
             "panels": [
                 service_panel("Tunnel Connections", [{"expr": 'cloudflared_tunnel_ha_connections{job="cloudflared"}', "legend": "ha connections"}]),
-                service_panel("Tunnel Requests and Errors", [{"expr": 'rate(cloudflared_tunnel_total_requests{job="cloudflared"}[5m])', "legend": "requests"}, {"expr": 'rate(cloudflared_tunnel_request_errors{job="cloudflared"}[5m])', "legend": "errors"}], "reqps"),
+                service_panel("Concurrent Requests Per Tunnel", [{"expr": 'cloudflared_tunnel_concurrent_requests_per_tunnel{job="cloudflared"}', "legend": "{{instance}}"}]),
+                service_panel("Request and Origin Error Rate", [{"expr": 'rate(cloudflared_tunnel_total_requests{job="cloudflared"}[5m])', "legend": "requests"}, {"expr": 'rate(cloudflared_tunnel_request_errors{job="cloudflared"}[5m])', "legend": "origin errors"}], "reqps"),
                 service_panel("Response Codes", [{"expr": 'sum by (status_code) (rate(cloudflared_tunnel_response_by_code{job="cloudflared"}[5m]))', "legend": "{{status_code}}"}], "reqps"),
-                service_panel("Active Sessions", [{"expr": 'cloudflared_tcp_active_sessions{job="cloudflared"}', "legend": "tcp"}, {"expr": 'cloudflared_udp_active_sessions{job="cloudflared"}', "legend": "udp"}]),
+                service_panel("Origin Error Ratio", [{"expr": '100 * sum(rate(cloudflared_tunnel_request_errors{job="cloudflared"}[5m])) / clamp_min(sum(rate(cloudflared_tunnel_total_requests{job="cloudflared"}[5m])), 1)', "legend": "origin error ratio"}], "percent"),
+                service_panel("TCP/UDP Active Sessions", [{"expr": 'cloudflared_tcp_active_sessions{job="cloudflared"}', "legend": "tcp"}, {"expr": 'cloudflared_udp_active_sessions{job="cloudflared"}', "legend": "udp"}]),
+                service_panel("TCP/UDP Session Rate", [{"expr": 'rate(cloudflared_tcp_total_sessions{job="cloudflared"}[5m])', "legend": "tcp"}, {"expr": 'rate(cloudflared_udp_total_sessions{job="cloudflared"}[5m])', "legend": "udp"}], "ops"),
+                service_panel("Tunnel Registration Events", [{"expr": 'rate(cloudflared_tunnel_tunnel_register_success{job="cloudflared"}[5m])', "legend": "success"}, {"expr": 'rate(cloudflared_tunnel_tunnel_register_fail{job="cloudflared"}[5m])', "legend": "fail"}], "ops"),
+                service_panel("Edge Locations", [{"expr": 'cloudflared_tunnel_server_locations{job="cloudflared"}', "legend": "{{edge_location}}"}]),
+                service_panel("RPC Operations and Failures", [{"expr": 'rate(cloudflared_rpc_client_operations{job="cloudflared"}[5m])', "legend": "operations"}, {"expr": 'rate(cloudflared_rpc_client_failures{job="cloudflared"}[5m])', "legend": "failures"}], "ops"),
+                service_panel("RPC Latency p95", [{"expr": 'histogram_quantile(0.95, sum by (le) (rate(cloudflared_rpc_client_latency_secs_bucket{job="cloudflared"}[5m])))', "legend": "p95"}], "s"),
                 service_panel("Proxy Connect Latency p95", [{"expr": 'histogram_quantile(0.95, sum by (le) (rate(cloudflared_proxy_connect_latency_bucket{job="cloudflared"}[5m])))', "legend": "p95"}], "s"),
-                service_panel("Process Resources", [{"expr": 'process_resident_memory_bytes{job="cloudflared"}', "legend": "rss"}, {"expr": 'go_goroutines{job="cloudflared"}', "legend": "goroutines"}], "short"),
+                service_panel("Process Memory", [{"expr": 'process_resident_memory_bytes{job="cloudflared"}', "legend": "rss"}, {"expr": 'go_memstats_heap_inuse_bytes{job="cloudflared"}', "legend": "heap in-use"}], "bytes"),
+                service_panel("Process Concurrency", [{"expr": 'go_goroutines{job="cloudflared"}', "legend": "goroutines"}, {"expr": 'promhttp_metric_handler_requests_in_flight{job="cloudflared"}', "legend": "metrics in flight"}]),
+                service_table("Build Info", 'build_info{job="cloudflared"}'),
             ],
         },
         {
@@ -612,6 +621,8 @@ def main() -> None:
                 service_panel("Users", [{"expr": 'webui_users_total{job="open-webui"}', "legend": "total"}, {"expr": 'webui_users_active{job="open-webui"}', "legend": "active"}, {"expr": 'webui_users_active_today{job="open-webui"}', "legend": "active today"}]),
                 service_panel("Status Code Mix", [{"expr": 'sum by (http_status_code) (rate(http_server_requests_total{job="open-webui"}[5m]))', "legend": "{{http_status_code}}"}], "reqps"),
                 service_panel("Route Hotspots", [{"expr": 'topk(10, sum by (http_route) (rate(http_server_requests_total{job="open-webui"}[5m])))', "legend": "{{http_route}}"}], "reqps"),
+                service_panel("Blackbox Availability", [{"expr": 'probe_success{job="blackbox-http",instance="http://open-webui:8080"}', "legend": "probe success"}]),
+                service_panel("Blackbox Duration", [{"expr": 'probe_duration_seconds{job="blackbox-http",instance="http://open-webui:8080"}', "legend": "probe duration"}], "s"),
                 service_table("OpenTelemetry Target Info", 'target_info{job="open-webui"}'),
             ],
         },
