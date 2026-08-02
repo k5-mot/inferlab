@@ -34,7 +34,7 @@ $Images = @(
     "docker.io/library/registry:3",
     "docker.io/library/redis:8.8.0-alpine",
     "docker.io/litellm/litellm:v1.91.0",
-    "docker.io/nousresearch/hermes-agent:main",
+    "docker.io/nousresearch/hermes-agent:v2026.7.30",
     "docker.io/ollama/ollama:0.31.1",
     "docker.io/prom/prometheus:v3.13.1",
     "docker.io/qdrant/qdrant:v1.18.2",
