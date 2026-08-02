@@ -408,7 +408,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: ghcr.io/k5-mot/oikb@sha256:1fbff6b0d07c4e50446ec6fd2e38df4d2f23449d114883733852181b1cb96669
+    # image: ghcr.io/k5-mot/oikb
     container_name: ${STACK_NAME:-inferlab}-oikb
     restart: unless-stopped
     user: "1000:33"
