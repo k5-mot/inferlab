@@ -22,42 +22,6 @@
 #   - https://github.com/NVIDIA/dcgm-exporter
 #
 services:
-  llm-quota-exporter:
-    build: ./llm-quota-exporter
-    container_name: ${STACK_NAME:-inferlab}-llm-quota-exporter
-    restart: unless-stopped
-    profiles:
-      - o11y
-    environment:
-      QUOTA_CONFIG_PATH: /config/quotas.yaml
-      DB_PATH: /data/usage.db
-      POLL_INTERVAL_SECONDS: ${LLM_QUOTA_POLL_INTERVAL_SECONDS:-60}
-      REQUEST_TIMEOUT_SECONDS: ${LLM_QUOTA_REQUEST_TIMEOUT_SECONDS:-10}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OLLAMA_BASE_URL: ${LLM_QUOTA_OLLAMA_BASE_URL:-http://ollama:11434}
-      INGEST_TOKEN: ${LLM_QUOTA_INGEST_TOKEN:-}
-      CHATGPT_PRO_STATUS: ${CHATGPT_PRO_STATUS:-unknown}
-      CHATGPT_PRO_RESET_TIMESTAMP: ${CHATGPT_PRO_RESET_TIMESTAMP:-0}
-    ports:
-      - ${LLM_QUOTA_EXPORTER_HTTP_HOST_PORT:-35002}:9469
-    volumes:
-      - ./llm-quota-config:/config:ro
-      - llm_quota_exporter_data:/data
-    networks:
-      - internal-nw
-    healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:9469/healthz', timeout=3).read()\" || exit 1" ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-    labels:
-      - homepage.icon=/icons/grafana.png
-      - homepage.group=50-o11y
-      - homepage.name=LLM Quota Exporter
-      - homepage.href=http://${PUBLIC_HOST}:${LLM_QUOTA_EXPORTER_HTTP_HOST_PORT:-35002}/metrics
-      - homepage.description=LLM quota and usage metrics exporter
-
   grafana:
     image: docker.io/grafana/grafana:13.1.1
     container_name: ${STACK_NAME:-inferlab}-grafana
@@ -162,8 +126,6 @@ services:
     networks:
       - internal-nw
     depends_on:
-      llm-quota-exporter:
-        condition: service_healthy
       node-exporter:
         condition: service_healthy
       cadvisor:
@@ -648,7 +610,6 @@ services:
 
 volumes:
   grafana_data:
-  llm_quota_exporter_data:
   prometheus_data:
 
 networks:

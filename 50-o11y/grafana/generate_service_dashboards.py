@@ -103,60 +103,6 @@ def stat_panel(
     }
 
 
-def gauge_panel(
-    panel_id: int,
-    title: str,
-    expr: str,
-    unit: str = "percent",
-    grid_pos: dict[str, int] | None = None,
-) -> dict[str, Any]:
-    """gauge panelを作成する。
-
-    Args:
-        panel_id: Grafana panel ID。
-        title: panel title。
-        expr: PromQL式。
-        unit: Grafana field unit。
-        grid_pos: 明示的に配置する場合のgridPos。Noneの場合は標準配置。
-
-    Returns:
-        Grafana dashboard JSONのgauge panel定義。
-    """
-    return {
-        "datasource": DATASOURCE,
-        "fieldConfig": {
-            "defaults": {
-                "color": {"mode": "thresholds"},
-                "max": 100,
-                "min": 0,
-                "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                        {"color": "red", "value": None},
-                        {"color": "yellow", "value": 30},
-                        {"color": "green", "value": 70},
-                    ],
-                },
-                "unit": unit,
-            },
-            "overrides": [],
-        },
-        "gridPos": grid_pos or grid(panel_id),
-        "id": panel_id,
-        "options": {
-            "orientation": "auto",
-            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
-            "showThresholdLabels": False,
-            "showThresholdMarkers": True,
-            "sizing": "auto",
-        },
-        "pluginVersion": "13.1.1",
-        "targets": [target(expr, "A")],
-        "title": title,
-        "type": "gauge",
-    }
-
-
 def timeseries_panel(
     panel_id: int,
     title: str,
@@ -366,117 +312,6 @@ def service_table(title: str, expr: str) -> dict[str, Any]:
     return panel
 
 
-def service_gauge(title: str, expr: str, unit: str = "percent") -> dict[str, Any]:
-    """サービス固有のgauge panel雛形を作成する。
-
-    Args:
-        title: panel title。
-        expr: PromQL式。
-        unit: Grafana field unit。
-
-    Returns:
-        IDと配置を後で設定するgauge panel定義。
-    """
-    panel = gauge_panel(1, title, expr, unit)
-    panel.pop("id")
-    panel.pop("gridPos")
-    return panel
-
-
-def placed_panel(panel: dict[str, Any], panel_id: int, grid_pos: dict[str, int]) -> dict[str, Any]:
-    """panelへIDと明示grid位置を設定する。
-
-    Args:
-        panel: 位置未設定または仮設定のpanel定義。
-        panel_id: Grafana panel ID。
-        grid_pos: Grafana gridPos。
-
-    Returns:
-        IDとgridPosを設定したpanel定義。
-    """
-    result = dict(panel)
-    result["id"] = panel_id
-    result["gridPos"] = grid_pos
-    return result
-
-
-def quota_remaining_expr(provider: str, window: str) -> str:
-    """quota残量率のPromQLを作成する。
-
-    Args:
-        provider: quota provider label。
-        window: quota window label。
-
-    Returns:
-        0から100のpercent値を返すPromQL式。
-    """
-    selector = f'provider="{provider}",window="{window}"'
-    return f"100 * sum(llm_quota_remaining{{{selector}}}) / clamp_min(sum(llm_quota_limit{{{selector}}}), 1)"
-
-
-def llm_quota_panels() -> list[dict[str, Any]]:
-    """LLM無料枠dashboard専用panelを作成する。
-
-    Args:
-        None。
-
-    Returns:
-        LLM無料枠dashboardのpanel定義配列。
-    """
-    providers = [
-        ("openrouter", "OpenRouter"),
-        ("ollamacloud", "Ollama Cloud"),
-        ("google_ai_studio", "Google AI Studio"),
-        ("cerebras", "Cerebras"),
-    ]
-    panels: list[dict[str, Any]] = []
-    panel_id = 1
-    for index, (provider, title) in enumerate(providers):
-        panels.append(
-            gauge_panel(
-                panel_id,
-                f"{title} weekly remaining",
-                quota_remaining_expr(provider, "week_7d"),
-                grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 0},
-            )
-        )
-        panel_id += 1
-    for index, (provider, title) in enumerate(providers):
-        panels.append(
-            gauge_panel(
-                panel_id,
-                f"{title} today remaining",
-                quota_remaining_expr(provider, "day"),
-                grid_pos={"h": 7, "w": 6, "x": index * 6, "y": 7},
-            )
-        )
-        panel_id += 1
-    panels.append(
-        timeseries_panel(
-            panel_id,
-            "Provider request frequency",
-            [
-                {
-                    "expr": 'sum by (provider) (rate(llm_usage_requests_total{provider=~"openrouter|ollamacloud|google_ai_studio|cerebras"}[5m]))',
-                    "legend": "{{provider}}",
-                }
-            ],
-            "reqps",
-            {"h": 9, "w": 24, "x": 0, "y": 14},
-        )
-    )
-    panel_id += 1
-    panels.append(
-        table_panel(
-            panel_id,
-            "Quota details - source label shows api/configured/estimated",
-            'llm_quota_limit{provider=~"openrouter|ollamacloud|google_ai_studio|cerebras"}',
-            {"h": 8, "w": 24, "x": 0, "y": 23},
-        )
-    )
-    return panels
-
-
 def write_dashboard(config: dict[str, Any]) -> None:
     """dashboard JSONをファイルへ書き出す。
 
@@ -587,14 +422,6 @@ def main() -> None:
                 service_panel("JVM Memory", [{"expr": 'sum by (area) (jvm_memory_used_bytes{job="keycloak"})', "legend": "{{area}} used"}, {"expr": 'sum by (area) (jvm_memory_max_bytes{job="keycloak"})', "legend": "{{area}} max"}], "bytes"),
                 service_panel("Password Hash Validations", [{"expr": 'sum by (provider) (rate(keycloak_credentials_password_hashing_validations_total{job="keycloak"}[5m]))', "legend": "{{provider}}"}], "ops"),
             ],
-        },
-        {
-            "file": "llm-free-quota.json",
-            "title": "LLM Free Quota",
-            "uid": "svc-llm-free-quota",
-            "job": "llm-quota-exporter",
-            "base_panels": False,
-            "panels": llm_quota_panels(),
         },
         {
             "file": "nextcloud.json",

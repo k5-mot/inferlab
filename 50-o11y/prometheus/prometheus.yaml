@@ -108,12 +108,6 @@ scrape_configs:
       - targets:
           - litellm:4000
 
-  - job_name: llm-quota-exporter
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - llm-quota-exporter:9469
-
   - job_name: searxng
     metrics_path: /metrics
     basic_auth:

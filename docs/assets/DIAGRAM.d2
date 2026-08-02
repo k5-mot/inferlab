@@ -559,14 +559,6 @@ service_catalog: {
         }
       }
 
-      llm_quota_exporter: {
-        label: "LLM Quota Exporter\n35002"
-        icon: "../../00-common/homepage/icons/prometheus.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#0891b2"
-        }
-      }
     }
 
     51_langfuse: {
@@ -614,4 +606,3 @@ service_catalog.row_3.20_owui.oikb -> service_catalog.row_3.20_owui.oikb_rustfs
 service_catalog.row_3.20_owui.oikb -> service_catalog.row_3.30_nextcloud.nextcloud
 
 service_catalog.row_4.50_o11y.grafana -> service_catalog.row_4.50_o11y.prometheus
-service_catalog.row_4.50_o11y.prometheus -> service_catalog.row_4.50_o11y.llm_quota_exporter

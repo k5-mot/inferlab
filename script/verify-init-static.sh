@@ -22,7 +22,10 @@ verify_shell_syntax() {
     git ls-files '*.sh' \
       ':!:10-inference/hermes-agent/lazy-packages/**' \
       ':!:node_modules/**' \
-      ':!:.venv/**'
+      ':!:.venv/**' |
+      while IFS= read -r tracked_file; do
+        [[ -f "${tracked_file}" ]] && printf '%s\n' "${tracked_file}"
+      done
   )
 
   if ((${#shell_files[@]} == 0)); then
@@ -47,7 +50,10 @@ verify_python_syntax() {
     git ls-files '*.py' \
       ':!:10-inference/hermes-agent/lazy-packages/**' \
       ':!:node_modules/**' \
-      ':!:.venv/**'
+      ':!:.venv/**' |
+      while IFS= read -r tracked_file; do
+        [[ -f "${tracked_file}" ]] && printf '%s\n' "${tracked_file}"
+      done
   )
 
   if ((${#python_files[@]} == 0)); then
@@ -72,7 +78,10 @@ verify_javascript_syntax() {
     git ls-files '*.js' '*.cjs' '*.mjs' \
       ':!:10-inference/hermes-agent/lazy-packages/**' \
       ':!:node_modules/**' \
-      ':!:.venv/**'
+      ':!:.venv/**' |
+      while IFS= read -r tracked_file; do
+        [[ -f "${tracked_file}" ]] && printf '%s\n' "${tracked_file}"
+      done
   )
 
   if ((${#javascript_files[@]} == 0)); then

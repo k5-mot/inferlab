@@ -22,7 +22,6 @@
 | GPU | `services/gpu.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | NVIDIA DCGMとAMD Device Metrics Exporterの代表metricsを表示する。 |
 | Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | repository、issue、runtime metricsを表示する。 |
 | Keycloak | `services/keycloak.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | HTTP、DB pool、cache、JVM metricsを表示する。 |
-| LLM Free Quota | `services/llm-free-quota.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | OpenRouter、Ollama Cloud、Google AI Studio、Cerebrasの無料枠meterを表示する。 |
 | Nextcloud | `services/nextcloud.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenMetrics endpoint metricsとscrape状態を表示する。 |
 | Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metrics、user数、route hotspot、blackbox疎通状態を表示する。 |
 

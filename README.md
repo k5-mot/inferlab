@@ -101,7 +101,6 @@
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |
-| `o11y` | `llm-quota-exporter` | `${LLM_QUOTA_EXPORTER_HTTP_HOST_PORT:-35002}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `cadvisor` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `blackbox-exporter` | - | `50-o11y/docker-compose.yml` |

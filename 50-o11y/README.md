@@ -9,7 +9,6 @@ GrafanaとPrometheusを中心にしたobservability stack。
 - Node Exporter
 - cAdvisor
 - Blackbox Exporter
-- LLM Quota Exporter
 - AMD Device Metrics Exporter（初期状態では無効）
 - NVIDIA DCGM Exporter（初期状態では無効）
 
@@ -23,7 +22,6 @@ Portainerは管理UIでありobservability基盤の中核ではないため、�
 | --- | --- |
 | `grafana` | `grafana/provisioning`と`grafana/dashboards`を読み込み、datasource、dashboard、folderを自動登録する。 |
 | `prometheus` | Compose内のentrypoint commandで`prometheus/prometheus.yaml`内のplaceholderを環境変数で置換し、`/tmp/prometheus.yaml`を生成してから起動する。 |
-| `llm-quota-exporter` | `llm-quota-config/quotas.yaml`を読み込み、LLM quota metricsを公開する。 |
 | `node-exporter` | host rootfsをread-only mountしてhost metricsを公開する。 |
 | `cadvisor` | Docker/host filesystemをread-only mountしてcontainer metricsを公開する。 |
 
@@ -103,7 +101,6 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api
 - `tei-embedding:8000`
 - `tei-reranking:8000`
 - `litellm:4000`
-- `llm-quota-exporter:9469`
 - `searxng:8080`
 - `gitea:3000`
 - `qdrant:6333`
