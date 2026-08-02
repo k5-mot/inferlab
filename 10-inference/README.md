@@ -8,9 +8,9 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論st
 
 | 対象 | 初期化内容 |
 | --- | --- |
-| `ollama-init` | `ollama/init-models.sh`で`OLLAMA_INIT_MODELS`に列挙したmodelを`ollama-cache` volumeへ順次pullする。 |
+| `ollama-init` | Compose内のinit commandで`OLLAMA_INIT_MODELS`に列挙したmodelを`ollama-cache` volumeへ順次pullする。 |
 | `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。 |
-| `hermes-agent` | `hermes-agent/docker/start-gateway.sh`で`uv add "langfuse==4.14.1"`を実行してからgatewayを起動する。 |
+| `hermes-agent` | Compose内の起動commandで`uv add "langfuse==4.14.1"`を実行してからgatewayを起動する。 |
 | `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。 |
 
 `ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。

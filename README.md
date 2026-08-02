@@ -173,6 +173,49 @@ sudo docker compose --env-file .env --profile o11y up -d
 - 監視用コンテナが `unhealthy` になる。
 - 設定ファイルを読み込めない。
 
+## 検証
+
+commit前の軽量検証は`.pre-commit-config.yaml`から実行する。Docker containerを起動しない静的検証として、shell/Python構文とCompose config解決を確認する。
+
+```bash
+# pre-commit hookをこのrepositoryへ登録する。
+pre-commit install
+
+# commit前と同じ静的検証を手動実行する。
+pre-commit run --all-files
+```
+
+GitHub Actionsでは、静的検証に加えて省リソースのCompose smoke検証を実行する。smoke検証は全stackを起動せず、初期化対象ごとに必要なprofileとserviceだけを起動する。
+
+```bash
+# BookStackのcustom initだけを起動して検証する。
+script/verify-compose-smoke.sh bookstack-init
+
+# DifyのPostgreSQL初期化だけを起動して検証する。
+script/verify-compose-smoke.sh dify-postgres-init
+
+# OIKB用RustFS bucket初期化だけを起動して検証する。
+script/verify-compose-smoke.sh oikb-bucket-init
+
+# Langfuse用RustFS bucket初期化だけを起動して検証する。
+script/verify-compose-smoke.sh langfuse-bucket-init
+
+# GiteaのKeycloak OAuth source同期だけを起動して検証する。
+script/verify-compose-smoke.sh gitea-keycloak-init
+```
+
+期待結果:
+
+- `script/verify-init-static.sh`が正常終了する。
+- smoke検証対象のinit serviceが`exited (0)`になる。
+- 検証後、CI用の一時Compose project、container、volume、networkが削除される。
+
+失敗条件:
+
+- shell/Python構文またはCompose config解決に失敗する。
+- smoke検証対象のinit serviceが非0で終了する。
+- Docker daemonまたはDocker Compose pluginを利用できない。
+
 ## オフライン用イメージ保存
 
 現在の Compose 構成で使うイメージを保存する場合は、次のコマンドを使います。

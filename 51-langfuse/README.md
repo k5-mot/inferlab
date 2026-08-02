@@ -8,7 +8,7 @@ Langfuse、worker、PostgreSQL、ClickHouse、Valkey、RustFSをまとめたLLM 
 
 | 対象 | 初期化内容 |
 | --- | --- |
-| `langfuse-rustfs-bucket-init` | `../00-common/scripts/ensure-s3-bucket.sh`でRustFSがhealthyになった後、`langfuse-bucket`が無ければ作成する。 |
+| `langfuse-rustfs-bucket-init` | Compose内のinit commandでRustFSがhealthyになった後、`langfuse-bucket`が無ければ作成する。 |
 | `langfuse-web` | `LANGFUSE_INIT_*`で初期org、project、user、project keyを作成する。 |
 | `langfuse-worker` | ClickHouse、PostgreSQL、Valkey、RustFS bucketの準備完了後にevent処理workerを起動する。 |
 | `langfuse-clickhouse` | Prometheus scrape用のClickHouse設定を`clickhouse/prometheus.xml`から読み込む。 |

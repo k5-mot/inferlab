@@ -1,0 +1,41 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  static:
+    name: Static validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify shell, Python, and Compose config
+        run: script/verify-init-static.sh
+
+  compose-smoke:
+    name: Compose smoke (${{ matrix.smoke_case }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        smoke_case:
+          - bookstack-init
+          - dify-postgres-init
+          - oikb-bucket-init
+          - langfuse-bucket-init
+          - gitea-keycloak-init
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run minimal Compose smoke
+        run: script/verify-compose-smoke.sh "${{ matrix.smoke_case }}"

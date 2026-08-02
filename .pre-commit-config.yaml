@@ -1,0 +1,45 @@
+minimum_pre_commit_version: "3.2.0"
+
+repos:
+  - repo: local
+    hooks:
+      - id: inferlab-init-static
+        name: InferLab init static validation
+        entry: script/verify-init-static.sh
+        language: system
+        pass_filenames: false
+
+      - id: inferlab-compose-smoke-bookstack-init
+        name: "InferLab Compose smoke: BookStack init"
+        entry: script/verify-compose-smoke.sh bookstack-init
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: inferlab-compose-smoke-dify-postgres-init
+        name: "InferLab Compose smoke: Dify PostgreSQL init"
+        entry: script/verify-compose-smoke.sh dify-postgres-init
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: inferlab-compose-smoke-oikb-bucket-init
+        name: "InferLab Compose smoke: OIKB bucket init"
+        entry: script/verify-compose-smoke.sh oikb-bucket-init
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: inferlab-compose-smoke-langfuse-bucket-init
+        name: "InferLab Compose smoke: Langfuse bucket init"
+        entry: script/verify-compose-smoke.sh langfuse-bucket-init
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: inferlab-compose-smoke-gitea-keycloak-init
+        name: "InferLab Compose smoke: Gitea Keycloak init"
+        entry: script/verify-compose-smoke.sh gitea-keycloak-init
+        language: system
+        pass_filenames: false
+        stages: [manual]

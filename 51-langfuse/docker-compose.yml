@@ -227,10 +227,16 @@ services:
       AWS_EC2_METADATA_DISABLED: "true"
       AWS_PAGER: ""
       RUSTFS_DEFAULT_BUCKET: langfuse-bucket
-    entrypoint: [ "/bin/sh", "/usr/local/bin/ensure-s3-bucket" ]
-    command: []
-    volumes:
-      - ../00-common/scripts/ensure-s3-bucket.sh:/usr/local/bin/ensure-s3-bucket:ro
+    entrypoint: [ "/bin/sh", "-euc" ]
+    command:
+      - |
+        # RustFS bucketはLangfuse起動前に存在している必要があるため、起動前に冪等作成する。
+        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
+          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
+        else
+          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
+          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
+        fi
     networks:
       - internal-nw
     depends_on:

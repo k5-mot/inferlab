@@ -11,7 +11,7 @@ Giteaは公式Docker imageを使用し、PostgreSQL接続は公式documentの`GI
 
 ## 起動時初期化
 
-`gitea`本体がhealthyになった後、`gitea-keycloak-init`が`init/sync-keycloak-oauth.sh`でKeycloak OAuth sourceを作成または更新する。
+`gitea`本体がhealthyになった後、`gitea-keycloak-init`がCompose内のinit commandでKeycloak OAuth sourceを作成または更新する。
 
 初期化処理は次の通り。
 

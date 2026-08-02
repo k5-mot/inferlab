@@ -4,7 +4,7 @@ BookStackとMariaDBをまとめたWiki stack。Keycloak OIDC loginを使う。
 
 ## 起動時初期化
 
-BookStackのLinuxServer imageは`/custom-cont-init.d`を実行する。Composeでは、先に`bookstack-custom-init`が`init/copy-custom-cont-init.sh`でrepository内の`custom-cont-init.d`を名前付きvolumeへコピーし、`bookstack`がそのvolumeを読み込む。
+BookStackのLinuxServer imageは`/custom-cont-init.d`を実行する。Composeでは、先に`bookstack-custom-init`がCompose内のinit commandでrepository内の`custom-cont-init.d`を名前付きvolumeへコピーし、`bookstack`がそのvolumeを読み込む。
 
 同梱している初期化scriptは次の通り。
 
