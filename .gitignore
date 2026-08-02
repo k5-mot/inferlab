@@ -40,3 +40,5 @@ backups/
 !30-nextcloud/nextcloud/apps/.gitignore
 graphify-out/
 docs.local/
+
+node_modules/
