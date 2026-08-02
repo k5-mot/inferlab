@@ -1,50 +1,8 @@
-# ローカル実行環境
+# InferLab
 
-複数の機能を Docker Compose profile で分けて起動するための構成です。
+## スタック・サービス一覧
 
-![構成図](docs/assets/DIAGRAM.svg)
-
-## 起動手順
-
-通常はラッパースクリプトで標準 profile を順番に起動します。
-
-```bash
-# 標準 profile を順番に起動する。
-sudo ./dc.sh up --remove-orphans
-```
-
-期待結果:
-
-- 標準 profile のコンテナが起動する。
-- 主要コンテナが `running` または `healthy` になる。
-
-失敗条件:
-
-- Compose 設定の解決に失敗する。
-- 必須コンテナが `unhealthy` になる。
-
-初回設定は [docs/manual/INITIAL_SETUP.md](docs/manual/INITIAL_SETUP.md) を参照してください。
-
-## 一括起動
-
-すべての標準 profile を 1 回の Compose 実行にまとめる場合は、次のコマンドを使います。
-
-```bash
-# 標準 profile を 1 つの Compose 実行で起動する。
-sudo ./dc.sh up-full --remove-orphans
-```
-
-期待結果:
-
-- 標準 profile のコンテナがまとめて起動する。
-- 主要コンテナが `running` または `healthy` になる。
-
-失敗条件:
-
-- Compose 設定の解決に失敗する。
-- コンテナ間の依存関係を満たせない。
-
-## Profile
+### Profile一覧
 
 `dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`bookstack`、`kaneo`、`zulip`、`obsidian`、`gitea`、`o11y`、`langfuse` です。`registry`、`dify`、`leantime` などのその他の profile は必要な場合に個別に指定します。
 
@@ -68,7 +26,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
-### Service 一覧
+### Service一覧
 
 ルートの `docker-compose.yml` が include する Compose ファイルに定義された有効な service は次のとおりです。`Port` が `-` の service は host へ公開していません。
 
@@ -118,6 +76,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `dify` | `dify-agent-backend` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-ssrf-proxy` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-postgres-init` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-redis` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-qdrant` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-nginx` | `32100` | `21-dify/docker-compose.yml` |
@@ -125,6 +84,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
 | `bookstack` | `bookstack` | `${BOOKSTACK_HOST_PORT:-33100}` | `31-bookstack/docker-compose.yml` |
+| `bookstack` | `bookstack-custom-init` | - | `31-bookstack/docker-compose.yml` |
 | `bookstack` | `bookstack-mariadb` | - | `31-bookstack/docker-compose.yml` |
 | `kaneo` | `kaneo` | `33200` | `32-kaneo/docker-compose.yml` |
 | `kaneo` | `kaneo-postgres` | - | `32-kaneo/docker-compose.yml` |
@@ -134,6 +94,7 @@ sudo ./dc.sh up-full --remove-orphans
 | `zulip` | `zulip-rabbitmq` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
 | `gitea` | `gitea` | `${GITEA_HTTP_HOST_PORT:-33400}`, `${GITEA_SSH_HOST_PORT:-33422}` | `34-gitea/docker-compose.yml` |
+| `gitea` | `gitea-keycloak-init` | - | `34-gitea/docker-compose.yml` |
 | `gitea` | `gitea-postgres` | - | `34-gitea/docker-compose.yml` |
 | `leantime` | `leantime` | `33900` | `39-leantime/docker-compose.yml` |
 | `leantime` | `leantime-db` | - | `39-leantime/docker-compose.yml` |
@@ -152,131 +113,45 @@ sudo ./dc.sh up-full --remove-orphans
 | `langfuse` | `langfuse-rustfs-bucket-init` | - | `51-langfuse/docker-compose.yml` |
 | `langfuse` | `langfuse-postgres` | - | `51-langfuse/docker-compose.yml` |
 
-GPU 監視用 profile は任意です。対応するホストで、監視用 Compose と設定ファイルの該当コメントを解除して使います。
+## ドキュメント目次
 
-## 個別起動
+### 利用手順
 
-監視 profile だけを起動する例です。
+- [初期設定](docs/manual/INITIAL_SETUP.md)
+- [テスト](docs/manual/TEST.md)
+- [オフライン用資材のダウンロード](docs/manual/DOWNLOAD.md)
+- [Registry利用ガイド](docs/manual/REGISTRY.md)
+- [構成図](docs/assets/DIAGRAM.svg)
 
-```bash
-# 監視 profile だけを起動する。
-sudo docker compose --env-file .env --profile o11y up -d
-```
+### 開発ルール
 
-期待結果:
+- [コーディングルール](docs/rules/CODING_RULES.md)
+- [コントリビューションルール](docs/rules/CONTRIBUTING.md)
 
-- 監視用 Web UI が指定ポートで応答する。
-- メトリクス収集用のエンドポイントが応答する。
+### トラブルシューティング
 
-失敗条件:
+- [OpenWebUIファイル取込時のDocling負荷](docs/troubleshooting/OPENWEBUI_DOCLING_LOAD.md)
+- [TEI起動時のホストresource枯渇](docs/troubleshooting/TEI_RESOURCE_EXHAUSTION.md)
 
-- 監視用コンテナが `unhealthy` になる。
-- 設定ファイルを読み込めない。
+### スタック別ガイド
 
-## 検証
+- [Keycloak](01-keycloak/README.md)
+- [Inference](10-inference/README.md)
+- [Registry](12-registry/README.md)
+- [Open WebUI](20-owui/README.md)
+- [Dify](21-dify/README.md)
+- [Nextcloud](30-nextcloud/README.md)
+- [BookStack](31-bookstack/README.md)
+- [Zulip](33-zulip/README.md)
+- [Gitea](34-gitea/README.md)
+- [Leantime・Plane](39-leantime/README.md)
+- [Observability](50-o11y/README.md)
+- [Langfuse](51-langfuse/README.md)
 
-commit前の軽量検証は`.pre-commit-config.yaml`から実行する。Docker containerを起動しない静的検証として、shell/Python構文とCompose config解決を確認する。
+## Author
 
-### pre-commit hookの登録
+[k5-mot](https://github.com/k5-mot)
 
-`pre-commit install`は、このrepositoryをcloneした作業treeごとに1回実行する必要がある。`.pre-commit-config.yaml`はGitで共有されるが、`.git/hooks/pre-commit`は各cloneのローカルファイルであり、Git管理対象にはならない。
+## License
 
-```bash
-# pre-commit hookをこのrepositoryへ登録する。
-pre-commit install
-
-# Git hook本体が作成され、実行可能になっていることを確認する。
-test -x .git/hooks/pre-commit
-
-# hook経由で静的検証が発火することを確認する。
-.git/hooks/pre-commit
-
-# commit前と同じ静的検証を手動実行する。
-pre-commit run --all-files
-```
-
-期待結果:
-
-- `pre-commit installed at .git/hooks/pre-commit`と表示される。
-- `.git/hooks/pre-commit`が存在し、実行権限を持つ。
-- commit実行時に`InferLab init static validation`が`Passed`になる。
-
-失敗条件:
-
-- `pre-commit` commandが見つからない。
-- `.git/hooks/pre-commit`が存在しない、または実行権限を持たない。
-- commit時に`InferLab init static validation`が表示されない。
-
-GitHub Actionsでは、静的検証に加えて省リソースのCompose smoke検証を実行する。smoke検証は全stackを起動せず、初期化対象ごとに必要なprofileとserviceだけを起動する。
-
-```bash
-# BookStackのcustom initだけを起動して検証する。
-script/verify-compose-smoke.sh bookstack-init
-
-# DifyのPostgreSQL初期化だけを起動して検証する。
-script/verify-compose-smoke.sh dify-postgres-init
-
-# OIKB用RustFS bucket初期化だけを起動して検証する。
-script/verify-compose-smoke.sh oikb-bucket-init
-
-# Langfuse用RustFS bucket初期化だけを起動して検証する。
-script/verify-compose-smoke.sh langfuse-bucket-init
-
-# GiteaのKeycloak OAuth source同期だけを起動して検証する。
-script/verify-compose-smoke.sh gitea-keycloak-init
-```
-
-期待結果:
-
-- `script/verify-init-static.sh`が正常終了する。
-- smoke検証対象のinit serviceが`exited (0)`になる。
-- 検証後、CI用の一時Compose project、container、volume、networkが削除される。
-
-失敗条件:
-
-- shell/Python構文またはCompose config解決に失敗する。
-- smoke検証対象のinit serviceが非0で終了する。
-- Docker daemonまたはDocker Compose pluginを利用できない。
-
-### Playwright E2E smoke検証
-
-認証と主要操作を含む検証は、通常のcommit前hookとしては重いため、`tests/e2e/`に手順化し、pre-commitの`manual` stageから実行する。GitHub Actionsでは`workflow_dispatch`で手動実行した場合だけ実行する。
-
-```bash
-# KeycloakとBookStackだけを起動し、OIDC認証後に新規Bookを作成する。
-tests/e2e/run-playwright-smoke.sh bookstack
-
-# pre-commitのmanual stage経由でBookStack E2E smoke検証を実行する。
-pre-commit run inferlab-playwright-smoke-bookstack --hook-stage manual
-```
-
-期待結果:
-
-- `keycloak`と`bookstack` profileだけを使う一時Compose projectが起動する。
-- BookStackのOIDC loginからKeycloak user `admin`で認証できる。
-- BookStackで検証用の新規Bookを作成できる。
-- 検証後、一時Compose project、container、volume、networkが削除される。
-
-失敗条件:
-
-- Docker daemon、Docker Compose plugin、Node.js、npm、Python 3のいずれかを利用できない。
-- KeycloakまたはBookStackが`healthy`にならない。
-- OIDC認証またはBookStackの新規Book作成に失敗する。
-
-## オフライン用イメージ保存
-
-現在の Compose 構成で使うイメージを保存する場合は、次のコマンドを使います。
-
-```powershell
-# 現在の Compose 構成で使うイメージを保存する。
-pwsh -NoProfile -File script/download-stack-images.ps1
-```
-
-期待結果:
-
-- `images/` に対象イメージごとの `.tar` が作成される。
-
-失敗条件:
-
-- 必要な取得コマンドが見つからない。
-- いずれかのイメージ取得に失敗する。
+プロジェクト全体を対象とするライセンスは設定されていません。サードパーティー素材には、各配置先に記載されたライセンスが適用されます。

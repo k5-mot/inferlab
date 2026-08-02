@@ -4,6 +4,7 @@ set -Eeuo pipefail
 readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly E2E_ROOT="${REPO_ROOT}/tests/e2e"
 readonly COMPOSE_PLAYWRIGHT_FILE="${E2E_ROOT}/docker-compose.playwright.yml"
+readonly TEST_MANUAL="${REPO_ROOT}/docs/manual/TEST.md"
 
 cd "${REPO_ROOT}"
 
@@ -15,7 +16,10 @@ cd "${REPO_ROOT}"
 # 副作用:
 #   利用可能なsmoke caseを標準出力へ表示する。
 print_usage() {
-  sed -n '1,120p' "${E2E_ROOT}/README.md"
+  sed -n '/^## Level 3: Playwright E2E検証$/,/^## GitHub Actionsでの実行範囲$/{
+    /^## GitHub Actionsでの実行範囲$/q
+    p
+  }' "${TEST_MANUAL}"
 }
 
 # 指定commandがPATHから実行できることを確認する。
