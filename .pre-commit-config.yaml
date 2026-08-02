@@ -8,12 +8,14 @@ repos:
         entry: script/verify-init-static.sh
         language: system
         pass_filenames: false
+        always_run: true
 
       - id: inferlab-compose-smoke-bookstack-init
         name: "InferLab Compose smoke: BookStack init"
         entry: script/verify-compose-smoke.sh bookstack-init
         language: system
         pass_filenames: false
+        always_run: true
         stages: [manual]
 
       - id: inferlab-compose-smoke-dify-postgres-init
@@ -21,6 +23,7 @@ repos:
         entry: script/verify-compose-smoke.sh dify-postgres-init
         language: system
         pass_filenames: false
+        always_run: true
         stages: [manual]
 
       - id: inferlab-compose-smoke-oikb-bucket-init
@@ -28,6 +31,7 @@ repos:
         entry: script/verify-compose-smoke.sh oikb-bucket-init
         language: system
         pass_filenames: false
+        always_run: true
         stages: [manual]
 
       - id: inferlab-compose-smoke-langfuse-bucket-init
@@ -35,6 +39,7 @@ repos:
         entry: script/verify-compose-smoke.sh langfuse-bucket-init
         language: system
         pass_filenames: false
+        always_run: true
         stages: [manual]
 
       - id: inferlab-compose-smoke-gitea-keycloak-init
@@ -42,4 +47,5 @@ repos:
         entry: script/verify-compose-smoke.sh gitea-keycloak-init
         language: system
         pass_filenames: false
+        always_run: true
         stages: [manual]
