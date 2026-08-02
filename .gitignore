@@ -40,5 +40,6 @@ backups/
 !30-nextcloud/nextcloud/apps/.gitignore
 graphify-out/
 docs.local/
+tests/e2e/artifacts/
 
 node_modules/

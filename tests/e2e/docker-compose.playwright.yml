@@ -1,0 +1,17 @@
+# Playwright smokeではhost port衝突を避けるため、外部公開portだけを動的化する。
+services:
+  keycloak:
+    ports: !override
+      - "${KEYCLOAK_HTTP_HOST_PORT:-30001}:8080"
+
+  keycloak-https:
+    volumes: !override
+      - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}:/opt/keycloak/certs:ro
+
+  bookstack:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes: !override
+      - bookstack-config:/config
+      - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
+      - bookstack-custom-cont-init:/custom-cont-init.d:ro

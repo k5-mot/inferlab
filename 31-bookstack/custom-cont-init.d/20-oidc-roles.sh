@@ -8,6 +8,11 @@ mariadb \
   -u "${DB_USERNAME}" \
   "-p${DB_PASSWORD}" \
   "${DB_DATABASE}" <<'SQL'
+UPDATE users
+SET external_auth_id = 'admin'
+WHERE email = 'admin@admin.com'
+  AND external_auth_id = '';
+
 UPDATE roles
 SET external_auth_id = 'admins'
 WHERE system_name = 'admin'

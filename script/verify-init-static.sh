@@ -59,6 +59,39 @@ verify_python_syntax() {
   python3 -m py_compile "${python_files[@]}"
 }
 
+# 追跡済みJavaScript scriptの構文を検証する。
+# 引数:
+#   なし。
+# 戻り値:
+#   Node.jsが未導入の場合は検証をskipして0、構文検証に失敗した場合は非0を返す。
+# 副作用:
+#   検証対象のfile pathを標準出力へ表示する。scriptは実行しない。
+verify_javascript_syntax() {
+  local javascript_files=()
+  mapfile -t javascript_files < <(
+    git ls-files '*.js' '*.cjs' '*.mjs' \
+      ':!:10-inference/hermes-agent/lazy-packages/**' \
+      ':!:node_modules/**' \
+      ':!:.venv/**'
+  )
+
+  if ((${#javascript_files[@]} == 0)); then
+    echo "javascript syntax: no tracked javascript files"
+    return 0
+  fi
+
+  if ! command -v node >/dev/null 2>&1; then
+    echo "javascript syntax: skipped because node is not installed"
+    return 0
+  fi
+
+  echo "javascript syntax: ${#javascript_files[@]} files"
+  local javascript_file
+  for javascript_file in "${javascript_files[@]}"; do
+    node --check "${javascript_file}"
+  done
+}
+
 # root Compose構成と主要profileの解決結果を検証する。
 # 引数:
 #   なし。
@@ -98,4 +131,5 @@ verify_compose_config() {
 
 verify_shell_syntax
 verify_python_syntax
+verify_javascript_syntax
 verify_compose_config

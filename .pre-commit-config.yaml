@@ -49,3 +49,11 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [manual]
+
+      - id: inferlab-playwright-smoke-bookstack
+        name: "InferLab Playwright smoke: BookStack"
+        entry: tests/e2e/run-playwright-smoke.sh bookstack
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]

@@ -238,6 +238,31 @@ script/verify-compose-smoke.sh gitea-keycloak-init
 - smoke検証対象のinit serviceが非0で終了する。
 - Docker daemonまたはDocker Compose pluginを利用できない。
 
+### Playwright E2E smoke検証
+
+認証と主要操作を含む検証は、通常のcommit前hookとしては重いため、`tests/e2e/`に手順化し、pre-commitの`manual` stageから実行する。GitHub Actionsでは`workflow_dispatch`で手動実行した場合だけ実行する。
+
+```bash
+# KeycloakとBookStackだけを起動し、OIDC認証後に新規Bookを作成する。
+tests/e2e/run-playwright-smoke.sh bookstack
+
+# pre-commitのmanual stage経由でBookStack E2E smoke検証を実行する。
+pre-commit run inferlab-playwright-smoke-bookstack --hook-stage manual
+```
+
+期待結果:
+
+- `keycloak`と`bookstack` profileだけを使う一時Compose projectが起動する。
+- BookStackのOIDC loginからKeycloak user `admin`で認証できる。
+- BookStackで検証用の新規Bookを作成できる。
+- 検証後、一時Compose project、container、volume、networkが削除される。
+
+失敗条件:
+
+- Docker daemon、Docker Compose plugin、Node.js、npm、Python 3のいずれかを利用できない。
+- KeycloakまたはBookStackが`healthy`にならない。
+- OIDC認証またはBookStackの新規Book作成に失敗する。
+
 ## オフライン用イメージ保存
 
 現在の Compose 構成で使うイメージを保存する場合は、次のコマンドを使います。

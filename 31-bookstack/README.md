@@ -11,7 +11,9 @@ BookStackのLinuxServer imageは`/custom-cont-init.d`を実行する。Compose�
 | Script | 初期化内容 |
 | --- | --- |
 | `10-keycloak-ca.sh` | Keycloak HTTPS issuer用の自己署名証明書をcontainerのtrust storeへ追加する。 |
-| `20-oidc-roles.sh` | Keycloakの`admins`/`users` groupをBookStack roleへ対応付け、OIDC userの初期roleをEditorへ寄せる。 |
+| `20-oidc-roles.sh` | 既定のBookStack管理者をKeycloakの`admin` userへ紐付け、Keycloakの`admins`/`users` groupをBookStack roleへ対応付け、OIDC userの初期roleをEditorへ寄せる。 |
+
+BookStackはOIDC userの対応付けにExternal Authentication IDを使う。このstackでは`OIDC_EXTERNAL_ID_CLAIM=preferred_username`を設定し、初期管理者`admin@admin.com`のExternal Authentication IDを`admin`へ更新する。これにより、初期状態のBookStack管理者とKeycloakの`admin` userが同じmail addressを持っていても、OIDC loginで衝突しない。
 
 ## 事前準備
 
@@ -96,3 +98,7 @@ sudo docker compose --env-file .env --profile bookstack up -d
 
 - volumeが使用中で削除できない。
 - Keycloak client secretがBookStack側と一致しない。
+
+## References
+
+- [BookStack: OpenID Connect Authentication](https://www.bookstackapp.com/docs/admin/oidc-auth/)
