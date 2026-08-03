@@ -1,3 +1,39 @@
+<#
+.SYNOPSIS
+airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得します。
+
+.DESCRIPTION
+root stackの全profileで参照されるcontainer imageを`images/`へ`.tar`として保存し、Nextcloud OIDC app archiveを`30-nextcloud/nextcloud/apps/`へ保存します。
+registry imageは`crane pull`で取得し、local build imageはDocker CLIでbuildしてから`docker save`で保存します。
+
+.PARAMETER Help
+scriptのhelpを表示して終了します。
+
+.EXAMPLE
+.\script\Download-Images.ps1
+
+root stackに必要なcontainer image archiveとNextcloud OIDC app archiveを取得します。
+
+.EXAMPLE
+.\script\Download-Images.ps1 -Help
+
+scriptの詳細helpを表示します。
+
+.NOTES
+副作用として`images/`と`30-nextcloud/nextcloud/apps/`へfileを作成または上書きします。
+実行にはPowerShell、crane、Docker CLIが必要です。
+#>
+[CmdletBinding()]
+param (
+    [Alias("h")]
+    [switch]$Help
+)
+
+if ($Help) {
+    Get-Help -Name $PSCommandPath -Detailed
+    exit 0
+}
+
 $OutputDirectory = Join-Path $PSScriptRoot "..\images"
 $NextcloudAppsDirectory = Join-Path $PSScriptRoot "..\30-nextcloud\nextcloud\apps"
 $Platform = "linux/amd64"
