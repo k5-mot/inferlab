@@ -1,6 +1,6 @@
 # ダウンロード
 
-`script/download-stack-images.ps1`で、airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得する手順。
+`script/Download-Images.ps1`で、airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得する手順。
 
 ## 前提
 
@@ -26,7 +26,7 @@
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # root stackのimage archiveとNextcloud OIDC app archiveを取得する。
-.\script\download-stack-images.ps1
+.\script\Download-Images.ps1
 ```
 
 期待結果:
@@ -87,18 +87,18 @@ scp .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP
 # repository rootへ移動する。
 cd <AIRGAP_REPO_DIR>
 
-# 取得済みcontainer image archiveをDockerへ読み込む。
-for archive in images/*.tar; do sudo docker load -i "$archive"; done
+# 取得済みcontainer image archiveをPodmanまたはDockerへ読み込む。
+sudo ./script/install-images.sh
 ```
 
 期待結果:
 
-- `sudo docker image ls`でstackが参照するimageが表示される。
-- `ghcr.io/k5-mot/oikb:latest`も表示される。
+- `sudo docker image ls`または`sudo podman image ls`でstackが参照するimageが表示される。
+- `inferlab-oikb`、`inferlab/hermes-agent:v2026.7.30-uid`、`inferlab/openclaw:2026.7.1-browser`も表示される。
 
 失敗条件:
 
-- `sudo docker load`が失敗する。
+- `sudo ./script/install-images.sh`が失敗する。
 - `docker compose config`で参照されるimageが不足する。
 
 ## 5. airgap serverでNextcloud OIDC app archiveを確認する
