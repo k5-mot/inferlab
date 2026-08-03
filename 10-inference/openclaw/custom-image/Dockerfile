@@ -24,10 +24,7 @@ USER node
 # named volumeの初回作成時にDockerがimage側の中身をコピーできるよう、標準のstate directoryへpluginを入れる。
 RUN OPENCLAW_HOME=/home/node \
     HOME=/home/node \
-    node dist/index.js plugins install @openclaw/discord@2026.6.33 \
-    && OPENCLAW_HOME=/home/node \
-    HOME=/home/node \
-    node dist/index.js plugins install @openclaw/cerebras-provider@2026.6.33 \
+    node dist/index.js plugins install @openclaw/discord@2026.7.1 \
     && OPENCLAW_HOME=/home/node \
     HOME=/home/node \
     node dist/index.js plugins install --acknowledge-clawhub-risk clawhub:openclaw-x-langfuse-plugin

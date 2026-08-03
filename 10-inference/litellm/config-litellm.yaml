@@ -3,14 +3,13 @@ general_settings:
 
 litellm_settings:
   callbacks:
-    - langfuse_otel
     - prometheus
   drop_params: true
   request_timeout: 600
 
 router_settings:
   routing_strategy: simple-shuffle
-  num_retries: 2
+  num_retries: 3
 
 model_list:
   ### Ollama
@@ -47,11 +46,17 @@ model_list:
       model: gemini/gemma-4-31b-it
       api_key: os.environ/GEMINI_API_KEY
 
-  ### Cerebras
-  - model_name: google/gemma4:31b
+  ### Groq Cloud
+  - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: cerebras/gemma-4-31b
-      api_key: os.environ/CEREBRAS_API_KEY
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY
+
+  ### Cloudflare Workers AI
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: cloudflare/@cf/openai/gpt-oss-20b
+      api_key: os.environ/CLOUDFLARE_API_KEY
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m

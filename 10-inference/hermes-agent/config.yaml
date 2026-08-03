@@ -1,73 +1,64 @@
 model:
-  provider: openai-codex
-  default: gpt-5.5
+  # provider: openai-codex
+  # default: gpt-5.5
+  provider: custom:litellm
+  default: google/gemma4:31b
 providers:
-  ollama-gemma4:
-    api: http://ollama:11434/v1
-    default_model: gemma4:31b-cloud
-    transport: chat_completions
-  cerebras-gemma4:
-    api: https://api.cerebras.ai/v1
-    key_env: CEREBRAS_API_KEY
-    default_model: gemma-4-31b
+  litellm:
+    api: http://litellm:4000/v1
+    key_env: LITELLM_MASTER_KEY
+    default_model: google/gemma4:31b
     transport: chat_completions
 fallback_providers:
-  - provider: custom:ollama-gemma4
-    model: gemma4:31b-cloud
-  - provider: custom:cerebras-gemma4
-    model: gemma-4-31b
-  - provider: gemini
-    model: gemma-4-31b-it
-    base_url: https://generativelanguage.googleapis.com/v1beta
-  - provider: openrouter
-    model: google/gemma-4-31b-it:free
+  - provider: custom:litellm
+    model: google/gemma4:31b
+  - provider: custom:litellm
+    model: openai/gpt-oss:20b
+  - provider: custom:litellm
+    model: nvidia/nemotron-3-nano:30b
 agent:
   verify_on_stop: false
 auxiliary:
   web_extract:
-    provider: gemini
-    model: gemma-4-31b-it
-    base_url: https://generativelanguage.googleapis.com/v1beta
+    provider: custom:litellm
+    model: google/gemma4:31b
     fallback_chain:
-      - provider: openrouter
-        model: google/gemma-4-31b-it:free
-      - provider: custom:cerebras-gemma4
-        model: gemma-4-31b
-      - provider: custom:ollama-gemma4
-        model: gemma4:31b-cloud
+    - provider: custom:litellm
+      model: google/gemma4:31b
+    - provider: custom:litellm
+      model: openai/gpt-oss:20b
+    - provider: custom:litellm
+      model: nvidia/nemotron-3-nano:30b
   compression:
-    provider: custom:cerebras-gemma4
-    model: gemma-4-31b
+    provider: custom:litellm
+    model: google/gemma4:31b
     fallback_chain:
-      - provider: gemini
-        model: gemma-4-31b-it
-        base_url: https://generativelanguage.googleapis.com/v1beta
-      - provider: openrouter
-        model: google/gemma-4-31b-it:free
-      - provider: custom:ollama-gemma4
-        model: gemma4:31b-cloud
+      - provider: custom:litellm
+        model: google/gemma4:31b
+      - provider: custom:litellm
+        model: openai/gpt-oss:20b
+      - provider: custom:litellm
+        model: nvidia/nemotron-3-nano:30b
   skills_hub:
-    provider: openrouter
-    model: google/gemma-4-31b-it:free
+    provider: custom:litellm
+    model: google/gemma4:31b
     fallback_chain:
-      - provider: custom:ollama-gemma4
-        model: gemma4:31b-cloud
-      - provider: custom:cerebras-gemma4
-        model: gemma-4-31b
-      - provider: gemini
-        model: gemma-4-31b-it
-        base_url: https://generativelanguage.googleapis.com/v1beta
+      - provider: custom:litellm
+        model: google/gemma4:31b
+      - provider: custom:litellm
+        model: openai/gpt-oss:20b
+      - provider: custom:litellm
+        model: nvidia/nemotron-3-nano:30b
   mcp:
-    provider: custom:ollama-gemma4
-    model: gemma4:31b-cloud
+    provider: custom:litellm
+    model: google/gemma4:31b
     fallback_chain:
-      - provider: custom:cerebras-gemma4
-        model: gemma-4-31b
-      - provider: gemini
-        model: gemma-4-31b-it
-        base_url: https://generativelanguage.googleapis.com/v1beta
-      - provider: openrouter
-        model: google/gemma-4-31b-it:free
+      - provider: custom:litellm
+        model: google/gemma4:31b
+      - provider: custom:litellm
+        model: openai/gpt-oss:20b
+      - provider: custom:litellm
+        model: nvidia/nemotron-3-nano:30b
 mcp_servers:
   searxng:
     command: npx

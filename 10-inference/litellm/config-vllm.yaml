@@ -2,8 +2,6 @@ general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
 
 litellm_settings:
-  callbacks:
-    - langfuse_otel
   drop_params: true
   request_timeout: 600
 

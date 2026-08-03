@@ -17,92 +17,40 @@
         }
     },
     "models": {
-        "mode": "merge",
+        "mode": "replace",
         "providers": {
-            "openai": {
-                "auth": "oauth",
-                "api": "openai-chatgpt-responses",
-                "models": [
-                    {
-                        "id": "GPT 5.5",
-                        "name": "gpt-5.5",
-                        "reasoning": true,
-                        "params": {
-                            "reasoning": {
-                                "effort": "high"
-                            },
-                            "reasoning_effort": "high"
-                        }
-                    }
-                ]
-            },
-            "ollama": {
-                "baseUrl": "http://ollama:11434/v1",
+            "litellm": {
+                "baseUrl": "http://litellm:4000/v1",
                 "api": "openai-completions",
                 "apiKey": {
                     "source": "env",
                     "provider": "default",
-                    "id": "OLLAMA_API_KEY"
+                    "id": "LITELLM_MASTER_KEY"
+                },
+                "headers": {
+                    "x-litellm-disable-callbacks": "langfuse"
                 },
                 "models": [
                     {
-                        "id": "gemma4:31b-cloud",
-                        "name": "Gemma 4 31B Cloud",
+                        "id": "google/gemma4:31b",
+                        "name": "Gemma 4 31B via LiteLLM",
                         "contextWindow": 195000,
                         "maxTokens": 8192,
-                        "reasoning": true,
-                        "params": {
-                            "think": "high",
-                            "thinking": "high"
-                        }
-                    }
-                ]
-            },
-            "cerebras": {
-                "baseUrl": "https://api.cerebras.ai/v1",
-                "api": "openai-completions",
-                "apiKey": {
-                    "source": "env",
-                    "provider": "default",
-                    "id": "CEREBRAS_API_KEY"
-                },
-                "models": [
+                        "reasoning": true
+                    },
                     {
-                        "id": "gemma-4-31b",
-                        "name": "Gemma 4 31B",
-                        "contextWindow": 195000,
+                        "id": "openai/gpt-oss:20b",
+                        "name": "GPT OSS 20B via LiteLLM",
+                        "contextWindow": 131000,
                         "maxTokens": 8192,
-                        "reasoning": true,
-                        "params": {
-                            "reasoning": {
-                                "effort": "high"
-                            },
-                            "reasoning_effort": "high"
-                        }
-                    }
-                ]
-            },
-            "gemini": {
-                "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
-                "api": "google-generative-ai",
-                "apiKey": {
-                    "source": "env",
-                    "provider": "default",
-                    "id": "GEMINI_API_KEY"
-                },
-                "models": [
+                        "reasoning": true
+                    },
                     {
-                        "id": "gemma-4-31b-it",
-                        "name": "Gemma 4 31B IT",
-                        "contextWindow": 195000,
+                        "id": "nvidia/nemotron-3-nano:30b",
+                        "name": "Nemotron 3 Nano 30B via LiteLLM",
+                        "contextWindow": 262000,
                         "maxTokens": 8192,
-                        "reasoning": true,
-                        "params": {
-                            "thinking": {
-                                "enabled": true,
-                                "level": "high"
-                            }
-                        }
+                        "reasoning": true
                     }
                 ]
             }
@@ -111,94 +59,54 @@
     "agents": {
         "defaults": {
             "model": {
-                "primary": "openai/gpt-5.5",
+                "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
-                    "ollama/gemma4:31b-cloud",
-                    "cerebras/gemma-4-31b",
-                    "gemini/gemma-4-31b-it",
-                    "openrouter/google/gemma-4-31b-it:free"
+                    "litellm/google/gemma4:31b",
+                    "litellm/openai/gpt-oss:20b",
+                    "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
             "models": {
-                "openai/gpt-5.5": {
-                    "params": {
-                        "reasoning": {
-                            "effort": "high"
-                        },
-                        "reasoning_effort": "high"
-                    }
-                },
-                "ollama/gemma4:31b-cloud": {
-                    "params": {
-                        "think": "high",
-                        "thinking": "high"
-                    }
-                },
-                "cerebras/gemma-4-31b": {
-                    "params": {
-                        "reasoning": {
-                            "effort": "high"
-                        },
-                        "reasoning_effort": "high"
-                    }
-                },
-                "gemini/gemma-4-31b-it": {
-                    "params": {
-                        "thinking": {
-                            "enabled": true,
-                            "level": "high"
-                        }
-                    }
-                },
-                "openrouter/google/gemma-4-31b-it:free": {
-                    "params": {
-                        "reasoning": {
-                            "effort": "high"
-                        },
-                        "reasoning_effort": "high"
-                    }
-                }
+                "litellm/google/gemma4:31b": {},
+                "litellm/openai/gpt-oss:20b": {},
+                "litellm/nvidia/nemotron-3-nano:30b": {}
             },
-            "utilityModel": "gemini/gemma-4-31b-it",
+            "utilityModel": "litellm/google/gemma4:31b",
             "imageModel": {
-                "primary": "ollama/gemma4:31b-cloud",
+                "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
-                    "ollama/gemma4:31b-cloud",
-                    "cerebras/gemma-4-31b",
-                    "gemini/gemma-4-31b-it",
-                    "openrouter/google/gemma-4-31b-it:free"
+                    "litellm/google/gemma4:31b",
+                    "litellm/openai/gpt-oss:20b",
+                    "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
             "imageGenerationModel": {},
             "videoGenerationModel": {},
             "musicGenerationModel": {},
             "voiceModel": {
-                "primary": "cerebras/gemma-4-31b",
+                "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
-                    "ollama/gemma4:31b-cloud",
-                    "cerebras/gemma-4-31b",
-                    "gemini/gemma-4-31b-it",
-                    "openrouter/google/gemma-4-31b-it:free"
+                    "litellm/google/gemma4:31b",
+                    "litellm/openai/gpt-oss:20b",
+                    "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
             "pdfModel": {
-                "primary": "openrouter/google/gemma-4-31b-it:free",
+                "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
-                    "ollama/gemma4:31b-cloud",
-                    "cerebras/gemma-4-31b",
-                    "gemini/gemma-4-31b-it",
-                    "openrouter/google/gemma-4-31b-it:free"
+                    "litellm/google/gemma4:31b",
+                    "litellm/openai/gpt-oss:20b",
+                    "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
             "mediaGenerationAutoProviderFallback": false,
             "subagents": {
                 "model": {
-                    "primary": "gemini/gemma-4-31b-it",
+                    "primary": "litellm/google/gemma4:31b",
                     "fallbacks": [
-                        "ollama/gemma4:31b-cloud",
-                        "cerebras/gemma-4-31b",
-                        "gemini/gemma-4-31b-it",
-                        "openrouter/google/gemma-4-31b-it:free"
+                        "litellm/google/gemma4:31b",
+                        "litellm/openai/gpt-oss:20b",
+                        "litellm/nvidia/nemotron-3-nano:30b"
                     ]
                 }
             }
@@ -208,8 +116,8 @@
         "media": {
             "models": [
                 {
-                    "provider": "gemini",
-                    "model": "gemma-4-31b-it",
+                    "provider": "litellm",
+                    "model": "google/gemma4:31b",
                     "capabilities": [
                         "image",
                         "video",
@@ -218,8 +126,18 @@
                     "type": "provider"
                 },
                 {
-                    "provider": "openrouter",
-                    "model": "google/gemma-4-31b-it:free",
+                    "provider": "litellm",
+                    "model": "openai/gpt-oss:20b",
+                    "capabilities": [
+                        "image",
+                        "video",
+                        "audio"
+                    ],
+                    "type": "provider"
+                },
+                {
+                    "provider": "litellm",
+                    "model": "nvidia/nemotron-3-nano:30b",
                     "capabilities": [
                         "image",
                         "video",
@@ -232,11 +150,11 @@
         "exec": {
             "reviewer": {
                 "model": {
-                    "primary": "openrouter/google/gemma-4-31b-it:free",
+                    "primary": "litellm/google/gemma4:31b",
                     "fallbacks": [
-                        "ollama/gemma4:31b-cloud",
-                        "cerebras/gemma-4-31b",
-                        "gemini/gemma-4-31b-it"
+                        "litellm/google/gemma4:31b",
+                        "litellm/openai/gpt-oss:20b",
+                        "litellm/nvidia/nemotron-3-nano:30b"
                     ]
                 }
             }
@@ -294,7 +212,7 @@
             "auto": "off",
             "mode": "final",
             "provider": "openai",
-            "summaryModel": "gemini/gemma-4-31b-it",
+            "summaryModel": "litellm/google/gemma4:31b",
             "providers": {
                 "openai": {
                     "baseUrl": "http://kokoro:8880/v1",
@@ -306,39 +224,18 @@
             }
         }
     },
-    "talk": {
-        "realtime": {
-            "provider": "google",
-            "model": "gemma-4-31b-it",
-            "mode": "stt-tts",
-            "brain": "agent-consult",
-            "providers": {
-                "google": {
-                    "apiKey": {
-                        "source": "env",
-                        "provider": "default",
-                        "id": "GEMINI_API_KEY"
-                    }
-                }
-            }
-        }
-    },
     "plugins": {
         "bundledDiscovery": "compat",
         "allow": [
             "browser",
             "canvas",
-            "cerebras",
             "device-pair",
             "discord",
             "file-transfer",
-            "google",
             "langfuse-bridge",
+            "litellm",
             "memory-core",
-            "ollama",
-            "openrouter",
-            "phone-control",
-            "talk-voice"
+            "phone-control"
         ],
         "entries": {
             "discord": {
