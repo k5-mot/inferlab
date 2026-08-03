@@ -2,7 +2,8 @@ $ErrorActionPreference = "Stop"
 
 # npmから依存込みで取得するpackageを定義する。
 $NpmPackages = @(
-    "cowsay"
+    "cowsay",
+    "figlet"
 )
 
 $ScriptDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }

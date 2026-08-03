@@ -1,16 +1,19 @@
 # ダウンロード
 
-`script/Download-Images.ps1`と`script/Download-Nextcloud-Oidc.ps1`で、airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得する手順。
+`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-Pip-Packages.ps1`、`script/Download-Npm-Packages.ps1`で、airgap環境へ持ち込む資材を取得する手順。
 
 ## 前提
 
-- オンライン端末でPowerShell、`crane`、Docker CLIを実行できる。
+- オンライン端末でPowerShell、`crane`、Docker CLI、Python 3、pip、Node.js、npmを実行できる。
 - repository rootでこの手順を実行する。
 - scriptは引数なしで実行できる。
-- 取得対象platformはscript既定値の`linux/amd64`。
+- container imageの取得対象platformはscript既定値の`linux/amd64`。
+- PyPI packageとnpm packageの取得対象platformはscript既定値のLinux x86_64。
 - 再実行すると既存archiveを上書きする。
 - 取得済みcontainer image archiveは`images/`へ保存される。
 - Nextcloud OIDC app archiveは`30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`へ保存される。
+- PyPI package archiveは`12-registry/registry/pypi/`へ保存される。
+- npm package archiveは`12-registry/registry/npm-packages/`へ保存される。
 - `30-nextcloud/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
 
 置換する値:
@@ -30,6 +33,12 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # Nextcloud OIDC app archiveを取得する。
 .\script\Download-Nextcloud-Oidc.ps1
+
+# Linux x86_64向けのPyPI package archiveを取得する。
+.\script\Download-Pip-Packages.ps1
+
+# Linux x86_64向けのnpm package archiveを取得する。
+.\script\Download-Npm-Packages.ps1
 ```
 
 期待結果:
@@ -37,12 +46,16 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `images/*.tar`が作成される。
 - `30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
+- `12-registry/registry/pypi/*`にpackage archiveが作成される。
+- `12-registry/registry/npm-packages/*.tgz`が作成される。
 
 失敗条件:
 
 - `crane`またはDocker CLIが見つからない。
 - container imageの取得に失敗する。
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
+- `pip download`が失敗する。
+- `npm install`または`npm pack`が失敗する。
 
 ## 2. 取得済み資材を確認する
 
@@ -52,17 +65,27 @@ Get-ChildItem .\images\*.tar | Measure-Object
 
 # Nextcloud OIDC app archiveのchecksumを確認する。
 Get-FileHash -Algorithm SHA256 .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz
+
+# 取得したPyPI package archiveの件数を確認する。
+Get-ChildItem .\12-registry\registry\pypi\* | Measure-Object
+
+# 取得したnpm package archiveの件数を確認する。
+Get-ChildItem .\12-registry\registry\npm-packages\*.tgz | Measure-Object
 ```
 
 期待結果:
 
 - `images/`に複数の`.tar` fileがある。
 - OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
+- PyPI package archiveが存在する。
+- npm package archiveが存在する。
 
 失敗条件:
 
 - `images/`が空である。
 - OIDC app archiveが存在しない、またはhashが一致しない。
+- PyPI package archiveが存在しない。
+- npm package archiveが存在しない。
 
 ## 3. airgap serverへ転送する
 
@@ -72,12 +95,20 @@ scp -r .\images <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/
 
 # Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
 scp .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/
+
+# PyPI package archiveをairgap serverへ転送する。
+scp -r .\12-registry\registry\pypi <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+
+# npm package archiveをairgap serverへ転送する。
+scp -r .\12-registry\registry\npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
 ```
 
 期待結果:
 
 - airgap server上に`<AIRGAP_REPO_DIR>/images/*.tar`がある。
 - airgap server上に`<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/pypi/*`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/npm-packages/*.tgz`がある。
 
 失敗条件:
 

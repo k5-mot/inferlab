@@ -9,6 +9,7 @@
 ## npm
 
 - cowsay
+- figlet
 
 ## Docker
 
