@@ -102,7 +102,7 @@ services:
       LANGFUSE_INIT_ORG_NAME: org0
       LANGFUSE_INIT_PROJECT_ID: prg0
       LANGFUSE_INIT_PROJECT_NAME: prg0
-      LANGFUSE_INIT_PROJECT_RETENTION: 30
+      LANGFUSE_INIT_PROJECT_RETENTION: 7
       LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
       LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_INIT_USER_EMAIL: admin@langfuse.com
@@ -130,7 +130,7 @@ services:
       - homepage.description=Langfuse platform
 
   langfuse-clickhouse:
-    image: docker.io/clickhouse/clickhouse-server:25.8.28.1
+    image: docker.io/clickhouse/clickhouse-server:26.7.1
     container_name: ${STACK_NAME:-inferlab}-langfuse-clickhouse
     restart: unless-stopped
     user: "101:101"
@@ -159,7 +159,7 @@ services:
       - homepage.description=Columnar analytics database
 
   langfuse-valkey:
-    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    image: docker.io/valkey/valkey:9.1.1-alpine3.24
     container_name: ${STACK_NAME:-inferlab}-langfuse-valkey
     restart: unless-stopped
     profiles:

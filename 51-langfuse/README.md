@@ -61,6 +61,29 @@ sudo docker compose --env-file .env --profile langfuse ps langfuse-rustfs-bucket
 - Langfuse UIで初期user loginに失敗する。
 - S3 event upload endpointへ接続できない。
 
+## データ保持期間
+
+Langfuseのtrace保持期間はproject単位で管理する。初期projectを7日保持へ制限する場合は、Langfuse起動後にPostgreSQL上のproject設定を更新する。
+
+```bash
+# 初期projectのtrace保持期間を7日に設定する。
+sudo docker compose --env-file .env --profile langfuse exec -T langfuse-postgres psql -U postgres_user -d langfuse_db -v ON_ERROR_STOP=1 -c "UPDATE projects SET retention_days = 7, updated_at = now() WHERE id = 'prg0' AND deleted_at IS NULL AND retention_days IS DISTINCT FROM 7;"
+
+# 初期projectのtrace保持期間を確認する。
+sudo docker compose --env-file .env --profile langfuse exec -T langfuse-postgres psql -U postgres_user -d langfuse_db -Atc "SELECT id, retention_days FROM projects WHERE id = 'prg0';"
+```
+
+期待結果:
+
+- 更新commandが`UPDATE 1`または`UPDATE 0`を返す。`UPDATE 0`はすでに7日に設定済みであることを示す。
+- 確認commandが`prg0|7`を返す。
+
+失敗条件:
+
+- `langfuse-postgres`が起動していない。
+- `projects` tableまたは`prg0` projectがまだ作成されていない。
+- 確認commandの`retention_days`が空または`7`以外になる。
+
 ## 再初期化
 
 Langfuseを完全に初期化し直す場合は、関連volumeを削除する。trace、project、API key、event objectを失う。
