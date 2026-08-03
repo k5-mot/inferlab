@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
-airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得します。
+airgap環境へ持ち込むcontainer image archiveを取得します。
 
 .DESCRIPTION
-root stackの全profileで参照されるcontainer imageを`images/`へ`.tar`として保存し、Nextcloud OIDC app archiveを`30-nextcloud/nextcloud/apps/`へ保存します。
+root stackの全profileで参照されるcontainer imageを指定directoryへ`.tar`として保存します。
 registry imageは`crane pull`で取得し、local build imageはDocker CLIでbuildしてから`docker save`で保存します。
+
+.PARAMETER ImageDirectory
+container image archiveを保存するdirectoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
@@ -12,7 +15,12 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\script\Download-Images.ps1
 
-root stackに必要なcontainer image archiveとNextcloud OIDC app archiveを取得します。
+root stackに必要なcontainer image archiveを`images/`へ取得します。
+
+.EXAMPLE
+.\script\Download-Images.ps1 -ImageDirectory .\airgap-images
+
+root stackに必要なcontainer image archiveを`airgap-images/`へ取得します。
 
 .EXAMPLE
 .\script\Download-Images.ps1 -Help
@@ -20,11 +28,13 @@ root stackに必要なcontainer image archiveとNextcloud OIDC app archiveを取
 scriptの詳細helpを表示します。
 
 .NOTES
-副作用として`images/`と`30-nextcloud/nextcloud/apps/`へfileを作成または上書きします。
+副作用として指定directoryへfileを作成または上書きします。
 実行にはPowerShell、crane、Docker CLIが必要です。
 #>
 [CmdletBinding()]
 param (
+    [string]$ImageDirectory = (Join-Path $PSScriptRoot "..\images"),
+
     [Alias("h")]
     [switch]$Help
 )
@@ -34,8 +44,7 @@ if ($Help) {
     exit 0
 }
 
-$OutputDirectory = Join-Path $PSScriptRoot "..\images"
-$NextcloudAppsDirectory = Join-Path $PSScriptRoot "..\30-nextcloud\nextcloud\apps"
+$OutputDirectory = $ImageDirectory
 $Platform = "linux/amd64"
 $Overwrite = $true
 
@@ -119,15 +128,6 @@ $LocalImages = @(
     }
 )
 
-$FileArtifacts = @(
-    @{
-        Url = "https://github.com/nextcloud-releases/user_oidc/releases/download/v8.10.1/user_oidc-v8.10.1.tar.gz"
-        FileName = "user_oidc-v8.10.1.tar.gz"
-        Sha256 = "49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd"
-        OutputDirectory = $NextcloudAppsDirectory
-    }
-)
-
 <#
 .SYNOPSIS
 コンテナイメージ参照から保存用アーカイブ名を生成します。
@@ -162,28 +162,6 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 }
 
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-New-Item -ItemType Directory -Path $NextcloudAppsDirectory -Force | Out-Null
-
-foreach ($FileArtifact in $FileArtifacts) {
-    $Url = $FileArtifact["Url"]
-    $FileName = $FileArtifact["FileName"]
-    $ExpectedSha256 = $FileArtifact["Sha256"]
-    $ArtifactDirectory = $FileArtifact["OutputDirectory"]
-    $ArtifactPath = Join-Path $ArtifactDirectory $FileName
-
-    if ((Test-Path $ArtifactPath) -and -not $Overwrite) {
-        Write-Host "Skip $FileName"
-        continue
-    }
-
-    Write-Host "Download $FileName"
-    Invoke-WebRequest -Uri $Url -OutFile $ArtifactPath
-
-    $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $ArtifactPath).Hash.ToLowerInvariant()
-    if ($ActualSha256 -ne $ExpectedSha256) {
-        throw "チェックサムが一致しません: $FileName"
-    }
-}
 
 foreach ($Image in $Images) {
     $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)

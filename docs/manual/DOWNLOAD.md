@@ -1,12 +1,12 @@
 # ダウンロード
 
-`script/Download-Images.ps1`で、airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得する手順。
+`script/Download-Images.ps1`と`script/Download-Nextcloud-Oidc.ps1`で、airgap環境へ持ち込むcontainer image archiveとNextcloud OIDC app archiveを取得する手順。
 
 ## 前提
 
 - オンライン端末でPowerShell、`crane`、Docker CLIを実行できる。
 - repository rootでこの手順を実行する。
-- scriptは引数なしで実行する。
+- scriptは引数なしで実行できる。
 - 取得対象platformはscript既定値の`linux/amd64`。
 - 再実行すると既存archiveを上書きする。
 - 取得済みcontainer image archiveは`images/`へ保存される。
@@ -25,8 +25,11 @@
 # script実行時だけPowerShell scriptの実行を許可する。
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-# root stackのimage archiveとNextcloud OIDC app archiveを取得する。
+# root stackのimage archiveを取得する。
 .\script\Download-Images.ps1
+
+# Nextcloud OIDC app archiveを取得する。
+.\script\Download-Nextcloud-Oidc.ps1
 ```
 
 期待結果:
@@ -88,7 +91,7 @@ scp .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP
 cd <AIRGAP_REPO_DIR>
 
 # 取得済みcontainer image archiveをPodmanまたはDockerへ読み込む。
-sudo ./script/install-images.sh
+sudo ./script/install-images.sh --image-directory images
 ```
 
 期待結果:
