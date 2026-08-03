@@ -205,16 +205,19 @@ EOF
 sudo dnf makecache
 
 # RPM packageをinstallする。
-sudo dnf install -y tmux vim-enhanced
+sudo dnf install -y tmux neovim vim git
 
 # installしたcommandを確認する。
 tmux -V
+nvim --version
+vim --version
+git --version
 ```
 
 期待結果:
 
 - `dnf makecache`が`inferlab` repositoryを読む。
-- `tmux`と`vim-enhanced`がinstallされる。
+- `tmux`、`neovim`、`vim`、`git`がinstallされる。
 
 失敗条件:
 
@@ -243,16 +246,19 @@ echo "deb [trusted=yes] http://<REGISTRY_HOST>:<DEB_PORT>/ stable main" | sudo t
 sudo apt-get update
 
 # deb packageをinstallする。
-sudo apt-get install -y tmux
+sudo apt-get install -y tmux neovim vim git
 
 # installしたcommandを確認する。
 tmux -V
+nvim --version
+vim --version
+git --version
 ```
 
 期待結果:
 
 - `apt-get update`が`http://<REGISTRY_HOST>:<DEB_PORT>/dists/stable/Release`を読む。
-- `tmux`がinstallされる。
+- `tmux`、`neovim`、`vim`、`git`がinstallされる。
 
 失敗条件:
 

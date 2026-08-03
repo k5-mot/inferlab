@@ -184,10 +184,10 @@ gpgcheck=0
 EOF
 
 # LIST.mdのRPM packageをinstallする。
-sudo dnf install -y tmux vim
+sudo dnf install -y tmux neovim vim git
 ```
 
-期待結果: `tmux` と `vim` を実行できる。
+期待結果: `tmux`、`nvim`、`vim`、`git` を実行できる。
 
 失敗基準: `dnf install` が失敗する。
 
@@ -201,10 +201,10 @@ echo "deb [trusted=yes] http://<REGISTRY_HOST>:31204/ ./" | sudo tee /etc/apt/so
 sudo apt-get update
 
 # LIST.mdのdeb packageをinstallする。
-sudo apt-get install -y tmux
+sudo apt-get install -y tmux neovim vim git
 ```
 
-期待結果: `tmux` を実行できる。
+期待結果: `tmux`、`nvim`、`vim`、`git` を実行できる。
 
 失敗基準: `apt-get install` が失敗する。
 

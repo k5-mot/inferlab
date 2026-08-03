@@ -2,7 +2,10 @@ $ErrorActionPreference = "Stop"
 
 # deb repositoryから依存込みで取得するpackageを定義する。
 $DebPackages = @(
-    "tmux"
+    "tmux",
+    "neovim",
+    "vim",
+    "git"
 )
 
 # 既定ではDebian 13(trixie)のmain/amd64を参照する。

@@ -3,13 +3,17 @@ $ErrorActionPreference = "Stop"
 # RPM repositoryから依存込みで取得するpackageを定義する。
 $RpmPackages = @(
     "tmux",
-    "vim"
+    "neovim",
+    "vim",
+    "git"
 )
 
-# 既定ではRocky Linux 9のBaseOS/AppStreamを参照する。
+# 既定ではRocky Linux 9のBaseOS/AppStream/CRBとEPELを参照する。
 $DefaultRpmRepositoryBaseUrls = @(
     "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-    "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/"
+    "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
+    "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os/",
+    "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
 )
 $DefaultRpmArchitecture = "x86_64"
 

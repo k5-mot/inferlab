@@ -4,7 +4,7 @@ Linux x64向けのnpm package archiveを取得します。
 
 .DESCRIPTION
 `npm install --package-lock-only`でLinux x64向けの依存解決を行い、lockfileに記録されたpackageを`npm pack`で`.tgz`として保存します。
-既定では`cowsay`、`figlet`と依存packageを`12-registry/registry/npm-packages/`へ保存します。
+既定ではInferLabのfrontend開発と確認に必要なnpm packageと依存packageを`12-registry/registry/npm-packages/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したnpm package archiveを保存するdirectoryです。
@@ -46,8 +46,28 @@ param (
     [string]$DestinationDirectory = (Join-Path $PSScriptRoot "..\12-registry\registry\npm-packages"),
 
     [string[]]$Packages = @(
+        "@pandacss/dev@^1.12.0",
+        "@serendie/design-token@^1.4.6",
+        "@serendie/ui@^3.7.0",
+        "@testing-library/jest-dom@^7.0.0",
+        "@testing-library/react@^16.3.2",
+        "@testing-library/user-event@^14.6.1",
+        "@types/react@^19.0.0",
+        "@types/react-dom@^19.0.0",
+        "@vitejs/plugin-react@^5.0.0",
+        "@vitest/coverage-v8@^4.1.10",
         "cowsay",
-        "figlet"
+        "figlet",
+        "jsdom@^30.0.1",
+        "keycloak-js@^26.2.0",
+        "lucide-react@^0.468.0",
+        "msw@^2.15.0",
+        "react@^19.0.0",
+        "react-dom@^19.0.0",
+        "typescript@^5.7.0",
+        "vite@^7.0.0",
+        "vite-plus@^0.2.1",
+        "vitest@^4.1.10"
     ),
 
     [string]$Os = "linux",

@@ -1,6 +1,6 @@
 # ダウンロード
 
-`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-Pip-Packages.ps1`、`script/Download-Npm-Packages.ps1`で、airgap環境へ持ち込む資材を取得する手順。
+`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
 
 ## 前提
 
@@ -14,6 +14,9 @@
 - Nextcloud OIDC app archiveは`30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`へ保存される。
 - PyPI package archiveは`12-registry/registry/pypi/`へ保存される。
 - npm package archiveは`12-registry/registry/npm-packages/`へ保存される。
+- RPM packageは`12-registry/registry/rpm/`へ保存される。
+- deb packageは`12-registry/registry/deb/`へ保存される。
+- VSIX fileは`12-registry/registry/vsix/`へ保存される。
 - `30-nextcloud/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
 
 置換する値:
@@ -39,6 +42,15 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # Linux x86_64向けのnpm package archiveを取得する。
 .\script\Download-Npm-Packages.ps1
+
+# Linux x86_64向けのRPM packageを取得する。
+.\script\Download-Rpm-Packages.ps1
+
+# Linux x86_64向けのdeb packageを取得する。
+.\script\Download-Deb-Packages.ps1
+
+# VS Code拡張機能のVSIX fileを取得する。
+.\script\Download-Vscode-Extensions.ps1
 ```
 
 期待結果:
@@ -48,6 +60,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
 - `12-registry/registry/pypi/*`にpackage archiveが作成される。
 - `12-registry/registry/npm-packages/*.tgz`が作成される。
+- `12-registry/registry/rpm/*.rpm`が作成される。
+- `12-registry/registry/deb/*.deb`が作成される。
+- `12-registry/registry/vsix/*.vsix`が作成される。
 
 失敗条件:
 
@@ -56,6 +71,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
 - `pip download`が失敗する。
 - `npm install`または`npm pack`が失敗する。
+- RPM repository metadataまたはpackage fileの取得に失敗する。
+- deb repository metadataまたはpackage fileの取得に失敗する。
+- Visual Studio MarketplaceからVSIXを取得できない。
 
 ## 2. 取得済み資材を確認する
 
@@ -71,6 +89,15 @@ Get-ChildItem .\12-registry\registry\pypi\* | Measure-Object
 
 # 取得したnpm package archiveの件数を確認する。
 Get-ChildItem .\12-registry\registry\npm-packages\*.tgz | Measure-Object
+
+# 取得したRPM packageの件数を確認する。
+Get-ChildItem .\12-registry\registry\rpm\*.rpm | Measure-Object
+
+# 取得したdeb packageの件数を確認する。
+Get-ChildItem .\12-registry\registry\deb\*.deb | Measure-Object
+
+# 取得したVSIX fileの件数を確認する。
+Get-ChildItem .\12-registry\registry\vsix\*.vsix | Measure-Object
 ```
 
 期待結果:
@@ -79,6 +106,9 @@ Get-ChildItem .\12-registry\registry\npm-packages\*.tgz | Measure-Object
 - OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
 - PyPI package archiveが存在する。
 - npm package archiveが存在する。
+- RPM packageが存在する。
+- deb packageが存在する。
+- VSIX fileが存在する。
 
 失敗条件:
 
@@ -86,6 +116,9 @@ Get-ChildItem .\12-registry\registry\npm-packages\*.tgz | Measure-Object
 - OIDC app archiveが存在しない、またはhashが一致しない。
 - PyPI package archiveが存在しない。
 - npm package archiveが存在しない。
+- RPM packageが存在しない。
+- deb packageが存在しない。
+- VSIX fileが存在しない。
 
 ## 3. airgap serverへ転送する
 
@@ -101,6 +134,15 @@ scp -r .\12-registry\registry\pypi <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>
 
 # npm package archiveをairgap serverへ転送する。
 scp -r .\12-registry\registry\npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+
+# RPM packageをairgap serverへ転送する。
+scp -r .\12-registry\registry\rpm <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+
+# deb packageをairgap serverへ転送する。
+scp -r .\12-registry\registry\deb <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+
+# VSIX fileをairgap serverへ転送する。
+scp -r .\12-registry\registry\vsix <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
 ```
 
 期待結果:
@@ -109,6 +151,9 @@ scp -r .\12-registry\registry\npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_R
 - airgap server上に`<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
 - airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/pypi/*`がある。
 - airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/npm-packages/*.tgz`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/rpm/*.rpm`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/deb/*.deb`がある。
+- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/vsix/*.vsix`がある。
 
 失敗条件:
 
@@ -153,7 +198,29 @@ sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 - checksumが一致しない。
 - Nextcloudの`06-install-user-oidc.sh` hookがonline downloadへfallbackし、airgapで失敗する。
 
-## 6. stackを起動する
+## 6. airgap serverでOS packageとVSIXをinstallする
+
+```bash
+# RPM系またはdeb系のOS packageをinstallする。
+./script/install-system-packages.sh
+
+# VS Code拡張機能をinstallする。
+./script/install-vscode-extensions.sh --editor-command code
+```
+
+期待結果:
+
+- rpm系OSでは`tmux`、`nvim`、`vim`、`git`が実行できる。
+- deb系OSでは`tmux`、`nvim`、`vim`、`git`が実行できる。
+- VS Code互換CLIにVSIX fileがinstallされる。
+
+失敗条件:
+
+- `dnf`、`yum`、`apt-get`のいずれも見つからない。
+- local packageの依存関係を解決できない。
+- VS Code互換CLIが見つからない、またはVSIX installが失敗する。
+
+## 7. stackを起動する
 
 ```bash
 # keycloak profile、nextcloud profile、owui profileを含めてstackを起動する。
@@ -174,7 +241,7 @@ sudo docker compose --env-file .env --profile nextcloud --profile owui ps nextcl
 - Nextcloudがunhealthyになる。
 - OIDC app archiveが見つからず、hookが外部URLへ接続しようとして失敗する。
 
-## 7. rollback
+## 8. rollback
 
 ```bash
 # 起動済みstackを停止する。
