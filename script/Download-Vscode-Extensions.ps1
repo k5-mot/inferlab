@@ -4,7 +4,7 @@ VS Code拡張機能のVSIX fileを取得します。
 
 .DESCRIPTION
 Visual Studio Marketplaceから指定した拡張機能のlatest VSIXを取得します。
-既定ではInferLabで使う拡張機能を`12-registry/registry/vsix/`へ保存します。
+既定ではInferLabで使う拡張機能を`vsix/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したVSIX fileを保存するdirectoryです。
@@ -31,7 +31,7 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path $PSScriptRoot "..\12-registry\registry\vsix"),
+    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "vsix"),
 
     [string[]]$ExtensionIds = @(
         "openai.chatgpt",

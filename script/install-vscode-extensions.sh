@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_DIR
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-readonly REPO_ROOT
-
-VSIX_DIRECTORY="${VSIX_DIRECTORY:-${REPO_ROOT}/12-registry/registry/vsix}"
+VSIX_DIRECTORY="${VSIX_DIRECTORY:-${PWD}/vsix}"
 EDITOR_COMMAND="${EDITOR_COMMAND:-}"
 
 # scriptの利用方法を標準出力へ表示する。
@@ -30,7 +25,7 @@ Options:
   -h, --help            このhelpを表示して終了します。
 
 Environment:
-  VSIX_DIRECTORY  既定のVSIX file directoryです。
+  VSIX_DIRECTORY  既定のVSIX file directoryです。既定値: <current-directory>/vsix
   EDITOR_COMMAND  code、code-server、codiumなどのCLI commandです。
 USAGE
 }

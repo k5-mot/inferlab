@@ -10,13 +10,14 @@
 - container imageの取得対象platformはscript既定値の`linux/amd64`。
 - PyPI packageとnpm packageの取得対象platformはscript既定値のLinux x86_64。
 - 再実行すると既存archiveを上書きする。
+- 各scriptの既定保存先は、実行時のカレントディレクトリ配下の資材種別directoryである。
 - 取得済みcontainer image archiveは`images/`へ保存される。
-- Nextcloud OIDC app archiveは`30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`へ保存される。
-- PyPI package archiveは`12-registry/registry/pypi/`へ保存される。
-- npm package archiveは`12-registry/registry/npm-packages/`へ保存される。
-- RPM packageは`12-registry/registry/rpm/`へ保存される。
-- deb packageは`12-registry/registry/deb/`へ保存される。
-- VSIX fileは`12-registry/registry/vsix/`へ保存される。
+- Nextcloud OIDC app archiveは`nextcloud-oidc/`へ保存される。
+- PyPI package archiveは`pip/`へ保存される。
+- npm package archiveは`npm/`へ保存される。
+- RPM packageは`rpm/`へ保存される。
+- deb packageは`deb/`へ保存される。
+- VSIX fileは`vsix/`へ保存される。
 - `30-nextcloud/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
 
 置換する値:
@@ -56,13 +57,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 期待結果:
 
 - `images/*.tar`が作成される。
-- `30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
+- `nextcloud-oidc/user_oidc-v8.10.1.tar.gz`が作成される。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
-- `12-registry/registry/pypi/*`にpackage archiveが作成される。
-- `12-registry/registry/npm-packages/*.tgz`が作成される。
-- `12-registry/registry/rpm/*.rpm`が作成される。
-- `12-registry/registry/deb/*.deb`が作成される。
-- `12-registry/registry/vsix/*.vsix`が作成される。
+- `pip/*`にpackage archiveが作成される。
+- `npm/*.tgz`が作成される。
+- `rpm/*.rpm`が作成される。
+- `deb/*.deb`が作成される。
+- `vsix/*.vsix`が作成される。
 
 失敗条件:
 
@@ -82,22 +83,22 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 Get-ChildItem .\images\*.tar | Measure-Object
 
 # Nextcloud OIDC app archiveのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz
+Get-FileHash -Algorithm SHA256 .\nextcloud-oidc\user_oidc-v8.10.1.tar.gz
 
 # 取得したPyPI package archiveの件数を確認する。
-Get-ChildItem .\12-registry\registry\pypi\* | Measure-Object
+Get-ChildItem .\pip\* | Measure-Object
 
 # 取得したnpm package archiveの件数を確認する。
-Get-ChildItem .\12-registry\registry\npm-packages\*.tgz | Measure-Object
+Get-ChildItem .\npm\*.tgz | Measure-Object
 
 # 取得したRPM packageの件数を確認する。
-Get-ChildItem .\12-registry\registry\rpm\*.rpm | Measure-Object
+Get-ChildItem .\rpm\*.rpm | Measure-Object
 
 # 取得したdeb packageの件数を確認する。
-Get-ChildItem .\12-registry\registry\deb\*.deb | Measure-Object
+Get-ChildItem .\deb\*.deb | Measure-Object
 
 # 取得したVSIX fileの件数を確認する。
-Get-ChildItem .\12-registry\registry\vsix\*.vsix | Measure-Object
+Get-ChildItem .\vsix\*.vsix | Measure-Object
 ```
 
 期待結果:
@@ -127,22 +128,22 @@ Get-ChildItem .\12-registry\registry\vsix\*.vsix | Measure-Object
 scp -r .\images <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/
 
 # Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
-scp .\30-nextcloud\nextcloud\apps\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/
+scp .\nextcloud-oidc\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/
 
 # PyPI package archiveをairgap serverへ転送する。
-scp -r .\12-registry\registry\pypi <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+scp .\pip\* <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/pypi/
 
 # npm package archiveをairgap serverへ転送する。
-scp -r .\12-registry\registry\npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+scp .\npm\*.tgz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/npm-packages/
 
 # RPM packageをairgap serverへ転送する。
-scp -r .\12-registry\registry\rpm <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+scp .\rpm\*.rpm <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/rpm/
 
 # deb packageをairgap serverへ転送する。
-scp -r .\12-registry\registry\deb <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+scp .\deb\*.deb <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/deb/
 
 # VSIX fileをairgap serverへ転送する。
-scp -r .\12-registry\registry\vsix <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/
+scp .\vsix\*.vsix <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/vsix/
 ```
 
 期待結果:
@@ -202,10 +203,10 @@ sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 
 ```bash
 # RPM系またはdeb系のOS packageをinstallする。
-./script/install-system-packages.sh
+./script/install-system-packages.sh --rpm-directory 12-registry/registry/rpm --deb-directory 12-registry/registry/deb
 
 # VS Code拡張機能をinstallする。
-./script/install-vscode-extensions.sh --editor-command code
+./script/install-vscode-extensions.sh --vsix-directory 12-registry/registry/vsix --editor-command code
 ```
 
 期待結果:

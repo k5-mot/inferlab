@@ -4,7 +4,7 @@ Linux x64向けのnpm package archiveを取得します。
 
 .DESCRIPTION
 `npm install --package-lock-only`でLinux x64向けの依存解決を行い、lockfileに記録されたpackageを`npm pack`で`.tgz`として保存します。
-既定ではInferLabのfrontend開発と確認に必要なnpm packageと依存packageを`12-registry/registry/npm-packages/`へ保存します。
+既定ではInferLabのfrontend開発と確認に必要なnpm packageと依存packageを`npm/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したnpm package archiveを保存するdirectoryです。
@@ -33,9 +33,9 @@ scriptのhelpを表示して終了します。
 既定のnpm packageをLinux x64向けに取得します。
 
 .EXAMPLE
-.\script\Download-Npm-Packages.ps1 -DestinationDirectory .\npm-packages -Packages cowsay,figlet
+.\script\Download-Npm-Packages.ps1 -DestinationDirectory .\npm -Packages cowsay,figlet
 
-指定したnpm packageを`npm-packages/`へ取得します。
+指定したnpm packageを`npm/`へ取得します。
 
 .NOTES
 副作用として指定directoryとwork directoryへfileを作成または上書きします。
@@ -43,7 +43,7 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path $PSScriptRoot "..\12-registry\registry\npm-packages"),
+    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "npm"),
 
     [string[]]$Packages = @(
         "@pandacss/dev@^1.12.0",
@@ -76,7 +76,7 @@ param (
 
     [string]$Libc = "glibc",
 
-    [string]$WorkDirectory = (Join-Path $PSScriptRoot "..\.npm-works\npm-linux-x64"),
+    [string]$WorkDirectory = (Join-Path (Get-Location).Path ".npm-work"),
 
     [Alias("h")]
     [switch]$Help

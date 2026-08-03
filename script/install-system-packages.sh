@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_DIR
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-readonly REPO_ROOT
-
-RPM_DIRECTORY="${RPM_DIRECTORY:-${REPO_ROOT}/12-registry/registry/rpm}"
-DEB_DIRECTORY="${DEB_DIRECTORY:-${REPO_ROOT}/12-registry/registry/deb}"
+RPM_DIRECTORY="${RPM_DIRECTORY:-${PWD}/rpm}"
+DEB_DIRECTORY="${DEB_DIRECTORY:-${PWD}/deb}"
 
 # scriptの利用方法を標準出力へ表示する。
 # 引数:
@@ -31,8 +26,8 @@ Options:
   -h, --help           このhelpを表示して終了します。
 
 Environment:
-  RPM_DIRECTORY  既定のRPM package directoryです。
-  DEB_DIRECTORY  既定のdeb package directoryです。
+  RPM_DIRECTORY  既定のRPM package directoryです。既定値: <current-directory>/rpm
+  DEB_DIRECTORY  既定のdeb package directoryです。既定値: <current-directory>/deb
 USAGE
 }
 

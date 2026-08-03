@@ -4,7 +4,7 @@ Linux x86_64向けのdeb packageを取得します。
 
 .DESCRIPTION
 Debian 13(trixie)のmain/amd64 repositoryから、指定したdeb packageと依存packageを取得します。
-既定では`12-registry/registry/deb/`へ保存します。
+既定では`deb/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したdeb packageを保存するdirectoryです。
@@ -37,7 +37,7 @@ tmux、neovim、vim、gitを依存込みで取得します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path $PSScriptRoot "..\12-registry\registry\deb"),
+    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "deb"),
 
     [string[]]$Packages = @(
         "tmux",

@@ -33,7 +33,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$ImageDirectory = (Join-Path $PSScriptRoot "..\images"),
+    [string]$ImageDirectory = (Join-Path (Get-Location).Path "images"),
 
     [Alias("h")]
     [switch]$Help

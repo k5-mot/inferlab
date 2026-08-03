@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_DIR
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-readonly REPO_ROOT
-IMAGE_DIRECTORY="${IMAGE_DIRECTORY:-${REPO_ROOT}/images}"
+IMAGE_DIRECTORY="${IMAGE_DIRECTORY:-${PWD}/images}"
 
 # scriptの利用方法を標準出力へ表示する。
 # 引数:
@@ -29,7 +25,7 @@ Options:
 
 Environment:
   IMAGE_DIRECTORY  読み込み対象のimage archive directoryです。
-                   既定値: <repository-root>/images
+                   既定値: <current-directory>/images
   IMAGE_ENGINE     使用するcontainer engine commandです。
                    例: podman, docker
 USAGE
