@@ -40,17 +40,36 @@ param (
     [string]$DestinationDirectory = (Join-Path (Get-Location).Path "rpm"),
 
     [string[]]$Packages = @(
+        "bash",
+        "zsh",
+        "curl",
+        "git",
+        "jq",
         "tmux",
-        "neovim",
-        "vim",
-        "git"
+        "vim-enhanced",
+        "ncdu",
+        "pkgconf-pkg-config",
+        "readline-devel",
+        "ncurses-devel",
+        "clang-libs"
     ),
 
     [string[]]$RepositoryBaseUrls = @(
-        "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-        "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
-        "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os/",
-        "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
+        ### Oracle Linux 9
+        "https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64/",
+        "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/",
+        "https://yum.oracle.com/repo/OracleLinux/OL9/codeready/builder/x86_64/",
+        "https://yum.oracle.com/repo/OracleLinux/OL9/developer/EPEL/x86_64/"
+        ### Rocky Linux 9
+        # "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
+        # "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
+        # "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os/",
+        # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
+        ### RedHat Enterprise Linux 9
+        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os/",
+        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os/",
+        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os/",
+        # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
     ),
 
     [string]$Architecture = "x86_64",
