@@ -4,7 +4,9 @@
 
 services:
   nextcloud:
-    image: docker.io/library/nextcloud:34.0.2-apache
+    build:
+      context: ./nextcloud
+    image: custom.io/${STACK_NAME:-inferlab}/nextcloud:34.0.2
     container_name: ${STACK_NAME:-inferlab}-nextcloud
     restart: unless-stopped
     profiles:
@@ -29,29 +31,10 @@ services:
       PHP_MEMORY_LIMIT: 1024M
       PHP_UPLOAD_LIMIT: 2G
       APACHE_BODY_LIMIT: 0
-      NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
-      NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
-      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
-      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
-      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
-      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
-      NEXTCLOUD_OIDC_SCOPE: "openid profile email"
-      NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
-      NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
-      NEXTCLOUD_OIDC_MAPPING_EMAIL: email
-      NEXTCLOUD_OIDC_MAPPING_GROUPS: groups
-      NEXTCLOUD_OIDC_UNIQUE_UID: 0
-      NEXTCLOUD_OIDC_GROUP_PROVISIONING: 1
-      NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: true
-      NEXTCLOUD_ALLOW_LOCAL_REMOTE_SERVERS: true
-      NEXTCLOUD_USER_OIDC_ARCHIVE: /opt/inferlab/nextcloud-apps/user_oidc-v8.10.1.tar.gz
     ports:
       - 33000:80
     volumes:
       - nextcloud:/var/www/html
-      - ./nextcloud/apps:/opt/inferlab/nextcloud-apps:ro
-      - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
-      - ./nextcloud/post-installation-hooks:/docker-entrypoint-hooks.d/post-installation:ro
     networks:
       - internal-nw
     healthcheck:
@@ -66,6 +49,37 @@ services:
       - homepage.name=Nextcloud
       - homepage.href=http://${PUBLIC_HOST}:33000/apps/files/files
       - homepage.description=Cloud storage platform
+
+  nextcloud-bootstrap:
+    image: custom.io/${STACK_NAME:-inferlab}/nextcloud:34.0.2
+    container_name: ${STACK_NAME:-inferlab}-nextcloud-bootstrap
+    restart: "no"
+    profiles:
+      - nextcloud
+    depends_on:
+      nextcloud:
+        condition: service_healthy
+    entrypoint:
+      - /usr/local/bin/inferlab-nextcloud-bootstrap
+    environment:
+      NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
+      NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
+      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
+      NEXTCLOUD_OIDC_SCOPE: "openid profile email"
+      NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
+      NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
+      NEXTCLOUD_OIDC_MAPPING_EMAIL: email
+      NEXTCLOUD_OIDC_MAPPING_GROUPS: groups
+      NEXTCLOUD_OIDC_UNIQUE_UID: "0"
+      NEXTCLOUD_OIDC_GROUP_PROVISIONING: "1"
+      NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: "true"
+    volumes:
+      - nextcloud:/var/www/html
+    networks:
+      - internal-nw
 
   nextcloud-postgres:
     image: docker.io/library/postgres:18.4-trixie

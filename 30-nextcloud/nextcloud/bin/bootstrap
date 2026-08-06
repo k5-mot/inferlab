@@ -1,0 +1,162 @@
+#!/bin/sh
+
+set -eu
+
+NEXTCLOUD_ROOT=/var/www/html
+
+occ() {
+  php "${NEXTCLOUD_ROOT}/occ" "$@"
+}
+
+log() {
+  printf '%s\n' "[nextcloud-bootstrap] $*"
+}
+
+is_true() {
+  case "${1:-}" in
+    1 | true | TRUE | yes | YES | on | ON)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+wait_for_installation() {
+  attempt=1
+  max_attempts=60
+
+  while [ "${attempt}" -le "${max_attempts}" ]; do
+    if occ status --output=json 2>/dev/null |
+      grep -q '"installed":true'; then
+      return 0
+    fi
+
+    log "Waiting for Nextcloud installation (${attempt}/${max_attempts})"
+
+    attempt=$((attempt + 1))
+    sleep 2
+  done
+
+  log "Nextcloud installation was not completed"
+  return 1
+}
+
+enable_app() {
+  app_id="$1"
+
+  if occ app:list --enabled --output=json |
+    grep -q "\"${app_id}\""; then
+    log "App already enabled: ${app_id}"
+    return 0
+  fi
+
+  log "Enabling app: ${app_id}"
+  occ app:enable "${app_id}"
+}
+
+configure_oidc() {
+  provider_id="${NEXTCLOUD_OIDC_PROVIDER_ID:-keycloak}"
+  client_id="${NEXTCLOUD_OIDC_CLIENT_ID:-}"
+  client_secret="${NEXTCLOUD_OIDC_CLIENT_SECRET:-}"
+  discovery_url="${NEXTCLOUD_OIDC_DISCOVERY_URL:-}"
+  end_session_endpoint="${NEXTCLOUD_OIDC_END_SESSION_ENDPOINT:-}"
+  post_logout_uri="${NEXTCLOUD_OIDC_POST_LOGOUT_URI:-}"
+
+  if [ -z "${client_id}" ]; then
+    log "NEXTCLOUD_OIDC_CLIENT_ID is required"
+    return 1
+  fi
+
+  if [ -z "${client_secret}" ]; then
+    log "NEXTCLOUD_OIDC_CLIENT_SECRET is required"
+    return 1
+  fi
+
+  if [ -z "${discovery_url}" ]; then
+    log "NEXTCLOUD_OIDC_DISCOVERY_URL is required"
+    return 1
+  fi
+
+  if [ -z "${end_session_endpoint}" ]; then
+    log "NEXTCLOUD_OIDC_END_SESSION_ENDPOINT is required"
+    return 1
+  fi
+
+  if [ -z "${post_logout_uri}" ]; then
+    log "NEXTCLOUD_OIDC_POST_LOGOUT_URI is required"
+    return 1
+  fi
+
+  allow_insecure_http=false
+
+  if is_true "${NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP:-false}"; then
+    allow_insecure_http=true
+  fi
+
+  log "Configuring user_oidc application"
+
+  occ config:app:set user_oidc allow_insecure_http \
+    --type=boolean \
+    --value="${allow_insecure_http}"
+
+  log "Configuring OIDC provider: ${provider_id}"
+
+  occ user_oidc:provider "${provider_id}" \
+    --clientid="${client_id}" \
+    --clientsecret="${client_secret}" \
+    --discoveryuri="${discovery_url}" \
+    --endsessionendpointuri="${end_session_endpoint}" \
+    --postlogouturi="${post_logout_uri}" \
+    --scope="${NEXTCLOUD_OIDC_SCOPE:-openid profile email}" \
+    --send-id-token-hint=1 \
+    --mapping-uid="${NEXTCLOUD_OIDC_MAPPING_UID:-preferred_username}" \
+    --mapping-display-name="${NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME:-name}" \
+    --mapping-email="${NEXTCLOUD_OIDC_MAPPING_EMAIL:-email}" \
+    --mapping-groups="${NEXTCLOUD_OIDC_MAPPING_GROUPS:-groups}" \
+    --unique-uid="${NEXTCLOUD_OIDC_UNIQUE_UID:-0}" \
+    --group-provisioning="${NEXTCLOUD_OIDC_GROUP_PROVISIONING:-1}"
+}
+
+configure_external_checks() {
+  log "Disabling external connectivity checks"
+
+  occ config:system:set has_internet_connection \
+    --type=boolean \
+    --value=false
+}
+
+configure_sharing() {
+  log "Configuring sharing"
+
+  /*
+   * 旧25-configure-oikb-share.shのoccコマンドを
+   * この関数へ移動する。
+   */
+  :
+}
+
+configure_openmetrics() {
+  log "Configuring OpenMetrics"
+
+  /*
+   * 旧30-configure-openmetrics.shのoccコマンドを
+   * この関数へ移動する。
+   */
+  :
+}
+
+main() {
+  wait_for_installation
+
+  enable_app user_oidc
+  configure_external_checks
+  configure_oidc
+  configure_sharing
+  configure_openmetrics
+
+  log "Bootstrap completed"
+}
+
+main "$@"
