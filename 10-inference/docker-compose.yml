@@ -278,14 +278,15 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    build:
-      context: ./hermes-agent-custom-image
-      dockerfile: Dockerfile
-      args:
-        HERMES_AGENT_BASE_IMAGE: ${HERMES_AGENT_BASE_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.7.30}
-        HERMES_AGENT_UID: ${HERMES_UID:-1000}
-        HERMES_AGENT_GID: ${HERMES_GID:-1000}
-    image: ${HERMES_AGENT_IMAGE:-inferlab/hermes-agent:v2026.7.30-uid}
+    # build:
+    #   context: ./hermes-agent-custom-image
+    #   dockerfile: Dockerfile
+    #   args:
+    #     HERMES_AGENT_BASE_IMAGE: ${HERMES_AGENT_BASE_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.8.3}
+    #     HERMES_AGENT_UID: ${HERMES_UID:-1000}
+    #     HERMES_AGENT_GID: ${HERMES_GID:-1000}
+    #     HERMES_AGENT_GID: ${HERMES_GID:-1000}
+    image: docker.io/nousresearch/hermes-agent:v2026.8.3
     container_name: ${STACK_NAME:-inferlab}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -297,11 +298,51 @@ services:
     command:
       - |
         set -eu
-        cd /opt/hermes
-        # 現行imageにLangfuse連携packageが同梱されない環境があるため、起動直前に補完する。
-        # 既に解決済みの場合は何もしないため、再起動時の副作用は最小限になる。
-        uv add "langfuse==4.14.1" || true
+
+        if /opt/hermes/.venv/bin/python -c \
+          'import importlib.metadata as m; exit(0 if m.version("langfuse") == "4.14.1" else 1)' \
+          2>/dev/null
+        then
+          echo "Langfuse 4.14.1 is already installed"
+        else
+          LANGFUSE_WHEEL="$(
+            find /tmp/python-packages \
+              -maxdepth 1 \
+              -type f \
+              -name 'langfuse-4.14.1-*.whl' \
+              -print \
+              -quit
+          )"
+
+          if [ -n "$${LANGFUSE_WHEEL}" ]; then
+            echo "Installing Langfuse from wheel: $${LANGFUSE_WHEEL}"
+
+            uv pip install \
+              --python /opt/hermes/.venv/bin/python \
+              --no-index \
+              --find-links=/tmp/python-packages \
+              "$${LANGFUSE_WHEEL}"
+          else
+            echo "Langfuse wheel not found; installing from package index"
+
+            uv pip install \
+              --python /opt/hermes/.venv/bin/python \
+              "langfuse==4.14.1"
+          fi
+        fi
+
         exec /init /opt/hermes/docker/main-wrapper.sh gateway run
+    # entrypoint:
+    #   - /bin/sh
+    #   - -lc
+    # command:
+    #   - |
+    #     set -eu
+    #     cd /opt/hermes
+    #     # 現行imageにLangfuse連携packageが同梱されない環境があるため、起動直前に補完する。
+    #     # 既に解決済みの場合は何もしないため、再起動時の副作用は最小限になる。
+    #     uv add "langfuse==4.14.1" || true
+    #     exec /init /opt/hermes/docker/main-wrapper.sh gateway run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
@@ -348,14 +389,19 @@ services:
       DOCLING_API_KEY: "sk-docling-serve-api-key"
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      HERMES_HOME: /opt/data
+      # HERMES_HOME: /opt/data
       UV_LINK_MODE: copy
-      HERMES_UID: ${HERMES_UID:-1000}
-      HERMES_GID: ${HERMES_GID:-1000}
+      UV_NO_CACHE: "true"
+      # HERMES_UID: ${HERMES_UID:-1000}
+      # HERMES_GID: ${HERMES_GID:-1000}
     ports:
       - 31001:9119
     volumes:
-      - ./hermes-agent:/opt/data
+      - hermes-data:/opt/data
+      - ./hermes/SOUL.md:/opt/data/SOUL.md:ro
+      - ./hermes/config.yaml:/opt/data/config.yaml
+      - ./hermes/hooks/install-skills:/opt/data/hooks/install-skills:ro
+      - ./hermes/packages:/tmp/python-packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -445,6 +491,7 @@ volumes:
   ollama-cache:
   openclaw-data:
   tei-cache:
+  hermes-data:
 
 networks:
   internal-nw:

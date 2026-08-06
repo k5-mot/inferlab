@@ -1,0 +1,4 @@
+name: install-skills
+description: Install required skills at gateway startup
+events:
+  - gateway:startup
