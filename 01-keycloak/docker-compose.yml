@@ -3,6 +3,9 @@
 # - Keycloak
 #   - https://www.keycloak.org/getting-started/getting-started-docker
 #   - https://www.keycloak.org/server/supported-configurations
+# - keycloak-config-cli
+#   - https://adorsys.github.io/keycloak-config-cli/
+#   - https://adorsys.github.io/keycloak-config-cli/compatibility/keycloak-versions/
 #
 services:
   keycloak:
@@ -11,11 +14,9 @@ services:
     restart: unless-stopped
     profiles:
       - keycloak
-    entrypoint:
-      - /bin/sh
-      - -c
     command:
-      - sh /opt/keycloak/import-realm.sh
+      - start
+      - --import-realm
     environment:
       # 全般.
       STACK_NAME: ${STACK_NAME:-inferlab}
@@ -24,12 +25,73 @@ services:
       KC_HOSTNAME: http://${PUBLIC_HOST}:30001
       # DB接続.
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloak_password
-      # 初期管理者.
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/${KEYCLOAK_POSTGRES_DB:-keycloak_db}
+      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak_password}
+      # master realmの初期管理者.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+      # TLS終端設定.
+      KC_HTTP_ENABLED: "true"
+      # KC_PROXY_HEADERS: xforwarded
+      # ヘルスチェックエンドポイントの有効化.
+      KC_HEALTH_ENABLED: "true"
+      # Prometheus metricsを管理ポートで公開する。
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_SCHEME: http
+      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
+      QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_LIST_SIZE:-524288}
+    ports:
+      - 30001:8080
+    volumes:
+      # 初回起動時にinferlab realmだけを作成する。
+      - ./keycloak/bootstrap-realm.json:/opt/keycloak/data/import/${STACK_NAME:-inferlab}-realm.json:ro
+    networks:
+      - internal-nw
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    healthcheck:
+      # Realm設定の反映完了はkeycloak-configサービスの終了状態で管理する。
+      test:
+        - CMD-SHELL
+        - timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    labels:
+      - homepage.icon=/icons/keycloak.png
+      - homepage.group=01-keycloak
+      - homepage.name=Keycloak
+      - homepage.href=http://${PUBLIC_HOST}:30001
+      - homepage.description=Identity and Access Management
+
+  keycloak-config:
+    image: docker.io/adorsys/keycloak-config-cli:6.5.1-26
+    container_name: ${STACK_NAME:-inferlab}-keycloak-config
+    restart: "no"
+    profiles:
+      - keycloak
+    environment:
+      # master realmの初期管理者を使ってKeycloak Admin APIへ接続する。
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_LOGINREALM: master
+      KEYCLOAK_USER: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KEYCLOAK_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
+      # Keycloakの起動待ち.
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
+      # 宣言的設定ファイル.
+      IMPORT_FILES_LOCATIONS: /config/config.yaml
+      IMPORT_VALIDATE: "true"
+      # config.yaml内の$(env:VARIABLE)を展開する。
+      IMPORT_VARSUBSTITUTION_ENABLED: "true"
+      IMPORT_VARSUBSTITUTION_UNDEFINEDISERROR: "true"
+      # 全般.
+      STACK_NAME: ${STACK_NAME:-inferlab}
+      PUBLIC_HOST: ${PUBLIC_HOST}
       # inferlab realmのadminユーザー.
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       # OIDCクライアント.
@@ -53,43 +115,13 @@ services:
       ZULIP_OIDC_CLIENT_SECRET: ${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}
       GITEA_OIDC_CLIENT_SECRET: ${GITEA_OIDC_CLIENT_SECRET:-sk-gitea-oidc-client-secret-key}
       GRAFANA_OIDC_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}
-      # TLS終端設定.
-      KC_HTTP_ENABLED: "true"
-      # KC_PROXY_HEADERS: xforwarded
-      # ヘルスチェックエンドポイントの有効化.
-      KC_HEALTH_ENABLED: "true"
-      # Prometheus metricsを管理ポートで公開する。
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_SCHEME: http
-      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
-      QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_SIZE:-512K}
-      QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: ${KEYCLOAK_HTTP_MAX_HEADER_LIST_SIZE:-524288}
-    ports:
-      - 30001:8080
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import-template/inferlab-realm.json:ro
-      - ./keycloak/client-sync.json:/opt/keycloak/data/import-template/client-sync.json:ro
-      - ./keycloak/import-realm.sh:/opt/keycloak/import-realm.sh:ro
+      - ./keycloak/config.yaml:/config/config.yaml:ro
     networks:
       - internal-nw
     depends_on:
-      keycloak-postgres:
+      keycloak:
         condition: service_healthy
-    healthcheck:
-      # 初回起動時はrealm importとOIDC client同期が完了するまでreadyにしない。
-      test:
-        - CMD-SHELL
-        - test -f /tmp/keycloak-client-sync.ready && timeout 3 sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
-      interval: 5s
-      timeout: 5s
-      retries: 60
-      start_period: 30s
-    labels:
-      - homepage.icon=/icons/keycloak.png
-      - homepage.group=01-keycloak
-      - homepage.name=Keycloak
-      - homepage.href=http://${PUBLIC_HOST}:30001
-      - homepage.description=Identity and Access Management
 
   keycloak-https:
     image: quay.io/keycloak/keycloak:26.7.0
@@ -104,12 +136,12 @@ services:
       KC_HOSTNAME: https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}
       # DB接続.
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak_db
-      KC_DB_USERNAME: keycloak_user
-      KC_DB_PASSWORD: keycloak_password
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/${KEYCLOAK_POSTGRES_DB:-keycloak_db}
+      KC_DB_USERNAME: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak_password}
       # 初期管理者.
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD:-admin}
       # HTTPS終端設定.
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
@@ -128,8 +160,9 @@ services:
     networks:
       - internal-nw
     depends_on:
-      keycloak:
-        condition: service_healthy
+      # config.yamlの適用が正常終了してからHTTPS側を起動する。
+      keycloak-config:
+        condition: service_completed_successfully
       keycloak-postgres:
         condition: service_healthy
     healthcheck:
@@ -154,9 +187,9 @@ services:
     profiles:
       - keycloak
     environment:
-      POSTGRES_DB: keycloak_db
-      POSTGRES_USER: keycloak_user
-      POSTGRES_PASSWORD: keycloak_password
+      POSTGRES_DB: ${KEYCLOAK_POSTGRES_DB:-keycloak_db}
+      POSTGRES_USER: ${KEYCLOAK_POSTGRES_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${KEYCLOAK_POSTGRES_PASSWORD:-keycloak_password}
     volumes:
       - keycloak_postgres_data:/var/lib/postgresql
     networks:
@@ -164,7 +197,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U keycloak_user -d keycloak_db
+        - pg_isready -U ${KEYCLOAK_POSTGRES_USER:-keycloak_user} -d ${KEYCLOAK_POSTGRES_DB:-keycloak_db}
       interval: 5s
       timeout: 5s
       retries: 10

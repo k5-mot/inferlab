@@ -1,0 +1,507 @@
+#
+# keycloak-config-cli configuration
+#
+# 管理対象:
+# - inferlab realm
+# - realm users
+# - groups
+# - OIDC clients
+#
+# 環境変数はkeycloak-config-cliのvariable substitutionで展開する。
+# docker-compose.yml側で以下を有効化すること。
+#
+# IMPORT_VARSUBSTITUTION_ENABLED: "true"
+# IMPORT_VARSUBSTITUTION_UNDEFINEDISERROR: "true"
+#
+
+realm: "$(env:STACK_NAME)"
+enabled: true
+displayName: "$(env:STACK_NAME)"
+
+registrationAllowed: false
+resetPasswordAllowed: true
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+
+groups:
+  - name: admins
+    path: /admins
+
+  - name: guests
+    path: /guests
+
+  - name: users
+    path: /users
+
+users:
+  - username: admin
+    enabled: true
+    firstName: admin
+    lastName: admin
+    email: admin@admin.com
+    emailVerified: true
+
+    groups:
+      - /admins
+      - /users
+
+    credentials:
+      - type: password
+        value: "$(env:KEYCLOAK_REALM_ADMIN_PASSWORD)"
+        temporary: false
+
+clients:
+  #
+  # Open WebUI
+  #
+  - clientId: open-webui
+    name: Open WebUI
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:OPEN_WEBUI_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
+      - "http://127.0.0.1:$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
+
+    webOrigins:
+      - "http://localhost:$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Dify
+  #
+  - clientId: dify
+    name: Dify
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:DIFY_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
+      - "http://127.0.0.1:$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
+      - "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
+
+    webOrigins:
+      - "http://localhost:$(env:DIFY_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:DIFY_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Langfuse
+  #
+  - clientId: langfuse
+    name: Langfuse
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:LANGFUSE_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
+      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)/*"
+      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
+      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)/*"
+      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
+      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/*"
+
+    webOrigins:
+      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Nextcloud
+  #
+  - clientId: nextcloud
+    name: Nextcloud
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:NEXTCLOUD_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/"
+
+    attributes:
+      post.logout.redirect.uris: "+"
+
+    redirectUris:
+      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
+      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
+      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
+      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
+      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
+      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
+
+    webOrigins:
+      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # BookStack
+  #
+  - clientId: bookstack
+    name: BookStack
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:BOOKSTACK_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
+      - "http://127.0.0.1:$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
+
+    webOrigins:
+      - "http://localhost:$(env:BOOKSTACK_HOST_PORT)"
+      - "http://127.0.0.1:$(env:BOOKSTACK_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Kaneo
+  #
+  - clientId: kaneo
+    name: Kaneo
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:KANEO_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
+      - "http://127.0.0.1:$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
+      - "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
+
+    webOrigins:
+      - "http://localhost:$(env:KANEO_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:KANEO_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Zulip
+  #
+  - clientId: zulip
+    name: Zulip
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:ZULIP_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)/"
+
+    redirectUris:
+      - "https://localhost:$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
+      - "https://127.0.0.1:$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
+      - "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
+
+    webOrigins:
+      - "https://localhost:$(env:ZULIP_HTTPS_HOST_PORT)"
+      - "https://127.0.0.1:$(env:ZULIP_HTTPS_HOST_PORT)"
+      - "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Gitea
+  #
+  - clientId: gitea
+    name: Gitea
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:GITEA_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
+      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
+      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
+      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
+
+    webOrigins:
+      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Leantime
+  #
+  - clientId: leantime
+    name: Leantime
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:LEANTIME_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)/"
+
+    redirectUris:
+      - "http://localhost:$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
+      - "http://127.0.0.1:$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
+
+    webOrigins:
+      - "http://localhost:$(env:LEANTIME_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:LEANTIME_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # Grafana
+  #
+  - clientId: grafana
+    name: Grafana
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:GRAFANA_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)/"
+
+    attributes:
+      post.logout.redirect.uris: "+"
+
+    redirectUris:
+      - "http://localhost:$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
+      - "http://127.0.0.1:$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
+      - "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
+
+    webOrigins:
+      - "http://localhost:$(env:GRAFANA_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:GRAFANA_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
