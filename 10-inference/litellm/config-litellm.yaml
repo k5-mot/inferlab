@@ -4,6 +4,7 @@ general_settings:
 litellm_settings:
   callbacks:
     - prometheus
+    - langfuse_otel
   drop_params: true
   request_timeout: 600
 
@@ -15,15 +16,15 @@ model_list:
   ### Ollama
   - model_name: google/gemma4:31b
     litellm_params:
-      model: ollama_chat/gemma4:31b-cloud
+      model: ollama/gemma4:31b-cloud
       api_base: http://ollama:11434
   - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: ollama_chat/gpt-oss:20b-cloud
+      model: ollama/gpt-oss:20b-cloud
       api_base: http://ollama:11434
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: ollama_chat/nemotron-3-nano:30b-cloud
+      model: ollama/nemotron-3-nano:30b-cloud
       api_base: http://ollama:11434
 
   ### OpenRouter
@@ -65,12 +66,14 @@ model_list:
       api_base: http://tei-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
+      max_parallel_requests: 1
   - model_name: cl-nagoya/ruri-v3-reranker:310m
     litellm_params:
       model: huggingface/cl-nagoya/ruri-v3-reranker-310m
       api_base: http://tei-reranking:8000
       api_key: EMPTY
       encoding_format: float
+      max_parallel_requests: 1
 
   ### TTS
   - model_name: kokoro

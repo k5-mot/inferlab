@@ -399,8 +399,9 @@ services:
     volumes:
       - hermes-data:/opt/data
       - ./hermes/SOUL.md:/opt/data/SOUL.md:ro
-      - ./hermes/config.yaml:/opt/data/config.yaml
+      - ./hermes/config.yaml:/opt/data/config.yaml:ro
       - ./hermes/hooks/install-skills:/opt/data/hooks/install-skills:ro
+      - ./hermes/plugins/langfuse-headers:/opt/data/plugins/langfuse-headers:ro
       - ./hermes/packages:/tmp/python-packages:ro
     networks:
       - internal-nw
