@@ -9,7 +9,7 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論st
 | 対象 | 初期化内容 |
 | --- | --- |
 | `ollama-init` | Compose内のinit commandで`OLLAMA_INIT_MODELS`に列挙したmodelを`ollama-cache` volumeへ順次pullする。Cloud modelのpullはsign in前でも成功するが、実行にはOllama serviceでのsign inが必要。 |
-| `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。 |
+| `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。Ollama chat modelはtool callの本文JSON漏れを避けるため、`ollama_chat/...` routeを使う。 |
 | `hermes-agent` | custom imageで`hermes` userのUID/GIDをvolume ownerへ合わせ、Compose内の起動commandで`uv add "langfuse==4.14.1"`を実行してからgatewayを起動する。 |
 | `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。 |
 
@@ -121,5 +121,6 @@ sudo docker compose --env-file .env --profile inference exec -it ollama ollama s
 
 ## References
 
+- [LiteLLM Ollama Provider](https://docs.litellm.ai/docs/providers/ollama)
 - [Ollama API Authentication](https://docs.ollama.com/api/authentication)
 - [Ollama Cloud](https://docs.ollama.com/cloud)

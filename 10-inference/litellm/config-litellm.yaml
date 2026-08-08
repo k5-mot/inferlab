@@ -14,18 +14,28 @@ router_settings:
 
 model_list:
   ### Ollama; Cloud modelの認証はOllama daemon側のsignin状態を使う。
+  ### tool callはOllama /api/chat routeで処理し、本文へのJSON漏れを避ける。
   - model_name: google/gemma4:31b
     litellm_params:
-      model: ollama/gemma4:31b-cloud
+      model: ollama_chat/gemma4:31b-cloud
       api_base: http://ollama:11434
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
   - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: ollama/gpt-oss:20b-cloud
+      model: ollama_chat/gpt-oss:20b-cloud
       api_base: http://ollama:11434
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: ollama/nemotron-3-nano:30b-cloud
+      model: ollama_chat/nemotron-3-nano:30b-cloud
       api_base: http://ollama:11434
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m
