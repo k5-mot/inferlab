@@ -13,19 +13,22 @@ router_settings:
   num_retries: 3
 
 model_list:
-  ### Ollama
+  ### Ollama Cloud; API keyでollama.comへ直接接続する。
   - model_name: google/gemma4:31b
     litellm_params:
-      model: ollama/gemma4:31b-cloud
-      api_base: http://ollama:11434
+      model: ollama/gemma4:31b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_API_KEY
   - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: ollama/gpt-oss:20b-cloud
-      api_base: http://ollama:11434
+      model: ollama/gpt-oss:20b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_API_KEY
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: ollama/nemotron-3-nano:30b-cloud
-      api_base: http://ollama:11434
+      model: ollama/nemotron-3-nano:30b
+      api_base: https://ollama.com
+      api_key: os.environ/OLLAMA_API_KEY
 
   ### OpenRouter
   - model_name: google/gemma4:31b

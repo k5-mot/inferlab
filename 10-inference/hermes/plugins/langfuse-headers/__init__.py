@@ -76,6 +76,8 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
     """
     request = dict(kwargs["request"])
     headers = dict(request.get("extra_headers") or {})
+    request_metadata = request.get("metadata")
+    metadata = dict(request_metadata) if isinstance(request_metadata, dict) else {}
 
     session_id = kwargs.get("session_id")
     turn_id = kwargs.get("turn_id")
@@ -103,9 +105,18 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
     # Hermes traceとして識別できるようにする。
     headers.setdefault("langfuse_trace_name", "Hermes Agent")
     headers.setdefault("langfuse_generation_name", "Hermes Agent")
-    headers.setdefault("langfuse_tags", '["hermes-agent"]')
+
+    # LiteLLM 1.94.1はlangfuse_tagsヘッダーを文字列として扱うため、
+    # list前提の標準ログ処理を壊さないmetadata側へtagを渡す。
+    tags = metadata.get("tags")
+    if isinstance(tags, list):
+        if "hermes-agent" not in tags:
+            metadata["tags"] = [*tags, "hermes-agent"]
+    elif tags is None:
+        metadata["tags"] = ["hermes-agent"]
 
     request["extra_headers"] = headers
+    request["metadata"] = metadata
 
     return {
         "request": request,

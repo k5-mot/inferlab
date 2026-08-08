@@ -12,7 +12,6 @@ providers:
     extra_headers:
       langfuse_trace_name: "Hermes Agent"
       langfuse_generation_name: "Hermes Agent"
-      langfuse_tags: '["hermes-agent"]'
 fallback_providers:
   - provider: custom:litellm
     model: google/gemma4:31b
