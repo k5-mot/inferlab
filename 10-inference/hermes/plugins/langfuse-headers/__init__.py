@@ -14,6 +14,24 @@ _lock = threading.Lock()
 _RELAY_PATCH_MARKER = "_litellm_langfuse_headers_patched"
 
 
+def _is_title_generation(**kwargs: Any) -> bool:
+    """Langfuse上でタイトル生成として扱う補助呼び出しか判定する。
+
+    Args:
+        **kwargs: Hermes middlewareまたはRelay metadata由来の実行時情報。
+
+    Returns:
+        title_generationの補助呼び出しであればTrue、それ以外はFalseを
+        返す。
+    """
+    markers = (
+        kwargs.get("auxiliary_task"),
+        kwargs.get("task"),
+        kwargs.get("call_role"),
+    )
+    return any(str(marker or "").endswith("title_generation") for marker in markers)
+
+
 def _remember_sender(**kwargs: Any) -> None:
     """Hermesのturn_idに対応するsender_idを一時保存する。
 
@@ -106,7 +124,10 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
     # 設定側のextra_headersが欠けても、
     # Hermes traceとして識別できるようにする。
     headers.setdefault("langfuse_trace_name", "Hermes-Agent")
-    headers.setdefault("langfuse_generation_name", "Hermes-Agent")
+    if _is_title_generation(**kwargs):
+        headers["langfuse_generation_name"] = "Hermes-Agent-TitleGen"
+    else:
+        headers.setdefault("langfuse_generation_name", "Hermes-Agent")
 
     # LiteLLM 1.94.1はlangfuse_tagsヘッダーを文字列として扱うため、
     # list前提の標準ログ処理を壊さないmetadata側へtagを渡す。
@@ -236,6 +257,8 @@ def _inject_relay_langfuse_headers(
             model=model_name or request.get("model"),
             provider=name,
             api_mode=(metadata or {}).get("api_mode"),
+            auxiliary_task=(metadata or {}).get("auxiliary_task"),
+            call_role=(metadata or {}).get("call_role"),
         )
     except Exception:
         return request
