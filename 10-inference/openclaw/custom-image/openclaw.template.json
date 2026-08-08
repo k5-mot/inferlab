@@ -27,6 +27,11 @@
                     "provider": "default",
                     "id": "LITELLM_MASTER_KEY"
                 },
+                "headers": {
+                    "langfuse_trace_name": "OpenClaw",
+                    "langfuse_generation_name": "OpenClaw",
+                    "langfuse_tags": "[\"openclaw\"]"
+                },
                 "models": [
                     {
                         "id": "google/gemma4:31b",
@@ -229,16 +234,12 @@
             "device-pair",
             "discord",
             "file-transfer",
-            "langfuse-bridge",
             "litellm",
             "memory-core",
             "phone-control"
         ],
         "entries": {
             "discord": {
-                "enabled": true
-            },
-            "langfuse-bridge": {
                 "enabled": true
             }
         }

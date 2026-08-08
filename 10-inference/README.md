@@ -10,8 +10,8 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論st
 | --- | --- |
 | `ollama-init` | Compose内のinit commandで`OLLAMA_INIT_MODELS`に列挙したmodelを`ollama-cache` volumeへ順次pullする。Cloud modelのpullはsign in前でも成功するが、実行にはOllama serviceでのsign inが必要。 |
 | `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。Ollama chat modelはtool callの本文JSON漏れを避けるため、`ollama_chat/...` routeを使う。 |
-| `hermes-agent` | custom imageで`hermes` userのUID/GIDをvolume ownerへ合わせ、Compose内の起動commandで`uv add "langfuse==4.14.1"`を実行してからgatewayを起動する。 |
-| `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。 |
+| `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
+| `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。Langfuseへの送信はLiteLLMに集約する。 |
 
 `ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
 
@@ -63,7 +63,13 @@ sudo docker compose --env-file .env --profile inference up -d
 - Cloud model実行時にOllama Cloudのsign inが要求される。
 - TEIがmemory不足で再起動を繰り返す。
 - LiteLLMの設定解決に失敗する。
-- Hermes-AgentがOpen WebUIまたはLangfuseへ接続できない。
+- Hermes-AgentがOpen WebUIまたはLiteLLMへ接続できない。
+
+## Langfuse連携
+
+Langfuseへの送信はLiteLLMの`langfuse_otel` callbackに集約する。Hermes-AgentとOpenClawはLangfuse SDKやLangfuse pluginから直接送信せず、LiteLLMへのprovider requestに`langfuse_*` headerまたはmetadataを付与する。
+
+Hermes-Agentは`litellm-langfuse-headers` pluginで、`session_id`、`turn_id`、`sender_id`、`api_request_id`をLiteLLMのLangfuse連携用headerへ変換する。OpenClawはLiteLLM providerの静的headerで、OpenClaw由来のtrace/generation名とtagを渡す。
 
 ## 確認手順
 

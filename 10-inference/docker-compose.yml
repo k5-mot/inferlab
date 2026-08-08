@@ -291,51 +291,7 @@ services:
     command:
       - |
         set -eu
-
-        if /opt/hermes/.venv/bin/python -c \
-          'import importlib.metadata as m; exit(0 if m.version("langfuse") == "4.14.1" else 1)' \
-          2>/dev/null
-        then
-          echo "Langfuse 4.14.1 is already installed"
-        else
-          LANGFUSE_WHEEL="$(
-            find /tmp/python-packages \
-              -maxdepth 1 \
-              -type f \
-              -name 'langfuse-4.14.1-*.whl' \
-              -print \
-              -quit
-          )"
-
-          if [ -n "$${LANGFUSE_WHEEL}" ]; then
-            echo "Installing Langfuse from wheel: $${LANGFUSE_WHEEL}"
-
-            uv pip install \
-              --python /opt/hermes/.venv/bin/python \
-              --no-index \
-              --find-links=/tmp/python-packages \
-              "$${LANGFUSE_WHEEL}"
-          else
-            echo "Langfuse wheel not found; installing from package index"
-
-            uv pip install \
-              --python /opt/hermes/.venv/bin/python \
-              "langfuse==4.14.1"
-          fi
-        fi
-
         exec /init /opt/hermes/docker/main-wrapper.sh gateway run
-    # entrypoint:
-    #   - /bin/sh
-    #   - -lc
-    # command:
-    #   - |
-    #     set -eu
-    #     cd /opt/hermes
-    #     # 現行imageにLangfuse連携packageが同梱されない環境があるため、起動直前に補完する。
-    #     # 既に解決済みの場合は何もしないため、再起動時の副作用は最小限になる。
-    #     uv add "langfuse==4.14.1" || true
-    #     exec /init /opt/hermes/docker/main-wrapper.sh gateway run
     environment:
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
@@ -369,10 +325,6 @@ services:
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
       DISCORD_AUTO_THREAD: false
-      ### Langfuse
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-http://langfuse-web:3000}
       VOICE_TOOLS_OPENAI_KEY: ${VOICE_TOOLS_OPENAI_KEY:-not-needed}
       ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
@@ -395,7 +347,6 @@ services:
       - ./hermes/config.yaml:/opt/data/config.yaml:ro
       - ./hermes/hooks/install-skills:/opt/data/hooks/install-skills:ro
       - ./hermes/plugins/langfuse-headers:/opt/data/plugins/langfuse-headers:ro
-      - ./hermes/packages:/tmp/python-packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -449,9 +400,6 @@ services:
       DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
       DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
       DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
-      LANGFUSE_BASE_URL: ${LANGFUSE_OTEL_HOST:-http://langfuse-web:3000}
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
     ports:
       - 31002:18789

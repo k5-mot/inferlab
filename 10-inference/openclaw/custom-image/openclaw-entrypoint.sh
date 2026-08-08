@@ -15,6 +15,9 @@ CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-${CONFIG_DIR}/openclaw.json}"
 
 mkdir -p "${CONFIG_DIR}" "$(dirname "${CONFIG_PATH}")" "$(dirname "${CONFIG_TEMPLATE_PATH}")" "$(dirname "${CONFIG_SCHEMA_PATH}")"
 
+# 旧imageで導入したLangfuse bridgeは、観測経路をLiteLLMへ集約する方針では読み込ませない。
+rm -rf "${CONFIG_DIR}/extensions/langfuse-bridge"
+
 # named volumeの初回コピーは既存volumeには効かないため、テンプレート類だけは毎回image側から反映する。
 cp "${CONFIG_TEMPLATE_SOURCE_PATH}" "${CONFIG_TEMPLATE_PATH}"
 cp "${CONFIG_SCHEMA_SOURCE_PATH}" "${CONFIG_SCHEMA_PATH}"

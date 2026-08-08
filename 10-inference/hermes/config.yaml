@@ -9,9 +9,6 @@ providers:
     key_env: LITELLM_MASTER_KEY
     default_model: google/gemma4:31b
     transport: chat_completions
-    extra_headers:
-      langfuse_trace_name: "Hermes Agent"
-      langfuse_generation_name: "Hermes Agent"
 fallback_providers:
   - provider: custom:litellm
     model: google/gemma4:31b

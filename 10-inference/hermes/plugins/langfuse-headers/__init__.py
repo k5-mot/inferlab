@@ -103,8 +103,8 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
 
     # 設定側のextra_headersが欠けても、
     # Hermes traceとして識別できるようにする。
-    headers.setdefault("langfuse_trace_name", "Hermes Agent")
-    headers.setdefault("langfuse_generation_name", "Hermes Agent")
+    headers.setdefault("langfuse_trace_name", "Hermes-Agent")
+    headers.setdefault("langfuse_generation_name", "Hermes-Agent")
 
     # LiteLLM 1.94.1はlangfuse_tagsヘッダーを文字列として扱うため、
     # list前提の標準ログ処理を壊さないmetadata側へtagを渡す。

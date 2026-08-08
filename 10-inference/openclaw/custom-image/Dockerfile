@@ -24,10 +24,7 @@ USER node
 # named volumeの初回作成時にDockerがimage側の中身をコピーできるよう、標準のstate directoryへpluginを入れる。
 RUN OPENCLAW_HOME=/home/node \
     HOME=/home/node \
-    node dist/index.js plugins install @openclaw/discord@2026.7.1 \
-    && OPENCLAW_HOME=/home/node \
-    HOME=/home/node \
-    node dist/index.js plugins install --acknowledge-clawhub-risk clawhub:openclaw-x-langfuse-plugin
+    node dist/index.js plugins install @openclaw/discord@2026.7.1
 
 # docker-compose側でcommandを上書きしなくても、標準でgatewayを起動する。
 ENTRYPOINT ["tini", "-s", "--", "/usr/local/bin/openclaw-entrypoint.sh"]
