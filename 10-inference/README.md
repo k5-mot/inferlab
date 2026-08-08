@@ -13,13 +13,15 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論st
 | `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
 | `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。Langfuseへの送信はLiteLLMに集約する。 |
 
-`ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
+`ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Ollama Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
 
 ## Ollama Cloudのsign in
 
-Cloud modelを`Hermes-Agent`または`OpenClaw`から使う場合、通信経路は`LiteLLM -> Ollama -> Ollama Cloud`に限定する。LiteLLMはOllama containerのlocal APIだけを呼び出すため、LiteLLMからOllama containerへ`OLLAMA_API_KEY`を渡さない。
+Ollama Cloud modelを`Hermes-Agent`、`OpenClaw`、`Open WebUI`から使う場合、Ollama deploymentの通信経路は`LiteLLM -> Ollama -> Ollama Cloud`に限定する。LiteLLMはOllama containerのlocal APIだけを呼び出すため、LiteLLMからOllama containerへ`OLLAMA_API_KEY`を渡さない。
 
-`OLLAMA_API_KEY`は`https://ollama.com/api`へ直接アクセスする場合の認証であり、このstackのCloud model実行経路では使わない。Ollama containerからOllama Cloudへ接続する認証は、`ollama-cache` volumeに保存されたOllamaのsign in状態を使う。
+`OLLAMA_API_KEY`は`https://ollama.com/api`へ直接アクセスする場合の認証であり、このstackのOllama Cloud実行経路では使わない。Ollama containerからOllama Cloudへ接続する認証は、`ollama-cache` volumeに保存されたOllamaのsign in状態を使う。
+
+この制約はLiteLLM全体をOllama providerへ限定するものではない。LiteLLMは同じ`model_name`に対してOllama、OpenRouter、Google AI Studio、Groq Cloud、Cloudflare Workers AIなどの複数deploymentを持ち、`router_settings.routing_strategy: simple-shuffle`で候補を分散する。
 
 初回起動時、または`ollama-cache` volumeを削除した後は、inference stackを起動してからsign inする。詳細な初期セットアップ手順は[Initial Setup](../docs/manual/INITIAL_SETUP.md)を参照する。
 
@@ -35,12 +37,12 @@ sudo docker compose --env-file .env --profile inference exec -it ollama ollama s
 
 - ブラウザでOllama Cloudへのsign inを完了できる。
 - `ollama-cache` volumeにsign in状態が保存される。
-- LiteLLM経由のCloud model実行が`ollama` serviceのsign in状態を使える。
+- LiteLLM経由のOllama Cloud model実行が`ollama` serviceのsign in状態を使える。
 
 失敗条件:
 
 - `ollama signin`が完了しない。
-- sign in後もCloud model実行時に`You need to be signed in to Ollama to run Cloud models.`が表示される。
+- sign in後もOllama Cloud model実行時に`You need to be signed in to Ollama to run Cloud models.`が表示される。
 - LiteLLMのOllama deploymentが`https://ollama.com/api`を参照している。
 
 ## 起動
@@ -59,8 +61,8 @@ sudo docker compose --env-file .env --profile inference up -d
 
 失敗条件:
 
-- Cloud modelの取得先へ接続できない。
-- Cloud model実行時にOllama Cloudのsign inが要求される。
+- Ollama Cloud modelの取得先へ接続できない。
+- Ollama Cloud model実行時にOllama Cloudのsign inが要求される。
 - TEIがmemory不足で再起動を繰り返す。
 - LiteLLMの設定解決に失敗する。
 - Hermes-AgentがOpen WebUIまたはLiteLLMへ接続できない。

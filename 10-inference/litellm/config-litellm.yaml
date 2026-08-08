@@ -37,6 +37,38 @@ model_list:
       supports_function_calling: true
       supports_parallel_function_calling: false
 
+  ### OpenRouter
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: openrouter/openai/gpt-oss-20b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: nvidia/nemotron-3-nano:30b
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  ### Google AI Studio
+  - model_name: google/gemma4:31b
+    litellm_params:
+      model: gemini/gemma-4-31b-it
+      api_key: os.environ/GEMINI_API_KEY
+
+  ### Groq Cloud
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY
+
+  ### Cloudflare Workers AI
+  - model_name: openai/gpt-oss:20b
+    litellm_params:
+      model: cloudflare/@cf/openai/gpt-oss-20b
+      api_key: os.environ/CLOUDFLARE_API_KEY
+
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m
     litellm_params:
