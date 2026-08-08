@@ -145,6 +145,39 @@ def _relay_context() -> Any | None:
         return None
 
 
+def _ambient_session_id() -> str:
+    """補助スレッドに残されたHermes session IDを取得する。
+
+    Args:
+        なし。
+
+    Returns:
+        session IDが取得できた場合は文字列、取得できない場合は空文字列を
+        返す。
+    """
+    try:
+        from agent.portal_tags import get_conversation_context
+
+        conversation_id = get_conversation_context()
+        if conversation_id:
+            return str(conversation_id)
+    except Exception:
+        pass
+
+    try:
+        from agent.aux_accounting import get_accounting_context
+
+        accounting_context = get_accounting_context()
+        if accounting_context is not None:
+            _session_db, session_id = accounting_context
+            if session_id:
+                return str(session_id)
+    except Exception:
+        pass
+
+    return ""
+
+
 def _inject_relay_langfuse_headers(
     request: dict[str, Any],
     *,
@@ -169,8 +202,9 @@ def _inject_relay_langfuse_headers(
     if not isinstance(request, dict):
         return request
 
+    api_request_id = (metadata or {}).get("api_request_id")
     relay_turn = _relay_context()
-    effective_session_id = session_id
+    effective_session_id = session_id or _ambient_session_id()
     turn_id = None
     task_id = None
     platform = None
@@ -185,13 +219,19 @@ def _inject_relay_langfuse_headers(
             )
             platform = getattr(lease, "platform", None)
 
+    # title_generationなどのdaemon threadではactive turnが既に消えている。
+    # その場合もLangfuse上で孤立traceにしないため、sessionと補助request ID
+    # から安定したtrace IDを合成する。
+    if turn_id is None and effective_session_id and api_request_id:
+        turn_id = f"{effective_session_id}:{api_request_id}"
+
     try:
         result = _inject_langfuse_headers(
             request=request,
             session_id=effective_session_id,
             task_id=task_id,
             turn_id=turn_id,
-            api_request_id=(metadata or {}).get("api_request_id"),
+            api_request_id=api_request_id,
             platform=platform or "",
             model=model_name or request.get("model"),
             provider=name,
@@ -227,7 +267,10 @@ def _patch_relay_llm() -> None:
 
     original_execute = relay_llm.execute
     original_execute_async = relay_llm.execute_async
+    original_execute_current = relay_llm.execute_current
+    original_execute_current_async = relay_llm.execute_current_async
     original_stream = relay_llm.stream
+    original_stream_current = relay_llm.stream_current
 
     @functools.wraps(original_execute)
     def execute_with_langfuse_headers(
@@ -271,6 +314,45 @@ def _patch_relay_llm() -> None:
             defer_logical_completion=defer_logical_completion,
         )
 
+    @functools.wraps(original_execute_current)
+    def execute_current_with_langfuse_headers(
+        request: dict[str, Any],
+        callback: Any,
+        *,
+        name: str,
+        model_name: str,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+    ) -> Any:
+        """現在のRelay turnが無い補助実行にもLangfuseヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            callback: 実際のprovider呼び出し関数。
+            name: provider名。
+            model_name: model名。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+
+        Returns:
+            元のRelay実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=None,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return original_execute_current(
+            request,
+            callback,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+        )
+
     @functools.wraps(original_execute_async)
     async def execute_async_with_langfuse_headers(
         request: dict[str, Any],
@@ -307,6 +389,45 @@ def _patch_relay_llm() -> None:
             request,
             callback,
             session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+        )
+
+    @functools.wraps(original_execute_current_async)
+    async def execute_current_async_with_langfuse_headers(
+        request: dict[str, Any],
+        callback: Any,
+        *,
+        name: str,
+        model_name: str,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+    ) -> Any:
+        """現在のRelay turnが無い非同期補助実行にもヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            callback: 実際のprovider呼び出し関数。
+            name: provider名。
+            model_name: model名。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+
+        Returns:
+            元のRelay実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=None,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return await original_execute_current_async(
+            request,
+            callback,
             name=name,
             model_name=model_name,
             metadata=metadata,
@@ -373,9 +494,57 @@ def _patch_relay_llm() -> None:
             defer_logical_completion=defer_logical_completion,
         )
 
+    @functools.wraps(original_stream_current)
+    def stream_current_with_langfuse_headers(
+        request: dict[str, Any],
+        stream_factory: Any,
+        *,
+        name: str,
+        model_name: str,
+        finalizer: Any,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+        completed_response_predicate: Any = None,
+    ) -> Any:
+        """現在のRelay turnが無い補助streamにもヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            stream_factory: 実際のprovider stream生成関数。
+            name: provider名。
+            model_name: model名。
+            finalizer: stream完了時の集約関数。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+            completed_response_predicate: 完了済み応答判定関数。
+
+        Returns:
+            元のRelay stream実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=None,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return original_stream_current(
+            request,
+            stream_factory,
+            name=name,
+            model_name=model_name,
+            finalizer=finalizer,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+            completed_response_predicate=completed_response_predicate,
+        )
+
     relay_llm.execute = execute_with_langfuse_headers
     relay_llm.execute_async = execute_async_with_langfuse_headers
+    relay_llm.execute_current = execute_current_with_langfuse_headers
+    relay_llm.execute_current_async = execute_current_async_with_langfuse_headers
     relay_llm.stream = stream_with_langfuse_headers
+    relay_llm.stream_current = stream_current_with_langfuse_headers
     setattr(relay_llm, _RELAY_PATCH_MARKER, True)
 
 
