@@ -13,54 +13,19 @@ router_settings:
   num_retries: 3
 
 model_list:
-  ### Ollama Cloud; API keyでollama.comへ直接接続する。
+  ### Ollama; Cloud modelの認証はOllama daemon側のsignin状態を使う。
   - model_name: google/gemma4:31b
     litellm_params:
-      model: ollama/gemma4:31b
-      api_base: https://ollama.com
-      api_key: os.environ/OLLAMA_API_KEY
+      model: ollama/gemma4:31b-cloud
+      api_base: http://ollama:11434
   - model_name: openai/gpt-oss:20b
     litellm_params:
-      model: ollama/gpt-oss:20b
-      api_base: https://ollama.com
-      api_key: os.environ/OLLAMA_API_KEY
+      model: ollama/gpt-oss:20b-cloud
+      api_base: http://ollama:11434
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
-      model: ollama/nemotron-3-nano:30b
-      api_base: https://ollama.com
-      api_key: os.environ/OLLAMA_API_KEY
-
-  ### OpenRouter
-  - model_name: google/gemma4:31b
-    litellm_params:
-      model: openrouter/google/gemma-4-31b-it:free
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: openai/gpt-oss:20b
-    litellm_params:
-      model: openrouter/openai/gpt-oss-20b:free
-      api_key: os.environ/OPENROUTER_API_KEY
-  - model_name: nvidia/nemotron-3-nano:30b
-    litellm_params:
-      model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
-      api_key: os.environ/OPENROUTER_API_KEY
-
-  ### Google AI Studio
-  - model_name: google/gemma4:31b
-    litellm_params:
-      model: gemini/gemma-4-31b-it
-      api_key: os.environ/GEMINI_API_KEY
-
-  ### Groq Cloud
-  - model_name: openai/gpt-oss:20b
-    litellm_params:
-      model: groq/openai/gpt-oss-20b
-      api_key: os.environ/GROQ_API_KEY
-
-  ### Cloudflare Workers AI
-  - model_name: openai/gpt-oss:20b
-    litellm_params:
-      model: cloudflare/@cf/openai/gpt-oss-20b
-      api_key: os.environ/CLOUDFLARE_API_KEY
+      model: ollama/nemotron-3-nano:30b-cloud
+      api_base: http://ollama:11434
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m
