@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import threading
 from typing import Any
 
@@ -10,6 +11,7 @@ from typing import Any
 # turn_idを介して一時的に対応付ける。
 _sender_by_turn: dict[str, str] = {}
 _lock = threading.Lock()
+_RELAY_PATCH_MARKER = "_litellm_langfuse_headers_patched"
 
 
 def _remember_sender(**kwargs: Any) -> None:
@@ -125,6 +127,258 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
     }
 
 
+def _relay_context() -> Any | None:
+    """現在のHermes Relay turnを取得する。
+
+    Args:
+        なし。
+
+    Returns:
+        active turnが存在する場合はRelayTurnContext、存在しない場合は
+        Noneを返す。
+    """
+    try:
+        from agent import relay_runtime
+
+        return relay_runtime.active_turn()
+    except Exception:
+        return None
+
+
+def _inject_relay_langfuse_headers(
+    request: dict[str, Any],
+    *,
+    session_id: str | None,
+    name: str,
+    model_name: str,
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Relay経由のLLM requestへLiteLLM向けLangfuseヘッダーを注入する。
+
+    Args:
+        request: providerへ送信されるOpenAI互換request。
+        session_id: 呼び出し元が明示したHermes session ID。
+        name: Relayへ記録されるprovider名。
+        model_name: Relayへ記録されるmodel名。
+        metadata: Relay呼び出しに付与された補助メタデータ。
+
+    Returns:
+        Langfuseヘッダーを追加したrequestを返す。注入に失敗した場合は
+        元のrequestを返す。
+    """
+    if not isinstance(request, dict):
+        return request
+
+    relay_turn = _relay_context()
+    effective_session_id = session_id
+    turn_id = None
+    task_id = None
+    platform = None
+
+    if relay_turn is not None:
+        turn_id = getattr(relay_turn, "turn_id", None)
+        task_id = getattr(relay_turn, "task_id", None)
+        lease = getattr(relay_turn, "lease", None)
+        if lease is not None:
+            effective_session_id = str(
+                getattr(lease, "session_id", None) or effective_session_id or ""
+            )
+            platform = getattr(lease, "platform", None)
+
+    try:
+        result = _inject_langfuse_headers(
+            request=request,
+            session_id=effective_session_id,
+            task_id=task_id,
+            turn_id=turn_id,
+            api_request_id=(metadata or {}).get("api_request_id"),
+            platform=platform or "",
+            model=model_name or request.get("model"),
+            provider=name,
+            api_mode=(metadata or {}).get("api_mode"),
+        )
+    except Exception:
+        return request
+
+    next_request = result.get("request")
+    return next_request if isinstance(next_request, dict) else request
+
+
+def _patch_relay_llm() -> None:
+    """Hermes Relay経由の補助LLM呼び出しにもヘッダー注入を適用する。
+
+    Args:
+        なし。
+
+    Returns:
+        Noneを返す。
+
+    Side Effects:
+        agent.relay_llmのexecute、execute_async、streamをプロセス内で
+        ラップする。既にラップ済みの場合は何もしない。
+    """
+    try:
+        from agent import relay_llm
+    except Exception:
+        return
+
+    if getattr(relay_llm, _RELAY_PATCH_MARKER, False):
+        return
+
+    original_execute = relay_llm.execute
+    original_execute_async = relay_llm.execute_async
+    original_stream = relay_llm.stream
+
+    @functools.wraps(original_execute)
+    def execute_with_langfuse_headers(
+        request: dict[str, Any],
+        callback: Any,
+        *,
+        session_id: str,
+        name: str,
+        model_name: str,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+    ) -> Any:
+        """同期Relay実行前にLangfuseヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            callback: 実際のprovider呼び出し関数。
+            session_id: Hermes session ID。
+            name: provider名。
+            model_name: model名。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+
+        Returns:
+            元のRelay実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return original_execute(
+            request,
+            callback,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+        )
+
+    @functools.wraps(original_execute_async)
+    async def execute_async_with_langfuse_headers(
+        request: dict[str, Any],
+        callback: Any,
+        *,
+        session_id: str,
+        name: str,
+        model_name: str,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+    ) -> Any:
+        """非同期Relay実行前にLangfuseヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            callback: 実際のprovider呼び出し関数。
+            session_id: Hermes session ID。
+            name: provider名。
+            model_name: model名。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+
+        Returns:
+            元のRelay実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return await original_execute_async(
+            request,
+            callback,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+        )
+
+    @functools.wraps(original_stream)
+    def stream_with_langfuse_headers(
+        request: dict[str, Any],
+        stream_factory: Any,
+        *,
+        session_id: str,
+        name: str,
+        model_name: str,
+        finalizer: Any,
+        on_stream_created: Any = None,
+        on_chunk: Any = None,
+        chunk_adapter: Any = None,
+        accept_chunk: Any = None,
+        completed_response_predicate: Any = None,
+        metadata: dict[str, Any] | None = None,
+        defer_logical_completion: bool = False,
+    ) -> Any:
+        """Relay stream開始前にLangfuseヘッダーを補完する。
+
+        Args:
+            request: providerへ送信されるOpenAI互換request。
+            stream_factory: 実際のprovider stream生成関数。
+            session_id: Hermes session ID。
+            name: provider名。
+            model_name: model名。
+            finalizer: stream完了時の集約関数。
+            on_stream_created: stream生成時のcallback。
+            on_chunk: chunk受信時のcallback。
+            chunk_adapter: chunk変換関数。
+            accept_chunk: chunk受理判定関数。
+            completed_response_predicate: 完了済み応答判定関数。
+            metadata: Relay呼び出しメタデータ。
+            defer_logical_completion: 論理呼び出し完了を遅延するか。
+
+        Returns:
+            元のRelay stream実行結果を返す。
+        """
+        request = _inject_relay_langfuse_headers(
+            request,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            metadata=metadata,
+        )
+        return original_stream(
+            request,
+            stream_factory,
+            session_id=session_id,
+            name=name,
+            model_name=model_name,
+            finalizer=finalizer,
+            on_stream_created=on_stream_created,
+            on_chunk=on_chunk,
+            chunk_adapter=chunk_adapter,
+            accept_chunk=accept_chunk,
+            completed_response_predicate=completed_response_predicate,
+            metadata=metadata,
+            defer_logical_completion=defer_logical_completion,
+        )
+
+    relay_llm.execute = execute_with_langfuse_headers
+    relay_llm.execute_async = execute_async_with_langfuse_headers
+    relay_llm.stream = stream_with_langfuse_headers
+    setattr(relay_llm, _RELAY_PATCH_MARKER, True)
+
+
 def register(ctx: Any) -> None:
     """Hermesへhookとmiddlewareを登録する。
 
@@ -145,3 +399,7 @@ def register(ctx: Any) -> None:
     # session_id、turn_id、api_request_idはrequest直前のmiddlewareで
     # headersへ移す。
     ctx.register_middleware("llm_request", _inject_langfuse_headers)
+
+    # 補助LLM呼び出しはconversation_loopのrequest middlewareを通らず
+    # relay_llmへ直接入るため、同じ注入処理をrelay入口にも適用する。
+    _patch_relay_llm()
