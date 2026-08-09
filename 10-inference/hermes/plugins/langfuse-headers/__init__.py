@@ -14,6 +14,73 @@ _lock = threading.Lock()
 _RELAY_PATCH_MARKER = "_litellm_langfuse_headers_patched"
 
 
+def _normalize_tag(value: Any) -> str:
+    """Langfuse tagとして使う値を小文字ケバブケースへ正規化する。
+
+    Args:
+        value: tag候補の任意の値。
+
+    Returns:
+        英数字とハイフンだけに正規化したtag文字列を返す。空値の場合は
+        空文字列を返す。
+    """
+    normalized = str(value or "").strip().lower().replace("_", "-")
+    normalized = normalized.replace(":", "-")
+    return "".join(
+        char for char in normalized if char.isalnum() or char == "-"
+    ).strip("-")
+
+
+def _scope_tag(**kwargs: Any) -> str:
+    """HermesのLLM呼び出し種別を表すLangfuse tagを決定する。
+
+    Args:
+        **kwargs: Hermes middlewareまたはRelay metadata由来の実行時情報。
+
+    Returns:
+        補助タスクの場合はタスク名由来のtag、通常会話の場合はchatを
+        返す。
+    """
+    auxiliary_task = _normalize_tag(kwargs.get("auxiliary_task"))
+    if auxiliary_task:
+        return auxiliary_task
+
+    call_role = str(kwargs.get("call_role") or "")
+    if call_role.startswith("auxiliary:"):
+        return _normalize_tag(call_role.split(":", 1)[1])
+
+    return "chat"
+
+
+def _append_langfuse_tags(metadata: dict[str, Any], *extra_tags: str) -> None:
+    """LiteLLMへ渡すmetadata.tagsへLangfuse分類tagを追加する。
+
+    Args:
+        metadata: LiteLLM request metadata。関数内で更新される。
+        *extra_tags: 追加したいtag文字列。
+
+    Returns:
+        Noneを返す。
+
+    Side Effects:
+        metadata["tags"]をlistとして設定または更新する。
+    """
+    raw_tags = metadata.get("tags")
+    if isinstance(raw_tags, list):
+        tags = list(raw_tags)
+    elif raw_tags is None:
+        tags = []
+    else:
+        tags = [str(raw_tags)]
+
+    for tag in ("hermes-agent", *extra_tags):
+        normalized = _normalize_tag(tag)
+        if normalized and normalized not in tags:
+            tags.append(normalized)
+
+    metadata["tags"] = tags
+
+
 def _remember_sender(**kwargs: Any) -> None:
     """Hermesのturn_idに対応するsender_idを一時保存する。
 
@@ -110,12 +177,7 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
 
     # LiteLLM 1.94.1はlangfuse_tagsヘッダーを文字列として扱うため、
     # list前提の標準ログ処理を壊さないmetadata側へtagを渡す。
-    tags = metadata.get("tags")
-    if isinstance(tags, list):
-        if "hermes-agent" not in tags:
-            metadata["tags"] = [*tags, "hermes-agent"]
-    elif tags is None:
-        metadata["tags"] = ["hermes-agent"]
+    _append_langfuse_tags(metadata, _scope_tag(**kwargs))
 
     request["extra_headers"] = headers
     request["metadata"] = metadata
@@ -236,6 +298,8 @@ def _inject_relay_langfuse_headers(
             model=model_name or request.get("model"),
             provider=name,
             api_mode=(metadata or {}).get("api_mode"),
+            auxiliary_task=(metadata or {}).get("auxiliary_task"),
+            call_role=(metadata or {}).get("call_role"),
         )
     except Exception:
         return request
