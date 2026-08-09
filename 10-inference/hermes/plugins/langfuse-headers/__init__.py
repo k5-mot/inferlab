@@ -7,9 +7,9 @@ import threading
 from typing import Any
 
 
-# llm_request middlewareではsender_idを直接参照できないため、
+# llm_request middlewareではsender_idなどを直接参照できないため、
 # turn_idを介して一時的に対応付ける。
-_sender_by_turn: dict[str, str] = {}
+_context_by_turn: dict[str, dict[str, str]] = {}
 _lock = threading.Lock()
 _RELAY_PATCH_MARKER = "_litellm_langfuse_headers_patched"
 
@@ -81,8 +81,48 @@ def _append_langfuse_tags(metadata: dict[str, Any], *extra_tags: str) -> None:
     metadata["tags"] = tags
 
 
+def _platform_name(value: Any) -> str:
+    """Hermes platform名を比較用の小文字文字列へ正規化する。
+
+    Args:
+        value: platform候補の任意の値。
+
+    Returns:
+        小文字化したplatform名を返す。空値の場合は空文字列を返す。
+    """
+    return str(value or "").strip().lower()
+
+
+def _trace_user_id(**kwargs: Any) -> str:
+    """Langfuse trace user_idへ渡すHermesユーザ識別子を決定する。
+
+    Args:
+        **kwargs: Hermes middlewareまたはRelay metadata由来の実行時情報。
+
+    Returns:
+        Discord通常会話ではDiscord sender_idを返す。title_generationや
+        Hermes WebUIなど、それ以外の経路ではhermes-agentを返す。
+    """
+    if _scope_tag(**kwargs) == "title-generation":
+        return "hermes-agent"
+
+    turn_id = kwargs.get("turn_id")
+    cached_context: dict[str, str] = {}
+    if turn_id is not None:
+        with _lock:
+            cached_context = dict(_context_by_turn.get(str(turn_id)) or {})
+
+    platform = _platform_name(kwargs.get("platform") or cached_context.get("platform"))
+    sender_id = str(kwargs.get("sender_id") or cached_context.get("sender_id") or "")
+
+    if platform.startswith("discord") and sender_id:
+        return sender_id
+
+    return "hermes-agent"
+
+
 def _remember_sender(**kwargs: Any) -> None:
-    """Hermesのturn_idに対応するsender_idを一時保存する。
+    """Hermesのturn_idに対応するユーザ文脈を一時保存する。
 
     Args:
         **kwargs: Hermesのpre_llm_call hookから渡される実行時情報。
@@ -91,23 +131,30 @@ def _remember_sender(**kwargs: Any) -> None:
         Noneを返す。
 
     Side Effects:
-        turn_idとsender_idが揃っている場合、プロセス内メモリへ
-        対応関係を保存する。
+        turn_idが存在する場合、sender_idやplatformをプロセス内メモリへ
+        保存する。
     """
     turn_id = kwargs.get("turn_id")
-    sender_id = kwargs.get("sender_id")
 
-    if turn_id is None or sender_id is None:
+    if turn_id is None:
         return
 
+    context: dict[str, str] = {}
+    sender_id = kwargs.get("sender_id")
+    platform = kwargs.get("platform")
+    if sender_id is not None:
+        context["sender_id"] = str(sender_id)
+    if platform is not None:
+        context["platform"] = str(platform)
+
     with _lock:
-        _sender_by_turn[str(turn_id)] = str(sender_id)
+        _context_by_turn[str(turn_id)] = context
 
     return
 
 
 def _forget_sender(**kwargs: Any) -> None:
-    """LLM呼び出し後にturn_idとsender_idの対応関係を削除する。
+    """LLM呼び出し後にturn_idのユーザ文脈を削除する。
 
     Args:
         **kwargs: Hermesのpost_llm_call hookから渡される実行時情報。
@@ -116,8 +163,7 @@ def _forget_sender(**kwargs: Any) -> None:
         Noneを返す。
 
     Side Effects:
-        turn_idが存在する場合、プロセス内メモリから対応関係を
-        削除する。
+        turn_idが存在する場合、プロセス内メモリからユーザ文脈を削除する。
     """
     turn_id = kwargs.get("turn_id")
 
@@ -125,7 +171,7 @@ def _forget_sender(**kwargs: Any) -> None:
         return
 
     with _lock:
-        _sender_by_turn.pop(str(turn_id), None)
+        _context_by_turn.pop(str(turn_id), None)
 
     return
 
@@ -160,11 +206,7 @@ def _inject_langfuse_headers(**kwargs: Any) -> dict[str, Any]:
     if turn_id is not None:
         headers["langfuse_trace_id"] = str(turn_id)
 
-        with _lock:
-            sender_id = _sender_by_turn.get(str(turn_id))
-
-        if sender_id is not None:
-            headers["langfuse_trace_user_id"] = sender_id
+    headers["langfuse_trace_user_id"] = _trace_user_id(**kwargs)
 
     # 実際のprovider呼び出しはLangfuseのgenerationとして扱う。
     if api_request_id is not None:
