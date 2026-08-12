@@ -358,7 +358,7 @@ services:
       retries: 20
       start_period: 5s
     labels:
-      - homepage.icon=/icons/redis.png
+      - homepage.icon=/icons/valkey.png
       - homepage.group=39-leantime
       - homepage.name=Plane-Redis
       - homepage.description=Inmemory key-value NoSQL database

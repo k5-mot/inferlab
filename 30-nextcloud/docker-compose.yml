@@ -125,7 +125,7 @@ services:
       timeout: 5s
       retries: 20
     labels:
-      - homepage.icon=/icons/redis.png
+      - homepage.icon=/icons/valkey.png
       - homepage.group=30-nextcloud
       - homepage.name=Nextcloud-Valkey
       - homepage.description=Inmemory key-value NoSQL database

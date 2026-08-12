@@ -387,7 +387,7 @@ services:
   #     retries: 3
   #     start_period: 10s
   #   labels:
-  #     - homepage.icon=/icons/redis.png
+  #     - homepage.icon=/icons/valkey.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Nextcloud Valkey Exporter
   #     - homepage.description=Nextcloud cache metrics exporter
@@ -410,7 +410,7 @@ services:
   #     retries: 3
   #     start_period: 10s
   #   labels:
-  #     - homepage.icon=/icons/redis.png
+  #     - homepage.icon=/icons/valkey.png
   #     - homepage.group=50-o11y
   #     - homepage.name=Langfuse Valkey Exporter
   #     - homepage.description=Langfuse cache metrics exporter

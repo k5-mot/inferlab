@@ -179,7 +179,7 @@ services:
       timeout: 10s
       retries: 10
     labels:
-      - homepage.icon=/icons/redis.png
+      - homepage.icon=/icons/valkey.png
       - homepage.group=51-langfuse
       - homepage.name=Langfuse-Valkey
       - homepage.description=Inmemory key-value NoSQL database
