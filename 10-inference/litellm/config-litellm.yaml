@@ -13,12 +13,12 @@ router_settings:
   num_retries: 3
 
 model_list:
-  ### Ollama; Cloud modelの認証はOllama daemon側のsignin状態を使う。
-  ### tool callはOllama /api/chat routeで処理し、本文へのJSON漏れを避ける。
+  ### Ollama
   - model_name: google/gemma4:31b
     litellm_params:
       model: ollama_chat/gemma4:31b-cloud
       api_base: http://ollama:11434
+      tags: ["ollama", "foundation"]
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -26,6 +26,7 @@ model_list:
     litellm_params:
       model: ollama_chat/gpt-oss:20b-cloud
       api_base: http://ollama:11434
+      tags: ["ollama", "foundation"]
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -33,6 +34,7 @@ model_list:
     litellm_params:
       model: ollama_chat/nemotron-3-nano:30b-cloud
       api_base: http://ollama:11434
+      tags: ["ollama", "foundation"]
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -42,32 +44,38 @@ model_list:
     litellm_params:
       model: openrouter/google/gemma-4-31b-it:free
       api_key: os.environ/OPENROUTER_API_KEY
+      tags: ["openrouter", "foundation"]
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: openrouter/openai/gpt-oss-20b:free
       api_key: os.environ/OPENROUTER_API_KEY
+      tags: ["openrouter", "foundation"]
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
       model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
       api_key: os.environ/OPENROUTER_API_KEY
+      tags: ["openrouter", "foundation"]
 
   ### Google AI Studio
   - model_name: google/gemma4:31b
     litellm_params:
       model: gemini/gemma-4-31b-it
       api_key: os.environ/GEMINI_API_KEY
+      tags: ["gemini", "foundation"]
 
   ### Groq Cloud
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      tags: ["groq", "foundation"]
 
   ### Cloudflare Workers AI
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: cloudflare/@cf/openai/gpt-oss-20b
       api_key: os.environ/CLOUDFLARE_API_KEY
+      tags: ["cloudflare", "foundation"]
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m
@@ -77,6 +85,7 @@ model_list:
       api_key: EMPTY
       encoding_format: float
       max_parallel_requests: 1
+      tags: ["text-embedding-inference", "embedding"]
   - model_name: cl-nagoya/ruri-v3-reranker:310m
     litellm_params:
       model: huggingface/cl-nagoya/ruri-v3-reranker-310m
@@ -84,12 +93,14 @@ model_list:
       api_key: EMPTY
       encoding_format: float
       max_parallel_requests: 1
+      tags: ["text-embedding-inference", "reranking"]
 
   ### TTS
-  - model_name: kokoro
+  - model_name: hexgrad/kokoro:82m
     litellm_params:
       model: openai/kokoro
       api_base: http://kokoro:8880/v1
       api_key: not-needed
+      tags: ["openai-compatible", "tts"]
     model_info:
       mode: audio_speech
