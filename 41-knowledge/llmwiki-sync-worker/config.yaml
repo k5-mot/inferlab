@@ -3,6 +3,12 @@ worker:
   http_timeout_seconds: ${LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS:-30}
   checkpoint_path: /state/checkpoint.json
   health_path: /state/health.json
+  status_path: /state/status.json
+
+web:
+  enabled: ${LLMWIKI_SYNC_WEB_ENABLED:-true}
+  host: ${LLMWIKI_SYNC_WEB_HOST:-0.0.0.0}
+  port: ${LLMWIKI_SYNC_WEB_PORT:-8090}
 
 llm_wiki:
   mcp_url: ${LLM_WIKI_MCP_URL:-http://llm-wiki:8080/mcp}
@@ -33,7 +39,7 @@ sources:
     max_items: ${NEXTCLOUD_LLMWIKI_MAX_ITEMS:-50}
 
   - name: bookstack
-    type: http_json
+    type: bookstack
     enabled: ${LLMWIKI_SYNC_BOOKSTACK_ENABLED:-false}
     base_url: ${BOOKSTACK_URL:-http://bookstack}
     auth:
@@ -55,7 +61,7 @@ sources:
         max_items: ${BOOKSTACK_LLMWIKI_MAX_ITEMS:-50}
 
   - name: zulip
-    type: http_json
+    type: zulip
     enabled: ${LLMWIKI_SYNC_ZULIP_ENABLED:-false}
     base_url: ${ZULIP_URL:-https://zulip}
     verify_tls: ${ZULIP_LLMWIKI_VERIFY_TLS:-false}
@@ -89,7 +95,7 @@ sources:
         max_items: ${ZULIP_LLMWIKI_MAX_MESSAGES:-50}
 
   - name: kaneo
-    type: http_json
+    type: kaneo
     enabled: ${LLMWIKI_SYNC_KANEO_ENABLED:-false}
     base_url: ${KANEO_URL:-http://kaneo:5173}
     auth:
@@ -107,7 +113,7 @@ sources:
         max_items: ${KANEO_LLMWIKI_MAX_PROJECTS:-50}
 
   - name: gitlab
-    type: http_json
+    type: gitlab
     enabled: ${LLMWIKI_SYNC_GITLAB_ENABLED:-false}
     base_url: ${GITLAB_URL:-http://gitlab}
     auth:

@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir PyYAML==6.0.3
 
-COPY sync_worker.py /app/sync_worker.py
+COPY . /app/
 
 RUN chmod 0555 /app/sync_worker.py
 

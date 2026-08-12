@@ -42,7 +42,7 @@ services:
       retries: 10
       start_period: 20s
     labels:
-      - homepage.icon=/icons/bookstack.png
+      - homepage.icon=/icons/llm-wiki.png
       - homepage.group=41-knowledge
       - homepage.name=LLM Wiki
       - homepage.href=http://${PUBLIC_HOST}:${LLM_WIKI_HTTP_HOST_PORT:-34100}/mcp
@@ -63,6 +63,9 @@ services:
       LLM_WIKI_SPACE_NAME: ${LLM_WIKI_SPACE_NAME:-inferlab}
       LLMWIKI_SYNC_INTERVAL_SECONDS: ${LLMWIKI_SYNC_INTERVAL_SECONDS:-3600}
       LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS: ${LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS:-30}
+      LLMWIKI_SYNC_WEB_ENABLED: ${LLMWIKI_SYNC_WEB_ENABLED:-true}
+      LLMWIKI_SYNC_WEB_HOST: 0.0.0.0
+      LLMWIKI_SYNC_WEB_PORT: "8090"
       LLMWIKI_SYNC_COUCHDB_ENABLED: ${LLMWIKI_SYNC_COUCHDB_ENABLED:-true}
       LLMWIKI_SYNC_COUCHDB_MAX_DOCS_PER_DATABASE: ${LLMWIKI_SYNC_COUCHDB_MAX_DOCS_PER_DATABASE:-50}
       COUCHDB_URL: http://couchdb:5984
@@ -96,6 +99,8 @@ services:
       GITLAB_URL: http://gitlab
       GITLAB_LLMWIKI_TOKEN: ${GITLAB_LLMWIKI_TOKEN:-}
       GITLAB_LLMWIKI_MAX_PROJECTS: ${GITLAB_LLMWIKI_MAX_PROJECTS:-50}
+    ports:
+      - "${LLMWIKI_SYNC_WEB_HOST_BIND:-127.0.0.1}:${LLMWIKI_SYNC_WEB_HOST_PORT:-34101}:8090"
     volumes:
       - llmwiki-sync-worker-state:/state
       - ./llmwiki-sync-worker/config.yaml:/config/config.yaml:ro
@@ -117,6 +122,7 @@ services:
       - homepage.icon=/icons/python.png
       - homepage.group=41-knowledge
       - homepage.name=LLMwiki Sync Worker
+      - homepage.href=http://${LLMWIKI_SYNC_WEB_PUBLIC_HOST:-127.0.0.1}:${LLMWIKI_SYNC_WEB_HOST_PORT:-34101}
       - homepage.description=Configured sources sync worker via llm-wiki MCP
 
 volumes:
