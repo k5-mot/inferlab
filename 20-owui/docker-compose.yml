@@ -130,12 +130,12 @@ services:
               "x-litellm-end-user-id": "{{USER_ID}}",
               "x-litellm-tags": "[\"open-webui\"]",
               "langfuse_trace_id": "{{MESSAGE_ID}}",
-              "langfuse_trace_name": "Open WebUI",
+              "langfuse_trace_name": "Open-WebUI",
               "langfuse_session_id": "{{CHAT_ID}}",
               "langfuse_trace_user_id": "{{USER_ID}}",
               "langfuse_tags": "[\"open-webui\"]",
               "langfuse_generation_id": "{{MESSAGE_ID}}",
-              "langfuse_generation_name": "Open WebUI"
+              "langfuse_generation_name": "Open-WebUI"
             }
           }
         }
