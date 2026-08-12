@@ -48,7 +48,49 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:${LLM_WIKI_HTTP_HOST_PORT:-34100}/mcp
       - homepage.description=Git-backed Markdown wiki engine for agents
 
+  couchdb-llmwiki-sync:
+    build:
+      context: ./couchdb-llmwiki-sync
+      dockerfile: Dockerfile
+    image: ${COUCHDB_LLMWIKI_SYNC_IMAGE:-inferlab/couchdb-llmwiki-sync:latest}
+    container_name: ${STACK_NAME:-inferlab}-couchdb-llmwiki-sync
+    restart: unless-stopped
+    profiles:
+      - knowledge
+    environment:
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
+      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
+      LLM_WIKI_SPACE_NAME: ${LLM_WIKI_SPACE_NAME:-inferlab}
+      SYNC_INTERVAL_SECONDS: ${COUCHDB_LLMWIKI_SYNC_INTERVAL_SECONDS:-3600}
+      SYNC_MAX_DOCS_PER_DATABASE: ${COUCHDB_LLMWIKI_SYNC_MAX_DOCS_PER_DATABASE:-50}
+      SYNC_CHECKPOINT_PATH: /state/checkpoint.json
+      SYNC_HEALTH_PATH: /state/health.json
+    volumes:
+      - couchdb-llmwiki-sync-state:/state
+    networks:
+      - internal-nw
+    depends_on:
+      llm-wiki:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          grep -q '"status": "ok"' /state/health.json
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - homepage.icon=/icons/couchdb.png
+      - homepage.group=41-knowledge
+      - homepage.name=CouchDB to LLM Wiki
+      - homepage.description=CouchDB changes sync worker via llm-wiki MCP
+
 volumes:
+  couchdb-llmwiki-sync-state:
   llm-wiki-state:
   llm-wiki-data:
 

@@ -25,7 +25,4 @@ fi
 
 llm-wiki --config "${CONFIG_PATH}" config set serve.http_allowed_hosts "localhost,127.0.0.1,::1,llm-wiki" --global
 
-# Hermes/OpenClawが同じvolume上のMarkdownを直接更新できるよう、共有wikiだけ緩める。
-chmod -R a+rwX "$(dirname "${SPACE_PATH}")"
-
 exec llm-wiki --config "${CONFIG_PATH}" serve --http ":${HTTP_PORT}" --watch
