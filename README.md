@@ -157,3 +157,21 @@
 ## License
 
 プロジェクト全体を対象とするライセンスは設定されていません。サードパーティー素材には、各配置先に記載されたライセンスが適用されます。
+
+## LiteLLM動作確認
+
+```bash
+# LiteLLM gateway経由でchat completions APIの応答を確認する。
+curl -fsS -X POST 'http://localhost:31000/chat/completions' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-litellm-master-key' \
+  -d '{
+    "model": "google/gemma4:31b",
+    "messages": [
+      {
+        "role": "user",
+        "content": "相模原市の特産品は？"
+      }
+    ]
+  }'
+```
