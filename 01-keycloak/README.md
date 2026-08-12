@@ -4,16 +4,15 @@ Keycloakを中心にした認証stack。HTTP公開用の`keycloak`と、HTTPS is
 
 ## 起動時初期化
 
-`keycloak` serviceは通常のKeycloak entrypointではなく、`keycloak/import-realm.sh`を起動する。
+`keycloak` serviceはKeycloak標準の`start --import-realm`で最小realmを作成し、`keycloak-config` serviceが`keycloak/config.yaml`を使ってrealm user、group、OIDC clientを同期する。
 
 初期化処理は次の順で実行される。
 
-1. `keycloak/realm-export.json`と`keycloak/client-sync.json`を環境変数で展開する。
-2. `${STACK_NAME:-inferlab}`のrealm import JSONを`/opt/keycloak/data/import/`へ生成する。
-3. `kc.sh start --import-realm`でKeycloakを起動する。
-4. 管理APIへログインできるまで待機する。
-5. `partialImport`でOIDC client定義を同期する。
-6. Keycloak本体のprocessへ制御を戻す。
+1. `keycloak`が`keycloak/bootstrap-realm.json`を`/opt/keycloak/data/import/`へmountする。
+2. `keycloak`が`start --import-realm`で`${STACK_NAME:-inferlab}` realmを作成する。
+3. `keycloak-config`がKeycloak Admin APIへ接続できるまで待機する。
+4. `keycloak-config`が`keycloak/config.yaml`を適用し、realm user、group、OIDC clientを同期する。
+5. `keycloak-config`が正常終了した後、`keycloak-https`を起動する。
 
 `keycloak-https`は同じDBを参照し、`keycloak/certs/keycloak.crt`と`keycloak/certs/keycloak.key`を使ってHTTPS issuerを提供する。BookStackとZulipはHTTPS issuerを使うため、この証明書が必要になる。
 
@@ -54,8 +53,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 
 失敗条件:
 
-- `keycloak` logに`Keycloak admin API authentication timed out.`が出る。
-- `keycloak` logに`Keycloak OIDC client sync timed out.`が出る。
+- `keycloak-config`が正常終了しない。
 - `keycloak-https`が証明書を読み込めずに起動しない。
 - 既存realmのclient secretが期待値と一致しない。
 
@@ -102,7 +100,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 期待結果:
 
 - PostgreSQL volumeが空の状態で再作成される。
-- realm importとclient同期が再実行される。
+- realm importと`keycloak-config`による設定同期が再実行される。
 
 失敗条件:
 
