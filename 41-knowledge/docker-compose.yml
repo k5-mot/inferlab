@@ -48,27 +48,57 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:${LLM_WIKI_HTTP_HOST_PORT:-34100}/mcp
       - homepage.description=Git-backed Markdown wiki engine for agents
 
-  couchdb-llmwiki-sync:
+  llmwiki-sync-worker:
     build:
-      context: ./couchdb-llmwiki-sync
+      context: ./llmwiki-sync-worker
       dockerfile: Dockerfile
-    image: ${COUCHDB_LLMWIKI_SYNC_IMAGE:-inferlab/couchdb-llmwiki-sync:latest}
-    container_name: ${STACK_NAME:-inferlab}-couchdb-llmwiki-sync
+    image: ${LLMWIKI_SYNC_WORKER_IMAGE:-inferlab/llmwiki-sync-worker:latest}
+    container_name: ${STACK_NAME:-inferlab}-llmwiki-sync-worker
     restart: unless-stopped
     profiles:
       - knowledge
     environment:
+      SYNC_CONFIG_PATH: /config/config.yaml
+      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
+      LLM_WIKI_SPACE_NAME: ${LLM_WIKI_SPACE_NAME:-inferlab}
+      LLMWIKI_SYNC_INTERVAL_SECONDS: ${LLMWIKI_SYNC_INTERVAL_SECONDS:-3600}
+      LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS: ${LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS:-30}
+      LLMWIKI_SYNC_COUCHDB_ENABLED: ${LLMWIKI_SYNC_COUCHDB_ENABLED:-true}
+      LLMWIKI_SYNC_COUCHDB_MAX_DOCS_PER_DATABASE: ${LLMWIKI_SYNC_COUCHDB_MAX_DOCS_PER_DATABASE:-50}
       COUCHDB_URL: http://couchdb:5984
       COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
-      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
-      LLM_WIKI_SPACE_NAME: ${LLM_WIKI_SPACE_NAME:-inferlab}
-      SYNC_INTERVAL_SECONDS: ${COUCHDB_LLMWIKI_SYNC_INTERVAL_SECONDS:-3600}
-      SYNC_MAX_DOCS_PER_DATABASE: ${COUCHDB_LLMWIKI_SYNC_MAX_DOCS_PER_DATABASE:-50}
-      SYNC_CHECKPOINT_PATH: /state/checkpoint.json
-      SYNC_HEALTH_PATH: /state/health.json
+      LLMWIKI_SYNC_NEXTCLOUD_ENABLED: ${LLMWIKI_SYNC_NEXTCLOUD_ENABLED:-false}
+      NEXTCLOUD_URL: http://nextcloud
+      NEXTCLOUD_LLMWIKI_USER: ${NEXTCLOUD_LLMWIKI_USER:-}
+      NEXTCLOUD_LLMWIKI_PASSWORD: ${NEXTCLOUD_LLMWIKI_PASSWORD:-}
+      NEXTCLOUD_LLMWIKI_ROOT_PATH: ${NEXTCLOUD_LLMWIKI_ROOT_PATH:-/}
+      NEXTCLOUD_LLMWIKI_DEPTH: ${NEXTCLOUD_LLMWIKI_DEPTH:-1}
+      NEXTCLOUD_LLMWIKI_MAX_ITEMS: ${NEXTCLOUD_LLMWIKI_MAX_ITEMS:-50}
+      LLMWIKI_SYNC_BOOKSTACK_ENABLED: ${LLMWIKI_SYNC_BOOKSTACK_ENABLED:-false}
+      BOOKSTACK_URL: http://bookstack
+      BOOKSTACK_LLMWIKI_TOKEN_ID: ${BOOKSTACK_LLMWIKI_TOKEN_ID:-}
+      BOOKSTACK_LLMWIKI_TOKEN_SECRET: ${BOOKSTACK_LLMWIKI_TOKEN_SECRET:-}
+      BOOKSTACK_LLMWIKI_MAX_ITEMS: ${BOOKSTACK_LLMWIKI_MAX_ITEMS:-50}
+      LLMWIKI_SYNC_ZULIP_ENABLED: ${LLMWIKI_SYNC_ZULIP_ENABLED:-false}
+      ZULIP_URL: https://zulip
+      ZULIP_LLMWIKI_EMAIL: ${ZULIP_LLMWIKI_EMAIL:-}
+      ZULIP_LLMWIKI_API_KEY: ${ZULIP_LLMWIKI_API_KEY:-}
+      ZULIP_LLMWIKI_VERIFY_TLS: ${ZULIP_LLMWIKI_VERIFY_TLS:-false}
+      ZULIP_LLMWIKI_MAX_STREAMS: ${ZULIP_LLMWIKI_MAX_STREAMS:-50}
+      ZULIP_LLMWIKI_MAX_MESSAGES: ${ZULIP_LLMWIKI_MAX_MESSAGES:-50}
+      LLMWIKI_SYNC_KANEO_ENABLED: ${LLMWIKI_SYNC_KANEO_ENABLED:-false}
+      KANEO_URL: http://kaneo:5173
+      KANEO_LLMWIKI_API_TOKEN: ${KANEO_LLMWIKI_API_TOKEN:-}
+      KANEO_LLMWIKI_WORKSPACE_ID: ${KANEO_LLMWIKI_WORKSPACE_ID:-}
+      KANEO_LLMWIKI_MAX_PROJECTS: ${KANEO_LLMWIKI_MAX_PROJECTS:-50}
+      LLMWIKI_SYNC_GITLAB_ENABLED: ${LLMWIKI_SYNC_GITLAB_ENABLED:-false}
+      GITLAB_URL: http://gitlab
+      GITLAB_LLMWIKI_TOKEN: ${GITLAB_LLMWIKI_TOKEN:-}
+      GITLAB_LLMWIKI_MAX_PROJECTS: ${GITLAB_LLMWIKI_MAX_PROJECTS:-50}
     volumes:
-      - couchdb-llmwiki-sync-state:/state
+      - llmwiki-sync-worker-state:/state
+      - ./llmwiki-sync-worker/config.yaml:/config/config.yaml:ro
     networks:
       - internal-nw
     depends_on:
@@ -84,13 +114,13 @@ services:
       retries: 5
       start_period: 60s
     labels:
-      - homepage.icon=/icons/couchdb.png
+      - homepage.icon=/icons/python.png
       - homepage.group=41-knowledge
-      - homepage.name=CouchDB to LLM Wiki
-      - homepage.description=CouchDB changes sync worker via llm-wiki MCP
+      - homepage.name=LLMwiki Sync Worker
+      - homepage.description=Configured sources sync worker via llm-wiki MCP
 
 volumes:
-  couchdb-llmwiki-sync-state:
+  llmwiki-sync-worker-state:
   llm-wiki-state:
   llm-wiki-data:
 

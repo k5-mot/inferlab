@@ -1,0 +1,127 @@
+worker:
+  interval_seconds: ${LLMWIKI_SYNC_INTERVAL_SECONDS:-3600}
+  http_timeout_seconds: ${LLMWIKI_SYNC_HTTP_TIMEOUT_SECONDS:-30}
+  checkpoint_path: /state/checkpoint.json
+  health_path: /state/health.json
+
+llm_wiki:
+  mcp_url: ${LLM_WIKI_MCP_URL:-http://llm-wiki:8080/mcp}
+  wiki: ${LLM_WIKI_SPACE_NAME:-inferlab}
+
+sources:
+  - name: couchdb
+    type: couchdb
+    enabled: ${LLMWIKI_SYNC_COUCHDB_ENABLED:-true}
+    base_url: ${COUCHDB_URL:-http://couchdb:5984}
+    username_env: COUCHDB_USER
+    password_env: COUCHDB_PASSWORD
+    max_docs_per_database: ${LLMWIKI_SYNC_COUCHDB_MAX_DOCS_PER_DATABASE:-50}
+    exclude_databases:
+      - _users
+      - _replicator
+      - _global_changes
+      - _metadata
+
+  - name: nextcloud
+    type: nextcloud_webdav
+    enabled: ${LLMWIKI_SYNC_NEXTCLOUD_ENABLED:-false}
+    base_url: ${NEXTCLOUD_URL:-http://nextcloud}
+    username_env: NEXTCLOUD_LLMWIKI_USER
+    password_env: NEXTCLOUD_LLMWIKI_PASSWORD
+    root_path: ${NEXTCLOUD_LLMWIKI_ROOT_PATH:-/}
+    depth: ${NEXTCLOUD_LLMWIKI_DEPTH:-1}
+    max_items: ${NEXTCLOUD_LLMWIKI_MAX_ITEMS:-50}
+
+  - name: bookstack
+    type: http_json
+    enabled: ${LLMWIKI_SYNC_BOOKSTACK_ENABLED:-false}
+    base_url: ${BOOKSTACK_URL:-http://bookstack}
+    auth:
+      type: bookstack_token
+      token_id_env: BOOKSTACK_LLMWIKI_TOKEN_ID
+      token_secret_env: BOOKSTACK_LLMWIKI_TOKEN_SECRET
+    endpoints:
+      - name: books
+        path: /api/books
+        items_path: data
+        id_fields: [id, slug, name]
+        title_fields: [name, slug]
+        max_items: ${BOOKSTACK_LLMWIKI_MAX_ITEMS:-50}
+      - name: pages
+        path: /api/pages
+        items_path: data
+        id_fields: [id, slug, name]
+        title_fields: [name, slug]
+        max_items: ${BOOKSTACK_LLMWIKI_MAX_ITEMS:-50}
+
+  - name: zulip
+    type: http_json
+    enabled: ${LLMWIKI_SYNC_ZULIP_ENABLED:-false}
+    base_url: ${ZULIP_URL:-https://zulip}
+    verify_tls: ${ZULIP_LLMWIKI_VERIFY_TLS:-false}
+    auth:
+      type: basic
+      username_env: ZULIP_LLMWIKI_EMAIL
+      password_env: ZULIP_LLMWIKI_API_KEY
+    endpoints:
+      - name: streams
+        path: /api/v1/streams
+        query:
+          include_public: true
+          include_subscribed: true
+          exclude_archived: true
+        items_path: streams
+        id_fields: [stream_id, name]
+        title_fields: [name]
+        max_items: ${ZULIP_LLMWIKI_MAX_STREAMS:-50}
+      - name: messages
+        path: /api/v1/messages
+        query:
+          anchor: newest
+          num_before: ${ZULIP_LLMWIKI_MAX_MESSAGES:-50}
+          num_after: 0
+          narrow:
+            - operator: channels
+              operand: public
+        items_path: messages
+        id_fields: [id]
+        title_fields: [subject, topic, sender_full_name]
+        max_items: ${ZULIP_LLMWIKI_MAX_MESSAGES:-50}
+
+  - name: kaneo
+    type: http_json
+    enabled: ${LLMWIKI_SYNC_KANEO_ENABLED:-false}
+    base_url: ${KANEO_URL:-http://kaneo:5173}
+    auth:
+      type: bearer
+      token_env: KANEO_LLMWIKI_API_TOKEN
+    endpoints:
+      - name: projects
+        path: /api/project
+        query:
+          workspaceId: ${KANEO_LLMWIKI_WORKSPACE_ID:-}
+          includeArchived: false
+        items_path: ""
+        id_fields: [id, slug, name]
+        title_fields: [name, slug]
+        max_items: ${KANEO_LLMWIKI_MAX_PROJECTS:-50}
+
+  - name: gitlab
+    type: http_json
+    enabled: ${LLMWIKI_SYNC_GITLAB_ENABLED:-false}
+    base_url: ${GITLAB_URL:-http://gitlab}
+    auth:
+      type: private_token
+      token_env: GITLAB_LLMWIKI_TOKEN
+    endpoints:
+      - name: projects
+        path: /api/v4/projects
+        query:
+          simple: true
+          per_page: ${GITLAB_LLMWIKI_MAX_PROJECTS:-50}
+          order_by: last_activity_at
+          sort: desc
+        items_path: ""
+        id_fields: [id, path_with_namespace, name]
+        title_fields: [path_with_namespace, name]
+        max_items: ${GITLAB_LLMWIKI_MAX_PROJECTS:-50}
