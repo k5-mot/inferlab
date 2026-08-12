@@ -485,17 +485,24 @@ service_catalog: {
       }
     }
 
-    34_gitea: {
-      label: "34-gitea"
+    34_gitlab: {
+      label: "34-gitlab"
       style: {
         fill: "#fef2f2"
         stroke: "#dc2626"
         stroke-width: 2
       }
 
-      gitea: {
-        label: "Gitea\n33400 / 33422"
-        icon: "../../00-common/homepage/icons/gitea.png"
+      gitlab: {
+        label: "GitLab\n33400 / 33422"
+        style: {
+          fill: "#ffffff"
+          stroke: "#dc2626"
+        }
+      }
+
+      gitlab_runner: {
+        label: "GitLab Runner"
         style: {
           fill: "#ffffff"
           stroke: "#dc2626"
@@ -518,6 +525,25 @@ service_catalog: {
         style: {
           fill: "#ffffff"
           stroke: "#475569"
+        }
+      }
+    }
+
+    41_knowledge: {
+      label: "41-knowledge"
+      grid-columns: 1
+      style: {
+        fill: "#f0fdfa"
+        stroke: "#0f766e"
+        stroke-width: 2
+      }
+
+      llm_wiki: {
+        label: "LLM Wiki\n34100"
+        icon: "../../00-common/homepage/icons/bookstack.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#0f766e"
         }
       }
     }

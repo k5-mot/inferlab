@@ -50,7 +50,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 - `keycloak`が`http://${PUBLIC_HOST}:30001`で応答する。
 - `keycloak-https`が`https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}`で応答する。
 - `${STACK_NAME:-inferlab}` realmが作成される。
-- Open WebUI、Dify、Nextcloud、Langfuse、Leantime、BookStack、Kaneo、Zulip、Gitea、Grafana向けOIDC clientが同期される。
+- Open WebUI、Dify、Nextcloud、Langfuse、Leantime、BookStack、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
 
 失敗条件:
 

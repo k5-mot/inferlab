@@ -396,20 +396,6 @@ def main() -> None:
             ],
         },
         {
-            "file": "gitea.json",
-            "title": "Gitea",
-            "uid": "svc-gitea",
-            "job": "gitea",
-            "panels": [
-                service_panel("Repository and User Growth", [{"expr": 'gitea_repositories{job="gitea"}', "legend": "repositories"}, {"expr": 'gitea_users{job="gitea"}', "legend": "users"}, {"expr": 'gitea_organizations{job="gitea"}', "legend": "organizations"}]),
-                service_panel("Issue Flow", [{"expr": 'gitea_issues_open{job="gitea"}', "legend": "open"}, {"expr": 'gitea_issues_closed{job="gitea"}', "legend": "closed"}, {"expr": 'gitea_issues{job="gitea"}', "legend": "total"}]),
-                service_panel("Project Artifacts", [{"expr": 'gitea_releases{job="gitea"}', "legend": "releases"}, {"expr": 'gitea_milestones{job="gitea"}', "legend": "milestones"}, {"expr": 'gitea_projects{job="gitea"}', "legend": "projects"}]),
-                service_panel("Collaboration Signals", [{"expr": 'gitea_stars{job="gitea"}', "legend": "stars"}, {"expr": 'gitea_watches{job="gitea"}', "legend": "watches"}, {"expr": 'gitea_follows{job="gitea"}', "legend": "follows"}]),
-                service_panel("Runtime Memory", [{"expr": 'process_resident_memory_bytes{job="gitea"}', "legend": "rss"}, {"expr": 'go_memstats_heap_inuse_bytes{job="gitea"}', "legend": "heap in-use"}], "bytes"),
-                service_panel("Runtime Concurrency", [{"expr": 'go_goroutines{job="gitea"}', "legend": "goroutines"}, {"expr": 'process_open_fds{job="gitea"}', "legend": "open fds"}]),
-            ],
-        },
-        {
             "file": "keycloak.json",
             "title": "Keycloak",
             "uid": "svc-keycloak",

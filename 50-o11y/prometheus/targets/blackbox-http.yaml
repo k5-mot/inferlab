@@ -10,7 +10,6 @@
     - http://dify-nginx
     - http://bookstack
     - http://leantime:8080
-    - http://gitea:3000
+    - http://gitlab/-/health
   labels:
     probe: http_2xx
-

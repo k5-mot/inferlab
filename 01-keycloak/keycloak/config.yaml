@@ -369,36 +369,33 @@ clients:
           userinfo.token.claim: "true"
 
   #
-  # Gitea
+  # GitLab
   #
-  - clientId: gitea
-    name: Gitea
+  - clientId: gitlab
+    name: GitLab
     enabled: true
     protocol: openid-connect
 
     publicClient: false
     clientAuthenticatorType: client-secret
-    secret: "$(env:GITEA_OIDC_CLIENT_SECRET)"
+    secret: "$(env:GITLAB_OIDC_CLIENT_SECRET)"
 
     standardFlowEnabled: true
     implicitFlowEnabled: false
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)/"
 
     redirectUris:
-      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
-      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/keycloak/callback"
-      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
-      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)/user/oauth2/Keycloak/callback"
+      - "http://localhost:$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
+      - "http://127.0.0.1:$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
+      - "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
 
     webOrigins:
-      - "http://localhost:$(env:GITEA_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:GITEA_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:GITEA_HTTP_HOST_PORT)"
+      - "http://localhost:$(env:GITLAB_HTTP_HOST_PORT)"
+      - "http://127.0.0.1:$(env:GITLAB_HTTP_HOST_PORT)"
+      - "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)"
 
     protocolMappers:
       - name: groups

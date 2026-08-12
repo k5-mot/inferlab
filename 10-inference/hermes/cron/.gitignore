@@ -1,0 +1,6 @@
+*
+!.gitignore
+!README.md
+!jobs.json
+!prompts/
+!prompts/**

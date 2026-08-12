@@ -20,7 +20,6 @@
 | Cloudflared | `services/cloudflared.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Cloudflare公式metricsとGrafana Labs dashboardの構成分類を参考に、Tunnel health、traffic、session、edge location、latency、process metricsを表示する。 |
 | CouchDB | `services/couchdb.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | Prometheus endpoint metricsとscrape状態を表示する。 |
 | GPU | `services/gpu.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-08-02 | NVIDIA DCGMとAMD Device Metrics Exporterの代表metricsを表示する。 |
-| Gitea | `services/gitea.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | repository、issue、runtime metricsを表示する。 |
 | Keycloak | `services/keycloak.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | HTTP、DB pool、cache、JVM metricsを表示する。 |
 | Nextcloud | `services/nextcloud.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenMetrics endpoint metricsとscrape状態を表示する。 |
 | Open-WebUI | `services/open-webui.json` | `grafana/generate_service_dashboards.py` | 自作、外部dashboard不使用 | 2026-07-26 | OpenTelemetry metrics、user数、route hotspot、blackbox疎通状態を表示する。 |
@@ -34,7 +33,6 @@
 | cAdvisor | cAdvisor公式またはGrafana Labs | dashboard JSONのlicense |
 | Grafana | Grafana Labs公式 | dashboard JSONのlicense |
 | RabbitMQ | RabbitMQ公式 | dashboard JSONのlicense |
-| Gitea | Grafana Cloud Integration | dashboard JSONのlicense |
 | Qdrant | Qdrant公式docs | metrics定義をもとに自作するか |
 | CouchDB | Apache CouchDB公式docs | metrics定義をもとに自作するか |
 | Nextcloud | Nextcloud公式docs | metrics定義をもとに自作するか |

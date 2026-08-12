@@ -21,7 +21,6 @@
 | `compose-smoke-dify-postgres-init` | 2 | 新規PostgreSQLのhealthcheck完了後に`dify_plugin` databaseを作成できること | 作成済みdatabaseに対する再実行、Dify API、worker、Web UI、plugin daemonの起動とmigration |
 | `compose-smoke-oikb-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`oikb-bucket`を作成できること | 作成済みbucketに対する再実行、Open WebUI、OIKB、Nextcloudの起動と同期 |
 | `compose-smoke-langfuse-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`langfuse-bucket`を作成できること | 作成済みbucketに対する再実行、Langfuse Web、worker、ClickHouse、PostgreSQLの起動とevent取込 |
-| `compose-smoke-gitea-keycloak-init` | 2 | 一時OIDC discovery endpointを使い、GiteaへKeycloak OAuth sourceを新規追加できること | 登録済みsourceの更新、実Keycloakとの認証、repository操作、SSH接続 |
 | `playwright-smoke-bookstack` | 3 | KeycloakとBookStackを起動し、OIDC認証後に新規Bookを1件作成できること | Book更新・削除、権限差、添付file、全文検索、他serviceの操作 |
 
 ## Level 1: 静的検証
@@ -101,8 +100,6 @@ script/verify-compose-smoke.sh oikb-bucket-init
 # Langfuse用RustFS bucket初期化だけを検証する。
 script/verify-compose-smoke.sh langfuse-bucket-init
 
-# GiteaのKeycloak OAuth source同期だけを検証する。
-script/verify-compose-smoke.sh gitea-keycloak-init
 ```
 
 pre-commitから個別に実行する場合は、対応するhook IDを指定する。
@@ -120,8 +117,6 @@ pre-commit run compose-smoke-oikb-bucket-init --hook-stage manual
 # Langfuseのbucket init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-langfuse-bucket-init --hook-stage manual
 
-# GiteaのKeycloak連携init smokeだけをmanual stageで実行する。
-pre-commit run compose-smoke-gitea-keycloak-init --hook-stage manual
 ```
 
 期待結果:
@@ -214,5 +209,5 @@ STACK_NAME=e2e-project-name docker compose down --volumes --remove-orphans
 | Job | Trigger | 実行内容 |
 | --- | --- | --- |
 | `static` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 1を実行する |
-| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の5ケースをmatrixで実行する |
+| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の4ケースをmatrixで実行する |
 | `playwright-e2e` | 手動実行のみ | Level 3のBookStackケースを実行する |

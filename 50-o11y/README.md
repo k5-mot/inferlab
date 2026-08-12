@@ -102,13 +102,11 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api
 - `tei-reranking:8000`
 - `litellm:4000`
 - `searxng:8080`
-- `gitea:3000`
 - `qdrant:6333`
 - `dify-qdrant:6333`
 - `keycloak-postgres-exporter:9187`
 - `nextcloud-postgres-exporter:9187`
 - `langfuse-postgres-exporter:9187`
-- `gitea-postgres-exporter:9187`
 - `dify-postgres-exporter:9187`
 - `zulip-postgres-exporter:9187`
 - `pulp-postgres-exporter:9187`
@@ -154,7 +152,6 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api
 - `grafana/dashboards/services/text-embeddings-inference.json`: Text Embeddings Inferenceのscrape状態、HTTP request、latency、queueを表示する。自作dashboard。
 - `grafana/dashboards/services/litellm.json`: LiteLLMのrequest、token、responseを表示する。自作dashboard。
 - `grafana/dashboards/services/searxng.json`: SearXNGのscrape状態を表示する。自作dashboard。
-- `grafana/dashboards/services/gitea.json`: GiteaのHTTP request、latency、process memoryを表示する。自作dashboard。
 - `grafana/dashboards/services/qdrant.json`: QdrantのREST/gRPC responseとapp infoを表示する。自作dashboard。
 - `grafana/dashboards/services/postgres-exporters.json`: PostgreSQL exporter群のup、connection、database sizeを表示する。自作dashboard。
 - `grafana/dashboards/services/redis-exporters.json`: Redis/Valkey exporter群のup、client、memoryを表示する。自作dashboard。
@@ -195,4 +192,3 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api
 - [Open WebUI OpenTelemetry](https://docs.openwebui.com/reference/monitoring/otel/)
 - [AMD Device Metrics Exporter](https://github.com/ROCm/device-metrics-exporter)
 - [NVIDIA DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter)
-- [Gitea configuration cheat sheet](https://docs.gitea.com/administration/config-cheat-sheet)

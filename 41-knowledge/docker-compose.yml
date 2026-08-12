@@ -1,0 +1,56 @@
+#
+# 参考資料:
+# - llm-wiki
+#   - https://github.com/geronimo-iia/llm-wiki
+#   - https://github.com/geronimo-iia/llm-wiki/blob/main/docs/guides/installation.md
+#   - https://github.com/geronimo-iia/llm-wiki/blob/main/docs/guides/ide-integration.md
+#
+services:
+  llm-wiki:
+    build:
+      context: ./llm-wiki
+      dockerfile: Dockerfile
+      args:
+        LLM_WIKI_VERSION: ${LLM_WIKI_VERSION:-v0.5.5}
+    image: ${LLM_WIKI_IMAGE:-inferlab/llm-wiki:v0.5.5}
+    container_name: ${STACK_NAME:-inferlab}-llm-wiki
+    restart: unless-stopped
+    profiles:
+      - knowledge
+    environment:
+      LLM_WIKI_CONFIG: /state/config.toml
+      LLM_WIKI_SPACE_NAME: ${LLM_WIKI_SPACE_NAME:-inferlab}
+      LLM_WIKI_SPACE_PATH: /wikis/${LLM_WIKI_SPACE_NAME:-inferlab}
+      LLM_WIKI_HTTP_PORT: "8080"
+      GIT_AUTHOR_NAME: ${LLM_WIKI_GIT_AUTHOR_NAME:-InferLab LLM Wiki}
+      GIT_AUTHOR_EMAIL: ${LLM_WIKI_GIT_AUTHOR_EMAIL:-llm-wiki@inferlab.local}
+      GIT_COMMITTER_NAME: ${LLM_WIKI_GIT_COMMITTER_NAME:-InferLab LLM Wiki}
+      GIT_COMMITTER_EMAIL: ${LLM_WIKI_GIT_COMMITTER_EMAIL:-llm-wiki@inferlab.local}
+    ports:
+      - "${LLM_WIKI_HTTP_HOST_PORT:-34100}:8080"
+    volumes:
+      - llm-wiki-state:/state
+      - llm-wiki-data:/wikis
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8080
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    labels:
+      - homepage.icon=/icons/bookstack.png
+      - homepage.group=41-knowledge
+      - homepage.name=LLM Wiki
+      - homepage.href=http://${PUBLIC_HOST}:${LLM_WIKI_HTTP_HOST_PORT:-34100}/mcp
+      - homepage.description=Git-backed Markdown wiki engine for agents
+
+volumes:
+  llm-wiki-state:
+  llm-wiki-data:
+
+networks:
+  internal-nw:

@@ -50,12 +50,13 @@ $Overwrite = $true
 
 $Images = @(
     "alpine:3.24.1",
-    "docker.gitea.com/gitea:1.27.0",
     "docker.io/amazon/aws-cli:2.36.14",
     "docker.io/clickhouse/clickhouse-server:25.8.28.1",
     "docker.io/cloudflare/cloudflared:2026.7.3",
     "docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f",
     "docker.io/grafana/grafana:13.1.1",
+    "docker.io/gitlab/gitlab-ce:19.2.1-ce.0",
+    "docker.io/gitlab/gitlab-runner:alpine-v19.2.1",
     "docker.io/langfuse/langfuse-worker:4.1.0",
     "docker.io/langfuse/langfuse:4.1.0",
     "docker.io/langgenius/dify-agent-backend:1.16.1",
@@ -124,6 +125,11 @@ $LocalImages = @(
     @{
         Image = "inferlab/openclaw:2026.7.1-browser"
         Context = Join-Path $PSScriptRoot "..\10-inference\openclaw\custom-image"
+        Dockerfile = "Dockerfile"
+    },
+    @{
+        Image = "inferlab/llm-wiki:v0.5.5"
+        Context = Join-Path $PSScriptRoot "..\41-knowledge\llm-wiki"
         Dockerfile = "Dockerfile"
     }
 )

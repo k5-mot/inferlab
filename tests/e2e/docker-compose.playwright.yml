@@ -56,20 +56,6 @@ services:
       - ./33-zulip/post-setup.d:/data/post-setup.d:ro
       - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
 
-  gitea:
-    environment:
-      GITEA__server__DOMAIN: ${PUBLIC_HOST}
-      GITEA__server__ROOT_URL: http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT:-33400}/
-      GITEA__server__SSH_DOMAIN: ${PUBLIC_HOST}
-    extra_hosts:
-      - host.docker.internal:host-gateway
-
-  gitea-keycloak-init:
-    environment:
-      GITEA_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:${KEYCLOAK_HTTP_HOST_PORT:-30001}/realms/${STACK_NAME}/.well-known/openid-configuration
-    extra_hosts:
-      - host.docker.internal:host-gateway
-
   open-webui:
     environment:
       WEBUI_URL: http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT:-32000}

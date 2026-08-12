@@ -10,7 +10,6 @@ readonly -a SMOKE_CASES=(
   bookstack
   kaneo
   zulip
-  gitea
   open-webui
   grafana
   langfuse
@@ -294,14 +293,6 @@ configure_smoke_case() {
       ACTIVE_PROFILES+=(--profile zulip)
       ACTIVE_SERVICES+=(keycloak-https zulip)
       ;;
-    gitea)
-      export GITEA_HTTP_HOST_PORT="${GITEA_HTTP_HOST_PORT:-$(allocate_port)}"
-      export GITEA_SSH_HOST_PORT="${GITEA_SSH_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${GITEA_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${GITEA_HTTP_HOST_PORT}"
-      ACTIVE_PROFILES+=(--profile gitea)
-      ACTIVE_SERVICES+=(gitea)
-      ;;
     open-webui)
       export OPEN_WEBUI_HTTP_HOST_PORT="${OPEN_WEBUI_HTTP_HOST_PORT:-$(allocate_port)}"
       export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT}"
@@ -338,7 +329,7 @@ configure_smoke_case() {
 # 戻り値:
 #   対象serviceがhealthyになった場合は0、失敗した場合は非0を返す。
 # 副作用:
-#   E2E用の一時Compose projectを起動し、GiteaではOAuth source同期も実行する。
+#   E2E用の一時Compose projectを起動する。
 start_smoke_stack() {
   generate_playwright_keycloak_cert
   trap cleanup_smoke EXIT
@@ -351,13 +342,6 @@ start_smoke_stack() {
 
   wait_for_keycloak_realm
 
-  if [[ "${ACTIVE_SMOKE_CASE}" == "gitea" ]]; then
-    compose_for_playwright up \
-      --no-deps \
-      --abort-on-container-exit \
-      --exit-code-from gitea-keycloak-init \
-      gitea-keycloak-init
-  fi
 }
 
 # Playwright失敗時に対象serviceの調査用logを表示する。
@@ -409,7 +393,7 @@ run_all_smokes() {
 }
 
 case "${1:-bookstack}" in
-  nextcloud | bookstack | kaneo | zulip | gitea | open-webui | grafana | langfuse)
+  nextcloud | bookstack | kaneo | zulip | open-webui | grafana | langfuse)
     run_smoke "$1"
     ;;
   all)

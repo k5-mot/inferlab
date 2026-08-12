@@ -123,7 +123,8 @@ verify_compose_config() {
     kaneo
     zulip
     obsidian
-    gitea
+    gitlab
+    knowledge
     o11y
     langfuse
   )

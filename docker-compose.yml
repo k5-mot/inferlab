@@ -13,9 +13,10 @@ include:
   - ./31-bookstack/docker-compose.yml
   - ./32-kaneo/docker-compose.yml
   - ./33-zulip/docker-compose.yml
-  - ./34-gitea/docker-compose.yml
+  - ./34-gitlab/docker-compose.yml
   - ./39-leantime/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
+  - ./41-knowledge/docker-compose.yml
   - ./50-o11y/docker-compose.yml
   - ./51-langfuse/docker-compose.yml
 

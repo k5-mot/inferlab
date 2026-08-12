@@ -117,12 +117,6 @@ scrape_configs:
       - targets:
           - searxng:8080
 
-  - job_name: gitea
-    metrics_path: /metrics
-    static_configs:
-      - targets:
-          - gitea:3000
-
   - job_name: qdrant
     metrics_path: /metrics
     http_headers:
@@ -141,7 +135,6 @@ scrape_configs:
           - keycloak-postgres-exporter:9187
           - nextcloud-postgres-exporter:9187
           - langfuse-postgres-exporter:9187
-          - gitea-postgres-exporter:9187
           - dify-postgres-exporter:9187
           - zulip-postgres-exporter:9187
           - pulp-postgres-exporter:9187

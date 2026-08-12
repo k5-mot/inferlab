@@ -298,30 +298,6 @@ services:
   #     - homepage.name=Langfuse PostgreSQL Exporter
   #     - homepage.description=Langfuse database metrics exporter
 
-  # gitea-postgres-exporter:
-  #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-gitea-postgres-exporter
-  #   restart: unless-stopped
-  #   profiles:
-  #     - o11y
-  #   environment:
-  #     DATA_SOURCE_URI: gitea-postgres:5432/${GITEA_DB_NAME:-gitea}?sslmode=disable
-  #     DATA_SOURCE_USER: ${GITEA_DB_USER:-gitea}
-  #     DATA_SOURCE_PASS: ${GITEA_DB_PASSWORD:-gitea_password}
-  #   networks:
-  #     - internal-nw
-  #   healthcheck:
-  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9187/metrics || exit 1" ]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 10s
-  #   labels:
-  #     - homepage.icon=/icons/postgresql.png
-  #     - homepage.group=50-o11y
-  #     - homepage.name=Gitea PostgreSQL Exporter
-  #     - homepage.description=Gitea database metrics exporter
-
   # dify-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
   #   container_name: ${STACK_NAME:-inferlab}-dify-postgres-exporter

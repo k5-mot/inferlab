@@ -23,7 +23,8 @@ readonly PROFILES=(
 #   "zulip"
 #   "leantime"
   "obsidian"
-#   "gitea"
+  "knowledge"
+#   "gitlab"
   "o11y"
   "langfuse"
 )

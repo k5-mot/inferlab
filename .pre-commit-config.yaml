@@ -42,14 +42,6 @@ repos:
         always_run: true
         stages: [manual]
 
-      - id: compose-smoke-gitea-keycloak-init
-        name: "Compose smoke: Gitea Keycloak init"
-        entry: script/verify-compose-smoke.sh gitea-keycloak-init
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [manual]
-
       - id: playwright-smoke-bookstack
         name: "Playwright smoke: BookStack"
         entry: tests/e2e/run-playwright-smoke.sh bookstack

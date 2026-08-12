@@ -437,40 +437,6 @@ async function verifyZulip(page, config) {
 }
 
 /**
- * GiteaへOIDC loginし、repository画面を表示できることを検証する。
- *
- * @param {import('playwright').Page} page - 操作対象のbrowser page。
- * @param {{baseUrl: string, username: string, password: string}} config - GiteaとKeycloakの検証設定。
- * @returns {Promise<void>} 認証済みrepository画面を確認できたら解決するPromise。
- * @throws {Error} OIDC認証またはrepository画面の表示に失敗した場合に送出する。
- */
-async function verifyGitea(page, config) {
-  await loginViaKeycloak(page, config, {
-    entryPath: '/user/login',
-    providerSelector: 'a[href*="/user/oauth2/keycloak"], a:has-text("keycloak"), button:has-text("keycloak")',
-    loginPathPattern: /^\/user\/login/,
-  });
-  await page.locator('body').filter({ hasText: /Repositories|リポジトリ|Dashboard|ダッシュボード/i }).waitFor({
-    state: 'visible',
-    timeout: 90000,
-  });
-
-  const repositoryName = `playwright-${artifactTimestamp().toLowerCase()}`;
-  const repository = await requestJsonFromPage(page, `${config.baseUrl}/api/v1/user/repos`, {
-    method: 'POST',
-    data: {
-      name: repositoryName,
-      description: 'Playwright smoke testで作成した検証用repositoryです。',
-      private: true,
-      auto_init: true,
-    },
-  });
-  if (repository?.name !== repositoryName) {
-    throw new Error('Gitea repository creation result did not match the request');
-  }
-}
-
-/**
  * Open WebUIへOIDC loginし、chat入力画面を表示できることを検証する。
  *
  * @param {import('playwright').Page} page - 操作対象のbrowser page。
@@ -665,9 +631,6 @@ async function main() {
       break;
     case 'zulip':
       await runBrowserSmoke(config, verifyZulip);
-      break;
-    case 'gitea':
-      await runBrowserSmoke(config, verifyGitea);
       break;
     case 'open-webui':
       await runBrowserSmoke(config, verifyOpenWebUi);

@@ -205,6 +205,17 @@
                 "timeout": 300,
                 "connect_timeout": 30,
                 "keepalive_interval": 120
+            },
+            "llm_wiki": {
+                "enabled": true,
+                "url": "http://llm-wiki:8080/mcp",
+                "tools": {
+                    "resources": true,
+                    "prompts": true
+                },
+                "timeout": 120,
+                "connect_timeout": 30,
+                "keepalive_interval": 120
             }
         }
     },

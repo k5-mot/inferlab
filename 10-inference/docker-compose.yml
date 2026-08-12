@@ -338,6 +338,12 @@ services:
       ### docling-serve
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
+      ### Knowledge
+      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
+      LLM_WIKI_SPACE_PATH: /wikis/inferlab
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       # HERMES_HOME: /opt/data
@@ -351,8 +357,11 @@ services:
       - hermes-data:/opt/data
       - ./hermes/SOUL.md:/opt/data/SOUL.md:ro
       - ./hermes/config.yaml:/opt/data/config.yaml:ro
+      - ./hermes/cron:/opt/data/cron
       - ./hermes/hooks/install-skills:/opt/data/hooks/install-skills:ro
       - ./hermes/plugins/langfuse-headers:/opt/data/plugins/langfuse-headers:ro
+      - ./hermes/scripts:/opt/data/scripts
+      - llm-wiki-data:/wikis
     networks:
       - internal-nw
     healthcheck:
@@ -406,12 +415,18 @@ services:
       DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
       DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
       DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
+      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
+      LLM_WIKI_SPACE_PATH: /wikis/inferlab
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
     ports:
       - 31002:18789
     volumes:
       - openclaw-data:/home/node/.openclaw
       - ./openclaw/workspaces:/home/node/.openclaw/workspaces
+      - llm-wiki-data:/wikis
     networks:
       - internal-nw
     # cap_drop:
@@ -440,6 +455,7 @@ volumes:
   openclaw-data:
   tei-cache:
   hermes-data:
+  llm-wiki-data:
 
 networks:
   internal-nw:
