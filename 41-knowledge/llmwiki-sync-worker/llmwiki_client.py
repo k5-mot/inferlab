@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import urllib.error
 from typing import Any
 
 from http_client import HttpClient
@@ -99,6 +100,34 @@ class LlmWikiClient:
 
         if not self.session_id:
             self.initialize()
+        try:
+            response = self._call_tool_once(name, arguments)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            self.session_id = None
+            self.initialize()
+            response = self._call_tool_once(name, arguments)
+        result = response.get("result")
+        if isinstance(result, dict) and result.get("isError"):
+            raise RuntimeError(f"MCP tool {name} failed: {result}")
+        return result
+
+    def _call_tool_once(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+        """現在のMCP sessionでtool callを1回だけ送信する。
+
+        Args:
+            name: tool名。
+            arguments: toolへ渡すarguments。
+
+        Returns:
+            JSON-RPC response。
+
+        Raises:
+            RuntimeError: MCP error responseを受け取った場合。
+            urllib.error.HTTPError: HTTP errorが発生した場合。
+        """
+
         payload = {
             "jsonrpc": "2.0",
             "id": str(uuid.uuid4()),
@@ -111,10 +140,7 @@ class LlmWikiClient:
         response, _ = self.http_client.post_json(self.mcp_url, payload, headers=headers)
         if "error" in response:
             raise RuntimeError(f"MCP tool {name} failed: {response['error']}")
-        result = response.get("result")
-        if isinstance(result, dict) and result.get("isError"):
-            raise RuntimeError(f"MCP tool {name} failed: {result}")
-        return result
+        return response
 
     def write_page(self, path: str, content: str) -> None:
         """Markdown pageをllm-wikiへ書き込む。
