@@ -93,7 +93,7 @@ Langfuseを完全に初期化し直す場合は、関連volumeを削除する。
 sudo docker compose --env-file .env --profile langfuse down
 
 # Langfuse関連の永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_langfuse_clickhouse_data" "${STACK_NAME:-inferlab}_langfuse_clickhouse_logs" "${STACK_NAME:-inferlab}_langfuse_valkey_data" "${STACK_NAME:-inferlab}_langfuse_postgres_data" "${STACK_NAME:-inferlab}_langfuse_rustfs_data"
+sudo docker volume rm "${STACK_NAME}_langfuse_clickhouse_data" "${STACK_NAME}_langfuse_clickhouse_logs" "${STACK_NAME}_langfuse_valkey_data" "${STACK_NAME}_langfuse_postgres_data" "${STACK_NAME}_langfuse_rustfs_data"
 
 # Langfuse stackを再作成する。
 sudo docker compose --env-file .env --profile langfuse up -d

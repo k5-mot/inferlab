@@ -6,7 +6,8 @@ readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
 
 export PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
-export STACK_NAME="${STACK_NAME:-inferlab}"
+: "${STACK_NAME:?STACK_NAME is required}"
+export STACK_NAME
 export PYTHONDONTWRITEBYTECODE=1
 
 # 追跡済みshell scriptの構文を検証する。

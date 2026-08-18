@@ -4,7 +4,7 @@ Linux x86_64向けのPyPI package archiveを取得します。
 
 .DESCRIPTION
 `pip download`を使い、指定したPyPI packageと依存packageをLinux x86_64向けに取得します。
-既定ではInferLabのbackend開発と実行に必要なCPython 3.12向けの`manylinux2014_x86_64` wheelを`pip/`へ保存します。
+既定ではbackend開発と実行に必要なCPython 3.12向けの`manylinux2014_x86_64` wheelを`/srv/12-registry/pypi/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したPyPI package archiveを保存するdirectoryです。
@@ -43,7 +43,7 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "pip"),
+    [string]$DestinationDirectory = "/srv/12-registry/pypi",
 
     [string[]]$Packages = @(
         "alembic>=1.14.0",

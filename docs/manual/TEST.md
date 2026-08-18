@@ -65,7 +65,7 @@ test -x .git/hooks/pre-commit
 pre-commit run --all-files
 
 # pre-commitを介さず静的検証scriptを直接実行する。
-script/verify-init-static.sh
+STACK_NAME=static-validation script/verify-init-static.sh
 ```
 
 期待結果:

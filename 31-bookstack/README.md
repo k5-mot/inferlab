@@ -83,7 +83,7 @@ BookStackを初期化し直す場合は、BookStackとMariaDBのvolumeを削除�
 sudo docker compose --env-file .env --profile bookstack down
 
 # BookStack関連の永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_bookstack-config" "${STACK_NAME:-inferlab}_bookstack-custom-cont-init" "${STACK_NAME:-inferlab}_bookstack-mariadb-config"
+sudo docker volume rm "${STACK_NAME}_bookstack-config" "${STACK_NAME}_bookstack-custom-cont-init" "${STACK_NAME}_bookstack-mariadb-config"
 
 # BookStack stackを再作成する。
 sudo docker compose --env-file .env --profile bookstack up -d

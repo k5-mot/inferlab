@@ -650,6 +650,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Observability Overview",
-  "uid": "inferlab-o11y-overview",
+  "uid": "stack-o11y-overview",
   "version": 1
 }

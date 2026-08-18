@@ -2,7 +2,7 @@
 # keycloak-config-cli configuration
 #
 # 管理対象:
-# - inferlab realm
+# - prod realm
 # - realm users
 # - groups
 # - OIDC clients
@@ -14,7 +14,7 @@
 # IMPORT_VARSUBSTITUTION_UNDEFINEDISERROR: "true"
 #
 
-realm: "$(env:STACK_NAME)"
+realm: "prod"
 enabled: true
 displayName: "$(env:STACK_NAME)"
 

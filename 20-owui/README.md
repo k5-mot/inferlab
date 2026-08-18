@@ -68,7 +68,7 @@ OIKB用RustFS bucketを作り直す場合は、OIKB用RustFS volumeを削除す�
 sudo docker compose --env-file .env --profile owui down
 
 # OIKB用RustFSの永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_oikb-rustfs-data"
+sudo docker volume rm "${STACK_NAME}_oikb-rustfs-data"
 
 # owui stackを再作成し、bucket作成を再実行する。
 sudo docker compose --env-file .env --profile owui up -d

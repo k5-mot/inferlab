@@ -5,7 +5,7 @@ Ollama Cloudのsign in、Keycloakの初回ログイン、Open-WebUIのKnowledge�
 ## 前提
 
 - `.env`に`PUBLIC_HOST`を設定している。
-- `STACK_NAME`を未指定にした場合、Keycloak realm名は`inferlab`になる。
+- Keycloak realm名は`prod`固定である。
 - 初期値のまま起動した場合、Keycloak管理者とrealm内admin userのpasswordはどちらも`admin`。
 - Open-WebUI用Keycloak clientは`open-webui`、client secretは`OPEN_WEBUI_OIDC_CLIENT_SECRET`で上書きできる。
 - OIKBはNextcloud volumeの`admin/files/oikb`とRustFS bucketの`s3://oikb-bucket/documents`をOpen-WebUI Knowledgeへ同期する。
@@ -72,7 +72,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 
 1. `http://${PUBLIC_HOST}:30001`を開く。
 2. 管理consoleへ`admin` / `admin`でログインする。
-3. 左上のrealm selectorで`inferlab`、または`.env`の`STACK_NAME`で指定したrealmを選ぶ。
+3. 左上のrealm selectorで`prod`を選ぶ。
 4. `Users`で`admin` userが存在し、`admins`と`users` groupに所属していることを確認する。
 5. `Clients`で`open-webui` clientが存在し、redirect URIに`http://${PUBLIC_HOST}:32000/oauth/oidc/callback`が含まれることを確認する。
 
@@ -83,7 +83,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 
 失敗条件:
 
-- `inferlab` realmが存在しない。
+- `prod` realmが存在しない。
 - `open-webui` clientのsecretが一致しない。
 - `groups` claimがID tokenまたはuser infoに含まれない。
 
@@ -216,8 +216,8 @@ sudo docker compose --env-file .env --profile owui up -d --force-recreate oikb
 - Open-WebUIのKnowledgeにfileが増えない。
 
 ```bash
-# 既定のSTACK_NAMEでOIKBの同期logを確認する。
-sudo docker logs --tail 200 inferlab-oikb
+# STACK_NAMEを使ってOIKBの同期logを確認する。
+sudo docker logs --tail 200 "${STACK_NAME}-oikb"
 ```
 
 ## 9. 再実行とrollback

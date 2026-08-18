@@ -4,7 +4,7 @@ Linux x64向けのnpm package archiveを取得します。
 
 .DESCRIPTION
 `npm install --package-lock-only`でLinux x64向けの依存解決を行い、lockfileに記録されたpackageを`npm pack`で`.tgz`として保存します。
-既定ではInferLabのfrontend開発と確認に必要なnpm packageと依存packageを`npm/`へ保存します。
+既定ではfrontend開発と確認に必要なnpm packageと依存packageを`/srv/12-registry/npm-packages/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したnpm package archiveを保存するdirectoryです。
@@ -43,7 +43,7 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "npm"),
+    [string]$DestinationDirectory = "/srv/12-registry/npm-packages",
 
     [string[]]$Packages = @(
         "@pandacss/dev@^1.12.0",

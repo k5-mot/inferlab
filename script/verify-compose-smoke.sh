@@ -12,7 +12,7 @@ if [[ -z "${SMOKE_CASE}" ]]; then
 fi
 
 readonly PROJECT_SUFFIX="${GITHUB_RUN_ID:-local}-${SMOKE_CASE}"
-export STACK_NAME="${STACK_NAME:-inferlab-ci-${PROJECT_SUFFIX//[^a-zA-Z0-9-]/-}}"
+export STACK_NAME="${STACK_NAME:-ci-${PROJECT_SUFFIX//[^a-zA-Z0-9-]/-}}"
 export PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
 
 readonly TEMP_DIR="$(mktemp -d)"

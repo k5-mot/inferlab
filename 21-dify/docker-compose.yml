@@ -12,7 +12,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   dify-init-permissions:
     image: docker.io/library/busybox:1.38.0
-    container_name: ${STACK_NAME:-inferlab}-dify-init-permissions
+    container_name: ${STACK_NAME}-dify-init-permissions
     restart: "no"
     profiles:
       - dify
@@ -38,7 +38,7 @@ services:
   dify-api:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-api
+    container_name: ${STACK_NAME}-dify-api
     restart: unless-stopped
     profiles:
       - dify
@@ -120,7 +120,7 @@ services:
   dify-worker:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-worker
+    container_name: ${STACK_NAME}-dify-worker
     restart: unless-stopped
     profiles:
       - dify
@@ -167,7 +167,7 @@ services:
   dify-worker-beat:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-worker-beat
+    container_name: ${STACK_NAME}-dify-worker-beat
     restart: unless-stopped
     profiles:
       - dify
@@ -206,7 +206,7 @@ services:
   dify-web:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-web:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-web
+    container_name: ${STACK_NAME}-dify-web
     restart: unless-stopped
     profiles:
       - dify
@@ -241,7 +241,7 @@ services:
   dify-plugin-daemon:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-plugin-daemon:0.6.8-local
-    container_name: ${STACK_NAME:-inferlab}-dify-plugin-daemon
+    container_name: ${STACK_NAME}-dify-plugin-daemon
     restart: unless-stopped
     profiles:
       - dify
@@ -295,7 +295,7 @@ services:
   dify-sandbox:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-sandbox:0.2.15
-    container_name: ${STACK_NAME:-inferlab}-dify-sandbox
+    container_name: ${STACK_NAME}-dify-sandbox
     restart: unless-stopped
     profiles:
       - dify
@@ -332,7 +332,7 @@ services:
   dify-local-sandbox:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-local-sandbox:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-local-sandbox
+    container_name: ${STACK_NAME}-dify-local-sandbox
     restart: unless-stopped
     profiles:
       - dify
@@ -357,7 +357,7 @@ services:
   dify-agent-backend:
     <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-backend:1.16.1
-    container_name: ${STACK_NAME:-inferlab}-dify-agent-backend
+    container_name: ${STACK_NAME}-dify-agent-backend
     restart: unless-stopped
     profiles:
       - dify
@@ -400,7 +400,7 @@ services:
   dify-ssrf-proxy:
     <<: *external-dns-stabilizer
     image: docker.io/ubuntu/squid@sha256:6a097f68bae708cedbabd6188d68c7e2e7a38cedd05a176e1cc0ba29e3bbe029
-    container_name: ${STACK_NAME:-inferlab}-dify-ssrf-proxy
+    container_name: ${STACK_NAME}-dify-ssrf-proxy
     restart: unless-stopped
     profiles:
       - dify
@@ -425,7 +425,7 @@ services:
 
   dify-postgres:
     image: docker.io/library/postgres:15-alpine
-    container_name: ${STACK_NAME:-inferlab}-dify-postgres
+    container_name: ${STACK_NAME}-dify-postgres
     restart: unless-stopped
     profiles:
       - dify
@@ -454,7 +454,7 @@ services:
 
   dify-postgres-init:
     image: docker.io/library/postgres:15-alpine
-    container_name: ${STACK_NAME:-inferlab}-dify-postgres-init
+    container_name: ${STACK_NAME}-dify-postgres-init
     restart: "no"
     profiles:
       - dify
@@ -479,7 +479,7 @@ services:
 
   dify-redis:
     image: docker.io/library/redis:8.8.0-alpine
-    container_name: ${STACK_NAME:-inferlab}-dify-redis
+    container_name: ${STACK_NAME}-dify-redis
     restart: unless-stopped
     profiles:
       - dify
@@ -510,7 +510,7 @@ services:
   dify-qdrant:
     <<: *external-dns-stabilizer
     image: docker.io/qdrant/qdrant:v1.18.3
-    container_name: ${STACK_NAME:-inferlab}-dify-qdrant
+    container_name: ${STACK_NAME}-dify-qdrant
     restart: unless-stopped
     profiles:
       - dify
@@ -538,7 +538,7 @@ services:
 
   dify-nginx:
     image: docker.io/library/nginx:1.31.3-alpine
-    container_name: ${STACK_NAME:-inferlab}-dify-nginx
+    container_name: ${STACK_NAME}-dify-nginx
     restart: unless-stopped
     profiles:
       - dify

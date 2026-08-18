@@ -7,7 +7,7 @@ fi
 
 : "${NEXTCLOUD_USER_OIDC_VERSION:=8.10.1}"
 : "${NEXTCLOUD_USER_OIDC_SHA256:=49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd}"
-: "${NEXTCLOUD_USER_OIDC_ARCHIVE:=/opt/inferlab/nextcloud-apps/user_oidc-v${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz}"
+: "${NEXTCLOUD_USER_OIDC_ARCHIVE:=/srv/30-nextcloud/apps/user_oidc-v${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz}"
 : "${NEXTCLOUD_USER_OIDC_URL:=https://github.com/nextcloud-releases/user_oidc/releases/download/v${NEXTCLOUD_USER_OIDC_VERSION}/user_oidc-v${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz}"
 
 app_dir=/var/www/html/custom_apps/user_oidc

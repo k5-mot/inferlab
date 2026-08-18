@@ -1,4 +1,4 @@
 {
-    "realm": "${STACK_NAME}",
+    "realm": "prod",
     "enabled": true
 }

@@ -10,7 +10,7 @@
 services:
   litellm:
     image: docker.io/litellm/litellm:v1.94.1
-    container_name: ${STACK_NAME:-inferlab}-litellm
+    container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
       - inference
@@ -57,12 +57,12 @@ services:
 
   vllm-foundation:
     image: docker.io/vllm/vllm-openai:v0.26.0
-    container_name: ${STACK_NAME:-inferlab}-vllm-foundation
+    container_name: ${STACK_NAME}-vllm-foundation
     restart: unless-stopped
     profiles:
       - inference
     command:
-      - "Qwen/Qwen3.6-27B-FP8"
+      - "/models/Qwen--Qwen3.6-27B-FP8"
       - --host
       - "0.0.0.0"
       - --port
@@ -95,6 +95,7 @@ services:
       VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
+      - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
@@ -115,12 +116,12 @@ services:
 
   vllm-embedding:
     image: docker.io/vllm/vllm-openai-cpu:v0.26.0
-    container_name: ${STACK_NAME:-inferlab}-vllm-embedding
+    container_name: ${STACK_NAME}-vllm-embedding
     restart: unless-stopped
     profiles:
       - inference
     command:
-      - "cl-nagoya/ruri-v3-310m"
+      - "/models/cl-nagoya--ruri-v3-310m"
       - --host
       - "0.0.0.0"
       - --port
@@ -138,6 +139,7 @@ services:
       VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
+      - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
@@ -151,12 +153,12 @@ services:
 
   vllm-reranking:
     image: docker.io/vllm/vllm-openai-cpu:v0.26.0
-    container_name: ${STACK_NAME:-inferlab}-vllm-reranking
+    container_name: ${STACK_NAME}-vllm-reranking
     restart: unless-stopped
     profiles:
       - inference
     command:
-      - "cl-nagoya/ruri-v3-reranker-310m"
+      - "/models/cl-nagoya--ruri-v3-reranker-310m"
       - --host
       - "0.0.0.0"
       - --port
@@ -174,6 +176,7 @@ services:
       VLLM_NO_USAGE_STATS: "1"
     volumes:
       - vllm-cache:/root/.cache
+      - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:

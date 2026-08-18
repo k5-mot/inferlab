@@ -15,7 +15,7 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\script\Download-Nextcloud-Oidc.ps1
 
-Nextcloud OIDC app archiveを`nextcloud-oidc/`へ取得します。
+Nextcloud OIDC app archiveを`/srv/30-nextcloud/apps/`へ取得します。
 
 .EXAMPLE
 .\script\Download-Nextcloud-Oidc.ps1 -OutputDirectory .\nextcloud-apps
@@ -33,7 +33,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$OutputDirectory = (Join-Path (Get-Location).Path "nextcloud-oidc"),
+    [string]$OutputDirectory = "/srv/30-nextcloud/apps",
 
     [Alias("h")]
     [switch]$Help

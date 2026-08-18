@@ -1,4 +1,4 @@
-# InferLab
+# Local AI Stack
 
 ## スタック・サービス一覧
 

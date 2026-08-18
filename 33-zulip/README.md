@@ -80,7 +80,7 @@ docker compose --profile zulip stop zulip zulip-postgres zulip-memcached zulip-r
 docker compose --profile zulip rm -sf zulip zulip-postgres zulip-memcached zulip-rabbitmq zulip-redis
 
 # Zulip service群の永続volumeを削除する。
-docker volume rm "${COMPOSE_PROJECT_NAME:-inferlab}_zulip-data" "${COMPOSE_PROJECT_NAME:-inferlab}_zulip-postgres-data" "${COMPOSE_PROJECT_NAME:-inferlab}_zulip-rabbitmq-data" "${COMPOSE_PROJECT_NAME:-inferlab}_zulip-redis-data"
+docker volume rm "${STACK_NAME}_zulip-data" "${STACK_NAME}_zulip-postgres-data" "${STACK_NAME}_zulip-rabbitmq-data" "${STACK_NAME}_zulip-redis-data"
 ```
 
 ```bash

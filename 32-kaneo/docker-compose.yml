@@ -1,7 +1,7 @@
 services:
   kaneo:
     image: ghcr.io/usekaneo/kaneo:2.12.1
-    container_name: ${STACK_NAME:-inferlab}-kaneo
+    container_name: ${STACK_NAME}-kaneo
     restart: unless-stopped
     profiles:
       - kaneo
@@ -15,8 +15,8 @@ services:
       AUTH_SECRET: ${KANEO_AUTH_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
       CUSTOM_OAUTH_CLIENT_ID: kaneo
       CUSTOM_OAUTH_CLIENT_SECRET: ${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}
-      CUSTOM_OAUTH_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
-      CUSTOM_OAUTH_LOGOUT_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      CUSTOM_OAUTH_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
+      CUSTOM_OAUTH_LOGOUT_URL: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/logout
       CUSTOM_OAUTH_SCOPES: openid,profile,email
       DISABLE_PASSWORD_REGISTRATION: ${KANEO_DISABLE_PASSWORD_REGISTRATION:-true}
     ports:
@@ -41,7 +41,7 @@ services:
 
   kaneo-postgres:
     image: docker.io/library/postgres:16-alpine
-    container_name: ${STACK_NAME:-inferlab}-kaneo-postgres
+    container_name: ${STACK_NAME}-kaneo-postgres
     restart: unless-stopped
     profiles:
       - kaneo

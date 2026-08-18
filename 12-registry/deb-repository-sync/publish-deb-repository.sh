@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# このscriptはregistry/deb直下のdebをreprepro repositoryへ反映する。
+# このscriptは/srv/12-registry/deb直下のdebをreprepro repositoryへ反映する。
 REPOSITORY_DIR="${REPOSITORY_DIR:-/repo}"
 IMPORTS_DIR="${IMPORTS_DIR:-$REPOSITORY_DIR}"
 DEB_DISTRIBUTION="${DEB_DISTRIBUTION:-stable}"
 DEB_CODENAME="${DEB_CODENAME:-stable}"
 DEB_COMPONENT="${DEB_COMPONENT:-main}"
 DEB_ARCHITECTURES="${DEB_ARCHITECTURES:-amd64 arm64}"
-DEB_ORIGIN="${DEB_ORIGIN:-InferLab}"
-DEB_LABEL="${DEB_LABEL:-InferLab}"
+DEB_ORIGIN="${DEB_ORIGIN:-Local}"
+DEB_LABEL="${DEB_LABEL:-Local}"
 PUBLIC_DIR="$REPOSITORY_DIR/public"
 
 case "$REPOSITORY_DIR" in
@@ -37,7 +37,7 @@ Codename: $DEB_CODENAME
 Suite: $DEB_DISTRIBUTION
 Architectures: $DEB_ARCHITECTURES
 Components: $DEB_COMPONENT
-Description: InferLab local APT repository
+Description: Local APT repository
 EOF
 
 shopt -s nullglob

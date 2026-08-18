@@ -106,7 +106,7 @@ Ollama model cacheを作り直す場合は`ollama-cache` volumeを削除する�
 sudo docker compose --env-file .env --profile inference down
 
 # Ollama model cacheを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_ollama-cache"
+sudo docker volume rm "${STACK_NAME}_ollama-cache"
 
 # inference stackを再作成し、model取得を再実行する。
 sudo docker compose --env-file .env --profile inference up -d

@@ -3,15 +3,53 @@
 #
 
 services:
+  nextcloud-app-init:
+    image: docker.io/library/nextcloud:34.0.2-apache
+    container_name: ${STACK_NAME}-nextcloud-app-init
+    restart: "no"
+    profiles:
+      - nextcloud
+    user: "0:0"
+    command:
+      - sh
+      - -eu
+      - -c
+      - |
+        if [ ! -f /var/www/html/version.php ]; then
+          cp -a /usr/src/nextcloud/. /var/www/html/
+          chown -R www-data:www-data /var/www/html
+        fi
+        mkdir -p /var/www/html/config /var/www/html/custom_apps /tmp/user_oidc-extract
+        cp /run/nextcloud-config/local.config.php /var/www/html/config/local.config.php
+        archive="/srv/30-nextcloud/apps/user_oidc-v$${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz"
+        if [ ! -f "$${archive}" ]; then
+          echo "Nextcloud OIDC app archiveが見つかりません: $${archive}" >&2
+          exit 1
+        fi
+        echo "$${NEXTCLOUD_USER_OIDC_SHA256}  $${archive}" | sha256sum -c -
+        rm -rf /var/www/html/custom_apps/user_oidc /tmp/user_oidc-extract/*
+        tar -xzf "$${archive}" -C /tmp/user_oidc-extract
+        mv /tmp/user_oidc-extract/user_oidc /var/www/html/custom_apps/user_oidc
+        chown -R www-data:www-data /var/www/html/config/local.config.php /var/www/html/custom_apps/user_oidc
+    environment:
+      NEXTCLOUD_USER_OIDC_VERSION: ${NEXTCLOUD_USER_OIDC_VERSION:-8.10.1}
+      NEXTCLOUD_USER_OIDC_SHA256: ${NEXTCLOUD_USER_OIDC_SHA256:-49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd}
+    volumes:
+      - nextcloud:/var/www/html
+      - /srv/30-nextcloud/apps:/srv/30-nextcloud/apps:ro
+      - ./nextcloud/config/local.config.php:/run/nextcloud-config/local.config.php:ro
+    networks:
+      - internal-nw
+
   nextcloud:
-    build:
-      context: ./nextcloud
-    image: custom.io/${STACK_NAME:-inferlab}/nextcloud:34.0.2
-    container_name: ${STACK_NAME:-inferlab}-nextcloud
+    image: docker.io/library/nextcloud:34.0.2-apache
+    container_name: ${STACK_NAME}-nextcloud
     restart: unless-stopped
     profiles:
       - nextcloud
     depends_on:
+      nextcloud-app-init:
+        condition: service_completed_successfully
       nextcloud-postgres:
         condition: service_healthy
       nextcloud-valkey:
@@ -35,6 +73,7 @@ services:
       - 33000:80
     volumes:
       - nextcloud:/var/www/html
+      - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
     networks:
       - internal-nw
     healthcheck:
@@ -51,8 +90,8 @@ services:
       - homepage.description=Cloud storage platform
 
   nextcloud-bootstrap:
-    image: custom.io/${STACK_NAME:-inferlab}/nextcloud:34.0.2
-    container_name: ${STACK_NAME:-inferlab}-nextcloud-bootstrap
+    image: docker.io/library/nextcloud:34.0.2-apache
+    container_name: ${STACK_NAME}-nextcloud-bootstrap
     restart: "no"
     profiles:
       - nextcloud
@@ -60,13 +99,14 @@ services:
       nextcloud:
         condition: service_healthy
     entrypoint:
-      - /usr/local/bin/inferlab-nextcloud-bootstrap
+      - sh
+      - /usr/local/bin/nextcloud-bootstrap
     environment:
       NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
       NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
-      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
-      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/logout
       NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
       NEXTCLOUD_OIDC_SCOPE: "openid profile email"
       NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
@@ -78,12 +118,13 @@ services:
       NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: "true"
     volumes:
       - nextcloud:/var/www/html
+      - ./nextcloud/bin/bootstrap:/usr/local/bin/nextcloud-bootstrap:ro
     networks:
       - internal-nw
 
   nextcloud-postgres:
     image: docker.io/library/postgres:18.4-trixie
-    container_name: ${STACK_NAME:-inferlab}-nextcloud-postgres
+    container_name: ${STACK_NAME}-nextcloud-postgres
     restart: unless-stopped
     profiles:
       - nextcloud
@@ -113,7 +154,7 @@ services:
 
   nextcloud-valkey:
     image: docker.io/valkey/valkey:8.1.9-alpine3.24
-    container_name: ${STACK_NAME:-inferlab}-nextcloud-valkey
+    container_name: ${STACK_NAME}-nextcloud-valkey
     restart: unless-stopped
     profiles:
       - nextcloud

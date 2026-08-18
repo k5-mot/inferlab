@@ -70,7 +70,7 @@ Difyを完全に初期化し直す場合は、Dify関連volumeを削除する。
 sudo docker compose --env-file .env --profile dify down
 
 # Dify関連の永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_dify-storage" "${STACK_NAME:-inferlab}_dify-plugin-daemon" "${STACK_NAME:-inferlab}_dify-postgres-data" "${STACK_NAME:-inferlab}_dify-redis-data" "${STACK_NAME:-inferlab}_dify-qdrant-storage" "${STACK_NAME:-inferlab}_dify-qdrant-snapshots"
+sudo docker volume rm "${STACK_NAME}_dify-storage" "${STACK_NAME}_dify-plugin-daemon" "${STACK_NAME}_dify-postgres-data" "${STACK_NAME}_dify-redis-data" "${STACK_NAME}_dify-qdrant-storage" "${STACK_NAME}_dify-qdrant-snapshots"
 
 # Dify stackを再作成する。
 sudo docker compose --env-file .env --profile dify up -d

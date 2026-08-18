@@ -24,7 +24,7 @@ services:
     # image: ghcr.io/open-webui/open-webui:0.11.0-slim
     image: ghcr.io/open-webui/open-webui:0.11.0
     # image: ghcr.io/open-webui/open-webui:0.10.2
-    container_name: ${STACK_NAME:-inferlab}-open-webui
+    container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped
     profiles:
       - owui
@@ -93,7 +93,7 @@ services:
       DEFAULT_USER_ROLE: "user"
       OAUTH_CLIENT_ID: "open-webui"
       OAUTH_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
-      OPENID_PROVIDER_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration
+      OPENID_PROVIDER_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
       OPENID_REDIRECT_URI: http://${PUBLIC_HOST}:32000/oauth/oidc/callback
       OAUTH_SCOPES: openid
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "true"
@@ -248,7 +248,7 @@ services:
   open-terminal:
     <<: *external-dns-stabilizer
     image: ghcr.io/open-webui/open-terminal:0.11.33
-    container_name: ${STACK_NAME:-inferlab}-open-terminal
+    container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
       - owui
@@ -286,7 +286,7 @@ services:
     <<: *external-dns-stabilizer
     # 公式READMEのDocker usageが`ghcr.io/open-webui/mcpo:main`を指定しているため、mcpoのみ例外的にmain tagを採用する。
     image: ghcr.io/open-webui/mcpo:main
-    container_name: ${STACK_NAME:-inferlab}-mcpo
+    container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:
       - owui
@@ -325,7 +325,7 @@ services:
   searxng:
     <<: *external-dns-stabilizer
     image: docker.io/searxng/searxng:2026.7.3-80c9806de
-    container_name: ${STACK_NAME:-inferlab}-searxng
+    container_name: ${STACK_NAME}-searxng
     restart: unless-stopped
     profiles:
       - owui
@@ -352,7 +352,7 @@ services:
 
   oikb-rustfs:
     image: docker.io/rustfs/rustfs:1.0.0-beta.12
-    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs
+    container_name: ${STACK_NAME}-oikb-rustfs
     restart: unless-stopped
     profiles:
       - owui
@@ -381,7 +381,7 @@ services:
 
   oikb-rustfs-bucket-init:
     image: docker.io/amazon/aws-cli:2.36.14
-    container_name: ${STACK_NAME:-inferlab}-oikb-rustfs-bucket-init
+    container_name: ${STACK_NAME}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
       - owui
@@ -415,8 +415,8 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    # image: ghcr.io/k5-mot/oikb
-    container_name: ${STACK_NAME:-inferlab}-oikb
+    image: ${OIKB_IMAGE:-local/oikb:latest}
+    container_name: ${STACK_NAME}-oikb
     restart: unless-stopped
     user: "1000:33"
     command: daemon --config /app/.oikb.yaml

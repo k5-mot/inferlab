@@ -1,7 +1,7 @@
 services:
   bookstack:
     image: lscr.io/linuxserver/bookstack:26.05.2
-    container_name: ${STACK_NAME:-inferlab}-bookstack
+    container_name: ${STACK_NAME}-bookstack
     restart: unless-stopped
     profiles:
       - bookstack
@@ -23,7 +23,7 @@ services:
       OIDC_DISPLAY_NAME_CLAIMS: name
       OIDC_CLIENT_ID: bookstack
       OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
-      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}}
+      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/prod}
       OIDC_ISSUER_DISCOVER: true
       OIDC_EXTERNAL_ID_CLAIM: preferred_username
       OIDC_END_SESSION_ENDPOINT: false
@@ -62,7 +62,7 @@ services:
 
   bookstack-custom-init:
     image: alpine:3.24.1
-    container_name: ${STACK_NAME:-inferlab}-bookstack-custom-init
+    container_name: ${STACK_NAME}-bookstack-custom-init
     restart: "no"
     network_mode: none
     profiles:
@@ -83,7 +83,7 @@ services:
 
   bookstack-mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.12
-    container_name: ${STACK_NAME:-inferlab}-bookstack-mariadb
+    container_name: ${STACK_NAME}-bookstack-mariadb
     restart: unless-stopped
     profiles:
       - bookstack

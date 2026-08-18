@@ -3,8 +3,7 @@
 set -eu
 
 VERSION="${USER_OIDC_VERSION:-8.10.1}"
-SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-DEST_DIR="${SCRIPT_DIR}/apps"
+DEST_DIR="${NEXTCLOUD_USER_OIDC_DEST_DIR:-/srv/30-nextcloud/apps}"
 DEST_FILE="${DEST_DIR}/user_oidc-v${VERSION}.tar.gz"
 URL="https://github.com/nextcloud-releases/user_oidc/releases/download/v${VERSION}/user_oidc-v${VERSION}.tar.gz"
 

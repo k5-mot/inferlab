@@ -3,7 +3,7 @@
 services:
   couchdb:
     image: docker.io/library/couchdb:3.5.2.1
-    container_name: ${STACK_NAME:-inferlab}-couchdb
+    container_name: ${STACK_NAME}-couchdb
     restart: unless-stopped
     profiles:
       - obsidian

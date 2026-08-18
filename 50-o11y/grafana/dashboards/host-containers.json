@@ -600,6 +600,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Host and Containers",
-  "uid": "inferlab-host-containers",
+  "uid": "stack-host-containers",
   "version": 1
 }

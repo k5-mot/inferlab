@@ -8,7 +8,7 @@
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:v1.13.2
-    container_name: ${STACK_NAME:-inferlab}-homepage
+    container_name: ${STACK_NAME}-homepage
     restart: unless-stopped
     ports:
       - 30000:3000
@@ -44,7 +44,7 @@ services:
 
   whoami:
     image: docker.io/traefik/whoami:${WHOAMI_IMAGE_TAG:-v1.11}
-    container_name: ${STACK_NAME:-inferlab}-whoami
+    container_name: ${STACK_NAME}-whoami
     restart: unless-stopped
     profiles:
       - common

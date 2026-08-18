@@ -1,6 +1,6 @@
 # Registry利用ガイド
 
-利用者端末からInferLabのRPM repository、APT repository、PyPIserver、Verdaccio、Code Marketplaceを使う手順。
+利用者端末からlocal RPM repository、APT repository、PyPIserver、Verdaccio、Code Marketplaceを使う手順。
 
 ## 前提
 
@@ -167,13 +167,13 @@ curl -fsS "http://<REGISTRY_HOST>:<CODE_MARKETPLACE_PORT>/api/extensionquery" \
 期待結果:
 
 - code-serverまたはVSCodiumのextension検索がCode Marketplaceを参照する。
-- `code-marketplace-importer`が`12-registry/registry/vsix`に配置済みのVSIXを登録し、検索対象になる。
+- `code-marketplace-importer`が`/srv/12-registry/vsix`に配置済みのVSIXを登録し、検索対象になる。
 
 失敗条件:
 
 - Code MarketplaceへHTTP接続できない。
 - client側が外部marketplaceを参照している。
-- VSIXが`12-registry/registry/vsix`へ配置されていない。
+- VSIXが`/srv/12-registry/vsix`へ配置されていない。
 - `code-marketplace-importer`が失敗して、VSIXが`code-marketplace-extensions` volumeへ登録されていない。
 - HTTPSが必須のclient構成で、HTTPのCode Marketplaceが拒否される。
 
@@ -192,10 +192,10 @@ unset VSCODE_GALLERY_SERVICE_URL VSCODE_GALLERY_ITEM_URL
 利用者端末がRHEL互換distributionの場合に使う。
 
 ```bash
-# InferLab RPM repositoryをdnf/yumへ登録する。
-sudo tee /etc/yum.repos.d/inferlab.repo > /dev/null <<'EOF'
-[inferlab]
-name=InferLab RPM
+# local RPM repositoryをdnf/yumへ登録する。
+sudo tee /etc/yum.repos.d/local.repo > /dev/null <<'EOF'
+[local]
+name=Local RPM
 baseurl=http://<REGISTRY_HOST>:<RPM_PORT>/
 enabled=1
 gpgcheck=0
@@ -216,7 +216,7 @@ git --version
 
 期待結果:
 
-- `dnf makecache`が`inferlab` repositoryを読む。
+- `dnf makecache`が`local` repositoryを読む。
 - `tmux`、`neovim`、`vim`、`git`がinstallされる。
 
 失敗条件:
@@ -227,8 +227,8 @@ git --version
 rollback:
 
 ```bash
-# InferLab RPM repository設定を削除する。
-sudo rm -f /etc/yum.repos.d/inferlab.repo
+# local RPM repository設定を削除する。
+sudo rm -f /etc/yum.repos.d/local.repo
 
 # repository metadataを更新する。
 sudo dnf makecache
@@ -239,8 +239,8 @@ sudo dnf makecache
 利用者端末がDebian系distributionの場合に使う。
 
 ```bash
-# InferLab APT repositoryをaptへ登録する。
-echo "deb [trusted=yes] http://<REGISTRY_HOST>:<DEB_PORT>/ stable main" | sudo tee /etc/apt/sources.list.d/inferlab.list
+# local APT repositoryをaptへ登録する。
+echo "deb [trusted=yes] http://<REGISTRY_HOST>:<DEB_PORT>/ stable main" | sudo tee /etc/apt/sources.list.d/local.list
 
 # package indexを更新する。
 sudo apt-get update
@@ -268,8 +268,8 @@ git --version
 rollback:
 
 ```bash
-# InferLab APT repository設定を削除する。
-sudo rm -f /etc/apt/sources.list.d/inferlab.list
+# local APT repository設定を削除する。
+sudo rm -f /etc/apt/sources.list.d/local.list
 
 # package indexを更新する。
 sudo apt-get update
@@ -300,12 +300,12 @@ printf '%s\n' "$VSCODE_GALLERY_SERVICE_URL"
 dnf repolist
 
 # aptに登録済みrepository fileを確認する。
-cat /etc/apt/sources.list.d/inferlab.list
+cat /etc/apt/sources.list.d/local.list
 ```
 
 期待結果:
 
-- 利用者端末のpackage managerがInferLab registryを参照している。
+- 利用者端末のpackage managerがlocal registryを参照している。
 
 失敗条件:
 

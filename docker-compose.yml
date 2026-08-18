@@ -1,4 +1,4 @@
-name: ${STACK_NAME:-inferlab}
+name: ${STACK_NAME:?STACK_NAME is required}
 
 include:
   - ./00-common/docker-compose.yml

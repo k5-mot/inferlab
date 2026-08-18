@@ -1,7 +1,7 @@
 storage: /verdaccio/storage
 
 web:
-  title: InferLab npm Registry
+  title: Local npm Registry
 
 auth:
   htpasswd:

@@ -117,7 +117,7 @@ prepare_playwright() {
   require_command npm
 
   local cache_base
-  cache_base="${PLAYWRIGHT_SMOKE_CACHE:-${RUNNER_TEMP:-${TMPDIR:-/tmp}/inferlab-playwright-smoke}}"
+  cache_base="${PLAYWRIGHT_SMOKE_CACHE:-${RUNNER_TEMP:-${TMPDIR:-/tmp}/playwright-smoke}}"
   readonly PLAYWRIGHT_NODE_DIR="${cache_base}/node"
   export PLAYWRIGHT_BROWSERS_PATH="${cache_base}/browsers"
   export NODE_PATH="${PLAYWRIGHT_NODE_DIR}/node_modules"
@@ -154,7 +154,7 @@ prepare_playwright() {
 generate_playwright_keycloak_cert() {
   require_command openssl
 
-  export PLAYWRIGHT_KEYCLOAK_CERT_DIR="${PLAYWRIGHT_KEYCLOAK_CERT_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/inferlab-keycloak-cert.XXXXXXXX")}"
+  export PLAYWRIGHT_KEYCLOAK_CERT_DIR="${PLAYWRIGHT_KEYCLOAK_CERT_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/keycloak-cert.XXXXXXXX")}"
 
   openssl req \
     -x509 \
@@ -179,7 +179,7 @@ generate_playwright_keycloak_cert() {
 # 副作用:
 #   Keycloakのhost公開portへ2秒間隔でHTTP requestを送る。
 wait_for_keycloak_realm() {
-  local discovery_url="http://127.0.0.1:${KEYCLOAK_HTTP_HOST_PORT}/realms/${STACK_NAME}/.well-known/openid-configuration"
+  local discovery_url="http://127.0.0.1:${KEYCLOAK_HTTP_HOST_PORT}/realms/prod/.well-known/openid-configuration"
   local timeout_seconds="${PLAYWRIGHT_KEYCLOAK_READY_TIMEOUT:-180}"
 
   python3 - "${discovery_url}" "${timeout_seconds}" <<'PY'
@@ -248,7 +248,7 @@ configure_smoke_case() {
   local smoke_case="$1"
 
   export PUBLIC_HOST="${PUBLIC_HOST:-host.docker.internal}"
-  export STACK_NAME="${STACK_NAME:-inferlab-e2e-${smoke_case}-$(date +%Y%m%d%H%M%S)}"
+  export STACK_NAME="${STACK_NAME:-e2e-${smoke_case}-$(date +%Y%m%d%H%M%S)}"
   export KEYCLOAK_HTTP_HOST_PORT="${KEYCLOAK_HTTP_HOST_PORT:-$(allocate_port)}"
   export KEYCLOAK_HTTPS_HOST_PORT="${KEYCLOAK_HTTPS_HOST_PORT:-$(allocate_port)}"
   export KEYCLOAK_REALM_ADMIN_PASSWORD="${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}"

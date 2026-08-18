@@ -1,6 +1,6 @@
 # ダウンロード
 
-`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
+`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-HuggingFace-Repos.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
 
 ## 前提
 
@@ -10,15 +10,15 @@
 - container imageの取得対象platformはscript既定値の`linux/amd64`。
 - PyPI packageとnpm packageの取得対象platformはscript既定値のLinux x86_64。
 - 再実行すると既存archiveを上書きする。
-- 各scriptの既定保存先は、実行時のカレントディレクトリ配下の資材種別directoryである。
-- 取得済みcontainer image archiveは`images/`へ保存される。
-- Nextcloud OIDC app archiveは`nextcloud-oidc/`へ保存される。
-- PyPI package archiveは`pip/`へ保存される。
-- npm package archiveは`npm/`へ保存される。
-- RPM packageは`rpm/`へ保存される。
-- deb packageは`deb/`へ保存される。
-- VSIX fileは`vsix/`へ保存される。
-- `30-nextcloud/nextcloud/apps/*.tar.gz`はGit管理対象外で、airgap環境へfileとして持ち込む。
+- 各scriptの既定保存先は、`/srv`配下の資材種別directoryである。
+- 取得済みcontainer image archiveは`/srv/oci-archive/`へ保存される。
+- Hugging Face repositoryは`/srv/huggingface/<owner>--<repo>/`へ保存される。
+- Nextcloud OIDC app archiveは`/srv/30-nextcloud/apps/`へ保存される。
+- PyPI package archiveは`/srv/12-registry/pypi/`へ保存される。
+- npm package archiveは`/srv/12-registry/npm-packages/`へ保存される。
+- RPM packageは`/srv/12-registry/rpm/`へ保存される。
+- deb packageは`/srv/12-registry/deb/`へ保存される。
+- VSIX fileは`/srv/12-registry/vsix/`へ保存される。
 
 置換する値:
 
@@ -38,6 +38,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 # Nextcloud OIDC app archiveを取得する。
 .\script\Download-Nextcloud-Oidc.ps1
 
+# Hugging Face model repositoryを取得する。
+.\script\Download-HuggingFace-Repos.ps1
+
 # Linux x86_64向けのPyPI package archiveを取得する。
 .\script\Download-Pip-Packages.ps1
 
@@ -56,20 +59,22 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 期待結果:
 
-- `images/*.tar`が作成される。
-- `nextcloud-oidc/user_oidc-v8.10.1.tar.gz`が作成される。
+- `/srv/oci-archive/*.tar`が作成される。
+- `/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
-- `pip/*`にpackage archiveが作成される。
-- `npm/*.tgz`が作成される。
-- `rpm/*.rpm`が作成される。
-- `deb/*.deb`が作成される。
-- `vsix/*.vsix`が作成される。
+- `/srv/huggingface/`に`owner--repo`形式のmodel repository directoryが作成される。
+- `/srv/12-registry/pypi/*`にpackage archiveが作成される。
+- `/srv/12-registry/npm-packages/*.tgz`が作成される。
+- `/srv/12-registry/rpm/*.rpm`が作成される。
+- `/srv/12-registry/deb/*.deb`が作成される。
+- `/srv/12-registry/vsix/*.vsix`が作成される。
 
 失敗条件:
 
 - `crane`またはDocker CLIが見つからない。
 - container imageの取得に失敗する。
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
+- `huggingface-cli`が見つからない、またはmodel repositoryの取得に失敗する。
 - `pip download`が失敗する。
 - `npm install`または`npm pack`が失敗する。
 - RPM repository metadataまたはpackage fileの取得に失敗する。
@@ -80,31 +85,35 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ```powershell
 # 取得したcontainer image archiveの件数を確認する。
-Get-ChildItem .\images\*.tar | Measure-Object
+Get-ChildItem /srv/oci-archive/*.tar | Measure-Object
 
 # Nextcloud OIDC app archiveのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 .\nextcloud-oidc\user_oidc-v8.10.1.tar.gz
+Get-FileHash -Algorithm SHA256 /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
+
+# 取得したHugging Face repositoryの件数を確認する。
+Get-ChildItem /srv/huggingface -Directory | Measure-Object
 
 # 取得したPyPI package archiveの件数を確認する。
-Get-ChildItem .\pip\* | Measure-Object
+Get-ChildItem /srv/12-registry/pypi/* | Measure-Object
 
 # 取得したnpm package archiveの件数を確認する。
-Get-ChildItem .\npm\*.tgz | Measure-Object
+Get-ChildItem /srv/12-registry/npm-packages/*.tgz | Measure-Object
 
 # 取得したRPM packageの件数を確認する。
-Get-ChildItem .\rpm\*.rpm | Measure-Object
+Get-ChildItem /srv/12-registry/rpm/*.rpm | Measure-Object
 
 # 取得したdeb packageの件数を確認する。
-Get-ChildItem .\deb\*.deb | Measure-Object
+Get-ChildItem /srv/12-registry/deb/*.deb | Measure-Object
 
 # 取得したVSIX fileの件数を確認する。
-Get-ChildItem .\vsix\*.vsix | Measure-Object
+Get-ChildItem /srv/12-registry/vsix/*.vsix | Measure-Object
 ```
 
 期待結果:
 
-- `images/`に複数の`.tar` fileがある。
+- `/srv/oci-archive/`に複数の`.tar` fileがある。
 - OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
+- Hugging Face repository directoryが存在する。
 - PyPI package archiveが存在する。
 - npm package archiveが存在する。
 - RPM packageが存在する。
@@ -113,8 +122,9 @@ Get-ChildItem .\vsix\*.vsix | Measure-Object
 
 失敗条件:
 
-- `images/`が空である。
+- `/srv/oci-archive/`が空である。
 - OIDC app archiveが存在しない、またはhashが一致しない。
+- Hugging Face repository directoryが存在しない。
 - PyPI package archiveが存在しない。
 - npm package archiveが存在しない。
 - RPM packageが存在しない。
@@ -124,37 +134,41 @@ Get-ChildItem .\vsix\*.vsix | Measure-Object
 ## 3. airgap serverへ転送する
 
 ```powershell
-# container image archiveをairgap serverへ転送する。
-scp -r .\images <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/
+# container image archiveをairgap serverのbind mount元へ転送する。
+scp -r /srv/oci-archive <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 
 # Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
-scp .\nextcloud-oidc\user_oidc-v8.10.1.tar.gz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/
+scp -r /srv/30-nextcloud <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 
-# PyPI package archiveをairgap serverへ転送する。
-scp .\pip\* <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/pypi/
+# Hugging Face repositoryをairgap serverのbind mount元へ転送する。
+scp -r /srv/huggingface <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 
-# npm package archiveをairgap serverへ転送する。
-scp .\npm\*.tgz <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/npm-packages/
+# PyPI package archiveをairgap serverのbind mount元へ転送する。
+scp -r /srv/12-registry/pypi <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
 
-# RPM packageをairgap serverへ転送する。
-scp .\rpm\*.rpm <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/rpm/
+# npm package archiveをairgap serverのbind mount元へ転送する。
+scp -r /srv/12-registry/npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
 
-# deb packageをairgap serverへ転送する。
-scp .\deb\*.deb <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/deb/
+# RPM packageをairgap serverのbind mount元へ転送する。
+scp -r /srv/12-registry/rpm <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
 
-# VSIX fileをairgap serverへ転送する。
-scp .\vsix\*.vsix <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/registry/vsix/
+# deb packageをairgap serverのbind mount元へ転送する。
+scp -r /srv/12-registry/deb <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
+
+# VSIX fileをairgap serverのbind mount元へ転送する。
+scp -r /srv/12-registry/vsix <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
 ```
 
 期待結果:
 
-- airgap server上に`<AIRGAP_REPO_DIR>/images/*.tar`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/pypi/*`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/npm-packages/*.tgz`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/rpm/*.rpm`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/deb/*.deb`がある。
-- airgap server上に`<AIRGAP_REPO_DIR>/12-registry/registry/vsix/*.vsix`がある。
+- airgap server上に`/srv/oci-archive/*.tar`がある。
+- airgap server上に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
+- airgap server上に`/srv/huggingface/*`がある。
+- airgap server上に`/srv/12-registry/pypi/*`がある。
+- airgap server上に`/srv/12-registry/npm-packages/*.tgz`がある。
+- airgap server上に`/srv/12-registry/rpm/*.rpm`がある。
+- airgap server上に`/srv/12-registry/deb/*.deb`がある。
+- airgap server上に`/srv/12-registry/vsix/*.vsix`がある。
 
 失敗条件:
 
@@ -168,13 +182,13 @@ scp .\vsix\*.vsix <AIRGAP_USER>@<AIRGAP_HOST>:<AIRGAP_REPO_DIR>/12-registry/regi
 cd <AIRGAP_REPO_DIR>
 
 # 取得済みcontainer image archiveをPodmanまたはDockerへ読み込む。
-sudo ./script/install-images.sh --image-directory images
+sudo ./script/install-images.sh --image-directory /srv/oci-archive
 ```
 
 期待結果:
 
 - `sudo docker image ls`または`sudo podman image ls`でstackが参照するimageが表示される。
-- `inferlab-oikb`、`inferlab/hermes-agent:v2026.7.30-uid`、`inferlab/openclaw:2026.7.1-browser`も表示される。
+- OIKB、Hermes-Agent、OpenClawのlocal build imageも表示される。
 
 失敗条件:
 
@@ -185,13 +199,13 @@ sudo ./script/install-images.sh --image-directory images
 
 ```bash
 # OIDC app archiveのchecksumを確認する。
-sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
+sha256sum /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
 ```
 
 期待結果:
 
 - hashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
-- Nextcloud container起動時に`/opt/inferlab/nextcloud-apps/user_oidc-v8.10.1.tar.gz`としてread-only mountされる。
+- Nextcloud init container起動時に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`としてread-only mountされる。
 
 失敗条件:
 
@@ -203,10 +217,10 @@ sha256sum 30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz
 
 ```bash
 # RPM系またはdeb系のOS packageをinstallする。
-./script/install-system-packages.sh --rpm-directory 12-registry/registry/rpm --deb-directory 12-registry/registry/deb
+./script/install-system-packages.sh --rpm-directory /srv/12-registry/rpm --deb-directory /srv/12-registry/deb
 
 # VS Code拡張機能をinstallする。
-./script/install-vscode-extensions.sh --vsix-directory 12-registry/registry/vsix --editor-command code
+./script/install-vscode-extensions.sh --vsix-directory /srv/12-registry/vsix --editor-command code
 ```
 
 期待結果:

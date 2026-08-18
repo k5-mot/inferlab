@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_DIRECTORY="${IMAGE_DIRECTORY:-${PWD}/images}"
+IMAGE_DIRECTORY="${IMAGE_DIRECTORY:-/srv/oci-archive}"
 
 # scriptの利用方法を標準出力へ表示する。
 # 引数:
@@ -16,7 +16,7 @@ Usage:
   script/install-images.sh [-d|--image-directory DIR] [-h|--help]
 
 Description:
-  images/*.tar をPodmanまたはDockerへ読み込みます。
+  /srv/oci-archive/*.tar をPodmanまたはDockerへ読み込みます。
   engineはpodmanを優先し、見つからない場合はdockerを使用します。
 
 Options:
@@ -25,7 +25,7 @@ Options:
 
 Environment:
   IMAGE_DIRECTORY  読み込み対象のimage archive directoryです。
-                   既定値: <current-directory>/images
+                   既定値: /srv/oci-archive
   IMAGE_ENGINE     使用するcontainer engine commandです。
                    例: podman, docker
 USAGE
@@ -110,7 +110,7 @@ load_image_archives() {
   local archive
 
   if [[ ! -d "${IMAGE_DIRECTORY}" ]]; then
-    echo "images directoryが見つかりません: ${IMAGE_DIRECTORY}" >&2
+    echo "image archive directoryが見つかりません: ${IMAGE_DIRECTORY}" >&2
     return 1
   fi
 

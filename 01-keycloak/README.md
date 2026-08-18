@@ -9,7 +9,7 @@ Keycloakを中心にした認証stack。HTTP公開用の`keycloak`と、HTTPS is
 初期化処理は次の順で実行される。
 
 1. `keycloak`が`keycloak/bootstrap-realm.json`を`/opt/keycloak/data/import/`へmountする。
-2. `keycloak`が`start --import-realm`で`${STACK_NAME:-inferlab}` realmを作成する。
+2. `keycloak`が`start --import-realm`で`prod` realmを作成する。
 3. `keycloak-config`がKeycloak Admin APIへ接続できるまで待機する。
 4. `keycloak-config`が`keycloak/config.yaml`を適用し、realm user、group、OIDC clientを同期する。
 5. `keycloak-config`が正常終了した後、`keycloak-https`を起動する。
@@ -48,7 +48,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 - `keycloak-postgres`がhealthyになる。
 - `keycloak`が`http://${PUBLIC_HOST}:30001`で応答する。
 - `keycloak-https`が`https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}`で応答する。
-- `${STACK_NAME:-inferlab}` realmが作成される。
+- `prod` realmが作成される。
 - Open WebUI、Dify、Nextcloud、Langfuse、Leantime、BookStack、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
 
 失敗条件:
@@ -64,7 +64,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 sudo docker compose --env-file .env --profile keycloak ps
 
 # realmのOpenID Provider Configurationを確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:30001/realms/${STACK_NAME:-inferlab}/.well-known/openid-configuration" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:30001/realms/prod/.well-known/openid-configuration" >/dev/null
 
 # HTTPS issuerのTCP応答を確認する。
 timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/'"${KEYCLOAK_HTTPS_HOST_PORT:-30002}"
@@ -91,7 +91,7 @@ realm importやclient同期を最初からやり直す場合は、Keycloakの永
 sudo docker compose --env-file .env --profile keycloak down
 
 # Keycloak PostgreSQLの永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_keycloak_postgres_data"
+sudo docker volume rm "${STACK_NAME}_keycloak_postgres_data"
 
 # Keycloak stackを再作成する。
 sudo docker compose --env-file .env --profile keycloak up -d

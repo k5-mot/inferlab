@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VSIX_DIRECTORY="${VSIX_DIRECTORY:-${PWD}/vsix}"
+VSIX_DIRECTORY="${VSIX_DIRECTORY:-/srv/12-registry/vsix}"
 EDITOR_COMMAND="${EDITOR_COMMAND:-}"
 
 # scriptの利用方法を標準出力へ表示する。
@@ -25,7 +25,7 @@ Options:
   -h, --help            このhelpを表示して終了します。
 
 Environment:
-  VSIX_DIRECTORY  既定のVSIX file directoryです。既定値: <current-directory>/vsix
+  VSIX_DIRECTORY  既定のVSIX file directoryです。既定値: /srv/12-registry/vsix
   EDITOR_COMMAND  code、code-server、codiumなどのCLI commandです。
 USAGE
 }

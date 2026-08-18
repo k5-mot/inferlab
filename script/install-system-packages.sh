@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RPM_DIRECTORY="${RPM_DIRECTORY:-${PWD}/rpm}"
-DEB_DIRECTORY="${DEB_DIRECTORY:-${PWD}/deb}"
+RPM_DIRECTORY="${RPM_DIRECTORY:-/srv/12-registry/rpm}"
+DEB_DIRECTORY="${DEB_DIRECTORY:-/srv/12-registry/deb}"
 
 # scriptの利用方法を標準出力へ表示する。
 # 引数:
@@ -26,8 +26,8 @@ Options:
   -h, --help           このhelpを表示して終了します。
 
 Environment:
-  RPM_DIRECTORY  既定のRPM package directoryです。既定値: <current-directory>/rpm
-  DEB_DIRECTORY  既定のdeb package directoryです。既定値: <current-directory>/deb
+  RPM_DIRECTORY  既定のRPM package directoryです。既定値: /srv/12-registry/rpm
+  DEB_DIRECTORY  既定のdeb package directoryです。既定値: /srv/12-registry/deb
 USAGE
 }
 

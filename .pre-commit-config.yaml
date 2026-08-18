@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: static-validation
         name: Static validation
-        entry: script/verify-init-static.sh
+        entry: env STACK_NAME=static-validation script/verify-init-static.sh
         language: system
         pass_filenames: false
         always_run: true

@@ -13,12 +13,12 @@
 # - registry
 #   - https://hub.docker.com/_/registry
 #
-name: ${STACK_NAME:-inferlab}
+name: ${STACK_NAME:?STACK_NAME is required}
 
 services:
   docker-registry:
     image: docker.io/library/registry:${DOCKER_REGISTRY_IMAGE_TAG:-3.1.1}
-    container_name: ${STACK_NAME:-inferlab}-docker-registry
+    container_name: ${STACK_NAME}-docker-registry
     restart: unless-stopped
     profiles:
       - registry
@@ -46,7 +46,7 @@ services:
 
   pypiserver:
     image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-v2.4.1}
-    container_name: ${STACK_NAME:-inferlab}-pypiserver
+    container_name: ${STACK_NAME}-pypiserver
     restart: unless-stopped
     profiles:
       - registry
@@ -55,7 +55,7 @@ services:
     ports:
       - ${PYPISERVER_HTTP_HOST_PORT:-31200}:8080
     volumes:
-      - ./registry/pypi:/data/packages
+      - /srv/12-registry/pypi:/data/packages:ro
     networks:
       - internal-nw
     healthcheck:
@@ -77,7 +77,7 @@ services:
 
   verdaccio:
     image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6.9.0}
-    container_name: ${STACK_NAME:-inferlab}-verdaccio
+    container_name: ${STACK_NAME}-verdaccio
     restart: unless-stopped
     profiles:
       - registry
@@ -107,7 +107,7 @@ services:
 
   code-marketplace:
     image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
-    container_name: ${STACK_NAME:-inferlab}-code-marketplace
+    container_name: ${STACK_NAME}-code-marketplace
     restart: unless-stopped
     profiles:
       - registry
@@ -143,7 +143,7 @@ services:
 
   code-marketplace-importer:
     image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
-    container_name: ${STACK_NAME:-inferlab}-code-marketplace-importer
+    container_name: ${STACK_NAME}-code-marketplace-importer
     restart: unless-stopped
     profiles:
       - registry
@@ -154,7 +154,7 @@ services:
       - sh
       - /usr/local/bin/import-vsix-extensions
     volumes:
-      - ./registry/vsix:/imports:ro
+      - /srv/12-registry/vsix:/imports:ro
       - code-marketplace-extensions:/extensions
       - ./code-marketplace-importer/import-vsix-extensions.sh:/usr/local/bin/import-vsix-extensions:ro
     networks:
@@ -170,7 +170,7 @@ services:
 
   npm-importer:
     image: node:${NODE_IMAGE_TAG:-22-alpine}
-    container_name: ${STACK_NAME:-inferlab}-npm-importer
+    container_name: ${STACK_NAME}-npm-importer
     profiles:
       - registry
     restart: unless-stopped
@@ -183,7 +183,7 @@ services:
       - sh
       - /usr/local/bin/import-npm-packages
     volumes:
-      - ./registry/npm-packages:/imports:ro
+      - /srv/12-registry/npm-packages:/imports:ro
       - ./npm-importer/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw
@@ -201,7 +201,7 @@ services:
 
   createrepo_c:
     image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
-    container_name: ${STACK_NAME:-inferlab}-createrepo_c
+    container_name: ${STACK_NAME}-createrepo_c
     profiles:
       - registry
     restart: unless-stopped
@@ -213,7 +213,7 @@ services:
       - bash
       - /usr/local/bin/sync-rpm-repository
     volumes:
-      - ./registry/rpm:/repo
+      - /srv/12-registry/rpm:/repo
       - ./rpm-repository-sync/publish-rpm-repository.sh:/usr/local/bin/publish-rpm-repository:ro
       - ./rpm-repository-sync/sync-rpm-repository.sh:/usr/local/bin/sync-rpm-repository:ro
     networks:
@@ -229,14 +229,14 @@ services:
 
   rpm-dist:
     image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
-    container_name: ${STACK_NAME:-inferlab}-rpm-dist
+    container_name: ${STACK_NAME}-rpm-dist
     restart: unless-stopped
     profiles:
       - registry
     ports:
       - ${RPM_REPO_HTTP_HOST_PORT:-31203}:8080
     volumes:
-      - ./registry/rpm:/usr/share/nginx/html:ro
+      - /srv/12-registry/rpm:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:
@@ -262,7 +262,7 @@ services:
 
   reprepro:
     image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f}
-    container_name: ${STACK_NAME:-inferlab}-reprepro
+    container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
     restart: unless-stopped
@@ -273,8 +273,8 @@ services:
       DEB_CODENAME: ${DEB_CODENAME:-stable}
       DEB_COMPONENT: ${DEB_COMPONENT:-main}
       DEB_DISTRIBUTION: ${DEB_DISTRIBUTION:-stable}
-      DEB_LABEL: ${DEB_LABEL:-InferLab}
-      DEB_ORIGIN: ${DEB_ORIGIN:-InferLab}
+      DEB_LABEL: ${DEB_LABEL:-Local}
+      DEB_ORIGIN: ${DEB_ORIGIN:-Local}
       REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
     command:
       - bash
@@ -288,7 +288,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - ./registry/deb:/repo
+      - /srv/12-registry/deb:/repo
       - ./deb-repository-sync/publish-deb-repository.sh:/usr/local/bin/publish-deb-repository:ro
       - ./deb-repository-sync/sync-deb-repository.sh:/usr/local/bin/sync-deb-repository:ro
     networks:
@@ -296,14 +296,14 @@ services:
 
   deb-dist:
     image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
-    container_name: ${STACK_NAME:-inferlab}-deb-dist
+    container_name: ${STACK_NAME}-deb-dist
     restart: unless-stopped
     profiles:
       - registry
     ports:
       - ${DEB_REPO_HTTP_HOST_PORT:-31204}:8080
     volumes:
-      - ./registry/deb/public:/usr/share/nginx/html:ro
+      - /srv/12-registry/deb/public:/usr/share/nginx/html:ro
     networks:
       - internal-nw
     depends_on:

@@ -10,7 +10,7 @@
 services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.0
-    container_name: ${STACK_NAME:-inferlab}-keycloak
+    container_name: ${STACK_NAME}-keycloak
     restart: unless-stopped
     profiles:
       - keycloak
@@ -19,7 +19,6 @@ services:
       - --import-realm
     environment:
       # 全般.
-      STACK_NAME: ${STACK_NAME:-inferlab}
       PUBLIC_HOST: ${PUBLIC_HOST}
       # ホスト名設定.
       KC_HOSTNAME: http://${PUBLIC_HOST}:30001
@@ -45,8 +44,8 @@ services:
     ports:
       - 30001:8080
     volumes:
-      # 初回起動時にinferlab realmだけを作成する。
-      - ./keycloak/bootstrap-realm.json:/opt/keycloak/data/import/${STACK_NAME:-inferlab}-realm.json:ro
+      # 初回起動時にprod realmだけを作成する。
+      - ./keycloak/bootstrap-realm.json:/opt/keycloak/data/import/prod-realm.json:ro
     networks:
       - internal-nw
     depends_on:
@@ -70,7 +69,7 @@ services:
 
   keycloak-config:
     image: docker.io/adorsys/keycloak-config-cli:6.5.1-26
-    container_name: ${STACK_NAME:-inferlab}-keycloak-config
+    container_name: ${STACK_NAME}-keycloak-config
     restart: "no"
     profiles:
       - keycloak
@@ -89,10 +88,8 @@ services:
       # config.yaml内の$(env:VARIABLE)を展開する。
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
       IMPORT_VARSUBSTITUTION_UNDEFINEDISERROR: "true"
-      # 全般.
-      STACK_NAME: ${STACK_NAME:-inferlab}
       PUBLIC_HOST: ${PUBLIC_HOST}
-      # inferlab realmのadminユーザー.
+      # prod realmのadminユーザー.
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       # OIDCクライアント.
       OPEN_WEBUI_HTTP_HOST_PORT: ${OPEN_WEBUI_HTTP_HOST_PORT:-32000}
@@ -123,7 +120,7 @@ services:
 
   keycloak-https:
     image: quay.io/keycloak/keycloak:26.7.0
-    container_name: ${STACK_NAME:-inferlab}-keycloak-https
+    container_name: ${STACK_NAME}-keycloak-https
     restart: unless-stopped
     profiles:
       - keycloak
@@ -180,7 +177,7 @@ services:
 
   keycloak-postgres:
     image: docker.io/library/postgres:18.4-trixie
-    container_name: ${STACK_NAME:-inferlab}-keycloak-postgres
+    container_name: ${STACK_NAME}-keycloak-postgres
     restart: unless-stopped
     profiles:
       - keycloak

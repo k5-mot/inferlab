@@ -23,7 +23,7 @@ services:
   litellm:
     <<: *external-dns-stabilizer
     image: docker.io/litellm/litellm:v1.94.1
-    container_name: ${STACK_NAME:-inferlab}-litellm
+    container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
       - inference
@@ -78,7 +78,7 @@ services:
   ollama:
     <<: *external-dns-stabilizer
     image: docker.io/ollama/ollama:0.32.5
-    container_name: ${STACK_NAME:-inferlab}-ollama
+    container_name: ${STACK_NAME}-ollama
     restart: unless-stopped
     profiles:
       - inference
@@ -109,7 +109,7 @@ services:
   ollama-init:
     <<: *external-dns-stabilizer
     image: docker.io/ollama/ollama:0.32.5
-    container_name: ${STACK_NAME:-inferlab}-ollama-init
+    container_name: ${STACK_NAME}-ollama-init
     restart: no
     profiles:
       - inference
@@ -150,13 +150,13 @@ services:
   tei-embedding:
     <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: ${STACK_NAME:-inferlab}-tei-embedding
+    container_name: ${STACK_NAME}-tei-embedding
     restart: on-failure:3
     profiles:
       - inference
     command:
       - --model-id
-      - cl-nagoya/ruri-v3-310m
+      - /models/cl-nagoya--ruri-v3-310m
       - --hostname
       - "0.0.0.0"
       - --port
@@ -179,6 +179,7 @@ services:
       # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
+      - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
@@ -201,13 +202,13 @@ services:
   tei-reranking:
     <<: *external-dns-stabilizer
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: ${STACK_NAME:-inferlab}-tei-reranking
+    container_name: ${STACK_NAME}-tei-reranking
     restart: on-failure:3
     profiles:
       - inference
     command:
       - --model-id
-      - cl-nagoya/ruri-v3-reranker-310m
+      - /models/cl-nagoya--ruri-v3-reranker-310m
       - --hostname
       - "0.0.0.0"
       - --port
@@ -230,6 +231,7 @@ services:
       # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
+      - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
@@ -251,7 +253,7 @@ services:
 
   kokoro:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.7.0
-    container_name: ${STACK_NAME:-inferlab}-kokoro
+    container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
       - inference
@@ -277,16 +279,8 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    # build:
-    #   context: ./hermes-agent-custom-image
-    #   dockerfile: Dockerfile
-    #   args:
-    #     HERMES_AGENT_BASE_IMAGE: ${HERMES_AGENT_BASE_IMAGE:-docker.io/nousresearch/hermes-agent:v2026.8.3}
-    #     HERMES_AGENT_UID: ${HERMES_UID:-1000}
-    #     HERMES_AGENT_GID: ${HERMES_GID:-1000}
-    #     HERMES_AGENT_GID: ${HERMES_GID:-1000}
     image: docker.io/nousresearch/hermes-agent:v2026.8.3
-    container_name: ${STACK_NAME:-inferlab}-hermes-agent
+    container_name: ${STACK_NAME}-hermes-agent
     restart: unless-stopped
     profiles:
       - inference
@@ -375,8 +369,8 @@ services:
       dockerfile: Dockerfile
       args:
         OPENCLAW_BASE_IMAGE: ${OPENCLAW_BASE_IMAGE:-ghcr.io/openclaw/openclaw:2026.7.1-browser}
-    image: ${OPENCLAW_IMAGE:-inferlab/openclaw:2026.7.1-browser}
-    container_name: ${STACK_NAME:-inferlab}-openclaw
+    image: ${OPENCLAW_IMAGE:-local/openclaw:2026.7.1-browser}
+    container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
       - inference

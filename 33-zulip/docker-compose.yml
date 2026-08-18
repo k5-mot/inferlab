@@ -1,7 +1,7 @@
 services:
   zulip:
     image: ghcr.io/zulip/zulip-server:12.1-0
-    container_name: ${STACK_NAME:-inferlab}-zulip
+    container_name: ${STACK_NAME}-zulip
     restart: unless-stopped
     profiles:
       - zulip
@@ -35,15 +35,15 @@ services:
       ZULIP_FLUID_LAYOUT_WIDTH: ${ZULIP_FLUID_LAYOUT_WIDTH:-True}
       ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS: ${ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS:-True}
       ZULIP_AUTO_CREATE_REALM_ID: ${ZULIP_AUTO_CREATE_REALM_ID:-}
-      ZULIP_AUTO_CREATE_REALM_NAME: ${ZULIP_AUTO_CREATE_REALM_NAME:-InferLab}
+      ZULIP_AUTO_CREATE_REALM_NAME: ${ZULIP_AUTO_CREATE_REALM_NAME:-Local}
       ZULIP_AUTO_CREATE_ADMIN_EMAIL: ${ZULIP_AUTO_CREATE_ADMIN_EMAIL:-admin@example.com}
-      ZULIP_AUTO_CREATE_ADMIN_NAME: ${ZULIP_AUTO_CREATE_ADMIN_NAME:-InferLab Admin}
+      ZULIP_AUTO_CREATE_ADMIN_NAME: ${ZULIP_AUTO_CREATE_ADMIN_NAME:-Local Admin}
       ZULIP_AUTO_CREATE_ADMIN_PASSWORD: ${ZULIP_AUTO_CREATE_ADMIN_PASSWORD:-}
       ZULIP_OIDC_ENABLED: ${ZULIP_OIDC_ENABLED:-True}
       ZULIP_OIDC_IDP_KEY: ${ZULIP_OIDC_IDP_KEY:-keycloak}
       ZULIP_OIDC_DISPLAY_NAME: ${ZULIP_OIDC_DISPLAY_NAME:-Keycloak}
       ZULIP_OIDC_DISPLAY_ICON: ${ZULIP_OIDC_DISPLAY_ICON:-}
-      ZULIP_OIDC_URL: ${ZULIP_OIDC_URL:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/${STACK_NAME:-inferlab}}
+      ZULIP_OIDC_URL: ${ZULIP_OIDC_URL:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/prod}
       ZULIP_OIDC_CLIENT_ID: ${ZULIP_OIDC_CLIENT_ID:-zulip}
       ZULIP_OIDC_AUTO_SIGNUP: ${ZULIP_OIDC_AUTO_SIGNUP:-True}
       ZULIP_OIDC_FULL_NAME_VALIDATED: ${ZULIP_OIDC_FULL_NAME_VALIDATED:-True}
@@ -132,7 +132,7 @@ services:
 
   zulip-postgres:
     image: zulip/zulip-postgresql:14
-    container_name: ${STACK_NAME:-inferlab}-zulip-postgres
+    container_name: ${STACK_NAME}-zulip-postgres
     restart: unless-stopped
     profiles:
       - zulip
@@ -160,7 +160,7 @@ services:
 
   zulip-memcached:
     image: docker.io/library/memcached:1.6.45-alpine
-    container_name: ${STACK_NAME:-inferlab}-zulip-memcached
+    container_name: ${STACK_NAME}-zulip-memcached
     restart: unless-stopped
     profiles:
       - zulip
@@ -193,7 +193,7 @@ services:
       - homepage.icon=/icons/memcached.png
   zulip-rabbitmq:
     image: docker.io/library/rabbitmq:4.2
-    container_name: ${STACK_NAME:-inferlab}-zulip-rabbitmq
+    container_name: ${STACK_NAME}-zulip-rabbitmq
     restart: unless-stopped
     profiles:
       - zulip
@@ -228,7 +228,7 @@ services:
 
   zulip-redis:
     image: docker.io/library/redis:8.8.0-alpine
-    container_name: ${STACK_NAME:-inferlab}-zulip-redis
+    container_name: ${STACK_NAME}-zulip-redis
     restart: unless-stopped
     profiles:
       - zulip

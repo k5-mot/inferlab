@@ -74,12 +74,7 @@ function Get-DefaultAssetsPath {
         [Parameter(Mandatory = $true)][string]$CurrentDirectory
     )
 
-    $ParentDirectory = Split-Path -Parent $ScriptDirectory
-    if ((Split-Path -Leaf $ScriptDirectory) -eq "scripts" -and (Split-Path -Leaf $ParentDirectory) -eq "12-registry") {
-        return (Join-Path $ParentDirectory "registry")
-    }
-
-    return (Join-Path (Join-Path $CurrentDirectory "12-registry") "registry")
+    return "/srv/12-registry"
 }
 
 <#

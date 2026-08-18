@@ -13,7 +13,7 @@ services:
   cloudflare:
     <<: *external-dns-stabilizer
     image: docker.io/cloudflare/cloudflared:2026.7.3
-    container_name: ${STACK_NAME:-inferlab}-cloudflare
+    container_name: ${STACK_NAME}-cloudflare
     restart: unless-stopped
     profiles:
       - pubnet

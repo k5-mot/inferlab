@@ -6,7 +6,11 @@ $Version = if ($env:USER_OIDC_VERSION) {
     "8.10.1"
 }
 
-$DestinationDirectory = Join-Path $PSScriptRoot "apps"
+$DestinationDirectory = if ($env:NEXTCLOUD_USER_OIDC_DEST_DIR) {
+    $env:NEXTCLOUD_USER_OIDC_DEST_DIR
+} else {
+    "/srv/30-nextcloud/apps"
+}
 $DestinationFile = Join-Path `
     $DestinationDirectory `
     "user_oidc-v$Version.tar.gz"

@@ -25,9 +25,9 @@ from zerver.actions.realm_settings import (
 from zerver.models import Realm, RealmUserDefault, UserProfile
 
 realm_id = os.environ.get("ZULIP_AUTO_CREATE_REALM_ID", "")
-realm_name = os.environ.get("ZULIP_AUTO_CREATE_REALM_NAME", "InferLab")
+realm_name = os.environ.get("ZULIP_AUTO_CREATE_REALM_NAME", "Local")
 admin_email = os.environ.get("ZULIP_AUTO_CREATE_ADMIN_EMAIL", "admin@example.com")
-admin_name = os.environ.get("ZULIP_AUTO_CREATE_ADMIN_NAME", "InferLab Admin")
+admin_name = os.environ.get("ZULIP_AUTO_CREATE_ADMIN_NAME", "Local Admin")
 password_file = os.environ["ZULIP_AUTO_CREATE_ADMIN_PASSWORD_FILE"]
 default_color_scheme = os.environ.get("ZULIP_DEFAULT_COLOR_SCHEME", "light").strip().lower()
 apply_color_scheme_to_existing_users = os.environ.get(

@@ -24,7 +24,7 @@
 services:
   grafana:
     image: docker.io/grafana/grafana:13.1.1
-    container_name: ${STACK_NAME:-inferlab}-grafana
+    container_name: ${STACK_NAME}-grafana
     restart: unless-stopped
     profiles:
       - o11y
@@ -41,9 +41,9 @@ services:
       GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ${GRAFANA_OIDC_CLIENT_ID:-grafana}
       GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${GRAFANA_OIDC_CLIENT_SECRET:-sk-grafana-oidc-client-secret-key}
       GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
-      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/auth
-      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/token
-      GF_AUTH_GENERIC_OAUTH_API_URL: http://${PUBLIC_HOST}:30001/realms/${STACK_NAME:-inferlab}/protocol/openid-connect/userinfo
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/auth
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/token
+      GF_AUTH_GENERIC_OAUTH_API_URL: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/userinfo
       GF_AUTH_GENERIC_OAUTH_USE_REFRESH_TOKEN: "true"
       GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: preferred_username
       GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH: name
@@ -77,7 +77,7 @@ services:
 
   prometheus:
     image: docker.io/prom/prometheus:v3.13.2
-    container_name: ${STACK_NAME:-inferlab}-prometheus
+    container_name: ${STACK_NAME}-prometheus
     restart: unless-stopped
     profiles:
       - o11y
@@ -147,7 +147,7 @@ services:
 
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.12.1
-    container_name: ${STACK_NAME:-inferlab}-node-exporter
+    container_name: ${STACK_NAME}-node-exporter
     restart: unless-stopped
     profiles:
       - o11y
@@ -173,7 +173,7 @@ services:
 
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.60.5
-    container_name: ${STACK_NAME:-inferlab}-cadvisor
+    container_name: ${STACK_NAME}-cadvisor
     restart: unless-stopped
     profiles:
       - o11y
@@ -205,7 +205,7 @@ services:
 
   blackbox-exporter:
     image: quay.io/prometheus/blackbox-exporter:v0.28.0
-    container_name: ${STACK_NAME:-inferlab}-blackbox-exporter
+    container_name: ${STACK_NAME}-blackbox-exporter
     restart: unless-stopped
     profiles:
       - o11y
@@ -228,7 +228,7 @@ services:
       - homepage.description=Endpoint probe exporter
   # keycloak-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-keycloak-postgres-exporter
+  #   container_name: ${STACK_NAME}-keycloak-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -252,7 +252,7 @@ services:
 
   # nextcloud-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-postgres-exporter
+  #   container_name: ${STACK_NAME}-nextcloud-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -276,7 +276,7 @@ services:
 
   # langfuse-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-langfuse-postgres-exporter
+  #   container_name: ${STACK_NAME}-langfuse-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -300,7 +300,7 @@ services:
 
   # dify-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-dify-postgres-exporter
+  #   container_name: ${STACK_NAME}-dify-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -324,7 +324,7 @@ services:
 
   # zulip-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-zulip-postgres-exporter
+  #   container_name: ${STACK_NAME}-zulip-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -348,7 +348,7 @@ services:
 
   # pulp-postgres-exporter:
   #   image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
-  #   container_name: ${STACK_NAME:-inferlab}-pulp-postgres-exporter
+  #   container_name: ${STACK_NAME}-pulp-postgres-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -372,7 +372,7 @@ services:
 
   # nextcloud-valkey-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-nextcloud-valkey-exporter
+  #   container_name: ${STACK_NAME}-nextcloud-valkey-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -394,7 +394,7 @@ services:
 
   # langfuse-valkey-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-langfuse-valkey-exporter
+  #   container_name: ${STACK_NAME}-langfuse-valkey-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -417,7 +417,7 @@ services:
 
   # dify-redis-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-dify-redis-exporter
+  #   container_name: ${STACK_NAME}-dify-redis-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -440,7 +440,7 @@ services:
 
   # zulip-redis-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-zulip-redis-exporter
+  #   container_name: ${STACK_NAME}-zulip-redis-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -463,7 +463,7 @@ services:
 
   # pulp-redis-exporter:
   #   image: docker.io/oliver006/redis_exporter:v1.84.0-alpine
-  #   container_name: ${STACK_NAME:-inferlab}-pulp-redis-exporter
+  #   container_name: ${STACK_NAME}-pulp-redis-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -486,7 +486,7 @@ services:
 
   # bookstack-mysqld-exporter:
   #   image: docker.io/prom/mysqld-exporter:v0.19.0
-  #   container_name: ${STACK_NAME:-inferlab}-bookstack-mysqld-exporter
+  #   container_name: ${STACK_NAME}-bookstack-mysqld-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - o11y
@@ -512,7 +512,7 @@ services:
   # AMD ROCm対応GPU環境でのみ有効化する。/dev/kfdと/dev/driが必要。
   # amd-device-metrics-exporter:
   #   image: docker.io/rocm/device-metrics-exporter:v1.5.0
-  #   container_name: ${STACK_NAME:-inferlab}-amd-device-metrics-exporter
+  #   container_name: ${STACK_NAME}-amd-device-metrics-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - amd-gpu
@@ -538,7 +538,7 @@ services:
   # NVIDIA GPU環境でのみ有効化する。NVIDIA Container Toolkitが必要。
   # nvidia-dcgm-exporter:
   #   image: nvcr.io/nvidia/k8s/dcgm-exporter:${NVIDIA_DCGM_EXPORTER_TAG:-4.5.3-4.8.2-distroless}
-  #   container_name: ${STACK_NAME:-inferlab}-nvidia-dcgm-exporter
+  #   container_name: ${STACK_NAME}-nvidia-dcgm-exporter
   #   restart: unless-stopped
   #   profiles:
   #     - nvidia-gpu

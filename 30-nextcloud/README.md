@@ -9,7 +9,8 @@ Nextcloud公式entrypointの`before-starting` hookを使い、既存volumeで再
 | Hook | 初期化内容 |
 | --- | --- |
 | `05-configure-trusted-domains.sh` | `trusted_domains`と`allow_local_remote_servers`をCompose環境変数から再設定する。 |
-| `06-install-user-oidc.sh` | `user_oidc` appを事前取得archiveまたは公式releaseから復元し、checksum確認後に有効化する。 |
+| `nextcloud-app-init` | `/srv/30-nextcloud/apps`の事前取得archiveから`user_oidc` appを復元し、Nextcloudの共有volumeへ配置する。 |
+| `06-install-user-oidc.sh` | `user_oidc` appを公式releaseから復元し、checksum確認後に有効化する。 |
 | `10-disable-external-checks.sh` | update checker、internet connection check、recommendations系appを無効化する。 |
 | `20-configure-oidc-logout.sh` | Keycloak OIDC provider、logout endpoint、claim mapping、group provisioningを設定する。 |
 | `25-configure-oikb-share.sh` | `admin` userの`/oikb` folderを作成し、`users` groupへ共有する。 |
@@ -25,6 +26,7 @@ sudo docker compose --env-file .env --profile nextcloud up -d
 期待結果:
 
 - `nextcloud-postgres`と`nextcloud-valkey`がhealthyになる。
+- `nextcloud-app-init`が正常終了する。
 - `nextcloud`が`http://${PUBLIC_HOST}:33000`で応答する。
 - `user_oidc` appが有効化される。
 - `/oikb` folderが作成され、`users` groupへ共有される。
@@ -63,7 +65,7 @@ sudo docker compose --env-file .env --profile nextcloud exec nextcloud php occ a
 
 ## airgap環境
 
-airgap環境では、事前に`30-nextcloud/nextcloud/apps/user_oidc-v8.10.1.tar.gz`を配置する。詳細は[docs/manual/DOWNLOAD.md](../docs/manual/DOWNLOAD.md)を参照する。
+airgap環境では、事前に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`を配置する。詳細は[docs/manual/DOWNLOAD.md](../docs/manual/DOWNLOAD.md)を参照する。
 
 ## 再初期化
 
@@ -74,7 +76,7 @@ Nextcloud本体を初期状態へ戻す場合は、NextcloudとPostgreSQLのvolu
 sudo docker compose --env-file .env --profile nextcloud down
 
 # Nextcloud関連の永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME:-inferlab}_nextcloud" "${STACK_NAME:-inferlab}_nextcloud-postgres"
+sudo docker volume rm "${STACK_NAME}_nextcloud" "${STACK_NAME}_nextcloud-postgres"
 
 # Nextcloud stackを再作成する。
 sudo docker compose --env-file .env --profile nextcloud up -d

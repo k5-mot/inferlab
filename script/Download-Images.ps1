@@ -15,7 +15,7 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\script\Download-Images.ps1
 
-root stackに必要なcontainer image archiveを`images/`へ取得します。
+root stackに必要なcontainer image archiveを`/srv/oci-archive/`へ取得します。
 
 .EXAMPLE
 .\script\Download-Images.ps1 -ImageDirectory .\airgap-images
@@ -33,7 +33,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$ImageDirectory = (Join-Path (Get-Location).Path "images"),
+    [string]$ImageDirectory = "/srv/oci-archive",
 
     [Alias("h")]
     [switch]$Help
@@ -78,6 +78,7 @@ $Images = @(
     "docker.io/library/redis:8.8.0-alpine",
     "docker.io/library/registry:3.1.1",
     "docker.io/litellm/litellm:v1.94.1",
+    "docker.io/nousresearch/hermes-agent:v2026.8.3",
     "docker.io/ollama/ollama:0.32.5",
     "docker.io/openitcockpit/createrepo_c:bullseye-0.17.0",
     "docker.io/prom/prometheus:v3.13.2",
@@ -112,17 +113,12 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "inferlab-oikb"
+        Image = "local/oikb:latest"
         Context = Join-Path $PSScriptRoot "..\20-owui\oikb"
         Dockerfile = "Containerfile"
     },
     @{
-        Image = "inferlab/hermes-agent:v2026.7.30-uid"
-        Context = Join-Path $PSScriptRoot "..\10-inference\hermes-agent-custom-image"
-        Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "inferlab/openclaw:2026.7.1-browser"
+        Image = "local/openclaw:2026.7.1-browser"
         Context = Join-Path $PSScriptRoot "..\10-inference\openclaw\custom-image"
         Dockerfile = "Dockerfile"
     }

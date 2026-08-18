@@ -6,7 +6,7 @@
 services:
   langfuse-worker:
     image: docker.io/langfuse/langfuse-worker:4.1.0
-    container_name: ${STACK_NAME:-inferlab}-langfuse-worker
+    container_name: ${STACK_NAME}-langfuse-worker
     restart: unless-stopped
     profiles:
       - langfuse
@@ -73,7 +73,7 @@ services:
       # SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
       AUTH_KEYCLOAK_CLIENT_ID: langfuse
       AUTH_KEYCLOAK_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
-      AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:30001/realms/inferlab
+      AUTH_KEYCLOAK_ISSUER: http://${PUBLIC_HOST}:30001/realms/prod
     networks:
       - internal-nw
     healthcheck:
@@ -90,7 +90,7 @@ services:
 
   langfuse-web:
     image: docker.io/langfuse/langfuse:4.1.0
-    container_name: ${STACK_NAME:-inferlab}-langfuse-web
+    container_name: ${STACK_NAME}-langfuse-web
     restart: unless-stopped
     profiles:
       - langfuse
@@ -131,7 +131,7 @@ services:
 
   langfuse-clickhouse:
     image: docker.io/clickhouse/clickhouse-server:26.7.1
-    container_name: ${STACK_NAME:-inferlab}-langfuse-clickhouse
+    container_name: ${STACK_NAME}-langfuse-clickhouse
     restart: unless-stopped
     user: "101:101"
     profiles:
@@ -160,7 +160,7 @@ services:
 
   langfuse-valkey:
     image: docker.io/valkey/valkey:9.1.1-alpine3.24
-    container_name: ${STACK_NAME:-inferlab}-langfuse-valkey
+    container_name: ${STACK_NAME}-langfuse-valkey
     restart: unless-stopped
     profiles:
       - langfuse
@@ -186,7 +186,7 @@ services:
 
   langfuse-rustfs:
     image: docker.io/rustfs/rustfs:1.0.0-beta.12
-    container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs
+    container_name: ${STACK_NAME}-langfuse-rustfs
     restart: unless-stopped
     profiles:
       - langfuse
@@ -215,7 +215,7 @@ services:
 
   langfuse-rustfs-bucket-init:
     image: docker.io/amazon/aws-cli:2.36.14
-    container_name: ${STACK_NAME:-inferlab}-langfuse-rustfs-bucket-init
+    container_name: ${STACK_NAME}-langfuse-rustfs-bucket-init
     restart: "no"
     profiles:
       - langfuse
@@ -246,7 +246,7 @@ services:
   langfuse-postgres:
     # image: docker.io/library/postgres:17.10-trixie
     image: docker.io/library/postgres:18.4-trixie
-    container_name: ${STACK_NAME:-inferlab}-langfuse-postgres
+    container_name: ${STACK_NAME}-langfuse-postgres
     restart: unless-stopped
     profiles:
       - langfuse

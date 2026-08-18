@@ -1,6 +1,6 @@
 # Registry List
 
-## wheel
+## PyPI
 
 - alembic>=1.14.0
 - boto3
@@ -58,6 +58,14 @@
 
 - hello-world
 - ollama/ollama
+
+## Hugging Face
+
+- Qwen/Qwen3.6-27B-FP8
+- Qwen/Qwen3-Embedding-0.6B
+- Qwen/Qwen3-Reranker-0.6B
+- cl-nagoya/ruri-v3-310m
+- cl-nagoya/ruri-v3-reranker-310m
 
 ## rpm
 

@@ -14,7 +14,7 @@
 
 - `<REGISTRY_HOST>`: Registry サーバへ接続する host 名または IP
 - `<REGISTRY_USER>`: Registry サーバへ file 転送できる user
-- `<REGISTRY_ASSETS>`: Registry サーバ上の取得済み `assets` directory path
+- `<REGISTRY_ASSETS>`: Registry サーバ上の取得済み `/srv` directory path
 - `<NPM_PUBLISH_TOKEN>`: npm publish 用 token
 
 ## 1. 資材取得端末: 資材を取得する
@@ -23,38 +23,25 @@
 # script実行時だけPowerShell scriptの実行を許可する。
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-# 取得済み資材を置くdirectoryを指定する。
-$env:ASSETS_DIR = "assets"
-
-# LIST.mdのPyPI、npm、container image、Hugging Face資材を取得する。
+# LIST.mdのPyPI、npm、RPM、deb、container image資材を取得する。
 .\12-registry\scripts\download-assets.ps1
+
+# LIST.mdのHugging Face資材を取得する。
+.\script\Download-HuggingFace-Repos.ps1
 ```
 
-RPM / deb / VSIX は、取得した file を次の directory へ置く。
-
-```powershell
-# RPM fileをpublish対象へ置く。
-Copy-Item -Force .\downloaded\*.rpm .\assets\rpm\
-
-# deb fileをpublish対象へ置く。
-Copy-Item -Force .\downloaded\*.deb .\assets\deb\
-
-# VSIX fileをpublish対象へ置く。
-Copy-Item -Force .\downloaded\*.vsix .\assets\vsix\
-```
-
-期待結果: `assets` 配下に投入対象 file が作成される。
+期待結果: `/srv` 配下に投入対象 file が作成される。
 
 失敗基準: script が非ゼロ終了する、または必要な file が作成されない。
 
 ## 2. 資材取得端末: 資材を Registry サーバへ転送する
 
 ```powershell
-# 取得済みassetsをRegistryサーバへ転送する。
-scp -r .\assets <REGISTRY_USER>@<REGISTRY_HOST>:<REGISTRY_ASSETS>
+# 取得済み資材をRegistryサーバへ転送する。
+scp -r /srv/12-registry /srv/oci-archive /srv/huggingface <REGISTRY_USER>@<REGISTRY_HOST>:/srv/
 ```
 
-期待結果: Registry サーバ上の `<REGISTRY_ASSETS>` に `pypi`、`npm`、`docker`、`rpm`、`deb`、`huggingface`、`vsix` がある。
+期待結果: Registry サーバ上の `/srv` に `12-registry`、`oci-archive`、`huggingface` がある。
 
 失敗基準: `scp` が失敗する、または転送先で file が欠ける。
 
@@ -66,7 +53,7 @@ rpm metadata 生成には `RPM_PUBLISHER_IMAGE`、deb metadata 生成には `DEB
 
 ```bash
 # repository rootへ移動する。
-cd /path/to/inferlab
+cd /path/to/repository
 
 # registry profileの配信serviceと同期serviceを起動する。
 sudo docker compose --env-file .env --profile registry up -d docker-registry pypiserver verdaccio code-marketplace rpm-dist deb-dist
@@ -81,26 +68,26 @@ sudo docker compose --env-file .env --profile registry ps docker-registry pypise
 
 ## 4. Registry サーバ: package / extension 資材を配置する
 
-`12-registry/registry` 配下へ資材を配置すると、起動済み service が配信または投入を行う。
+`/srv/12-registry` 配下へ資材を配置すると、起動済み service が配信または投入を行う。
 
 ```bash
 # repository rootへ移動する。
-cd /path/to/inferlab
+cd /path/to/repository
 
 # PyPI packageをpypiserverの配信directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/assets/pypi/. 12-registry/registry/pypi/
+cp -a <REGISTRY_ASSETS>/12-registry/pypi/. /srv/12-registry/pypi/
 
 # npm packageをVerdaccio importerの入力directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/assets/npm/. 12-registry/registry/npm-packages/
+cp -a <REGISTRY_ASSETS>/12-registry/npm-packages/. /srv/12-registry/npm-packages/
 
 # RPM packageをcreaterepo_cの入力directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/assets/rpm/. 12-registry/registry/rpm/
+cp -a <REGISTRY_ASSETS>/12-registry/rpm/. /srv/12-registry/rpm/
 
 # deb packageをrepreproの入力directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/assets/deb/. 12-registry/registry/deb/
+cp -a <REGISTRY_ASSETS>/12-registry/deb/. /srv/12-registry/deb/
 
 # VSIXをcode-marketplace importerの入力directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/assets/vsix/. 12-registry/registry/vsix/
+cp -a <REGISTRY_ASSETS>/12-registry/vsix/. /srv/12-registry/vsix/
 ```
 
 期待結果: PyPI / npm / RPM / deb / VSIX が各 registry で取得できる。
@@ -113,16 +100,16 @@ Docker Registry は `docker.io/library/registry` を使う。`docker save` 形�
 
 ```bash
 # repository rootへ移動する。
-cd /path/to/inferlab
+cd /path/to/repository
 
 # 取得済みcontainer image archiveを配置する。
-cp -a <REGISTRY_ASSETS>/assets/docker/. 12-registry/registry/docker-archive/
+cp -a <REGISTRY_ASSETS>/oci-archive/. /srv/oci-archive/
 
 # hello-world archiveをDocker Registryへ投入する。
-skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:12-registry/registry/docker-archive/hello-world_latest.tar docker://<REGISTRY_HOST>:31205/library/hello-world:latest
+skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:/srv/oci-archive/hello-world_latest.tar docker://<REGISTRY_HOST>:31205/library/hello-world:latest
 
 # ollama archiveをDocker Registryへ投入する。
-skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:12-registry/registry/docker-archive/ollama_ollama_latest.tar docker://<REGISTRY_HOST>:31205/library/ollama:latest
+skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:/srv/oci-archive/ollama_ollama_latest.tar docker://<REGISTRY_HOST>:31205/library/ollama:latest
 ```
 
 期待結果: `http://<REGISTRY_HOST>:31205/v2/` が応答し、投入した image を pull できる。
@@ -175,9 +162,9 @@ sudo docker pull <REGISTRY_HOST>:31205/library/ollama:latest
 
 ```bash
 # RPM repositoryをdnfに登録する。
-sudo tee /etc/yum.repos.d/inferlab.repo > /dev/null <<'EOF'
-[inferlab]
-name=InferLab RPM
+sudo tee /etc/yum.repos.d/local.repo > /dev/null <<'EOF'
+[local]
+name=Local RPM
 baseurl=http://<REGISTRY_HOST>:31203/
 enabled=1
 gpgcheck=0
@@ -195,7 +182,7 @@ sudo dnf install -y tmux neovim vim git
 
 ```bash
 # flat deb repositoryをaptに登録する。
-echo "deb [trusted=yes] http://<REGISTRY_HOST>:31204/ ./" | sudo tee /etc/apt/sources.list.d/inferlab.list
+echo "deb [trusted=yes] http://<REGISTRY_HOST>:31204/ ./" | sudo tee /etc/apt/sources.list.d/local.list
 
 # aptのpackage情報を更新する。
 sudo apt-get update
@@ -223,11 +210,11 @@ export EXTENSIONS_GALLERY='{"serviceUrl":"http://<REGISTRY_HOST>:31202/api","ite
 
 ## 12. 利用者端末: Hugging Face model を使う
 
-Hugging Face model は registry service には投入しない。`assets/huggingface` の model directory を利用者端末の任意の場所へ配置して使う。
+Hugging Face model は registry service には投入しない。`/srv/huggingface` の model directory を利用者端末の任意の場所へ配置して使う。
 
 ```bash
 # 配置済みmodel directoryを確認する。
-find ./huggingface -maxdepth 3 -type f | head
+find /srv/huggingface -maxdepth 3 -type f | head
 ```
 
 期待結果: model file が表示される。

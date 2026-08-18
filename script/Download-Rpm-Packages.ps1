@@ -4,7 +4,7 @@ Linux x86_64向けのRPM packageを取得します。
 
 .DESCRIPTION
 Rocky Linux 9互換repositoryから、指定したRPM packageと依存packageを取得します。
-既定ではBaseOS、AppStream、CRB、EPELを参照し、`rpm/`へ保存します。
+既定ではBaseOS、AppStream、CRB、EPELを参照し、`/srv/12-registry/rpm/`へ保存します。
 
 .PARAMETER DestinationDirectory
 取得したRPM packageを保存するdirectoryです。
@@ -37,7 +37,7 @@ tmux、neovim、vim、gitを依存込みで取得します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (Join-Path (Get-Location).Path "rpm"),
+    [string]$DestinationDirectory = "/srv/12-registry/rpm",
 
     [string[]]$Packages = @(
         "bash",
