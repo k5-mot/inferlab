@@ -124,7 +124,6 @@ verify_compose_config() {
     zulip
     obsidian
     gitlab
-    knowledge
     o11y
     langfuse
   )

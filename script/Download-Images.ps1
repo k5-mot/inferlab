@@ -65,7 +65,6 @@ $Images = @(
     "docker.io/langgenius/dify-plugin-daemon:0.6.8-local",
     "docker.io/langgenius/dify-sandbox:0.2.15",
     "docker.io/langgenius/dify-web:1.16.1",
-    "docker.io/leantime/leantime:3.9.8",
     "docker.io/library/busybox:1.38.0",
     "docker.io/library/couchdb:3.5.2.1",
     "docker.io/library/memcached:1.6.45-alpine",
@@ -125,11 +124,6 @@ $LocalImages = @(
     @{
         Image = "inferlab/openclaw:2026.7.1-browser"
         Context = Join-Path $PSScriptRoot "..\10-inference\openclaw\custom-image"
-        Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "inferlab/llm-wiki:v0.5.5"
-        Context = Join-Path $PSScriptRoot "..\41-knowledge\llm-wiki"
         Dockerfile = "Dockerfile"
     }
 )

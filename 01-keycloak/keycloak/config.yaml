@@ -413,50 +413,6 @@ clients:
           userinfo.token.claim: "true"
 
   #
-  # Leantime
-  #
-  - clientId: leantime
-    name: Leantime
-    enabled: true
-    protocol: openid-connect
-
-    publicClient: false
-    clientAuthenticatorType: client-secret
-    secret: "$(env:LEANTIME_OIDC_CLIENT_SECRET)"
-
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)/"
-
-    redirectUris:
-      - "http://localhost:$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
-      - "http://127.0.0.1:$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)/oidc/callback"
-
-    webOrigins:
-      - "http://localhost:$(env:LEANTIME_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:LEANTIME_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:LEANTIME_HTTP_HOST_PORT)"
-
-    protocolMappers:
-      - name: groups
-        protocol: openid-connect
-        protocolMapper: oidc-group-membership-mapper
-        consentRequired: false
-
-        config:
-          claim.name: groups
-          full.path: "false"
-          introspection.token.claim: "true"
-          multivalued: "true"
-          id.token.claim: "true"
-          access.token.claim: "true"
-          userinfo.token.claim: "true"
-
-  #
   # Grafana
   #
   - clientId: grafana

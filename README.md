@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`knowledge`、`o11y`、`langfuse` です。`registry`、`dify`、`bookstack`、`kaneo`、`zulip`、`gitlab`、`leantime` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`bookstack`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -21,9 +21,7 @@
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
 | `zulip` | `33-zulip/docker-compose.yml` | チャット |
 | `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
-| `leantime` | `39-leantime/docker-compose.yml` | プロジェクト管理 |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
-| `knowledge` | `41-knowledge/docker-compose.yml` | LLMwiki |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
@@ -97,10 +95,7 @@
 | `gitlab` | `gitlab` | `${GITLAB_HTTP_HOST_PORT:-33400}`, `${GITLAB_SSH_HOST_PORT:-33422}` | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner-register` | - | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner` | - | `34-gitlab/docker-compose.yml` |
-| `leantime` | `leantime` | `33900` | `39-leantime/docker-compose.yml` |
-| `leantime` | `leantime-db` | - | `39-leantime/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
-| `knowledge` | `llm-wiki` | `${LLM_WIKI_HTTP_HOST_PORT:-34100}` | `41-knowledge/docker-compose.yml` |
 | `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
@@ -146,8 +141,6 @@
 - [BookStack](31-bookstack/README.md)
 - [Zulip](33-zulip/README.md)
 - [GitLab](34-gitlab/README.md)
-- [Knowledge](41-knowledge/README.md)
-- [Leantime・Plane](39-leantime/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 

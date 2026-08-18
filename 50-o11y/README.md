@@ -113,7 +113,6 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api
 - `dify-redis-exporter:9121`
 - `zulip-redis-exporter:9121`
 - `pulp-redis-exporter:9121`
-- `leantime-mysqld-exporter:9104`
 - `bookstack-mysqld-exporter:9104`
 - `zulip-rabbitmq:15692`
 - `langfuse-clickhouse:9363`

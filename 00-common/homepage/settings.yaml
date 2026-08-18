@@ -59,16 +59,8 @@ layout:
       icon: /icons/gitlab.png
       style: row
       columns: 4
-  - 39-leantime:
-      icon: /icons/leantime.png
-      style: row
-      columns: 4
   - 40-obsidian:
       icon: /icons/obsidian.png
-      style: row
-      columns: 4
-  - 41-knowledge:
-      icon: /icons/bookstack.png
       style: row
       columns: 4
   - 50-o11y:

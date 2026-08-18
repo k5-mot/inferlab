@@ -9,7 +9,6 @@
     - http://oikb:8080/health
     - http://dify-nginx
     - http://bookstack
-    - http://leantime:8080
     - http://gitlab/-/health
   labels:
     probe: http_2xx

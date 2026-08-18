@@ -338,8 +338,6 @@ services:
       ### docling-serve
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: "sk-docling-serve-api-key"
-      ### Knowledge
-      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       # HERMES_HOME: /opt/data
@@ -406,7 +404,6 @@ services:
       DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
       DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
       DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
-      LLM_WIKI_MCP_URL: http://llm-wiki:8080/mcp
       TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
     ports:
       - 31002:18789

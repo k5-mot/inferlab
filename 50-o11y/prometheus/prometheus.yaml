@@ -151,7 +151,6 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - leantime-mysqld-exporter:9104
           - bookstack-mysqld-exporter:9104
 
   - job_name: rabbitmq
