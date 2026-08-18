@@ -4,14 +4,23 @@ set -eu
 
 NEXTCLOUD_ROOT=/var/www/html
 
+# Nextcloudのoccコマンドを実行する。
+# 引数: occへそのまま渡す引数。
+# 戻り値: occコマンドの終了コード。
 occ() {
   php "${NEXTCLOUD_ROOT}/occ" "$@"
 }
 
+# bootstrapログを標準出力へ出力する。
+# 引数: 出力するメッセージ。
+# 戻り値: printfの終了コード。
 log() {
   printf '%s\n' "[nextcloud-bootstrap] $*"
 }
 
+# 環境変数の真偽値表現を判定する。
+# 引数: 判定対象の文字列。
+# 戻り値: 真として扱う値なら0、それ以外なら1。
 is_true() {
   case "${1:-}" in
     1 | true | TRUE | yes | YES | on | ON)
@@ -23,6 +32,9 @@ is_true() {
   esac
 }
 
+# Nextcloudの初期インストール完了を待機する。
+# 引数: なし。
+# 戻り値: インストール済みを確認できた場合は0、タイムアウト時は1。
 wait_for_installation() {
   attempt=1
   max_attempts=60
@@ -43,6 +55,9 @@ wait_for_installation() {
   return 1
 }
 
+# Nextcloudアプリを有効化する。
+# 引数: 有効化するアプリID。
+# 戻り値: アプリが有効化済み、または有効化に成功した場合は0。
 enable_app() {
   app_id="$1"
 
@@ -56,6 +71,9 @@ enable_app() {
   occ app:enable "${app_id}"
 }
 
+# user_oidcアプリのOpenID Connectプロバイダーを設定する。
+# 引数: なし。設定値はNEXTCLOUD_OIDC_*環境変数から読む。
+# 戻り値: 必須環境変数が揃い、occ設定が成功した場合は0。
 configure_oidc() {
   provider_id="${NEXTCLOUD_OIDC_PROVIDER_ID:-keycloak}"
   client_id="${NEXTCLOUD_OIDC_CLIENT_ID:-}"
@@ -119,6 +137,9 @@ configure_oidc() {
     --group-provisioning="${NEXTCLOUD_OIDC_GROUP_PROVISIONING:-1}"
 }
 
+# Nextcloudの外部接続チェックを無効化する。
+# 引数: なし。
+# 戻り値: occ設定が成功した場合は0。
 configure_external_checks() {
   log "Disabling external connectivity checks"
 
@@ -127,26 +148,29 @@ configure_external_checks() {
     --value=false
 }
 
+# OIKB共有向けの追加設定を行う。
+# 引数: なし。
+# 戻り値: 設定が成功した場合は0。
 configure_sharing() {
   log "Configuring sharing"
 
-  /*
-   * 旧25-configure-oikb-share.shのoccコマンドを
-   * この関数へ移動する。
-   */
+  # 旧25-configure-oikb-share.shのoccコマンドをこの関数へ移動する。
   :
 }
 
+# OpenMetrics向けの追加設定を行う。
+# 引数: なし。
+# 戻り値: 設定が成功した場合は0。
 configure_openmetrics() {
   log "Configuring OpenMetrics"
 
-  /*
-   * 旧30-configure-openmetrics.shのoccコマンドを
-   * この関数へ移動する。
-   */
+  # 旧30-configure-openmetrics.shのoccコマンドをこの関数へ移動する。
   :
 }
 
+# bootstrap処理を順に実行する。
+# 引数: なし。
+# 戻り値: すべての設定が成功した場合は0。
 main() {
   wait_for_installation
 
