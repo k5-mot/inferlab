@@ -49,8 +49,8 @@ services:
     networks:
       - internal-nw
     depends_on:
-      keycloak-postgres:
-        condition: service_healthy
+      keycloak-postgres-compat:
+        condition: service_completed_successfully
     healthcheck:
       # Realm設定の反映完了はkeycloak-configサービスの終了状態で管理する。
       test:
@@ -89,6 +89,7 @@ services:
       IMPORT_VARSUBSTITUTION_ENABLED: "true"
       IMPORT_VARSUBSTITUTION_UNDEFINEDISERROR: "true"
       PUBLIC_HOST: ${PUBLIC_HOST}
+      STACK_NAME: ${STACK_NAME}
       # prod realmのadminユーザー.
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       OPEN_WEBUI_OIDC_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
@@ -148,8 +149,8 @@ services:
       # config.yamlの適用が正常終了してからHTTPS側を起動する。
       keycloak-config:
         condition: service_completed_successfully
-      keycloak-postgres:
-        condition: service_healthy
+      keycloak-postgres-compat:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD-SHELL
@@ -192,6 +193,50 @@ services:
       - homepage.group=01-keycloak
       - homepage.name=Keycloak-Postgres
       - homepage.description=Relational database
+
+  keycloak-postgres-compat:
+    image: docker.io/library/postgres:18.4-trixie
+    container_name: ${STACK_NAME}-keycloak-postgres-compat
+    restart: "no"
+    profiles:
+      - keycloak
+    entrypoint:
+      - sh
+      - -euc
+    command:
+      - |
+        # 既存volumeが旧credentialで初期化済みの場合だけ、新しい固定credentialを追加する。
+        if PGPASSWORD=kc_db_password psql -h keycloak-postgres -U kc_db_user -d keycloak_db -tAc 'SELECT 1' >/dev/null 2>&1; then
+          echo "Keycloak PostgreSQL credential is already current."
+          exit 0
+        fi
+
+        if ! PGPASSWORD=keycloak_password psql -h keycloak-postgres -U keycloak_user -d keycloak_db -tAc 'SELECT 1' >/dev/null 2>&1; then
+          echo "Keycloak PostgreSQL credential migration failed: neither current nor legacy credential can connect." >&2
+          exit 1
+        fi
+
+        if PGPASSWORD=keycloak_password psql -h keycloak-postgres -U keycloak_user -d keycloak_db -tAc "SELECT 1 FROM pg_roles WHERE rolname = 'kc_db_user'" | grep -q '^1$'; then
+          PGPASSWORD=keycloak_password psql -v ON_ERROR_STOP=1 -h keycloak-postgres -U keycloak_user -d keycloak_db \
+            -c "ALTER ROLE kc_db_user WITH LOGIN PASSWORD 'kc_db_password';"
+        else
+          PGPASSWORD=keycloak_password psql -v ON_ERROR_STOP=1 -h keycloak-postgres -U keycloak_user -d keycloak_db \
+            -c "CREATE ROLE kc_db_user LOGIN PASSWORD 'kc_db_password';"
+        fi
+
+        PGPASSWORD=keycloak_password psql -v ON_ERROR_STOP=1 -h keycloak-postgres -U keycloak_user -d keycloak_db \
+          -c "ALTER DATABASE keycloak_db OWNER TO kc_db_user;" \
+          -c "GRANT ALL PRIVILEGES ON DATABASE keycloak_db TO kc_db_user;" \
+          -c "GRANT ALL PRIVILEGES ON SCHEMA public TO kc_db_user;" \
+          -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO kc_db_user;" \
+          -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO kc_db_user;" \
+          -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO kc_db_user;" \
+          -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO kc_db_user;"
+    networks:
+      - internal-nw
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
 
 volumes:
   keycloak_postgres_data:
