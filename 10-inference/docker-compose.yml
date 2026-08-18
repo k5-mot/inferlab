@@ -371,7 +371,7 @@ services:
       dockerfile: Dockerfile
       args:
         OPENCLAW_BASE_IMAGE: ghcr.io/openclaw/openclaw:2026.7.1-browser
-    image: local/openclaw:2026.7.1-browser
+    # image: local/openclaw:2026.7.1-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
@@ -403,7 +403,9 @@ services:
       - 31002:18789
     volumes:
       - openclaw-data:/home/node/.openclaw
-      - ./openclaw/workspaces:/home/node/.openclaw/workspaces
+      - ./openclaw/AGENTS.md:/home/node/.openclaw/workspaces/AGENTS.md:ro
+      - ./openclaw/IDENTITY.md:/home/node/.openclaw/workspaces/IDENTITY.md:ro
+      - ./openclaw/SOUL.md:/home/node/.openclaw/workspaces/SOUL.md:ro
     networks:
       - internal-nw
     # cap_drop:

@@ -1,6 +1,0 @@
-# OpenClawの実行時生成物
-*
-!.gitignore
-!custom-image/
-!custom-image/**
-workspaces/
