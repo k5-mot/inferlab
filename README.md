@@ -44,6 +44,7 @@
 | `inference` | `tei-reranking` | - | `10-inference/docker-compose.yml` |
 | `inference`, `hermes-agent` | `hermes-agent` | `31001` | `10-inference/docker-compose.yml` |
 | `inference`, `hermes-agent` | `openclaw` | `31002` | `10-inference/docker-compose.yml` |
+| `inference`, `qwenpaw` | `qwenpaw` | `31003` | `10-inference/docker-compose.yml` |
 | `inference` | `kokoro` | `31005` | `10-inference/docker-compose.yml` |
 | `rag` | `docling` | `31100` | `11-rag/docker-compose.yml` |
 | `rag` | `qdrant` | - | `11-rag/docker-compose.yml` |

@@ -6,6 +6,8 @@
 #   - https://docs.ollama.com/docker
 # - TEI; HuggingFace Text Embedding Inference
 #   - https://huggingface.co/docs/text-embeddings-inference/quick_tour
+# - QwenPaw
+#   - https://github.com/agentscope-ai/QwenPaw
 #
 
 x-external-dns-stabilizer: &external-dns-stabilizer
@@ -429,11 +431,60 @@ services:
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31002
 
+  # https://github.com/agentscope-ai/QwenPaw/blob/main/docker-compose.yml
+  qwenpaw:
+    <<: *external-dns-stabilizer
+    image: docker.io/agentscope/qwenpaw:v2.1.0
+    container_name: ${STACK_NAME}-qwenpaw
+    restart: unless-stopped
+    profiles:
+      - inference
+      - qwenpaw
+    init: true
+    environment:
+      QWENPAW_PORT: "8088"
+      QWENPAW_AUTH_ENABLED: "true"
+      QWENPAW_AUTH_USERNAME: ${QWENPAW_AUTH_USERNAME:-qwenpaw-admin}
+      QWENPAW_AUTH_PASSWORD: ${QWENPAW_AUTH_PASSWORD:-pw-qwenpaw-admin-password}
+      QWENPAW_ENABLED_CHANNELS: console,discord
+      OPENAI_BASE_URL: http://litellm:4000/v1
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      OPENAI_MODEL: openai/gpt-oss:20b
+      DISCORD_CHANNEL_ENABLED: "1"
+      DISCORD_BOT_TOKEN: ${QWENPAW_DISCORD_BOT_TOKEN:-}
+      DISCORD_REQUIRE_MENTION: "1"
+      DISCORD_STREAMING_ENABLED: "1"
+      TZ: Asia/Tokyo
+    ports:
+      - 31003:8088
+    volumes:
+      - qwenpaw-data:/app/working
+      - qwenpaw-secrets:/app/working.secret
+      - qwenpaw-backups:/app/working.backups
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    labels:
+      - homepage.group=10-inference
+      - homepage.name=QwenPaw
+      - homepage.description=Personal AI agent
+      - homepage.href=http://${PUBLIC_HOST}:31003
+
 volumes:
   ollama-cache:
   openclaw-data:
   tei-cache:
   hermes-data:
+  qwenpaw-data:
+  qwenpaw-secrets:
+  qwenpaw-backups:
 
 networks:
   internal-nw:

@@ -1,6 +1,6 @@
 # 10-inference
 
-LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論stack。
+LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、QwenPaw、Kokoroをまとめた推論stack。
 
 ## 起動時初期化
 
@@ -12,6 +12,7 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、Kokoroをまとめた推論st
 | `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。Ollama chat modelはtool callの本文JSON漏れを避けるため、`ollama_chat/...` routeを使う。 |
 | `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
 | `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。Langfuseへの送信はLiteLLMに集約する。 |
+| `qwenpaw` | 公式imageでConsoleとDiscord channelを起動する。model providerはLiteLLMへ向け、Langfuseへの送信はLiteLLMに集約する。 |
 
 `ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Ollama Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
 
@@ -57,6 +58,7 @@ sudo docker compose --env-file .env --profile inference up -d
 - `ollama-init`がmodel取得後に正常終了する。
 - `ollama`、`tei-embedding`、`tei-reranking`がhealthyになる。
 - `litellm`が`http://${PUBLIC_HOST}:31000/ui`で応答する。
+- `qwenpaw`が`http://${PUBLIC_HOST}:31003`で応答する。
 - `kokoro`がhealthcheckに成功する。
 
 失敗条件:
@@ -66,10 +68,42 @@ sudo docker compose --env-file .env --profile inference up -d
 - TEIがmemory不足で再起動を繰り返す。
 - LiteLLMの設定解決に失敗する。
 - Hermes-AgentがOpen WebUIまたはLiteLLMへ接続できない。
+- QwenPawのConsole認証情報が未設定、またはDiscord bot tokenが不正である。
+
+## QwenPawの初期設定
+
+QwenPaw Consoleは`http://${PUBLIC_HOST}:31003`で公開する。`QWENPAW_AUTH_ENABLED=true`を固定し、`.env`の`QWENPAW_AUTH_USERNAME`と`QWENPAW_AUTH_PASSWORD`で初期adminを自動登録する。
+
+モデルはQwenPawからLiteLLMへ集約する。QwenPawにはOpenAI互換providerとして次の値を設定する。
+
+| 項目 | 値 |
+| --- | --- |
+| Base URL | `http://litellm:4000/v1` |
+| API Key | `.env`の`LITELLM_MASTER_KEY` |
+| Model | `openai/gpt-oss:20b` |
+
+Discord channelは`.env`の`QWENPAW_DISCORD_BOT_TOKEN`をQwenPaw container内の`DISCORD_BOT_TOKEN`へ渡して有効化する。Discordの詳細なアクセス制御はQwenPaw Consoleで管理する。
+
+```bash
+# QwenPawだけを再作成して、認証情報とDiscord設定を反映する。
+sudo docker compose --env-file .env --profile qwenpaw up -d --force-recreate qwenpaw
+```
+
+期待結果:
+
+- `http://${PUBLIC_HOST}:31003`でQwenPaw Consoleにloginできる。
+- QwenPawのmodel requestがLiteLLMを経由する。
+- LiteLLM経由のrequestがLangfuseに記録される。
+
+失敗条件:
+
+- QwenPaw Consoleにloginできない。
+- QwenPawから`http://litellm:4000/v1`へ接続できない。
+- Discord bot tokenを設定してもDiscord gatewayへ接続できない。
 
 ## Langfuse連携
 
-Langfuseへの送信はLiteLLMの`langfuse_otel` callbackに集約する。Hermes-AgentとOpenClawはLangfuse SDKやLangfuse pluginから直接送信せず、LiteLLMへのprovider requestに`langfuse_*` headerまたはmetadataを付与する。
+Langfuseへの送信はLiteLLMの`langfuse_otel` callbackに集約する。Hermes-Agent、OpenClaw、QwenPawはLangfuse SDKやLangfuse pluginから直接送信せず、LiteLLMへのprovider requestへ集約する。
 
 Hermes-Agentは`litellm-langfuse-headers` pluginで、`session_id`、`turn_id`、`sender_id`、`api_request_id`をLiteLLMのLangfuse連携用headerへ変換する。OpenClawはLiteLLM providerの静的headerで、OpenClaw由来のtrace/generation名とtagを渡す。
 
@@ -91,6 +125,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 - LiteLLM readinessが成功する。
 - `ollama list`に`OLLAMA_INIT_MODELS`で指定したmodelが表示される。
 - TEIのhealthcheckがhealthyになる。
+- QwenPaw Consoleが`http://${PUBLIC_HOST}:31003`で応答する。
 
 失敗条件:
 
@@ -132,3 +167,5 @@ sudo docker compose --env-file .env --profile inference exec -it ollama ollama s
 - [LiteLLM Ollama Provider](https://docs.litellm.ai/docs/providers/ollama)
 - [Ollama API Authentication](https://docs.ollama.com/api/authentication)
 - [Ollama Cloud](https://docs.ollama.com/cloud)
+- [QwenPaw](https://github.com/agentscope-ai/QwenPaw)
+- [QwenPaw Docker Compose](https://raw.githubusercontent.com/agentscope-ai/QwenPaw/main/docker-compose.yml)
