@@ -10,7 +10,15 @@ litellm_settings:
 
 router_settings:
   routing_strategy: simple-shuffle
+  # 同じ model_name 内で、失敗した deployment を除外して、別 provider を選び直す
+  enable_weighted_failover: true
+  # リトライ回数
   num_retries: 3
+  # 1リクエスト内で試す failover の最大数
+  max_fallbacks: 5
+  # 壊れている provider を一時的に routing 対象外にする
+  allowed_fails: 2
+  cooldown_time: 30
 
 model_list:
   ### Ollama
@@ -19,6 +27,7 @@ model_list:
       model: ollama_chat/gemma4:31b-cloud
       api_base: http://ollama:11434
       tags: ["ollama", "foundation"]
+      weight: 1
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -27,6 +36,7 @@ model_list:
       model: ollama_chat/gpt-oss:20b-cloud
       api_base: http://ollama:11434
       tags: ["ollama", "foundation"]
+      weight: 1
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -35,6 +45,7 @@ model_list:
       model: ollama_chat/nemotron-3-nano:30b-cloud
       api_base: http://ollama:11434
       tags: ["ollama", "foundation"]
+      weight: 1
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
@@ -45,16 +56,19 @@ model_list:
       model: openrouter/google/gemma-4-31b-it:free
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
+      weight: 1
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: openrouter/openai/gpt-oss-20b:free
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
+      weight: 1
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
       model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
+      weight: 1
 
   ### Google AI Studio
   - model_name: google/gemma4:31b
@@ -62,6 +76,7 @@ model_list:
       model: gemini/gemma-4-31b-it
       api_key: os.environ/GEMINI_API_KEY
       tags: ["gemini", "foundation"]
+      weight: 1
 
   ### Groq Cloud
   - model_name: openai/gpt-oss:20b
@@ -69,6 +84,7 @@ model_list:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
       tags: ["groq", "foundation"]
+      weight: 1
 
   ### Cloudflare Workers AI
   - model_name: openai/gpt-oss:20b
@@ -76,6 +92,7 @@ model_list:
       model: cloudflare/@cf/openai/gpt-oss-20b
       api_key: os.environ/CLOUDFLARE_API_KEY
       tags: ["cloudflare", "foundation"]
+      weight: 1
 
   ### TEI; HuggingFace Text Embedding Inference
   - model_name: cl-nagoya/ruri-v3:310m

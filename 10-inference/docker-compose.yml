@@ -156,7 +156,8 @@ services:
       - inference
     command:
       - --model-id
-      - /models/cl-nagoya--ruri-v3-310m
+      - "cl-nagoya/ruri-v3-310m"
+      # - /models/cl-nagoya--ruri-v3-310m
       - --hostname
       - "0.0.0.0"
       - --port
@@ -179,7 +180,7 @@ services:
       # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
-      - /srv/huggingface:/models:ro
+      # - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
@@ -208,7 +209,8 @@ services:
       - inference
     command:
       - --model-id
-      - /models/cl-nagoya--ruri-v3-reranker-310m
+      - "cl-nagoya/ruri-v3-reranker-310m"
+      # - /models/cl-nagoya--ruri-v3-reranker-310m
       - --hostname
       - "0.0.0.0"
       - --port
@@ -231,7 +233,7 @@ services:
       # HF_HUB_OFFLINE: "1"
     volumes:
       - tei-cache:/data
-      - /srv/huggingface:/models:ro
+      # - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
