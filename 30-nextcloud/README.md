@@ -4,13 +4,12 @@ Nextcloud、PostgreSQL、Valkeyをまとめたfile storage stack。
 
 ## 起動時初期化
 
-Nextcloud公式entrypointの`before-starting` hookを使い、既存volumeで再起動した場合も設定を再適用する。
+Nextcloud公式entrypointの`before-starting` hookを使い、既存volumeで再起動した場合も設定を再適用する。外部から取得する`user_oidc` archiveは、事前に`/srv/30-nextcloud/apps/`へ配置する。
 
 | Hook | 初期化内容 |
 | --- | --- |
 | `05-configure-trusted-domains.sh` | `trusted_domains`と`allow_local_remote_servers`をCompose環境変数から再設定する。 |
-| `nextcloud-app-init` | `/srv/30-nextcloud/apps`の事前取得archiveから`user_oidc` appを復元し、Nextcloudの共有volumeへ配置する。 |
-| `06-install-user-oidc.sh` | `user_oidc` appを公式releaseから復元し、checksum確認後に有効化する。 |
+| `06-install-user-oidc.sh` | `/srv/30-nextcloud/apps`の事前取得archiveから`user_oidc` appを復元し、checksum確認後に有効化する。 |
 | `10-disable-external-checks.sh` | update checker、internet connection check、recommendations系appを無効化する。 |
 | `20-configure-oidc-logout.sh` | Keycloak OIDC provider、logout endpoint、claim mapping、group provisioningを設定する。 |
 | `25-configure-oikb-share.sh` | `admin` userの`/oikb` folderを作成し、`users` groupへ共有する。 |
@@ -26,7 +25,6 @@ sudo docker compose --env-file .env --profile nextcloud up -d
 期待結果:
 
 - `nextcloud-postgres`と`nextcloud-valkey`がhealthyになる。
-- `nextcloud-app-init`が正常終了する。
 - `nextcloud`が`http://${PUBLIC_HOST}:33000`で応答する。
 - `user_oidc` appが有効化される。
 - `/oikb` folderが作成され、`users` groupへ共有される。
@@ -34,7 +32,7 @@ sudo docker compose --env-file .env --profile nextcloud up -d
 失敗条件:
 
 - `user_oidc` archiveのchecksumが一致しない。
-- online環境で`user_oidc` release archiveを取得できない。
+- `/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`が存在しない。
 - Keycloak discovery URLへ到達できない。
 - OIKB共有ownerの`admin` userが存在しない。
 

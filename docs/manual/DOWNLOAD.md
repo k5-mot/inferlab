@@ -57,6 +57,13 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\script\Download-Vscode-Extensions.ps1
 ```
 
+Linux/macOS shellでNextcloud OIDC app archiveだけを取得する場合:
+
+```bash
+# Nextcloud OIDC app archiveを/srvへ取得する。
+sudo ./script/Download-Nextcloud-Oidc.sh
+```
+
 期待結果:
 
 - `/srv/oci-archive/*.tar`が作成される。
@@ -205,13 +212,13 @@ sha256sum /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
 期待結果:
 
 - hashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
-- Nextcloud init container起動時に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`としてread-only mountされる。
+- Nextcloud本体起動時に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`としてread-only mountされる。
 
 失敗条件:
 
 - OIDC app archiveが存在しない。
 - checksumが一致しない。
-- Nextcloudの`06-install-user-oidc.sh` hookがonline downloadへfallbackし、airgapで失敗する。
+- Nextcloudの`06-install-user-oidc.sh` hookから`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`を参照できない。
 
 ## 6. airgap serverでOS packageとVSIXをinstallする
 

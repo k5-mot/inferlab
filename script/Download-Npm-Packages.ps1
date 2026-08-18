@@ -22,7 +22,7 @@ npmへ渡すtarget CPUです。
 npmへ渡すtarget libcです。
 
 .PARAMETER WorkDirectory
-依存解決用の一時work directoryです。
+依存解決用の一時work directoryです。既定では`/srv/12-registry/npm-work/`を使います。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
@@ -76,7 +76,7 @@ param (
 
     [string]$Libc = "glibc",
 
-    [string]$WorkDirectory = (Join-Path (Get-Location).Path ".npm-work"),
+    [string]$WorkDirectory = "/srv/12-registry/npm-work",
 
     [Alias("h")]
     [switch]$Help

@@ -3,41 +3,6 @@
 #
 
 services:
-  nextcloud-app-init:
-    image: docker.io/library/nextcloud:34.0.2-apache
-    container_name: ${STACK_NAME}-nextcloud-app-init
-    restart: "no"
-    profiles:
-      - nextcloud
-    user: "0:0"
-    command:
-      - sh
-      - -eu
-      - -c
-      - |
-        if [ ! -f /var/www/html/version.php ]; then
-          cp -a /usr/src/nextcloud/. /var/www/html/
-          chown -R www-data:www-data /var/www/html
-        fi
-        mkdir -p /var/www/html/config /var/www/html/custom_apps /tmp/user_oidc-extract
-        cp /run/nextcloud-config/local.config.php /var/www/html/config/local.config.php
-        archive="/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz"
-        if [ ! -f "$${archive}" ]; then
-          echo "Nextcloud OIDC app archiveが見つかりません: $${archive}" >&2
-          exit 1
-        fi
-        echo "49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd  $${archive}" | sha256sum -c -
-        rm -rf /var/www/html/custom_apps/user_oidc /tmp/user_oidc-extract/*
-        tar -xzf "$${archive}" -C /tmp/user_oidc-extract
-        mv /tmp/user_oidc-extract/user_oidc /var/www/html/custom_apps/user_oidc
-        chown -R www-data:www-data /var/www/html/config/local.config.php /var/www/html/custom_apps/user_oidc
-    volumes:
-      - nextcloud:/var/www/html
-      - /srv/30-nextcloud/apps:/srv/30-nextcloud/apps:ro
-      - ./nextcloud/config/local.config.php:/run/nextcloud-config/local.config.php:ro
-    networks:
-      - internal-nw
-
   nextcloud:
     image: docker.io/library/nextcloud:34.0.2-apache
     container_name: ${STACK_NAME}-nextcloud
@@ -45,8 +10,6 @@ services:
     profiles:
       - nextcloud
     depends_on:
-      nextcloud-app-init:
-        condition: service_completed_successfully
       nextcloud-postgres:
         condition: service_healthy
       nextcloud-valkey:
@@ -62,6 +25,21 @@ services:
       NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 ${PUBLIC_HOST} nextcloud"
       NEXTCLOUD_DATA_DIR: /var/www/html/data
       NEXTCLOUD_INIT_HTACCESS: "true"
+      NEXTCLOUD_ALLOW_LOCAL_REMOTE_SERVERS: "true"
+      NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
+      NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
+      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
+      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
+      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/logout
+      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
+      NEXTCLOUD_OIDC_SCOPE: "openid profile email"
+      NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
+      NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
+      NEXTCLOUD_OIDC_MAPPING_EMAIL: email
+      NEXTCLOUD_OIDC_MAPPING_GROUPS: groups
+      NEXTCLOUD_OIDC_UNIQUE_UID: "0"
+      NEXTCLOUD_OIDC_GROUP_PROVISIONING: "1"
+      NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: "true"
       OVERWRITECLIURL: http://${PUBLIC_HOST}:33000
       PHP_MEMORY_LIMIT: 1024M
       PHP_UPLOAD_LIMIT: 2G
@@ -70,6 +48,7 @@ services:
       - 33000:80
     volumes:
       - nextcloud:/var/www/html
+      - /srv/30-nextcloud/apps:/srv/30-nextcloud/apps:ro
       - ./nextcloud/before-starting-hooks:/docker-entrypoint-hooks.d/before-starting:ro
     networks:
       - internal-nw
@@ -85,39 +64,6 @@ services:
       - homepage.name=Nextcloud
       - homepage.href=http://${PUBLIC_HOST}:33000/apps/files/files
       - homepage.description=Cloud storage platform
-
-  nextcloud-bootstrap:
-    image: docker.io/library/nextcloud:34.0.2-apache
-    container_name: ${STACK_NAME}-nextcloud-bootstrap
-    restart: "no"
-    profiles:
-      - nextcloud
-    depends_on:
-      nextcloud:
-        condition: service_healthy
-    entrypoint:
-      - sh
-      - /usr/local/bin/nextcloud-bootstrap
-    environment:
-      NEXTCLOUD_OIDC_PROVIDER_ID: keycloak
-      NEXTCLOUD_OIDC_CLIENT_ID: nextcloud
-      NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
-      NEXTCLOUD_OIDC_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
-      NEXTCLOUD_OIDC_END_SESSION_ENDPOINT: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/logout
-      NEXTCLOUD_OIDC_POST_LOGOUT_URI: http://${PUBLIC_HOST}:33000/login
-      NEXTCLOUD_OIDC_SCOPE: "openid profile email"
-      NEXTCLOUD_OIDC_MAPPING_UID: preferred_username
-      NEXTCLOUD_OIDC_MAPPING_DISPLAY_NAME: name
-      NEXTCLOUD_OIDC_MAPPING_EMAIL: email
-      NEXTCLOUD_OIDC_MAPPING_GROUPS: groups
-      NEXTCLOUD_OIDC_UNIQUE_UID: "0"
-      NEXTCLOUD_OIDC_GROUP_PROVISIONING: "1"
-      NEXTCLOUD_OIDC_ALLOW_INSECURE_HTTP: "true"
-    volumes:
-      - nextcloud:/var/www/html
-      - ./nextcloud/bin/bootstrap:/usr/local/bin/nextcloud-bootstrap:ro
-    networks:
-      - internal-nw
 
   nextcloud-postgres:
     image: docker.io/library/postgres:18.4-trixie
