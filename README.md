@@ -138,6 +138,7 @@
 
 - [Keycloak](01-keycloak/README.md)
 - [Inference](10-inference/README.md)
+- [RAG](11-rag/README.md)
 - [Registry](12-registry/README.md)
 - [Open WebUI](20-owui/README.md)
 - [Dify](21-dify/README.md)
