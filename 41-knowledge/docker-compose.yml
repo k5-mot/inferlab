@@ -100,7 +100,7 @@ services:
       GITLAB_LLMWIKI_TOKEN: ${GITLAB_LLMWIKI_TOKEN:-}
       GITLAB_LLMWIKI_MAX_PROJECTS: ${GITLAB_LLMWIKI_MAX_PROJECTS:-50}
     ports:
-      - "${LLMWIKI_SYNC_WEB_HOST_BIND:-127.0.0.1}:${LLMWIKI_SYNC_WEB_HOST_PORT:-34101}:8090"
+      - "${LLMWIKI_SYNC_WEB_HOST_PORT:-34101}:8090"
     volumes:
       - llmwiki-sync-worker-state:/state
       - ./llmwiki-sync-worker/config.yaml:/config/config.yaml:ro
