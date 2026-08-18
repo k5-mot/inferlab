@@ -23,7 +23,7 @@ sudo docker compose --env-file .env --profile zulip up -d
 期待結果:
 
 - `zulip-postgres`、`zulip-rabbitmq`、`zulip-redis`がhealthyになる。
-- `zulip`が`https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}`で応答する。
+- `zulip`が`https://${PUBLIC_HOST}:33300`で応答する。
 - 初期組織と初期管理者が作成される。
 - Keycloak OIDC provider設定が有効になる。
 
@@ -48,17 +48,17 @@ docker compose --profile zulip up -d zulip
 
 期待結果:
 
-- `https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT:-33300}/local-static/themes/usability.css?v=20260802-collapse-divider`がHTTP 200を返す。
+- `https://${PUBLIC_HOST}:33300/local-static/themes/usability.css?v=20260802-collapse-divider`がHTTP 200を返す。
 - Zulipの通常画面HTMLに`/local-static/themes/usability.css`のstylesheet linkが含まれる。
 - sidebarとcontent areaの横余白が最小化される。
 - window端と左右sidebarの横余白が最小化される。
 - sidebarとcontent areaに薄い水平線が表示される。
 - message入力欄の最小高さが標準より広めの1.5倍相当になる。
 - view/channel itemとmessage行の高さと余白が使いやすい密度へ調整され、channel配下のtopic itemは標準相当の高さを維持する。
-- `ZULIP_FLUID_LAYOUT_WIDTH=True`により、sidebar折り畳み時もcontent areaがwindow幅へ追従する。
+- fluid layout設定により、sidebar折り畳み時もcontent areaがwindow幅へ追従する。
 - Zulip applicationとcontainer processのtimezoneが`Asia/Tokyo`になる。
-- `ZULIP_DEFAULT_COLOR_SCHEME`でZulipのuser default themeを変更できる。
-- `ZULIP_OIDC_*`でZulipとKeycloak/OIDC providerの連携を変更できる。
+- Zulipのuser default themeは`light`になる。
+- ZulipとKeycloak/OIDC providerの連携設定が反映される。
 
 失敗条件:
 
@@ -106,13 +106,9 @@ docker compose --profile zulip up -d zulip
 - 配色、font family、button colorはZulip標準を維持する。
 - Zulip本体のtemplateや`/home/zulip/prod-static`内の生成bundleは直接変更しない。
 
-## 環境変数
+## 固定設定
 
-`ZULIP_DEFAULT_COLOR_SCHEME`は`auto`、`automatic`、`dark`、`light`、またはZulip内部値の`1`、`2`、`3`を受け付ける。既定値は`light`。`ZULIP_APPLY_DEFAULT_COLOR_SCHEME_TO_EXISTING_USERS=True`の場合、既存の通常userにも同じthemeを反映する。
-
-`ZULIP_FLUID_LAYOUT_WIDTH=True`はZulip標準のfluid layout user settingを有効化する。`ZULIP_APPLY_FLUID_LAYOUT_WIDTH_TO_EXISTING_USERS=True`の場合、既存の通常userにも同じlayout設定を反映する。
-
-Keycloak連携はOIDC設定として扱う。`ZULIP_OIDC_ENABLED=False`でZulip側のOIDC provider定義を空にできる。providerのissuer、client ID、表示名、auto signupは`ZULIP_OIDC_URL`、`ZULIP_OIDC_CLIENT_ID`、`ZULIP_OIDC_DISPLAY_NAME`、`ZULIP_OIDC_AUTO_SIGNUP`で変更する。
+Zulipのuser default themeは`light`、fluid layoutは有効、Keycloak OIDC providerは`prod` realm固定で構成する。
 
 ## 確認手順
 
@@ -121,7 +117,7 @@ Keycloak連携はOIDC設定として扱う。`ZULIP_OIDC_ENABLED=False`でZulip�
 sudo docker compose --env-file .env --profile zulip ps
 
 # Zulip HTTPS endpointの応答を確認する。
-curl -kfsS "https://${PUBLIC_HOST:-localhost}:${ZULIP_HTTPS_HOST_PORT:-33300}/" >/dev/null
+curl -kfsS "https://${PUBLIC_HOST:-localhost}:33300/" >/dev/null
 
 # 自動生成された初期管理者password fileを確認する。
 sudo docker compose --env-file .env --profile zulip exec zulip test -s /data/initial-admin-password

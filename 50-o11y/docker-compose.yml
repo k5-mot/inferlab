@@ -31,7 +31,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-grafana-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-      GF_SERVER_ROOT_URL: http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}/
+      GF_SERVER_ROOT_URL: http://${PUBLIC_HOST}:35000/
       GF_METRICS_ENABLED: "true"
       GF_USERS_DEFAULT_THEME: light
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
@@ -52,7 +52,7 @@ services:
       GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(groups[*], 'admins') && 'Admin' || contains(groups[*], 'users') && 'Editor' || 'Viewer'"
       DS_PROMETHEUS: http://prometheus:9090
     ports:
-      - ${GRAFANA_HTTP_HOST_PORT:-35000}:3000
+      - 35000:3000
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -72,7 +72,7 @@ services:
       - homepage.icon=/icons/grafana.png
       - homepage.group=50-o11y
       - homepage.name=Grafana
-      - homepage.href=http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT:-35000}
+      - homepage.href=http://${PUBLIC_HOST}:35000
       - homepage.description=Observability dashboard
 
   prometheus:
@@ -86,39 +86,34 @@ services:
       - -ec
     command:
       - |
-        # Prometheus設定はsecret値を含めずrepositoryへ置くため、起動時にplaceholderを置換する。
+        # Prometheus設定はAPI keyを含めずrepositoryへ置くため、起動時にplaceholderを置換する。
         # 置換後の一時fileだけをPrometheusへ渡し、元templateはread-onlyのまま保つ。
         awk '
         BEGIN {
-          couchdb_user = ENVIRON["COUCHDB_USER"]
-          couchdb_password = ENVIRON["COUCHDB_PASSWORD"]
           litellm_master_key = ENVIRON["LITELLM_MASTER_KEY"]
-          gsub(/\\/, "\\\\", couchdb_user)
-          gsub(/&/, "\\&", couchdb_user)
-          gsub(/\\/, "\\\\", couchdb_password)
-          gsub(/&/, "\\&", couchdb_password)
+          qdrant_api_key = ENVIRON["QDRANT_API_KEY"]
           gsub(/\\/, "\\\\", litellm_master_key)
           gsub(/&/, "\\&", litellm_master_key)
+          gsub(/\\/, "\\\\", qdrant_api_key)
+          gsub(/&/, "\\&", qdrant_api_key)
         }
         {
-          gsub(/__COUCHDB_USER__/, couchdb_user)
-          gsub(/__COUCHDB_PASSWORD__/, couchdb_password)
           gsub(/__LITELLM_MASTER_KEY__/, litellm_master_key)
+          gsub(/__QDRANT_API_KEY__/, qdrant_api_key)
           print
         }
         ' /etc/prometheus/prometheus.yaml > /tmp/prometheus.yaml
         exec /bin/prometheus \
           --config.file=/tmp/prometheus.yaml \
           --storage.tsdb.path=/prometheus \
-          --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d} \
+          --storage.tsdb.retention.time=30d \
           --web.enable-lifecycle \
           --web.enable-otlp-receiver
     environment:
-      COUCHDB_USER: ${COUCHDB_USER:-couchdb_user}
-      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD:-couchdb_password}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-sk-qdrant-api-key}
     ports:
-      - ${PROMETHEUS_HTTP_HOST_PORT:-35001}:9090
+      - 35001:9090
     volumes:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
@@ -142,7 +137,7 @@ services:
       - homepage.icon=/icons/prometheus.png
       - homepage.group=50-o11y
       - homepage.name=Prometheus
-      - homepage.href=http://${PUBLIC_HOST}:${PROMETHEUS_HTTP_HOST_PORT:-35001}
+      - homepage.href=http://${PUBLIC_HOST}:35001
       - homepage.description=Metrics database
 
   node-exporter:
@@ -234,8 +229,8 @@ services:
   #     - o11y
   #   environment:
   #     DATA_SOURCE_URI: keycloak-postgres:5432/keycloak_db?sslmode=disable
-  #     DATA_SOURCE_USER: keycloak_user
-  #     DATA_SOURCE_PASS: keycloak_password
+  #     DATA_SOURCE_USER: kc_db_user
+  #     DATA_SOURCE_PASS: kc_db_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -331,7 +326,7 @@ services:
   #   environment:
   #     DATA_SOURCE_URI: zulip-postgres:5432/zulip?sslmode=disable
   #     DATA_SOURCE_USER: zulip
-  #     DATA_SOURCE_PASS: ${ZULIP_POSTGRES_PASSWORD:-zulip_password}
+  #     DATA_SOURCE_PASS: zulip_db_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -355,7 +350,7 @@ services:
   #   environment:
   #     DATA_SOURCE_URI: pulp-postgres:5432/pulp?sslmode=disable
   #     DATA_SOURCE_USER: pulp
-  #     DATA_SOURCE_PASS: ${PULP_POSTGRES_PASSWORD:-pulp_password}
+  #     DATA_SOURCE_PASS: pulp_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -400,7 +395,7 @@ services:
   #     - o11y
   #   environment:
   #     REDIS_ADDR: redis://langfuse-valkey:6379
-  #     REDIS_PASSWORD: sk-langfuse-redis-secret-key
+  #     REDIS_PASSWORD: lf_redis_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -446,7 +441,7 @@ services:
   #     - o11y
   #   environment:
   #     REDIS_ADDR: redis://zulip-redis:6379
-  #     REDIS_PASSWORD: ${ZULIP_REDIS_PASSWORD:-zulip_password}
+  #     REDIS_PASSWORD: zulip_redis_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -469,7 +464,7 @@ services:
   #     - o11y
   #   environment:
   #     REDIS_ADDR: redis://pulp-redis:6379
-  #     REDIS_PASSWORD: ${PULP_REDIS_PASSWORD:-pulp_redis_password}
+  #     REDIS_PASSWORD: pulp_redis_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -494,7 +489,7 @@ services:
   #     - --mysqld.address=bookstack-mariadb:3306
   #     - --mysqld.username=root
   #   environment:
-  #     MYSQLD_EXPORTER_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD:-bookstack_root_password}
+  #     MYSQLD_EXPORTER_PASSWORD: bs_db_root_password
   #   networks:
   #     - internal-nw
   #   healthcheck:
@@ -537,7 +532,7 @@ services:
 
   # NVIDIA GPU環境でのみ有効化する。NVIDIA Container Toolkitが必要。
   # nvidia-dcgm-exporter:
-  #   image: nvcr.io/nvidia/k8s/dcgm-exporter:${NVIDIA_DCGM_EXPORTER_TAG:-4.5.3-4.8.2-distroless}
+  #   image: nvcr.io/nvidia/k8s/dcgm-exporter:4.5.3-4.8.2-distroless
   #   container_name: ${STACK_NAME}-nvidia-dcgm-exporter
   #   restart: unless-stopped
   #   profiles:

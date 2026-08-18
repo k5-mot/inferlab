@@ -88,23 +88,6 @@ compose_for_playwright() {
     "$@"
 }
 
-# host側の未使用TCP portを1つ取得する。
-# 引数:
-#   なし。
-# 戻り値:
-#   未使用portを取得できた場合は0、取得できない場合は非0を返す。
-# 副作用:
-#   Pythonで一時的にTCP socketをbindする。
-allocate_port() {
-  python3 - <<'PY'
-import socket
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    sock.bind(("127.0.0.1", 0))
-    print(sock.getsockname()[1])
-PY
-}
-
 # Playwrightのnpm依存とChromium browserを専用cacheへ準備する。
 # 引数:
 #   なし。
@@ -179,7 +162,7 @@ generate_playwright_keycloak_cert() {
 # 副作用:
 #   Keycloakのhost公開portへ2秒間隔でHTTP requestを送る。
 wait_for_keycloak_realm() {
-  local discovery_url="http://127.0.0.1:${KEYCLOAK_HTTP_HOST_PORT}/realms/prod/.well-known/openid-configuration"
+  local discovery_url="http://127.0.0.1:30001/realms/prod/.well-known/openid-configuration"
   local timeout_seconds="${PLAYWRIGHT_KEYCLOAK_READY_TIMEOUT:-180}"
 
   python3 - "${discovery_url}" "${timeout_seconds}" <<'PY'
@@ -249,8 +232,6 @@ configure_smoke_case() {
 
   export PUBLIC_HOST="${PUBLIC_HOST:-host.docker.internal}"
   export STACK_NAME="${STACK_NAME:-e2e-${smoke_case}-$(date +%Y%m%d%H%M%S)}"
-  export KEYCLOAK_HTTP_HOST_PORT="${KEYCLOAK_HTTP_HOST_PORT:-$(allocate_port)}"
-  export KEYCLOAK_HTTPS_HOST_PORT="${KEYCLOAK_HTTPS_HOST_PORT:-$(allocate_port)}"
   export KEYCLOAK_REALM_ADMIN_PASSWORD="${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}"
   export PLAYWRIGHT_SMOKE_CASE="${smoke_case}"
   export PLAYWRIGHT_SMOKE_USERNAME="${PLAYWRIGHT_SMOKE_USERNAME:-admin}"
@@ -263,56 +244,46 @@ configure_smoke_case() {
 
   case "${smoke_case}" in
     nextcloud)
-      export NEXTCLOUD_HTTP_HOST_PORT="${NEXTCLOUD_HTTP_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${NEXTCLOUD_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${NEXTCLOUD_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33000"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33000"
       ACTIVE_PROFILES+=(--profile nextcloud)
       ACTIVE_SERVICES+=(nextcloud)
       ;;
     bookstack)
-      export BOOKSTACK_HOST_PORT="${BOOKSTACK_HOST_PORT:-$(allocate_port)}"
-      export BOOKSTACK_PUBLIC_URL="${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST}:${BOOKSTACK_HOST_PORT}}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="${BOOKSTACK_PUBLIC_URL}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${BOOKSTACK_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33100"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33100"
       ACTIVE_PROFILES+=(--profile bookstack)
       ACTIVE_SERVICES+=(keycloak-https bookstack)
       ;;
     kaneo)
-      export KANEO_HTTP_HOST_PORT="${KANEO_HTTP_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${KANEO_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${KANEO_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33200"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33200"
       ACTIVE_PROFILES+=(--profile kaneo)
       ACTIVE_SERVICES+=(kaneo)
       ;;
     zulip)
-      export ZULIP_HTTP_HOST_PORT="${ZULIP_HTTP_HOST_PORT:-$(allocate_port)}"
-      export ZULIP_HTTPS_HOST_PORT="${ZULIP_HTTPS_HOST_PORT:-$(allocate_port)}"
-      export ZULIP_SMTP_HOST_PORT="${ZULIP_SMTP_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:${ZULIP_HTTPS_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${ZULIP_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:33300"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33302"
       ACTIVE_PROFILES+=(--profile zulip)
       ACTIVE_SERVICES+=(keycloak-https zulip)
       ;;
     open-webui)
-      export OPEN_WEBUI_HTTP_HOST_PORT="${OPEN_WEBUI_HTTP_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${OPEN_WEBUI_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${OPEN_WEBUI_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:32000"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:32000"
       ACTIVE_PROFILES+=(--profile owui)
       ACTIVE_SERVICES+=(open-webui)
       ;;
     grafana)
-      export GRAFANA_HTTP_HOST_PORT="${GRAFANA_HTTP_HOST_PORT:-$(allocate_port)}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${GRAFANA_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${GRAFANA_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:35000"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:35000"
       ACTIVE_PROFILES+=(--profile o11y)
       ACTIVE_SERVICES+=(grafana)
       ;;
     langfuse)
-      export LANGFUSE_HTTP_HOST_PORT="${LANGFUSE_HTTP_HOST_PORT:-$(allocate_port)}"
       export PLAYWRIGHT_LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-pk-lf-langfuse-project-public-key}"
       export PLAYWRIGHT_LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}"
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:${LANGFUSE_HTTP_HOST_PORT}"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:${LANGFUSE_HTTP_HOST_PORT}"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:35100"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:35100"
       ACTIVE_PROFILES+=(--profile langfuse)
       ACTIVE_SERVICES+=(langfuse-web)
       ;;

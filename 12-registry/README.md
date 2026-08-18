@@ -62,13 +62,13 @@ sudo docker compose --env-file .env --profile registry up -d
 sudo docker compose --env-file .env --profile registry ps
 
 # PyPIserverのsimple indexを確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:${PYPISERVER_HTTP_HOST_PORT:-31200}/simple/" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:31200/simple/" >/dev/null
 
 # VerdaccioのHTTP応答を確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:${VERDACCIO_HTTP_HOST_PORT:-31201}/" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:31201/" >/dev/null
 
 # Docker Registry APIの疎通を確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}/v2/" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:31205/v2/" >/dev/null
 ```
 
 期待結果:

@@ -17,13 +17,13 @@ name: ${STACK_NAME:?STACK_NAME is required}
 
 services:
   docker-registry:
-    image: docker.io/library/registry:${DOCKER_REGISTRY_IMAGE_TAG:-3.1.1}
+    image: docker.io/library/registry:3.1.1
     container_name: ${STACK_NAME}-docker-registry
     restart: unless-stopped
     profiles:
       - registry
     ports:
-      - ${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}:5000
+      - 31205:5000
     volumes:
       - docker-registry-data:/var/lib/registry
     networks:
@@ -31,7 +31,7 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=Docker Registry
-      - homepage.href=http://${PUBLIC_HOST}:${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}/v2/
+      - homepage.href=http://${PUBLIC_HOST}:31205/v2/
       - homepage.description=Container image registry
       - homepage.icon=/icons/docker.png
     healthcheck:
@@ -45,7 +45,7 @@ services:
       start_period: 10s
 
   pypiserver:
-    image: pypiserver/pypiserver:${PYPISERVER_IMAGE_TAG:-v2.4.1}
+    image: pypiserver/pypiserver:v2.4.1
     container_name: ${STACK_NAME}-pypiserver
     restart: unless-stopped
     profiles:
@@ -53,7 +53,7 @@ services:
     command:
       - run
     ports:
-      - ${PYPISERVER_HTTP_HOST_PORT:-31200}:8080
+      - 31200:8080
     volumes:
       - /srv/12-registry/pypi:/data/packages:ro
     networks:
@@ -71,18 +71,18 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=PyPIserver
-      - homepage.href=http://${PUBLIC_HOST}:${PYPISERVER_HTTP_HOST_PORT:-31200}/simple/
+      - homepage.href=http://${PUBLIC_HOST}:31200/simple/
       - homepage.description=Python package registry
       - homepage.icon=/icons/pypi.png
 
   verdaccio:
-    image: verdaccio/verdaccio:${VERDACCIO_IMAGE_TAG:-6.9.0}
+    image: verdaccio/verdaccio:6.9.0
     container_name: ${STACK_NAME}-verdaccio
     restart: unless-stopped
     profiles:
       - registry
     ports:
-      - ${VERDACCIO_HTTP_HOST_PORT:-31201}:4873
+      - 31201:4873
     volumes:
       - verdaccio-storage:/verdaccio/storage
       - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
@@ -101,12 +101,12 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=Verdaccio
-      - homepage.href=http://${PUBLIC_HOST}:${VERDACCIO_HTTP_HOST_PORT:-31201}/
+      - homepage.href=http://${PUBLIC_HOST}:31201/
       - homepage.description=npm registry
       - homepage.icon=/icons/verdaccio.png
 
   code-marketplace:
-    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    image: ghcr.io/coder/code-marketplace:v2.4.2
     container_name: ${STACK_NAME}-code-marketplace
     restart: unless-stopped
     profiles:
@@ -115,7 +115,7 @@ services:
       - --address=0.0.0.0:3000
       - --extensions-dir=/extensions
     ports:
-      - ${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}:3000
+      - 31202:3000
     volumes:
       - code-marketplace-extensions:/extensions:ro
     networks:
@@ -137,19 +137,19 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=Code Marketplace
-      - homepage.href=http://${PUBLIC_HOST}:${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}/api
+      - homepage.href=http://${PUBLIC_HOST}:31202/api
       - homepage.description=VS Code extension marketplace
       - homepage.icon=/icons/visual-studio-code.png
 
   code-marketplace-importer:
-    image: ghcr.io/coder/code-marketplace:${CODE_MARKETPLACE_IMAGE_TAG:-v2.4.2}
+    image: ghcr.io/coder/code-marketplace:v2.4.2
     container_name: ${STACK_NAME}-code-marketplace-importer
     restart: unless-stopped
     profiles:
       - registry
     entrypoint: []
     environment:
-      CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS: ${CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS:-300}
+      CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS: 300
     command:
       - sh
       - /usr/local/bin/import-vsix-extensions
@@ -169,15 +169,15 @@ services:
       start_period: 10s
 
   npm-importer:
-    image: node:${NODE_IMAGE_TAG:-22-alpine}
+    image: node:22-alpine
     container_name: ${STACK_NAME}-npm-importer
     profiles:
       - registry
     restart: unless-stopped
     working_dir: /work
     environment:
-      NPM_IMPORT_ENABLED: ${NPM_IMPORT_ENABLED:-true}
-      NPM_IMPORT_INTERVAL_SECONDS: ${NPM_IMPORT_INTERVAL_SECONDS:-30}
+      NPM_IMPORT_ENABLED: true
+      NPM_IMPORT_INTERVAL_SECONDS: 30
       NPM_PUBLISH_TOKEN: ${NPM_PUBLISH_TOKEN:-local-publish-token}
     command:
       - sh
@@ -200,7 +200,7 @@ services:
       start_period: 10s
 
   createrepo_c:
-    image: ${RPM_PUBLISHER_IMAGE:-docker.io/openitcockpit/createrepo_c:bullseye-0.17.0}
+    image: docker.io/openitcockpit/createrepo_c:bullseye-0.17.0
     container_name: ${STACK_NAME}-createrepo_c
     profiles:
       - registry
@@ -208,7 +208,7 @@ services:
     user: "0:0"
     entrypoint: []
     environment:
-      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
+      REPOSITORY_SYNC_INTERVAL_SECONDS: 30
     command:
       - bash
       - /usr/local/bin/sync-rpm-repository
@@ -228,13 +228,13 @@ services:
       start_period: 10s
 
   rpm-dist:
-    image: nginxinc/nginx-unprivileged:${RPM_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
+    image: nginxinc/nginx-unprivileged:1.31.3-alpine
     container_name: ${STACK_NAME}-rpm-dist
     restart: unless-stopped
     profiles:
       - registry
     ports:
-      - ${RPM_REPO_HTTP_HOST_PORT:-31203}:8080
+      - 31203:8080
     volumes:
       - /srv/12-registry/rpm:/usr/share/nginx/html:ro
     networks:
@@ -256,12 +256,12 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=createrepo_c
-      - homepage.href=http://${PUBLIC_HOST}:${RPM_REPO_HTTP_HOST_PORT:-31203}/
+      - homepage.href=http://${PUBLIC_HOST}:31203/
       - homepage.description=RPM source repository for dnf/yum
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: ${DEB_REPREPRO_IMAGE:-docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f}
+    image: docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f
     container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
@@ -269,20 +269,20 @@ services:
     user: "0:0"
     entrypoint: []
     environment:
-      DEB_ARCHITECTURES: ${DEB_ARCHITECTURES:-amd64 arm64}
-      DEB_CODENAME: ${DEB_CODENAME:-stable}
-      DEB_COMPONENT: ${DEB_COMPONENT:-main}
-      DEB_DISTRIBUTION: ${DEB_DISTRIBUTION:-stable}
-      DEB_LABEL: ${DEB_LABEL:-Local}
-      DEB_ORIGIN: ${DEB_ORIGIN:-Local}
-      REPOSITORY_SYNC_INTERVAL_SECONDS: ${REPOSITORY_SYNC_INTERVAL_SECONDS:-30}
+      DEB_ARCHITECTURES: amd64 arm64
+      DEB_CODENAME: stable
+      DEB_COMPONENT: main
+      DEB_DISTRIBUTION: stable
+      DEB_LABEL: Local
+      DEB_ORIGIN: Local
+      REPOSITORY_SYNC_INTERVAL_SECONDS: 30
     command:
       - bash
       - /usr/local/bin/sync-deb-repository
     healthcheck:
       test:
         - CMD-SHELL
-        - test -f "/repo/public/dists/$${DEB_CODENAME:-stable}/Release"
+        - test -f /repo/public/dists/stable/Release
       interval: 30s
       timeout: 5s
       retries: 5
@@ -295,13 +295,13 @@ services:
       - internal-nw
 
   deb-dist:
-    image: nginxinc/nginx-unprivileged:${DEB_REPO_NGINX_IMAGE_TAG:-1.31.3-alpine}
+    image: nginxinc/nginx-unprivileged:1.31.3-alpine
     container_name: ${STACK_NAME}-deb-dist
     restart: unless-stopped
     profiles:
       - registry
     ports:
-      - ${DEB_REPO_HTTP_HOST_PORT:-31204}:8080
+      - 31204:8080
     volumes:
       - /srv/12-registry/deb/public:/usr/share/nginx/html:ro
     networks:
@@ -323,7 +323,7 @@ services:
     labels:
       - homepage.group=12-registry
       - homepage.name=reprepro
-      - homepage.href=http://${PUBLIC_HOST}:${DEB_REPO_HTTP_HOST_PORT:-31204}/
+      - homepage.href=http://${PUBLIC_HOST}:31204/
       - homepage.description=APT repository
       - homepage.icon=/icons/debian-linux.png
 

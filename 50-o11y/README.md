@@ -70,7 +70,7 @@ sudo docker compose --env-file .env --profile o11y ps
 sudo docker compose --env-file .env --profile o11y exec prometheus promtool check config /tmp/prometheus.yaml
 
 # Grafana health endpointを確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:${GRAFANA_HTTP_HOST_PORT:-35000}/api/health" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:35000/api/health" >/dev/null
 ```
 
 期待結果:

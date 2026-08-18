@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-IMPORT_INTERVAL_SECONDS="${CODE_MARKETPLACE_IMPORT_INTERVAL_SECONDS:-300}"
+IMPORT_INTERVAL_SECONDS="300"
 STATE_FILE="/extensions/.vsix-import.sha256"
 
 mkdir -p /extensions

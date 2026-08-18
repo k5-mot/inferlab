@@ -36,17 +36,20 @@ repository rootで実行する。
 # rag profileのcontainer状態を確認する。
 sudo docker compose --env-file .env --profile rag ps
 
+# .envのAPI keyと接続先hostを現在のshellに読み込む。
+set -a; . ./.env; set +a
+
 # hostからDoclingのhealth endpointを確認する。
-curl -fsS -H 'X-Api-Key: sk-docling-serve-api-key' "http://${PUBLIC_HOST:-localhost}:31100/readyz" >/dev/null
+curl -fsS -H "X-Api-Key: ${DOCLING_SERVE_API_KEY}" "http://${PUBLIC_HOST:-localhost}:31100/readyz" >/dev/null
 
 # Docling container内からDoclingのhealth endpointを確認する。
-sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H 'X-Api-Key: sk-docling-serve-api-key' http://127.0.0.1:5001/readyz >/dev/null
+sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H "X-Api-Key: ${DOCLING_SERVE_API_KEY}" http://127.0.0.1:5001/readyz >/dev/null
 
 # Docling containerからQdrantのhealth endpointを確認する。
-sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H 'api-key: sk-qdrant-api-key' http://qdrant:6333/readyz >/dev/null
+sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H "api-key: ${QDRANT_API_KEY}" http://qdrant:6333/readyz >/dev/null
 
 # Docling containerからQdrantのcollection一覧APIを確認する。
-sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H 'api-key: sk-qdrant-api-key' http://qdrant:6333/collections
+sudo docker compose --env-file .env --profile rag exec docling curl -fsS -H "api-key: ${QDRANT_API_KEY}" http://qdrant:6333/collections
 ```
 
 期待結果:

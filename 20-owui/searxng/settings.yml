@@ -1,10 +1,10 @@
 use_default_settings: true
 
 general:
-  open_metrics: "sk-searxng-openmetrics-password"
+  open_metrics: "sx_metrics_password"
 
 server:
-  secret_key: "sk-searxng-secret-key"
+  secret_key: "__SEARXNG_SECRET_KEY__"
   limiter: false
 
 search:

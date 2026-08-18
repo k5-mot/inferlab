@@ -21,19 +21,16 @@ services:
         fi
         mkdir -p /var/www/html/config /var/www/html/custom_apps /tmp/user_oidc-extract
         cp /run/nextcloud-config/local.config.php /var/www/html/config/local.config.php
-        archive="/srv/30-nextcloud/apps/user_oidc-v$${NEXTCLOUD_USER_OIDC_VERSION}.tar.gz"
+        archive="/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz"
         if [ ! -f "$${archive}" ]; then
           echo "Nextcloud OIDC app archiveが見つかりません: $${archive}" >&2
           exit 1
         fi
-        echo "$${NEXTCLOUD_USER_OIDC_SHA256}  $${archive}" | sha256sum -c -
+        echo "49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd  $${archive}" | sha256sum -c -
         rm -rf /var/www/html/custom_apps/user_oidc /tmp/user_oidc-extract/*
         tar -xzf "$${archive}" -C /tmp/user_oidc-extract
         mv /tmp/user_oidc-extract/user_oidc /var/www/html/custom_apps/user_oidc
         chown -R www-data:www-data /var/www/html/config/local.config.php /var/www/html/custom_apps/user_oidc
-    environment:
-      NEXTCLOUD_USER_OIDC_VERSION: ${NEXTCLOUD_USER_OIDC_VERSION:-8.10.1}
-      NEXTCLOUD_USER_OIDC_SHA256: ${NEXTCLOUD_USER_OIDC_SHA256:-49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd}
     volumes:
       - nextcloud:/var/www/html
       - /srv/30-nextcloud/apps:/srv/30-nextcloud/apps:ro
@@ -56,12 +53,12 @@ services:
         condition: service_healthy
     environment:
       POSTGRES_DB: nextcloud_db
-      POSTGRES_USER: nextcloud_user
-      POSTGRES_PASSWORD: nextcloud_password
+      POSTGRES_USER: nc_db_user
+      POSTGRES_PASSWORD: nc_db_password
       POSTGRES_HOST: nextcloud-postgres
       REDIS_HOST: nextcloud-valkey
-      NEXTCLOUD_ADMIN_USER: admin
-      NEXTCLOUD_ADMIN_PASSWORD: admin
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-admin}
       NEXTCLOUD_TRUSTED_DOMAINS: "localhost 127.0.0.1 ${PUBLIC_HOST} nextcloud"
       NEXTCLOUD_DATA_DIR: /var/www/html/data
       NEXTCLOUD_INIT_HTACCESS: "true"
@@ -130,8 +127,8 @@ services:
       - nextcloud
     environment:
       POSTGRES_DB: nextcloud_db
-      POSTGRES_USER: nextcloud_user
-      POSTGRES_PASSWORD: nextcloud_password
+      POSTGRES_USER: nc_db_user
+      POSTGRES_PASSWORD: nc_db_password
       TZ: UTC
       PGTZ: UTC
     volumes:
@@ -141,7 +138,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U nextcloud_user -d nextcloud_db
+        - pg_isready -U "$${POSTGRES_USER}" -d nextcloud_db
       interval: 5s
       timeout: 5s
       retries: 20

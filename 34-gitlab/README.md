@@ -17,8 +17,8 @@ sudo docker compose --env-file .env --profile gitlab up -d
 
 期待結果:
 
-- GitLabが`http://${PUBLIC_HOST}:${GITLAB_HTTP_HOST_PORT:-33400}`で応答する。
-- `GITLAB_USAGE_PING_ENABLED=false`の場合、GitLab Service PingはGitLab社へ送信されない。
+- GitLabが`http://${PUBLIC_HOST}:33400`で応答する。
+- GitLab Service Pingは送信されない。
 - `GITLAB_RUNNER_TOKEN`が空の場合、runner登録はskipされ、runner本体は未登録状態で起動する。
 
 失敗条件:

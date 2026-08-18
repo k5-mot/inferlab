@@ -32,9 +32,9 @@
 | Profile | Service | Port | Compose file |
 | --- | --- | --- | --- |
 | `common` | `homepage` | `30000` | `00-common/docker-compose.yml` |
-| `common` | `whoami` | `${WHOAMI_HTTP_HOST_PORT:-30003}` | `00-common/docker-compose.yml` |
+| `common` | `whoami` | `30003` | `00-common/docker-compose.yml` |
 | `keycloak` | `keycloak` | `30001` | `01-keycloak/docker-compose.yml` |
-| `keycloak` | `keycloak-https` | `${KEYCLOAK_HTTPS_HOST_PORT:-30002}` | `01-keycloak/docker-compose.yml` |
+| `keycloak` | `keycloak-https` | `30002` | `01-keycloak/docker-compose.yml` |
 | `keycloak` | `keycloak-postgres` | - | `01-keycloak/docker-compose.yml` |
 | `pubnet` | `cloudflare` | - | `02-pubnet/docker-compose.yml` |
 | `inference` | `litellm` | `31000` | `10-inference/docker-compose.yml` |
@@ -47,16 +47,16 @@
 | `inference` | `kokoro` | `31005` | `10-inference/docker-compose.yml` |
 | `rag` | `docling` | `31100` | `11-rag/docker-compose.yml` |
 | `rag` | `qdrant` | - | `11-rag/docker-compose.yml` |
-| `registry` | `pypiserver` | `${PYPISERVER_HTTP_HOST_PORT:-31200}` | `12-registry/docker-compose.yml` |
-| `registry` | `verdaccio` | `${VERDACCIO_HTTP_HOST_PORT:-31201}` | `12-registry/docker-compose.yml` |
-| `registry` | `code-marketplace` | `${CODE_MARKETPLACE_HTTP_HOST_PORT:-31202}` | `12-registry/docker-compose.yml` |
+| `registry` | `pypiserver` | `31200` | `12-registry/docker-compose.yml` |
+| `registry` | `verdaccio` | `31201` | `12-registry/docker-compose.yml` |
+| `registry` | `code-marketplace` | `31202` | `12-registry/docker-compose.yml` |
 | `registry` | `code-marketplace-importer` | - | `12-registry/docker-compose.yml` |
 | `registry` | `npm-importer` | - | `12-registry/docker-compose.yml` |
 | `registry` | `createrepo_c` | - | `12-registry/docker-compose.yml` |
-| `registry` | `rpm-dist` | `${RPM_REPO_HTTP_HOST_PORT:-31203}` | `12-registry/docker-compose.yml` |
+| `registry` | `rpm-dist` | `31203` | `12-registry/docker-compose.yml` |
 | `registry` | `reprepro` | - | `12-registry/docker-compose.yml` |
-| `registry` | `deb-dist` | `${DEB_REPO_HTTP_HOST_PORT:-31204}` | `12-registry/docker-compose.yml` |
-| `registry` | `docker-registry` | `${DOCKER_REGISTRY_HTTP_HOST_PORT:-31205}` | `12-registry/docker-compose.yml` |
+| `registry` | `deb-dist` | `31204` | `12-registry/docker-compose.yml` |
+| `registry` | `docker-registry` | `31205` | `12-registry/docker-compose.yml` |
 | `owui` | `open-webui` | `32000` | `20-owui/docker-compose.yml` |
 | `owui` | `open-terminal` | `32003` | `20-owui/docker-compose.yml` |
 | `owui` | `mcpo` | `32004` | `20-owui/docker-compose.yml` |
@@ -82,22 +82,22 @@
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
-| `bookstack` | `bookstack` | `${BOOKSTACK_HOST_PORT:-33100}` | `31-bookstack/docker-compose.yml` |
+| `bookstack` | `bookstack` | `33100` | `31-bookstack/docker-compose.yml` |
 | `bookstack` | `bookstack-custom-init` | - | `31-bookstack/docker-compose.yml` |
 | `bookstack` | `bookstack-mariadb` | - | `31-bookstack/docker-compose.yml` |
 | `kaneo` | `kaneo` | `33200` | `32-kaneo/docker-compose.yml` |
 | `kaneo` | `kaneo-postgres` | - | `32-kaneo/docker-compose.yml` |
-| `zulip` | `zulip` | `${ZULIP_HTTP_HOST_PORT:-33302}`, `${ZULIP_HTTPS_HOST_PORT:-33300}`, `${ZULIP_SMTP_HOST_PORT:-33325}` | `33-zulip/docker-compose.yml` |
+| `zulip` | `zulip` | `33302`, `33300`, `33325` | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-postgres` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-memcached` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-rabbitmq` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
-| `gitlab` | `gitlab` | `${GITLAB_HTTP_HOST_PORT:-33400}`, `${GITLAB_SSH_HOST_PORT:-33422}` | `34-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab` | `33400`, `33422` | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner-register` | - | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner` | - | `34-gitlab/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
-| `o11y` | `grafana` | `${GRAFANA_HTTP_HOST_PORT:-35000}` | `50-o11y/docker-compose.yml` |
-| `o11y` | `prometheus` | `${PROMETHEUS_HTTP_HOST_PORT:-35001}` | `50-o11y/docker-compose.yml` |
+| `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
+| `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `cadvisor` | - | `50-o11y/docker-compose.yml` |
 | `o11y` | `blackbox-exporter` | - | `50-o11y/docker-compose.yml` |

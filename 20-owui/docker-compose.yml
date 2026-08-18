@@ -34,7 +34,7 @@ services:
       DO_NOT_TRACK: "true"
       ANONYMIZED_TELEMETRY: "false"
       WEBUI_URL: http://${PUBLIC_HOST}:32000
-      WEBUI_SECRET_KEY: sk-open-webui-secret-key
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-sk-open-webui-secret-key}
       ### Air-gapped
       OFFLINE_MODE: "true"
       HF_HUB_OFFLINE: "1"
@@ -78,7 +78,7 @@ services:
             "spec": "",
             "path": "openapi.json",
             "auth_type": "bearer",
-            "key": "sk-mcpo-api-secret-key",
+            "key": "${MCPO_API_KEY:-sk-mcpo-api-secret-key}",
             "config": { "enable": true },
             "info": {
               "id": "open-webui",
@@ -104,7 +104,7 @@ services:
       DEFAULT_MODELS: "google/gemma4:31b"
       DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
-      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};hermes-agent-secret-key"
+      OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}"
       OPENAI_API_CONFIGS: >-
         {
           "0": {
@@ -145,7 +145,7 @@ services:
           {
             "id": "open-terminal",
             "url": "http://open-terminal:8000",
-            "key": "sk-open-terminal-api-key",
+            "key": "${OPEN_TERMINAL_API_KEY:-sk-open-terminal-api-key}",
             "name": "Open-Terminal",
             "auth_type": "bearer",
             "config": {
@@ -176,7 +176,7 @@ services:
       # https://github.com/docling-project/docling/blob/main/docling/datamodel/stage_model_specs.py
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
-      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DOCLING_PARAMS: >-
         {
           "to_formats": [ "md" ],
@@ -188,7 +188,7 @@ services:
         }
       ### For Qdrant (Vector DB)
       VECTOR_DB: qdrant
-      QDRANT_API_KEY: "sk-qdrant-api-key"
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-sk-qdrant-api-key}
       QDRANT_URI: http://qdrant:6333
       ### For SearXNG (Web Search)
       ENABLE_WEB_SEARCH: "true"
@@ -257,7 +257,7 @@ services:
       OPEN_TERMINAL_PIP_PACKAGES: "httpx polars"
       OPEN_TERMINAL_NPM_PACKAGES: "typescript tsx"
       OPEN_TERMINAL_MULTI_USER: "true"
-      OPEN_TERMINAL_API_KEY: "sk-open-terminal-api-key"
+      OPEN_TERMINAL_API_KEY: ${OPEN_TERMINAL_API_KEY:-sk-open-terminal-api-key}
       NPM_CONFIG_PREFIX: /home/user/.npm-global
       PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     ports:
@@ -270,7 +270,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer sk-open-terminal-api-key\" http://127.0.0.1:8000/files/list"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" http://127.0.0.1:8000/files/list"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -298,7 +298,7 @@ services:
       - --port
       - "8000"
       - --api-key
-      - sk-mcpo-api-secret-key
+      - ${MCPO_API_KEY:-sk-mcpo-api-secret-key}
       - --config
       - /config/config.json
     ports:
@@ -310,7 +310,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer sk-mcpo-api-secret-key\" http://127.0.0.1:8000/openapi.json"
+        - "curl -fsS -H \"Authorization: Bearer ${MCPO_API_KEY:-sk-mcpo-api-secret-key}\" http://127.0.0.1:8000/openapi.json"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -329,16 +329,38 @@ services:
     restart: unless-stopped
     profiles:
       - owui
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        # SearXNG設定はsecret値を含めずrepositoryへ置くため、起動時にplaceholderを置換する。
+        mkdir -p /tmp/searxng
+        awk '
+        BEGIN {
+          searxng_secret_key = ENVIRON["SEARXNG_SECRET_KEY"]
+          gsub(/\\/, "\\\\", searxng_secret_key)
+          gsub(/&/, "\\&", searxng_secret_key)
+        }
+        {
+          gsub(/__SEARXNG_SECRET_KEY__/, searxng_secret_key)
+          print
+        }
+        ' /etc/searxng/settings.yml.template > /tmp/searxng/settings.yml
+        export __SEARXNG_CONFIG_PATH=/tmp/searxng
+        exec /usr/local/searxng/entrypoint.sh
+    environment:
+      SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-sk-searxng-secret-key}
     ports:
       - 32002:8080
     volumes:
-      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - ./searxng/settings.yml:/etc/searxng/settings.yml.template:ro
     networks:
       - internal-nw
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "python -c \"import urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer sk-searxng-secret-key'}); print(urllib.request.urlopen(req).read().decode())\""
+        - "python -c \"import os, urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer '+os.environ['SEARXNG_SECRET_KEY']}); print(urllib.request.urlopen(req).read().decode())\""
       interval: 30s
       timeout: 10s
       retries: 5
@@ -357,8 +379,8 @@ services:
     profiles:
       - owui
     environment:
-      RUSTFS_ACCESS_KEY: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
-      RUSTFS_SECRET_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      RUSTFS_ACCESS_KEY: oikb_rustfs_key
+      RUSTFS_SECRET_KEY: oikb_rustfs_secret
     ports:
       - 32005:9000
       - 32006:9001
@@ -386,8 +408,8 @@ services:
     profiles:
       - owui
     environment:
-      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
-      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      AWS_ACCESS_KEY_ID: oikb_rustfs_key
+      AWS_SECRET_ACCESS_KEY: oikb_rustfs_secret
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://oikb-rustfs:9000
       AWS_EC2_METADATA_DISABLED: "true"
@@ -415,7 +437,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: ${OIKB_IMAGE:-local/oikb:latest}
+    image: local/oikb:latest
     container_name: ${STACK_NAME}-oikb
     restart: unless-stopped
     user: "1000:33"
@@ -423,21 +445,21 @@ services:
     profiles:
       - owui
     environment:
-      OPEN_WEBUI_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
+      OPEN_WEBUI_URL: http://open-webui:8080
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
-      OIKB_OPENWEBUI_TIMEOUT: ${OIKB_OPENWEBUI_TIMEOUT:-21600}
+      OIKB_OPENWEBUI_TIMEOUT: "21600"
       OIKB_API_KEY: ${OIKB_API_KEY:-sk-oikb-api-key}
       LOG_FORMAT: json
       NEXTCLOUD_OPENWEBUI_KB_ID: ${NEXTCLOUD_OPENWEBUI_KB_ID:-}
       NEXTCLOUD_SOURCE: nextcloud:/oikb
       NEXTCLOUD_URL: http://nextcloud
-      NEXTCLOUD_USER: admin
-      NEXTCLOUD_PASSWORD: admin
+      NEXTCLOUD_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
+      NEXTCLOUD_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:-admin}
       # OIKB_NEXTCLOUD_SOURCE: /nextcloud/data/admin/files/oikb
       RUSTFS_OPENWEBUI_KB_ID: ${RUSTFS_OPENWEBUI_KB_ID:-}
-      OIKB_RUSTFS_SOURCE: ${OIKB_RUSTFS_SOURCE:-s3://oikb-bucket/documents}
-      AWS_ACCESS_KEY_ID: ${OIKB_RUSTFS_ACCESS_KEY_ID:-rustfs_admin}
-      AWS_SECRET_ACCESS_KEY: ${OIKB_RUSTFS_SECRET_ACCESS_KEY:-rustfs_secret_key}
+      OIKB_RUSTFS_SOURCE: s3://oikb-bucket/documents
+      AWS_ACCESS_KEY_ID: oikb_rustfs_key
+      AWS_SECRET_ACCESS_KEY: oikb_rustfs_secret
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL_S3: http://oikb-rustfs:9000
     ports:

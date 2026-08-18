@@ -13,7 +13,7 @@ sources:
   #       - "**/*.url"
 
   - name: nextcloud-documents
-    source: ${NEXTCLOUD_SOURCE:-}
+    source: nextcloud:/oikb
     kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
     interval: 6h
     filter:
@@ -23,7 +23,7 @@ sources:
         - "**/*.url"
 
   - name: rustfs-documents
-    source: "${OIKB_RUSTFS_SOURCE:-s3://oikb-bucket/documents}"
+    source: "s3://oikb-bucket/documents"
     kb-id: "${RUSTFS_OPENWEBUI_KB_ID:-}"
     interval: 6h
     filter:

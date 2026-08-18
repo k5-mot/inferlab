@@ -2,13 +2,13 @@
 
 external_url ENV.fetch('GITLAB_EXTERNAL_URL')
 
-gitlab_rails['gitlab_shell_ssh_port'] = ENV.fetch('GITLAB_SSH_HOST_PORT', '33422').to_i
+gitlab_rails['gitlab_shell_ssh_port'] = 33422
 gitlab_rails['gitlab_ssh_host'] = ENV.fetch('GITLAB_SSH_HOST')
 
 nginx['listen_port'] = 80
 nginx['listen_https'] = false
 
-gitlab_rails['usage_ping_enabled'] = ENV.fetch('GITLAB_USAGE_PING_ENABLED', 'false') == 'true'
+gitlab_rails['usage_ping_enabled'] = false
 
 gitlab_rails['omniauth_enabled'] = true
 gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']

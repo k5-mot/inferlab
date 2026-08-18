@@ -22,8 +22,8 @@ rm -rf "${CONFIG_DIR}/extensions/langfuse-bridge"
 cp "${CONFIG_TEMPLATE_SOURCE_PATH}" "${CONFIG_TEMPLATE_PATH}"
 cp "${CONFIG_SCHEMA_SOURCE_PATH}" "${CONFIG_SCHEMA_PATH}"
 
-# Discordのroutingに必要なIDだけをテンプレートへ展開する。
-envsubst '${DISCORD_GUILD_ID} ${DISCORD_CHANNEL_ID}' < "${CONFIG_TEMPLATE_PATH}" > "${CONFIG_PATH}"
+# DiscordのroutingとMCP接続に必要な値だけをテンプレートへ展開する。
+envsubst '${DISCORD_GUILD_ID} ${DISCORD_CHANNEL_ID} ${DOCLING_SERVE_API_KEY}' < "${CONFIG_TEMPLATE_PATH}" > "${CONFIG_PATH}"
 
 # DockerfileのCMDは最小引数に保ち、環境変数でbind modeだけ差し替えられるようここで補完する。
 if [ "$#" -eq 3 ] && [ "$1" = "node" ] && [ "$2" = "dist/index.js" ] && [ "$3" = "gateway" ]; then

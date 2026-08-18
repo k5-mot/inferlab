@@ -297,11 +297,10 @@ services:
       ### OpenAI-Compatible API
       API_SERVER_ENABLED: "true"
       API_SERVER_HOST: "0.0.0.0"
-      # API_SERVER_PORT: ${HERMES_AGENT_PORT:-8642}
       API_SERVER_KEY: ${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}
       GATEWAY_ALLOWED_USERS: ${HERMES_AGENT_GATEWAY_ALLOWED_USERS:-}
-      GATEWAY_ALLOW_ALL_USERS: ${HERMES_AGENT_GATEWAY_ALLOW_ALL_USERS:-true}
-      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Tokyo}
+      GATEWAY_ALLOW_ALL_USERS: "true"
+      REPORT_TIMEZONE: Asia/Tokyo
       ### Web Dashboard
       HERMES_DASHBOARD: "1"
       HERMES_DASHBOARD_HOST: "0.0.0.0"
@@ -310,14 +309,14 @@ services:
       HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:-pw-hermes-agent-dashboard-password}
       HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-sk-hermes-agent-dashboard-secret}
       ### Open-WebUI
-      OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-http://open-webui:8080}
-      OPEN_WEBUI_PUBLIC_URL: ${OPEN_WEBUI_PUBLIC_URL:-http://${PUBLIC_HOST}:31001}
+      OPEN_WEBUI_BASE_URL: http://open-webui:8080
+      OPEN_WEBUI_PUBLIC_URL: http://${PUBLIC_HOST}:31001
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
-      OPEN_WEBUI_DEFAULT_CHANNEL: ${OPEN_WEBUI_DEFAULT_CHANNEL:-general}
-      OPEN_WEBUI_CHANNELS_LIST_PATH: ${OPEN_WEBUI_CHANNELS_LIST_PATH:-/api/v1/channels/}
-      OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: ${OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE:-/api/v1/channels/{channel_id}/messages/post}
-      OPEN_WEBUI_CHATS_ALL_DB_PATH: ${OPEN_WEBUI_CHATS_ALL_DB_PATH:-/api/v1/chats/all/db}
-      OPEN_WEBUI_MAX_MESSAGE_CHARS: ${OPEN_WEBUI_MAX_MESSAGE_CHARS:-20000}
+      OPEN_WEBUI_DEFAULT_CHANNEL: general
+      OPEN_WEBUI_CHANNELS_LIST_PATH: /api/v1/channels/
+      OPEN_WEBUI_CHANNELS_POST_PATH_TEMPLATE: /api/v1/channels/{channel_id}/messages/post
+      OPEN_WEBUI_CHATS_ALL_DB_PATH: /api/v1/chats/all/db
+      OPEN_WEBUI_MAX_MESSAGE_CHARS: "20000"
       ### Discord
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
       DISCORD_ALLOWED_USERS: ${DISCORD_ALLOWED_USERS:-}
@@ -325,13 +324,14 @@ services:
       DISCORD_HOME_CHANNEL: ${DISCORD_HOME_CHANNEL:-}
       DISCORD_HOME_CHANNEL_NAME: ${DISCORD_HOME_CHANNEL_NAME:-}
       DISCORD_AUTO_THREAD: false
-      VOICE_TOOLS_OPENAI_KEY: ${VOICE_TOOLS_OPENAI_KEY:-not-needed}
+      VOICE_TOOLS_OPENAI_KEY: not-needed
       ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
-      SEARXNG_SECRET_KEY: "sk-searxng-secret-key"
+      SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-sk-searxng-secret-key}
       ### docling-serve
       DOCLING_SERVER_URL: http://docling:5001
-      DOCLING_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
+      DOCLING_MCP_SERVICE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       # HERMES_HOME: /opt/data
@@ -348,7 +348,7 @@ services:
     networks:
       - internal-nw
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:${HERMES_AGENT_PORT:-8642}/health >/dev/null || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://127.0.0.1:8642/health >/dev/null || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -368,16 +368,13 @@ services:
       context: ./openclaw/custom-image
       dockerfile: Dockerfile
       args:
-        OPENCLAW_BASE_IMAGE: ${OPENCLAW_BASE_IMAGE:-ghcr.io/openclaw/openclaw:2026.7.1-browser}
-    image: ${OPENCLAW_IMAGE:-local/openclaw:2026.7.1-browser}
+        OPENCLAW_BASE_IMAGE: ghcr.io/openclaw/openclaw:2026.7.1-browser
+    image: local/openclaw:2026.7.1-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
       - inference
       - openclaw
-    env_file:
-      - path: .env
-        required: false
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
@@ -392,13 +389,14 @@ services:
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspaces
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-gateway-token}
-      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
-      OPENCLAW_DISABLE_BONJOUR: ${OPENCLAW_DISABLE_BONJOUR:-}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
+      OPENCLAW_DISABLE_BONJOUR: ""
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      DOCLING_SERVE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
       DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
       DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
-      TZ: ${OPENCLAW_TZ:-Asia/Tokyo}
+      TZ: Asia/Tokyo
     ports:
       - 31002:18789
     volumes:

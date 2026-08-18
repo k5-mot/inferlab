@@ -68,17 +68,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):32000/"
 
     redirectUris:
-      - "http://localhost:$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
-      - "http://127.0.0.1:$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)/oauth/oidc/callback"
+      - "http://localhost:32000/oauth/oidc/callback"
+      - "http://127.0.0.1:32000/oauth/oidc/callback"
+      - "http://$(env:PUBLIC_HOST):32000/oauth/oidc/callback"
 
     webOrigins:
-      - "http://localhost:$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:OPEN_WEBUI_HTTP_HOST_PORT)"
+      - "http://localhost:32000"
+      - "http://127.0.0.1:32000"
+      - "http://$(env:PUBLIC_HOST):32000"
 
     protocolMappers:
       - name: groups
@@ -112,17 +112,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):32100/"
 
     redirectUris:
-      - "http://localhost:$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
-      - "http://127.0.0.1:$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
-      - "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)/console/api/oauth/authorize/keycloak"
+      - "http://localhost:32100/console/api/oauth/authorize/keycloak"
+      - "http://127.0.0.1:32100/console/api/oauth/authorize/keycloak"
+      - "http://$(env:PUBLIC_HOST):32100/console/api/oauth/authorize/keycloak"
 
     webOrigins:
-      - "http://localhost:$(env:DIFY_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:DIFY_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:DIFY_HTTP_HOST_PORT)"
+      - "http://localhost:32100"
+      - "http://127.0.0.1:32100"
+      - "http://$(env:PUBLIC_HOST):32100"
 
     protocolMappers:
       - name: groups
@@ -156,20 +156,20 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):35100/"
 
     redirectUris:
-      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
-      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)/*"
-      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
-      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)/*"
-      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/api/auth/callback/keycloak"
-      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)/*"
+      - "http://localhost:35100/api/auth/callback/keycloak"
+      - "http://localhost:35100/*"
+      - "http://127.0.0.1:35100/api/auth/callback/keycloak"
+      - "http://127.0.0.1:35100/*"
+      - "http://$(env:PUBLIC_HOST):35100/api/auth/callback/keycloak"
+      - "http://$(env:PUBLIC_HOST):35100/*"
 
     webOrigins:
-      - "http://localhost:$(env:LANGFUSE_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:LANGFUSE_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:LANGFUSE_HTTP_HOST_PORT)"
+      - "http://localhost:35100"
+      - "http://127.0.0.1:35100"
+      - "http://$(env:PUBLIC_HOST):35100"
 
     protocolMappers:
       - name: groups
@@ -203,23 +203,23 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33000/"
 
     attributes:
       post.logout.redirect.uris: "+"
 
     redirectUris:
-      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
-      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
-      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/apps/user_oidc/code"
-      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
-      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
-      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)/login"
+      - "http://localhost:33000/apps/user_oidc/code"
+      - "http://127.0.0.1:33000/apps/user_oidc/code"
+      - "http://$(env:PUBLIC_HOST):33000/apps/user_oidc/code"
+      - "http://localhost:33000/login"
+      - "http://127.0.0.1:33000/login"
+      - "http://$(env:PUBLIC_HOST):33000/login"
 
     webOrigins:
-      - "http://localhost:$(env:NEXTCLOUD_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:NEXTCLOUD_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:NEXTCLOUD_HTTP_HOST_PORT)"
+      - "http://localhost:33000"
+      - "http://127.0.0.1:33000"
+      - "http://$(env:PUBLIC_HOST):33000"
 
     protocolMappers:
       - name: groups
@@ -253,17 +253,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33100/"
 
     redirectUris:
-      - "http://localhost:$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
-      - "http://127.0.0.1:$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)/oidc/callback"
+      - "http://localhost:33100/oidc/callback"
+      - "http://127.0.0.1:33100/oidc/callback"
+      - "http://$(env:PUBLIC_HOST):33100/oidc/callback"
 
     webOrigins:
-      - "http://localhost:$(env:BOOKSTACK_HOST_PORT)"
-      - "http://127.0.0.1:$(env:BOOKSTACK_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:BOOKSTACK_HOST_PORT)"
+      - "http://localhost:33100"
+      - "http://127.0.0.1:33100"
+      - "http://$(env:PUBLIC_HOST):33100"
 
     protocolMappers:
       - name: groups
@@ -297,17 +297,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33200/"
 
     redirectUris:
-      - "http://localhost:$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
-      - "http://127.0.0.1:$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
-      - "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)/api/auth/oauth2/callback/custom"
+      - "http://localhost:33200/api/auth/oauth2/callback/custom"
+      - "http://127.0.0.1:33200/api/auth/oauth2/callback/custom"
+      - "http://$(env:PUBLIC_HOST):33200/api/auth/oauth2/callback/custom"
 
     webOrigins:
-      - "http://localhost:$(env:KANEO_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:KANEO_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:KANEO_HTTP_HOST_PORT)"
+      - "http://localhost:33200"
+      - "http://127.0.0.1:33200"
+      - "http://$(env:PUBLIC_HOST):33200"
 
     protocolMappers:
       - name: groups
@@ -341,17 +341,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)/"
+    rootUrl: "https://$(env:PUBLIC_HOST):33300/"
 
     redirectUris:
-      - "https://localhost:$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
-      - "https://127.0.0.1:$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
-      - "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)/complete/oidc/"
+      - "https://localhost:33300/complete/oidc/"
+      - "https://127.0.0.1:33300/complete/oidc/"
+      - "https://$(env:PUBLIC_HOST):33300/complete/oidc/"
 
     webOrigins:
-      - "https://localhost:$(env:ZULIP_HTTPS_HOST_PORT)"
-      - "https://127.0.0.1:$(env:ZULIP_HTTPS_HOST_PORT)"
-      - "https://$(env:PUBLIC_HOST):$(env:ZULIP_HTTPS_HOST_PORT)"
+      - "https://localhost:33300"
+      - "https://127.0.0.1:33300"
+      - "https://$(env:PUBLIC_HOST):33300"
 
     protocolMappers:
       - name: groups
@@ -385,17 +385,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33400/"
 
     redirectUris:
-      - "http://localhost:$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
-      - "http://127.0.0.1:$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
-      - "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)/users/auth/openid_connect/callback"
+      - "http://localhost:33400/users/auth/openid_connect/callback"
+      - "http://127.0.0.1:33400/users/auth/openid_connect/callback"
+      - "http://$(env:PUBLIC_HOST):33400/users/auth/openid_connect/callback"
 
     webOrigins:
-      - "http://localhost:$(env:GITLAB_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:GITLAB_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:GITLAB_HTTP_HOST_PORT)"
+      - "http://localhost:33400"
+      - "http://127.0.0.1:33400"
+      - "http://$(env:PUBLIC_HOST):33400"
 
     protocolMappers:
       - name: groups
@@ -429,20 +429,20 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)/"
+    rootUrl: "http://$(env:PUBLIC_HOST):35000/"
 
     attributes:
       post.logout.redirect.uris: "+"
 
     redirectUris:
-      - "http://localhost:$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
-      - "http://127.0.0.1:$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
-      - "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)/login/generic_oauth"
+      - "http://localhost:35000/login/generic_oauth"
+      - "http://127.0.0.1:35000/login/generic_oauth"
+      - "http://$(env:PUBLIC_HOST):35000/login/generic_oauth"
 
     webOrigins:
-      - "http://localhost:$(env:GRAFANA_HTTP_HOST_PORT)"
-      - "http://127.0.0.1:$(env:GRAFANA_HTTP_HOST_PORT)"
-      - "http://$(env:PUBLIC_HOST):$(env:GRAFANA_HTTP_HOST_PORT)"
+      - "http://localhost:35000"
+      - "http://127.0.0.1:35000"
+      - "http://$(env:PUBLIC_HOST):35000"
 
     protocolMappers:
       - name: groups

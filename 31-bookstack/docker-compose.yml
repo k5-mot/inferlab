@@ -6,16 +6,16 @@ services:
     profiles:
       - bookstack
     environment:
-      PUID: ${BOOKSTACK_PUID:-1000}
-      PGID: ${BOOKSTACK_PGID:-1000}
-      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
-      APP_URL: ${BOOKSTACK_PUBLIC_URL:-http://${PUBLIC_HOST:?PUBLIC_HOST must be set}:33100}
+      PUID: 1000
+      PGID: 1000
+      TZ: Asia/Tokyo
+      APP_URL: http://${PUBLIC_HOST}:33100
       APP_KEY: ${BOOKSTACK_APP_KEY:-base64:8Xpuu6D/PftKO7GAZWORsKIw1rveODqBcEyU8HKaxCA=}
       DB_HOST: bookstack-mariadb
       DB_PORT: "3306"
-      DB_USERNAME: ${BOOKSTACK_DB_USER:-bookstack}
-      DB_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
-      DB_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
+      DB_USERNAME: bs_db_user
+      DB_PASSWORD: bs_db_password
+      DB_DATABASE: bookstack
       QUEUE_CONNECTION: database
       AUTH_METHOD: oidc
       AUTH_AUTO_INITIATE: false
@@ -23,7 +23,7 @@ services:
       OIDC_DISPLAY_NAME_CLAIMS: name
       OIDC_CLIENT_ID: bookstack
       OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
-      OIDC_ISSUER: ${BOOKSTACK_OIDC_ISSUER:-https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}/realms/prod}
+      OIDC_ISSUER: https://${PUBLIC_HOST}:30002/realms/prod
       OIDC_ISSUER_DISCOVER: true
       OIDC_EXTERNAL_ID_CLAIM: preferred_username
       OIDC_END_SESSION_ENDPOINT: false
@@ -33,7 +33,7 @@ services:
       SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
       CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     ports:
-      - "${BOOKSTACK_HOST_PORT:-33100}:80"
+      - "33100:80"
     volumes:
       - bookstack-config:/config
       - ../01-keycloak/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
@@ -88,13 +88,13 @@ services:
     profiles:
       - bookstack
     environment:
-      PUID: ${BOOKSTACK_PUID:-1000}
-      PGID: ${BOOKSTACK_PGID:-1000}
-      TZ: ${BOOKSTACK_TZ:-Asia/Tokyo}
-      MYSQL_ROOT_PASSWORD: ${BOOKSTACK_DB_ROOT_PASSWORD:-bookstack_root_password}
-      MYSQL_DATABASE: ${BOOKSTACK_DB_DATABASE:-bookstack}
-      MYSQL_USER: ${BOOKSTACK_DB_USER:-bookstack}
-      MYSQL_PASSWORD: ${BOOKSTACK_DB_PASSWORD:-bookstack_password}
+      PUID: 1000
+      PGID: 1000
+      TZ: Asia/Tokyo
+      MYSQL_ROOT_PASSWORD: bs_db_root_password
+      MYSQL_DATABASE: bookstack
+      MYSQL_USER: bs_db_user
+      MYSQL_PASSWORD: bs_db_password
     volumes:
       - bookstack-mariadb-config:/config
     networks:

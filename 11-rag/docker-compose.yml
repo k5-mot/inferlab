@@ -33,7 +33,7 @@ services:
       DOCLING_SERVE_HOST: 0.0.0.0
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"
-      DOCLING_SERVE_API_KEY: "sk-docling-serve-api-key"
+      DOCLING_SERVE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
       DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
@@ -59,8 +59,8 @@ services:
       nofile:
         soft: 65535
         hard: 65535
-    mem_limit: ${DOCLING_MEM_LIMIT:-8g}
-    memswap_limit: ${DOCLING_MEMSWAP_LIMIT:-9g}
+    mem_limit: 8g
+    memswap_limit: 9g
     pids_limit: 512
     labels:
       - homepage.icon=/icons/docling.png
@@ -77,6 +77,7 @@ services:
     profiles:
       - rag
     environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-sk-qdrant-api-key}
       QDRANT__TELEMETRY_DISABLED: "true"
     volumes:
       - qdrant-storage:/qdrant/storage

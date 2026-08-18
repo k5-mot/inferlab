@@ -47,7 +47,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 
 - `keycloak-postgres`がhealthyになる。
 - `keycloak`が`http://${PUBLIC_HOST}:30001`で応答する。
-- `keycloak-https`が`https://${PUBLIC_HOST}:${KEYCLOAK_HTTPS_HOST_PORT:-30002}`で応答する。
+- `keycloak-https`が`https://${PUBLIC_HOST}:30002`で応答する。
 - `prod` realmが作成される。
 - Open WebUI、Dify、Nextcloud、Langfuse、Leantime、BookStack、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
 
@@ -67,7 +67,7 @@ sudo docker compose --env-file .env --profile keycloak ps
 curl -fsS "http://${PUBLIC_HOST:-localhost}:30001/realms/prod/.well-known/openid-configuration" >/dev/null
 
 # HTTPS issuerのTCP応答を確認する。
-timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/'"${KEYCLOAK_HTTPS_HOST_PORT:-30002}"
+timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/'"30002"
 ```
 
 期待結果:
