@@ -31,6 +31,32 @@ uv run --project 41-openkb mypy --config-file 41-openkb/pyproject.toml 41-openkb
 - `config.yaml` のschema違反またはcredential参照不足がある場合、serviceは起動してはならない。
 - test、lint、format、type checkのいずれかが終了code 0以外なら変更を完了扱いにしてはならない。
 
+## BookStack integration test
+
+起動済みの実BookStackでPublisher lifecycleを検証する場合、次の環境変数を MUST 設定する。
+
+- `BOOKSTACK_INTEGRATION_BASE_URL`
+- `BOOKSTACK_INTEGRATION_TOKEN_ID`
+- `BOOKSTACK_INTEGRATION_TOKEN_SECRET`
+- `BOOKSTACK_INTEGRATION_SUFFIX`
+
+`BOOKSTACK_INTEGRATION_SUFFIX` はrunごとに一意な値を MUST 使用する。tokenにはAPI accessとshelf、book、pageのview、create、update権限が必要であり、管理者権限やdelete権限は不要である。testはsuffix付きのshelf、book、pageを作成し、結果をBookStack上へ保持する。
+
+```bash
+# 起動済みBookStackに対してPublisher lifecycle integration testを実行する。
+uv run --project 41-openkb pytest -m integration 41-openkb/tests/integration
+```
+
+期待結果:
+
+- 初回publishでshelf 1件、book 2件、page 2件が作成される。
+- 再publishは変更なし、本文変更はupdate、生成元削除はunavailable表示として処理される。
+- OpenKB wikilinkがBookStackの `/link/{page_id}` へ変換される。
+
+失敗基準:
+
+- 4xxまたは5xx response、重複作成、本文不一致、shelfへのbook関連付け漏れが発生した場合は失敗とする。
+
 ## 設定反映
 
 MVPでは設定を起動時にだけ読み込む。`config.yaml` またはcredential環境変数を変更した場合は、`llm-wiki-api` containerを再起動する。稼働中のreload endpointは提供しない。

@@ -982,6 +982,8 @@ BookStack Publisherの責務:
 - removed page処理
 - source metadata追加
 
+BookStackのpage create APIは本文として非空の `markdown` または `html` を要求する。Publisherはpage IDを先に確保する場合でも、create requestへ未変換のGenerated Wiki Markdownを MUST 含める。全page IDの確定後、OpenKB wikilinkをBookStackの相対canonical path `/link/{bookstack_page_id}` へ変換して更新する。内部API hostnameを公開page本文へ MUST NOT 埋め込む。
+
 ---
 
 # 22. Publish Mapping

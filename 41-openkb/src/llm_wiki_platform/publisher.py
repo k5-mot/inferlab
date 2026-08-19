@@ -115,14 +115,11 @@ class BookStackPublisher:
                 response = await self._http.request(
                     "POST",
                     "/api/pages",
-                    json={"book_id": book_id, "name": page.title, "markdown": ""},
+                    json={"book_id": book_id, "name": page.title, "markdown": page.markdown},
                 )
                 created_page = require_mapping(response.json(), "created page")
                 page_id = int(created_page["id"])
                 page_ids[page.openkb_id] = page_id
-                url = created_page.get("url")
-                if isinstance(url, str):
-                    page_urls[page.title] = url
             else:
                 page_ids[page.openkb_id] = int(mapping["bookstack_page_id"])
                 if (
@@ -133,7 +130,7 @@ class BookStackPublisher:
                 else:
                     updated += 1
         if not self._publish.dry_run:
-            await self._populate_known_urls(pages, page_ids, page_urls)
+            self._populate_known_urls(pages, page_ids, page_urls)
             for page in pages:
                 mapping = mappings.get(page.openkb_id)
                 if (
@@ -266,13 +263,13 @@ class BookStackPublisher:
                 return items
             offset += 500
 
-    async def _populate_known_urls(
-        self,
+    @staticmethod
+    def _populate_known_urls(
         pages: list[GeneratedPage],
         page_ids: dict[str, int],
         page_urls: dict[str, str],
     ) -> None:
-        """既存pageをreadしてwikilink変換用URLを収集する。
+        """BookStack page IDからwikilink変換用canonical pathを構築する。
 
         Args:
             pages: 公開対象page。
@@ -283,13 +280,7 @@ class BookStackPublisher:
             なし。
         """
         for page in pages:
-            if page.title in page_urls:
-                continue
-            response = await self._http.request("GET", f"/api/pages/{page_ids[page.openkb_id]}")
-            body = require_mapping(response.json(), "BookStack page")
-            url = body.get("url")
-            if isinstance(url, str):
-                page_urls[page.title] = url
+            page_urls[page.title] = f"/link/{page_ids[page.openkb_id]}"
 
     async def _attach_books_to_shelf(
         self,

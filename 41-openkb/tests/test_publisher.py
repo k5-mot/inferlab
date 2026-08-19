@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import httpx
@@ -64,6 +65,8 @@ async def test_publish_creates_mapping_then_skips_unchanged_page(tmp_path: Path)
         if request.method == "GET" and request.url.path == "/api/books":
             return httpx.Response(200, json={"data": [{"id": 10, "name": "Concepts"}]})
         if request.method == "POST" and request.url.path == "/api/pages":
+            body = json.loads(request.content)
+            assert body["markdown"] == "# Access Token\n\nRelated to [[Session]].\n"
             return httpx.Response(
                 200,
                 json={
@@ -109,3 +112,4 @@ async def test_publish_creates_mapping_then_skips_unchanged_page(tmp_path: Path)
     assert mapping["bookstack_page_id"] == 100
     assert requests.count(("POST", "/api/pages")) == 1
     assert requests.count(("PUT", "/api/pages/100")) == 1
+    assert requests.count(("GET", "/api/pages/100")) == 0
