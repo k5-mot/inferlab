@@ -15,6 +15,7 @@ include:
   - ./33-zulip/docker-compose.yml
   - ./34-gitlab/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
+  - ./41-openkb/docker-compose.yml
   - ./50-o11y/docker-compose.yml
   - ./51-langfuse/docker-compose.yml
 

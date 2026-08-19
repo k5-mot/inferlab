@@ -1166,7 +1166,7 @@ Ingest
 
 5. Store
 
-6. OpenKB ingest
+6. OpenKB投入対象としてstaging
 
 7. Checkpoint update
 ```
@@ -1177,11 +1177,13 @@ Ingest
 ```text
 Compile
 
-1. OpenKB compile
+1. staging済みdocumentをOpenKB add
 
-2. Generated Wiki update
+2. OpenKB全体recompile
 
-3. Compile run state update
+3. Generated Wiki update
+
+4. Compile run state update
 ```
 
 `publish` はOpenKB上のGenerated WikiをBookStack LLM Wikiへ反映する処理である。
@@ -1203,6 +1205,10 @@ Publish
 
 将来的には `Publish plan` と `BookStack publish` の間にGenerated Wiki validationを追加する。
 MVPではvalidation gateを実行しない。
+
+OpenKBの現行REST APIでは `POST /api/v1/add` がuploadとdocument compileを一体で実行し、uploadだけを行うendpointは提供されない。
+そのためMVP実装では `ingest` 時にCanonical Source Storeへ変更documentをstagingし、`compile` schedule到来時にstaging分をOpenKBへまとめて `add` した後、knowledge base全体を `recompile` する。
+この実装上の境界により、OpenKB filesystemへ外部processから書き込まず、source取得時にLLM処理が起動することを防ぐ。
 
 ---
 
@@ -1236,6 +1242,7 @@ scheduler:
 
 storage:
   source_store_path: /data/knowledge-source
+  state_database_path: /data/knowledge-source/state/platform.db
 
 defaults:
   ingest:
@@ -1306,9 +1313,15 @@ sources:
       schedule: "*/5 * * * *"
 
 openkb:
-  base_url: http://openkb:8000
+  base_url: http://openkb:7566
+  knowledge_base: internal-wiki
+  generated_wiki_path: /openkb-kbs/internal-wiki/wiki
   credential:
     token_env: OPENKB_TOKEN
+  llm:
+    model: openai/gpt-oss:20b
+    api_key_env: LITELLM_MASTER_KEY
+    openai_api_base: http://litellm:4000/v1
 
 bookstack:
   base_url: https://bookstack.internal.example
@@ -1316,6 +1329,18 @@ bookstack:
     shelf: Human Wiki
   llm_wiki:
     shelf: LLM Wiki
+    books:
+      concepts: Concepts
+      entities: Entities
+      projects: Projects
+      systems: Systems
+      decisions: Decisions
+      sources: Sources
+      summaries: Summaries
+      syntheses: Syntheses
+  ingest:
+    enabled: true
+    schedule: "*/10 * * * *"
   reader_credential:
     token_id_env: BOOKSTACK_READER_TOKEN_ID
     token_secret_env: BOOKSTACK_READER_TOKEN_SECRET
@@ -1567,18 +1592,13 @@ Python例:
 
 ```python
 class SourceConnector:
+    def discover(self) -> list["SourceObject"]: ...
 
-    def discover(self) -> list["SourceObject"]:
-        ...
+    def fetch(self, source: "SourceObject") -> bytes: ...
 
-    def fetch(self, source: "SourceObject") -> bytes:
-        ...
+    def normalize(self, source: "SourceObject") -> "KnowledgeDocument": ...
 
-    def normalize(self, source: "SourceObject") -> "KnowledgeDocument":
-        ...
-
-    def checkpoint(self) -> str:
-        ...
+    def checkpoint(self) -> str: ...
 ```
 
 各Connectorはこのinterfaceを実装する。
@@ -1591,15 +1611,11 @@ class SourceConnector:
 
 ```python
 class WikiPublisher:
+    def plan(self, pages): ...
 
-    def plan(self, pages):
-        ...
+    def publish(self, plan): ...
 
-    def publish(self, plan):
-        ...
-
-    def delete(self, page_id):
-        ...
+    def delete(self, page_id): ...
 ```
 
 初期実装:
@@ -1624,6 +1640,8 @@ OutlinePublisher
 
 OpenKBにはCLIだけでなくFastAPIベースのREST APIとWeb UIが用意されているため、本システムからはREST API利用を基本とする。
 
+初期MVPのOpenKB imageは、REST APIを配布物に含むPyPI版 `0.5.0rc1` に MUST 固定する。安定版 `0.4.5` にはREST APIの起動scriptが含まれないため MUST NOT 使用する。同等のREST APIを含む安定版が公開された場合は、API contract testとcontainer起動確認を通した上で MAY 更新する。
+
 構成:
 
 ```text
@@ -1635,6 +1653,10 @@ Ingestion Service
 ```
 
 OpenKB filesystemへ外部プロセスが直接ファイルを書き込む結合は避ける。
+
+OpenKBの現行REST APIにはGenerated Wiki page本文をreadするendpointがない。
+MVPのBookStack PublisherはOpenKB knowledge base volumeの `wiki/` directoryだけをread-only mountし、生成済みMarkdownを取得する。
+OpenKBへの入力と変更操作はREST APIだけを使用し、PublisherからOpenKB filesystemへのwrite pathは持たせない。
 
 ---
 
@@ -1891,8 +1913,9 @@ services:
     # optional source cache
 ```
 
-`llm-wiki-api` と `llm-wiki-worker` は同じ `config.yaml` を参照する。
-設定変更時は該当コンテナを再起動する。
+MVPでは `llm-wiki-api` processが管理API、scheduler、job実行を所有する。
+同じscheduleを複数processが登録することを避けるため、MVPでは `llm-wiki-worker` を分離しない。
+設定変更時は `llm-wiki-api` containerを再起動する。
 
 GitLab、Zulip、Nextcloud、Kaneoは既存サービスとして外部接続する。
 
@@ -2438,3 +2461,14 @@ LLM Wiki
 ```
 
 LLM WikiからHuman WikiへのFeedbackは、この基盤が十分に安定した後の独立フェーズとして実装する。
+
+## References
+
+- [OpenKB REST API](https://github.com/VectifyAI/OpenKB/blob/main/examples/rest-api/README.md)
+- [OpenKB on PyPI](https://pypi.org/project/openkb/)
+- [OpenKB 0.5.0rc1](https://pypi.org/project/openkb/0.5.0rc1/)
+- [BookStack API](https://www.bookstackapp.com/docs/admin/hacking-bookstack/)
+- [GitLab REST API resources](https://docs.gitlab.com/api/api_resources/)
+- [Zulip REST API](https://zulip.com/api/rest)
+- [Nextcloud WebDAV API](https://docs.nextcloud.com/server/stable/developer_manual/client_apis/WebDAV/basic.html)
+- [Kaneo API Reference](https://kaneo.app/docs/api-reference/introduction)

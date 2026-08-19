@@ -1,0 +1,89 @@
+services:
+  openkb:
+    build:
+      context: .
+      dockerfile: Dockerfile.openkb
+    image: local/openkb:0.5.0rc1
+    container_name: ${STACK_NAME}-openkb
+    restart: unless-stopped
+    profiles:
+      - openkb
+    environment:
+      OPENKB_KB_ROOT: /data/kbs
+      OPENKB_API_TOKEN: ${OPENKB_TOKEN:-sk-openkb-api-token}
+    volumes:
+      - openkb-kbs:/data/kbs
+    networks:
+      - internal-nw
+    mem_limit: 4g
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:7566/docs', timeout=5)
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    labels:
+      - homepage.group=41-openkb
+      - homepage.name=OpenKB
+      - homepage.description=LLM knowledge compiler
+
+  llm-wiki-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local/llm-wiki-platform:0.1.0
+    container_name: ${STACK_NAME}-llm-wiki-api
+    restart: unless-stopped
+    profiles:
+      - openkb
+    environment:
+      OPENKB_TOKEN: ${OPENKB_TOKEN:-sk-openkb-api-token}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      GITLAB_TOKEN: ${GITLAB_TOKEN:-}
+      ZULIP_BOT_EMAIL: ${ZULIP_BOT_EMAIL:-}
+      ZULIP_API_KEY: ${ZULIP_API_KEY:-}
+      NEXTCLOUD_USERNAME: ${NEXTCLOUD_USERNAME:-}
+      NEXTCLOUD_PASSWORD: ${NEXTCLOUD_PASSWORD:-}
+      KANEO_TOKEN: ${KANEO_TOKEN:-}
+      BOOKSTACK_READER_TOKEN_ID: ${BOOKSTACK_READER_TOKEN_ID:-}
+      BOOKSTACK_READER_TOKEN_SECRET: ${BOOKSTACK_READER_TOKEN_SECRET:-}
+      BOOKSTACK_PUBLISHER_TOKEN_ID: ${BOOKSTACK_PUBLISHER_TOKEN_ID:-}
+      BOOKSTACK_PUBLISHER_TOKEN_SECRET: ${BOOKSTACK_PUBLISHER_TOKEN_SECRET:-}
+    ports:
+      - "34100:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - llm-wiki-source:/data/knowledge-source
+      - openkb-kbs:/openkb-kbs:ro
+    networks:
+      - internal-nw
+    depends_on:
+      openkb:
+        condition: service_healthy
+    mem_limit: 512m
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=5)
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    labels:
+      - homepage.group=41-openkb
+      - homepage.name=LLM Wiki Platform
+      - homepage.href=http://${PUBLIC_HOST}:34100/docs
+      - homepage.description=Ingest, compile and publish orchestration
+
+volumes:
+  llm-wiki-source:
+  openkb-kbs:
+
+networks:
+  internal-nw:

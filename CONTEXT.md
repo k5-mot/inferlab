@@ -13,7 +13,7 @@ OpenKBが取り込み済み資料をもとにLLM Wikiのページ、リンク、
 _Avoid_: compile, 再生成, Wiki生成
 
 **取り込み**:
-Source Systemから差分を取得し、Canonical Documentへ正規化してOpenKBへ投入するまでの処理。LLM Wikiの再構成やBookStackへの公開は含めない。
+Source Systemから差分を取得し、Canonical Documentへ正規化してOpenKB投入待ちとしてstagingするまでの処理。OpenKBの現行APIでは投入とdocument compileを分離できないため、実際のOpenKB addは知識コンパイル開始時に行う。LLM Wikiの再構成やBookStackへの公開は含めない。
 _Avoid_: ingest, クロール, 同期
 
 **公開**:
