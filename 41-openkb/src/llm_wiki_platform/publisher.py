@@ -2,31 +2,18 @@
 
 from __future__ import annotations
 
-import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from llm_wiki_platform.config import BookStackConfig, PublishConfig
 from llm_wiki_platform.connectors.base import RetryingHttpClient, require_mapping
+from llm_wiki_platform.generated_wiki import GeneratedPage, load_generated_pages
 from llm_wiki_platform.state import StateStore
 
 _WIKILINK_PATTERN = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
 _UNAVAILABLE_MARKER = "**Generated source unavailable.**"
-
-
-@dataclass(frozen=True, slots=True)
-class GeneratedPage:
-    """OpenKB Generated Wiki内の1 Markdown page。"""
-
-    openkb_id: str
-    title: str
-    category: str
-    markdown: str
-    content_hash: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,7 +82,7 @@ class BookStackPublisher:
             FileNotFoundError: Generated Wiki directoryが存在しない場合。
             ValueError: LLM Wiki shelfを一意に解決できない場合。
         """
-        pages = self._load_generated_pages()
+        pages = load_generated_pages(self._generated_wiki_path)
         shelf, books = await self._ensure_destination(pages)
         mappings = {
             str(item["openkb_id"]): item for item in self._state_store.list_publish_mappings()
@@ -166,41 +153,6 @@ class BookStackPublisher:
             unavailable=unavailable,
             dry_run=self._publish.dry_run,
         )
-
-    def _load_generated_pages(self) -> list[GeneratedPage]:
-        """Generated Wiki directoryから公開対象Markdownを読み込む。
-
-        Returns:
-            stable relative path順のGenerated Page一覧。
-
-        Raises:
-            FileNotFoundError: wiki directoryが存在しない場合。
-        """
-        if not self._generated_wiki_path.is_dir():
-            raise FileNotFoundError(
-                f"Generated Wiki directoryが存在しません: {self._generated_wiki_path}"
-            )
-        pages: list[GeneratedPage] = []
-        for path in sorted(self._generated_wiki_path.rglob("*.md")):
-            relative = path.relative_to(self._generated_wiki_path)
-            if relative.parts and relative.parts[0] in {"reports", "raw"}:
-                continue
-            text = path.read_text(encoding="utf-8")
-            frontmatter, markdown = _split_frontmatter(text)
-            title = str(frontmatter.get("title") or _first_heading(markdown) or path.stem)
-            category = relative.parts[0].lower() if len(relative.parts) > 1 else "concepts"
-            digest_input = f"{title}\0{category}\0{markdown}".encode()
-            digest = hashlib.sha256(digest_input).hexdigest()
-            pages.append(
-                GeneratedPage(
-                    openkb_id=relative.as_posix(),
-                    title=title,
-                    category=category,
-                    markdown=markdown,
-                    content_hash=digest,
-                )
-            )
-        return pages
 
     async def _ensure_destination(
         self, pages: list[GeneratedPage]
@@ -338,41 +290,6 @@ class BookStackPublisher:
             )
             changed += 1
         return changed
-
-
-def _split_frontmatter(text: str) -> tuple[dict[str, Any], str]:
-    """Markdown frontmatterと本文を分離する。
-
-    Args:
-        text: Generated Wiki Markdown。
-
-    Returns:
-        frontmatter objectと本文。
-    """
-    if not text.startswith("---\n"):
-        return {}, text
-    end = text.find("\n---\n", 4)
-    if end < 0:
-        return {}, text
-    loaded = yaml.safe_load(text[4:end]) or {}
-    if not isinstance(loaded, dict):
-        raise ValueError("Generated Wiki frontmatterはmappingである必要があります")
-    return dict(loaded), text[end + 5 :]
-
-
-def _first_heading(markdown: str) -> str | None:
-    """Markdown最初のH1をtitle候補として取得する。
-
-    Args:
-        markdown: Markdown本文。
-
-    Returns:
-        H1 text。存在しなければNone。
-    """
-    for line in markdown.splitlines():
-        if line.startswith("# "):
-            return line.removeprefix("# ").strip()
-    return None
 
 
 def _book_name(category: str) -> str:
