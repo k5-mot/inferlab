@@ -6,8 +6,8 @@ services:
     profiles:
       - kaneo
     environment:
-      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:33200
-      KANEO_API_URL: http://${PUBLIC_HOST}:33200
+      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:33300
+      KANEO_API_URL: http://${PUBLIC_HOST}:33300
       POSTGRES_DB: kaneo
       POSTGRES_USER: kaneo_db_user
       POSTGRES_PASSWORD: kaneo_db_password
@@ -20,7 +20,7 @@ services:
       CUSTOM_OAUTH_SCOPES: openid,profile,email
       DISABLE_PASSWORD_REGISTRATION: true
     ports:
-      - "33200:5173"
+      - "33300:5173"
     networks:
       - internal-nw
     depends_on:
@@ -33,9 +33,9 @@ services:
       retries: 3
       start_period: 60s
     labels:
-      - homepage.group=32-kaneo
+      - homepage.group=33-kaneo
       - homepage.name=Kaneo
-      - homepage.href=http://${PUBLIC_HOST}:33200
+      - homepage.href=http://${PUBLIC_HOST}:33300
       - homepage.description=Project management tool
       - homepage.icon=/icons/kaneo.png
 
@@ -59,7 +59,7 @@ services:
       timeout: 5s
       retries: 5
     labels:
-      - homepage.group=32-kaneo
+      - homepage.group=33-kaneo
       - homepage.name=Kaneo-PostgreSQL
       - homepage.description=Relational database
       - homepage.icon=/icons/postgresql.png

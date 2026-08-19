@@ -9,7 +9,7 @@ services:
       PUID: 1000
       PGID: 1000
       TZ: Asia/Tokyo
-      APP_URL: http://${PUBLIC_HOST}:33100
+      APP_URL: http://${PUBLIC_HOST}:33500
       APP_KEY: ${BOOKSTACK_APP_KEY:-base64:8Xpuu6D/PftKO7GAZWORsKIw1rveODqBcEyU8HKaxCA=}
       DB_HOST: bookstack-mariadb
       DB_PORT: "3306"
@@ -33,7 +33,7 @@ services:
       SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
       CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     ports:
-      - "33100:80"
+      - "33500:80"
     volumes:
       - bookstack-config:/config
       - ../01-keycloak/keycloak/certs/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
@@ -54,9 +54,9 @@ services:
       retries: 10
       start_period: 60s
     labels:
-      - homepage.group=31-bookstack
+      - homepage.group=35-bookstack
       - homepage.name=BookStack
-      - homepage.href=http://${PUBLIC_HOST}:33100
+      - homepage.href=http://${PUBLIC_HOST}:33500
       - homepage.description=Team documentation wiki
       - homepage.icon=/icons/bookstack.png
 
@@ -109,7 +109,7 @@ services:
       start_period: 30s
     labels:
       - homepage.icon=/icons/mariadb.png
-      - homepage.group=31-bookstack
+      - homepage.group=35-bookstack
       - homepage.name=BookStack-MariaDB
       - homepage.description=MySQL-compatible relational database
 

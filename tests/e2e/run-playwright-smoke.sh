@@ -250,20 +250,20 @@ configure_smoke_case() {
       ACTIVE_SERVICES+=(nextcloud)
       ;;
     bookstack)
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33100"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33100"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33500"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33500"
       ACTIVE_PROFILES+=(--profile bookstack)
       ACTIVE_SERVICES+=(keycloak-https bookstack)
       ;;
     kaneo)
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33200"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33200"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33300"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33300"
       ACTIVE_PROFILES+=(--profile kaneo)
       ACTIVE_SERVICES+=(kaneo)
       ;;
     zulip)
-      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:33300"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33302"
+      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:33400"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33402"
       ACTIVE_PROFILES+=(--profile zulip)
       ACTIVE_SERVICES+=(keycloak-https zulip)
       ;;

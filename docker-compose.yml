@@ -10,10 +10,11 @@ include:
   - ./20-owui/docker-compose.yml
   - ./21-dify/docker-compose.yml
   - ./30-nextcloud/docker-compose.yml
-  - ./31-bookstack/docker-compose.yml
-  - ./32-kaneo/docker-compose.yml
-  - ./33-zulip/docker-compose.yml
-  - ./34-gitlab/docker-compose.yml
+  - ./32-wikijs/docker-compose.yml
+  - ./33-kaneo/docker-compose.yml
+  - ./34-zulip/docker-compose.yml
+  - ./35-bookstack/docker-compose.yml
+  - ./36-gitlab/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
   - ./41-openkb/docker-compose.yml
   - ./50-o11y/docker-compose.yml

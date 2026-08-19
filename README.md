@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`bookstack`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`wikijs`、`kaneo`、`zulip`、`bookstack`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -17,10 +17,11 @@
 | `owui` | `20-owui/docker-compose.yml` | Open WebUI、検索、ツール連携、Knowledge同期 |
 | `dify` | `21-dify/docker-compose.yml` | 自動化 |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
-| `bookstack` | `31-bookstack/docker-compose.yml` | Wiki |
-| `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
-| `zulip` | `33-zulip/docker-compose.yml` | チャット |
-| `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
+| `wikijs` | `32-wikijs/docker-compose.yml` | Wiki |
+| `kaneo` | `33-kaneo/docker-compose.yml` | プロジェクト管理 |
+| `zulip` | `34-zulip/docker-compose.yml` | チャット |
+| `bookstack` | `35-bookstack/docker-compose.yml` | Wiki |
+| `gitlab` | `36-gitlab/docker-compose.yml` | Git 管理とCI |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
@@ -83,19 +84,21 @@
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
-| `bookstack` | `bookstack` | `33100` | `31-bookstack/docker-compose.yml` |
-| `bookstack` | `bookstack-custom-init` | - | `31-bookstack/docker-compose.yml` |
-| `bookstack` | `bookstack-mariadb` | - | `31-bookstack/docker-compose.yml` |
-| `kaneo` | `kaneo` | `33200` | `32-kaneo/docker-compose.yml` |
-| `kaneo` | `kaneo-postgres` | - | `32-kaneo/docker-compose.yml` |
-| `zulip` | `zulip` | `33302`, `33300`, `33325` | `33-zulip/docker-compose.yml` |
-| `zulip` | `zulip-postgres` | - | `33-zulip/docker-compose.yml` |
-| `zulip` | `zulip-memcached` | - | `33-zulip/docker-compose.yml` |
-| `zulip` | `zulip-rabbitmq` | - | `33-zulip/docker-compose.yml` |
-| `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
-| `gitlab` | `gitlab` | `33400`, `33422` | `34-gitlab/docker-compose.yml` |
-| `gitlab` | `gitlab-runner-register` | - | `34-gitlab/docker-compose.yml` |
-| `gitlab` | `gitlab-runner` | - | `34-gitlab/docker-compose.yml` |
+| `wikijs` | `wikijs` | `33200` | `32-wikijs/docker-compose.yml` |
+| `wikijs` | `wikijs-postgres` | - | `32-wikijs/docker-compose.yml` |
+| `kaneo` | `kaneo` | `33300` | `33-kaneo/docker-compose.yml` |
+| `kaneo` | `kaneo-postgres` | - | `33-kaneo/docker-compose.yml` |
+| `zulip` | `zulip` | `33402`, `33400`, `33425` | `34-zulip/docker-compose.yml` |
+| `zulip` | `zulip-postgres` | - | `34-zulip/docker-compose.yml` |
+| `zulip` | `zulip-memcached` | - | `34-zulip/docker-compose.yml` |
+| `zulip` | `zulip-rabbitmq` | - | `34-zulip/docker-compose.yml` |
+| `zulip` | `zulip-redis` | - | `34-zulip/docker-compose.yml` |
+| `bookstack` | `bookstack` | `33500` | `35-bookstack/docker-compose.yml` |
+| `bookstack` | `bookstack-custom-init` | - | `35-bookstack/docker-compose.yml` |
+| `bookstack` | `bookstack-mariadb` | - | `35-bookstack/docker-compose.yml` |
+| `gitlab` | `gitlab` | `33600`, `33622` | `36-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab-runner-register` | - | `36-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab-runner` | - | `36-gitlab/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
@@ -139,9 +142,10 @@
 - [Open WebUI](20-owui/README.md)
 - [Dify](21-dify/README.md)
 - [Nextcloud](30-nextcloud/README.md)
-- [BookStack](31-bookstack/README.md)
-- [Zulip](33-zulip/README.md)
-- [GitLab](34-gitlab/README.md)
+- [Wiki.js](32-wikijs/README.md)
+- [Zulip](34-zulip/README.md)
+- [BookStack](35-bookstack/README.md)
+- [GitLab](36-gitlab/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 

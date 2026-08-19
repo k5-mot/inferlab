@@ -1,4 +1,4 @@
-# 31-bookstack
+# 35-bookstack
 
 BookStackとMariaDBをまとめたWiki stack。Keycloak OIDC loginを使う。
 
@@ -45,7 +45,7 @@ sudo docker compose --env-file .env --profile bookstack up -d
 
 - `bookstack-custom-init`が正常終了する。
 - `bookstack-mariadb`がhealthyになる。
-- `bookstack`が`http://${PUBLIC_HOST}:33100`で応答する。
+- `bookstack`が`http://${PUBLIC_HOST}:33500`で応答する。
 - Keycloak login後、`admins`または`users` groupに応じたBookStack roleが付与される。
 
 失敗条件:
@@ -61,7 +61,7 @@ sudo docker compose --env-file .env --profile bookstack up -d
 sudo docker compose --env-file .env --profile bookstack ps
 
 # BookStack login画面の応答を確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:33100/login" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:33500/login" >/dev/null
 ```
 
 期待結果:
