@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from llm_wiki_platform.config import BookStackConfig, PublishConfig
 from llm_wiki_platform.connectors.base import RetryingHttpClient, require_mapping
-from llm_wiki_platform.generated_wiki import GeneratedPage, load_generated_pages
+from llm_wiki_platform.generated_wiki import (
+    GeneratedPage,
+    convert_wikilinks,
+    load_generated_pages,
+)
 from llm_wiki_platform.state import StateStore
 
-_WIKILINK_PATTERN = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
 _UNAVAILABLE_MARKER = "**Generated source unavailable.**"
 
 
@@ -128,7 +130,7 @@ class BookStackPublisher:
                     continue
                 page_id = page_ids[page.openkb_id]
                 book_id = books[page.category]
-                markdown = _convert_wikilinks(page.markdown, page_urls)
+                markdown = convert_wikilinks(page.markdown, page_urls)
                 await self._http.request(
                     "PUT",
                     f"/api/pages/{page_id}",
@@ -312,31 +314,3 @@ def _book_name(category: str) -> str:
         "syntheses": "Syntheses",
     }
     return aliases.get(category, category.replace("_", " ").title())
-
-
-def _convert_wikilinks(markdown: str, page_urls: dict[str, str]) -> str:
-    """解決可能なOpenKB wikilinkをBookStack Markdown linkへ変換する。
-
-    Args:
-        markdown: OpenKB page本文。
-        page_urls: page titleとBookStack URLの対応。
-
-    Returns:
-        wikilink変換後のMarkdown。
-    """
-
-    def replace(match: re.Match[str]) -> str:
-        """1つのwikilinkをURL解決できる場合だけMarkdown化する。
-
-        Args:
-            match: wikilink regex match。
-
-        Returns:
-            Markdown linkまたは元wikilink。
-        """
-        target = match.group(1).strip()
-        label = (match.group(2) or target).strip()
-        url = page_urls.get(target)
-        return f"[{label}]({url})" if url else match.group(0)
-
-    return _WIKILINK_PATTERN.sub(replace, markdown)

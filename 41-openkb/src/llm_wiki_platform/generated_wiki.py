@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+_WIKILINK_PATTERN = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,3 +98,31 @@ def first_heading(markdown: str) -> str | None:
         if line.startswith("# "):
             return line.removeprefix("# ").strip()
     return None
+
+
+def convert_wikilinks(markdown: str, page_urls: dict[str, str]) -> str:
+    """解決可能なOpenKB wikilinkをMarkdown linkへ変換する。
+
+    Args:
+        markdown: OpenKB page本文。
+        page_urls: page titleと公開先URLの対応。
+
+    Returns:
+        wikilink変換後のMarkdown。
+    """
+
+    def replace(match: re.Match[str]) -> str:
+        """1つのwikilinkをURL解決できる場合だけMarkdown化する。
+
+        Args:
+            match: wikilink regex match。
+
+        Returns:
+            Markdown linkまたは元wikilink。
+        """
+        target = match.group(1).strip()
+        label = (match.group(2) or target).strip()
+        url = page_urls.get(target)
+        return f"[{label}]({url})" if url else match.group(0)
+
+    return _WIKILINK_PATTERN.sub(replace, markdown)
