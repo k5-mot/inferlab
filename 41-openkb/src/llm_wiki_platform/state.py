@@ -86,6 +86,13 @@ class StateStore:
                     last_published_hash TEXT NOT NULL,
                     published_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS wikijs_publish_mappings (
+                    openkb_id TEXT PRIMARY KEY,
+                    wikijs_page_id INTEGER NOT NULL,
+                    wikijs_path TEXT NOT NULL,
+                    last_published_hash TEXT NOT NULL,
+                    published_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS openkb_staging (
                     source_id TEXT PRIMARY KEY,
                     source TEXT NOT NULL,
@@ -440,6 +447,75 @@ class StateStore:
                     openkb_id,
                     bookstack_page_id,
                     bookstack_book_id,
+                    content_hash,
+                    published_at,
+                ),
+            )
+
+    def get_wikijs_publish_mapping(self, openkb_id: str) -> dict[str, Any] | None:
+        """OpenKB page IDに対応するWiki.js mappingを取得する。
+
+        Args:
+            openkb_id: Generated Wiki内のstable page ID。
+
+        Returns:
+            mapping情報。未登録ならNone。
+        """
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM wikijs_publish_mappings WHERE openkb_id = ?", (openkb_id,)
+            ).fetchone()
+        return None if row is None else dict(row)
+
+    def list_wikijs_publish_mappings(self) -> list[dict[str, Any]]:
+        """すべてのWiki.js publish mappingを列挙する。
+
+        Returns:
+            OpenKB page ID順のmapping一覧。
+        """
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM wikijs_publish_mappings ORDER BY openkb_id"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def upsert_wikijs_publish_mapping(
+        self,
+        *,
+        openkb_id: str,
+        wikijs_page_id: int,
+        wikijs_path: str,
+        content_hash: str,
+    ) -> None:
+        """OpenKB pageとWiki.js pageの対応を保存する。
+
+        Args:
+            openkb_id: Generated Wiki内のstable page ID。
+            wikijs_page_id: Wiki.js page ID。
+            wikijs_path: localeを除いたWiki.js page path。
+            content_hash: 最後に公開したMarkdownのSHA-256。
+
+        Returns:
+            なし。
+        """
+        published_at = datetime.now(UTC).isoformat()
+        with self._lock, self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO wikijs_publish_mappings(
+                    openkb_id, wikijs_page_id, wikijs_path,
+                    last_published_hash, published_at
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(openkb_id) DO UPDATE SET
+                    wikijs_page_id = excluded.wikijs_page_id,
+                    wikijs_path = excluded.wikijs_path,
+                    last_published_hash = excluded.last_published_hash,
+                    published_at = excluded.published_at
+                """,
+                (
+                    openkb_id,
+                    wikijs_page_id,
+                    wikijs_path,
                     content_hash,
                     published_at,
                 ),

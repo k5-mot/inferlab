@@ -32,6 +32,7 @@ def _publisher_config(tmp_path: Path) -> AppConfig:
     }
     loaded["bookstack"]["base_url"] = "http://bookstack.test"
     loaded["pipeline"]["publish"]["enabled"] = True
+    loaded["pipeline"]["publish"]["targets"] = ["bookstack"]
     return AppConfig.model_validate(loaded)
 
 

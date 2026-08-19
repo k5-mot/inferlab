@@ -45,7 +45,7 @@ def test_management_api_reports_disabled_pipeline(tmp_path: Path) -> None:
 
     assert health.json() == {"status": "ok", "jobs": {}}
     assert connectors.json() == {"enabled": []}
-    assert len(sources.json()) == 5
+    assert len(sources.json()) == 6
     assert compile_response.status_code == 409
     assert publish_response.status_code == 409
     assert reload_response.status_code == 404

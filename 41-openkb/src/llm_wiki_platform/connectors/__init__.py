@@ -5,6 +5,7 @@ from llm_wiki_platform.connectors.bookstack import BookStackConnector
 from llm_wiki_platform.connectors.gitlab import GitLabConnector
 from llm_wiki_platform.connectors.kaneo import KaneoConnector
 from llm_wiki_platform.connectors.nextcloud import NextcloudConnector
+from llm_wiki_platform.connectors.wikijs import WikiJSConnector
 from llm_wiki_platform.connectors.zulip import ZulipConnector
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "KaneoConnector",
     "NextcloudConnector",
     "SourceConnector",
+    "WikiJSConnector",
     "ZulipConnector",
 ]

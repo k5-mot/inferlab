@@ -8,7 +8,7 @@ from llm_wiki_platform.config import AppConfig
 from llm_wiki_platform.ingestion import IngestionService
 from llm_wiki_platform.jobs import JobCoordinator, SubmissionResult
 from llm_wiki_platform.openkb_client import OpenKBClient
-from llm_wiki_platform.publisher import BookStackPublisher
+from llm_wiki_platform.publisher import Publisher
 
 
 class PipelineService:
@@ -20,7 +20,7 @@ class PipelineService:
         ingestion: IngestionService,
         coordinator: JobCoordinator,
         openkb: OpenKBClient | None,
-        publisher: BookStackPublisher | None,
+        publishers: dict[str, Publisher],
     ) -> None:
         """PipelineServiceを初期化する。
 
@@ -29,7 +29,7 @@ class PipelineService:
             ingestion: source ingest service。
             coordinator: 多重実行を防止するjob coordinator。
             openkb: compile有効時のOpenKB client。
-            publisher: publish有効時のBookStack publisher。
+            publishers: target名と有効なPublisherの対応。
 
         Returns:
             なし。
@@ -38,7 +38,7 @@ class PipelineService:
         self._ingestion = ingestion
         self._coordinator = coordinator
         self._openkb = openkb
-        self._publisher = publisher
+        self._publishers = publishers
 
     async def submit_ingest(self, source_name: str, trigger: str) -> SubmissionResult:
         """source ingestをjob coordinatorへsubmitする。
@@ -104,7 +104,7 @@ class PipelineService:
         return await self._coordinator.submit("compile", trigger, runner)
 
     async def submit_publish(self, trigger: str) -> SubmissionResult:
-        """BookStack publishをjob coordinatorへsubmitする。
+        """設定済みtargetへのpublishをjob coordinatorへsubmitする。
 
         Args:
             trigger: manualまたはcompile。
@@ -115,21 +115,23 @@ class PipelineService:
         Raises:
             RuntimeError: publishが無効またはpublisher未構築の場合。
         """
-        publisher = self._publisher
-        if not self._config.pipeline.publish.enabled or publisher is None:
+        publishers = self._publishers
+        if not self._config.pipeline.publish.enabled or not publishers:
             raise RuntimeError("publishはconfig.yamlで無効です")
 
         async def runner(run_trigger: str) -> dict[str, Any]:
-            """BookStack publishを1回実行する。
+            """設定された全targetへpublishを1回実行する。
 
             Args:
                 run_trigger: coordinatorが確定した起動理由。
 
             Returns:
-                publish集計と起動理由。
+                target別publish集計と起動理由。
             """
-            result = await publisher.publish()
-            return result.as_dict() | {"trigger": run_trigger}
+            results: dict[str, dict[str, int | bool]] = {}
+            for target, publisher in publishers.items():
+                results[target] = (await publisher.publish()).as_dict()
+            return {"trigger": run_trigger, "targets": results}
 
         return await self._coordinator.submit("publish", trigger, runner)
 

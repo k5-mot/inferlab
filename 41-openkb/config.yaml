@@ -112,6 +112,22 @@ bookstack:
     token_id_env: BOOKSTACK_PUBLISHER_TOKEN_ID
     token_secret_env: BOOKSTACK_PUBLISHER_TOKEN_SECRET
 
+wikijs:
+  base_url: http://wikijs:3000
+  human_wiki:
+    path: human
+    locale: en
+  llm_wiki:
+    path: llm
+    locale: en
+  ingest:
+    enabled: false
+    schedule: "*/10 * * * *"
+  reader_credential:
+    token_env: WIKIJS_READER_TOKEN
+  publisher_credential:
+    token_env: WIKIJS_PUBLISHER_TOKEN
+
 pipeline:
   compile:
     enabled: false
@@ -122,6 +138,7 @@ pipeline:
       max_delay: 2h
   publish:
     enabled: false
+    targets: []
     mode: after_successful_compile
     require_validation: false
     dry_run: false

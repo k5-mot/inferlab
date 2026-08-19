@@ -64,12 +64,28 @@ bookstack:
   publisher_credential:
     token_id_env: BOOKSTACK_PUBLISHER_TOKEN_ID
     token_secret_env: BOOKSTACK_PUBLISHER_TOKEN_SECRET
+wikijs:
+  base_url: http://wikijs:3000
+  human_wiki:
+    path: human
+    locale: en
+  llm_wiki:
+    path: llm
+    locale: en
+  ingest:
+    enabled: false
+    schedule: "*/15 * * * *"
+  reader_credential:
+    token_env: WIKIJS_READER_TOKEN
+  publisher_credential:
+    token_env: WIKIJS_PUBLISHER_TOKEN
 pipeline:
   compile:
     enabled: {str(compile_enabled).lower()}
     schedule: "*/30 * * * *"
   publish:
     enabled: false
+    targets: []
     mode: after_successful_compile
     require_validation: false
     deletion_policy: mark_unavailable
@@ -150,6 +166,30 @@ def test_human_and_llm_shelves_must_be_distinct(tmp_path: Path) -> None:
     config_path.write_text(content, encoding="utf-8")
 
     with pytest.raises(ConfigLoadError, match="別shelf"):
+        load_config(config_path, {})
+
+
+def test_wikijs_uses_common_ingest_defaults_and_normalizes_paths(tmp_path: Path) -> None:
+    """Wiki.js sourceにも共通既定値を適用しpath prefixを正規化することを検証する。"""
+    config_path = _write_config(tmp_path / "config.yaml", "  {}")
+    content = config_path.read_text(encoding="utf-8").replace("path: human", "path: /human/")
+    config_path.write_text(content, encoding="utf-8")
+
+    config = load_config(config_path, {})
+    effective = config.effective_ingest("wikijs")
+
+    assert config.wikijs.human_wiki.path == "human"
+    assert effective.retry.max_attempts == 3
+    assert effective.rate_limit.requests_per_minute == 60
+
+
+def test_wikijs_human_and_llm_paths_must_not_overlap(tmp_path: Path) -> None:
+    """Wiki.jsのHuman WikiとLLM Wikiが包含関係なら起動失敗することを検証する。"""
+    config_path = _write_config(tmp_path / "config.yaml", "  {}")
+    content = config_path.read_text(encoding="utf-8").replace("path: llm", "path: human/generated")
+    config_path.write_text(content, encoding="utf-8")
+
+    with pytest.raises(ConfigLoadError, match="path prefix"):
         load_config(config_path, {})
 
 

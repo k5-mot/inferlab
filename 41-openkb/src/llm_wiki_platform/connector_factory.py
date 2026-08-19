@@ -13,6 +13,7 @@ from llm_wiki_platform.connectors import (
     KaneoConnector,
     NextcloudConnector,
     SourceConnector,
+    WikiJSConnector,
     ZulipConnector,
 )
 from llm_wiki_platform.connectors.base import RetryingHttpClient
@@ -110,4 +111,15 @@ def build_connector_registry(
         clients.append(client)
         retrying = RetryingHttpClient(client, effective.retry, effective.rate_limit)
         connectors["bookstack"] = BookStackConnector(config.bookstack, retrying)
+    if config.wikijs.ingest.enabled:
+        effective = config.effective_ingest("wikijs")
+        credential = resolve_credential(config.wikijs.reader_credential, environ)
+        client = httpx.AsyncClient(
+            base_url=str(config.wikijs.base_url),
+            headers={"Authorization": f"Bearer {credential['token']}"},
+            timeout=30,
+        )
+        clients.append(client)
+        retrying = RetryingHttpClient(client, effective.retry, effective.rate_limit)
+        connectors["wikijs"] = WikiJSConnector(config.wikijs, retrying)
     return ConnectorRegistry(connectors, clients)

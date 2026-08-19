@@ -293,6 +293,69 @@ class BookStackConfig(StrictModel):
         return self
 
 
+class WikiJSBoundaryConfig(StrictModel):
+    """Wiki.js内のWiki境界をlocaleとpath prefixで表す。"""
+
+    path: str = Field(min_length=1)
+    locale: str = Field(min_length=2)
+
+    @field_validator("path")
+    @classmethod
+    def normalize_path(cls, value: str) -> str:
+        """Wiki.js path prefixをslashなしの相対pathへ正規化する。
+
+        Args:
+            value: 設定されたpath prefix。
+
+        Returns:
+            前後のslashを除去したpath prefix。
+
+        Raises:
+            ValueError: 空pathまたは相対移動segmentを含む場合。
+        """
+        normalized = value.strip().strip("/")
+        if not normalized:
+            raise ValueError("Wiki.js path prefixは空にできません")
+        if any(part in {".", ".."} for part in normalized.split("/")):
+            raise ValueError("Wiki.js path prefixに相対移動segmentは使用できません")
+        return normalized
+
+
+class WikiJSIngestConfig(SourceIngestConfig):
+    """Wiki.js Human Wiki取込の有効状態を含む設定。"""
+
+    enabled: bool
+
+
+class WikiJSConfig(StrictModel):
+    """Wiki.jsの読取・公開設定。"""
+
+    base_url: AnyHttpUrl
+    human_wiki: WikiJSBoundaryConfig
+    llm_wiki: WikiJSBoundaryConfig
+    ingest: WikiJSIngestConfig
+    reader_credential: CredentialRefs
+    publisher_credential: CredentialRefs
+
+    @model_validator(mode="after")
+    def validate_wiki_boundary(self) -> WikiJSConfig:
+        """Human WikiとLLM Wikiのpath範囲が重ならないことを検証する。
+
+        Returns:
+            検証済み設定自身。
+
+        Raises:
+            ValueError: 同一locale内でpath prefixが同一または包含関係の場合。
+        """
+        if self.human_wiki.locale != self.llm_wiki.locale:
+            return self
+        human = self.human_wiki.path
+        llm = self.llm_wiki.path
+        if human == llm or human.startswith(f"{llm}/") or llm.startswith(f"{human}/"):
+            raise ValueError("Wiki.js Human WikiとLLM Wikiのpath prefixを分離してください")
+        return self
+
+
 class CompileTriggerConfig(StrictModel):
     """ingest完了を契機とする将来のcompile条件。"""
 
@@ -329,10 +392,27 @@ class PublishConfig(StrictModel):
     """publishの起動条件と削除方針。"""
 
     enabled: bool
+    targets: tuple[Literal["bookstack", "wikijs"], ...] = ("bookstack",)
     mode: Literal["after_successful_compile", "manual"]
     require_validation: Literal[False] = False
     dry_run: bool = False
     deletion_policy: Literal["mark_unavailable"] = "mark_unavailable"
+
+    @model_validator(mode="after")
+    def validate_targets(self) -> PublishConfig:
+        """有効な公開処理に1つ以上の重複しないtargetを要求する。
+
+        Returns:
+            検証済み設定自身。
+
+        Raises:
+            ValueError: 有効時にtargetがないか、targetが重複する場合。
+        """
+        if self.enabled and not self.targets:
+            raise ValueError("publish有効時はtargetを1つ以上指定してください")
+        if len(set(self.targets)) != len(self.targets):
+            raise ValueError("publish targetを重複指定できません")
+        return self
 
 
 class PipelineConfig(StrictModel):
@@ -360,6 +440,7 @@ class AppConfig(StrictModel):
     sources: dict[str, SourceConfig]
     openkb: OpenKBConfig
     bookstack: BookStackConfig
+    wikijs: WikiJSConfig
     pipeline: PipelineConfig
 
     @field_validator("sources")
@@ -415,19 +496,28 @@ class AppConfig(StrictModel):
                 ("token_id_env", "token_secret_env"),
                 "bookstack reader",
             )
+        if self.wikijs.ingest.enabled:
+            _require_fields(self.wikijs.reader_credential, ("token_env",), "wikijs reader")
         if self.pipeline.publish.enabled:
-            _require_fields(
-                self.bookstack.publisher_credential,
-                ("token_id_env", "token_secret_env"),
-                "bookstack publisher",
-            )
+            if "bookstack" in self.pipeline.publish.targets:
+                _require_fields(
+                    self.bookstack.publisher_credential,
+                    ("token_id_env", "token_secret_env"),
+                    "bookstack publisher",
+                )
+            if "wikijs" in self.pipeline.publish.targets:
+                _require_fields(
+                    self.wikijs.publisher_credential,
+                    ("token_env",),
+                    "wikijs publisher",
+                )
         return self
 
     def effective_ingest(self, source_name: str) -> EffectiveIngestConfig:
         """source共通既定値へsource別overrideを適用する。
 
         Args:
-            source_name: `sources`のkey、または`bookstack`。
+            source_name: `sources`のkey、`bookstack`、または`wikijs`。
 
         Returns:
             解決済みingest設定。
@@ -436,11 +526,13 @@ class AppConfig(StrictModel):
             KeyError: source名が設定に存在しない場合。
             ValueError: 解決後のretry delayが不正な場合。
         """
-        source_ingest = (
-            self.bookstack.ingest
-            if source_name == "bookstack"
-            else self.sources[source_name].ingest
-        )
+        source_ingest: SourceIngestConfig
+        if source_name == "bookstack":
+            source_ingest = self.bookstack.ingest
+        elif source_name == "wikijs":
+            source_ingest = self.wikijs.ingest
+        else:
+            source_ingest = self.sources[source_name].ingest
         retry_update = _defined_values(source_ingest.retry)
         rate_limit_update = _defined_values(source_ingest.rate_limit)
         retry = self.defaults.ingest.retry.model_copy(update=retry_update)
@@ -461,6 +553,8 @@ class AppConfig(StrictModel):
         names = [name for name, source in self.sources.items() if source.enabled]
         if self.bookstack.ingest.enabled:
             names.append("bookstack")
+        if self.wikijs.ingest.enabled:
+            names.append("wikijs")
         return tuple(names)
 
 
@@ -547,8 +641,13 @@ def validate_environment(config: AppConfig, environ: Mapping[str, str]) -> None:
             required.update(source.credential.environment_names())
     if config.bookstack.ingest.enabled:
         required.update(config.bookstack.reader_credential.environment_names())
+    if config.wikijs.ingest.enabled:
+        required.update(config.wikijs.reader_credential.environment_names())
     if config.pipeline.publish.enabled:
-        required.update(config.bookstack.publisher_credential.environment_names())
+        if "bookstack" in config.pipeline.publish.targets:
+            required.update(config.bookstack.publisher_credential.environment_names())
+        if "wikijs" in config.pipeline.publish.targets:
+            required.update(config.wikijs.publisher_credential.environment_names())
     if config.enabled_source_names() or config.pipeline.compile.enabled:
         token_env = config.openkb.credential.token_env
         if token_env:

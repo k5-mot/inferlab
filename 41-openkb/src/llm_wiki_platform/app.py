@@ -22,9 +22,10 @@ from llm_wiki_platform.ingestion import IngestionService
 from llm_wiki_platform.jobs import JobCoordinator, SubmissionResult
 from llm_wiki_platform.openkb_client import OpenKBClient
 from llm_wiki_platform.pipeline import PipelineService
-from llm_wiki_platform.publisher import BookStackPublisher
+from llm_wiki_platform.publisher import BookStackPublisher, Publisher
 from llm_wiki_platform.source_store import SourceStore, serialize_document_state
 from llm_wiki_platform.state import StateStore, decode_run_detail
+from llm_wiki_platform.wikijs_publisher import WikiJSPublisher
 
 
 @dataclass(slots=True)
@@ -127,29 +128,50 @@ def _build_context(config: AppConfig, environ: Mapping[str, str]) -> Application
         )
         openkb = OpenKBClient(config, state_store, retrying, environ)
 
-    publisher: BookStackPublisher | None = None
+    publishers: dict[str, Publisher] = {}
     if config.pipeline.publish.enabled:
-        credential = resolve_credential(config.bookstack.publisher_credential, environ)
-        client = httpx.AsyncClient(
-            base_url=str(config.bookstack.base_url),
-            headers={
-                "Authorization": f"Token {credential['token_id']}:{credential['token_secret']}"
-            },
-            timeout=60,
-        )
-        owned_clients.append(client)
-        retrying = RetryingHttpClient(
-            client, config.defaults.ingest.retry, config.defaults.ingest.rate_limit
-        )
-        publisher = BookStackPublisher(
-            config.bookstack,
-            config.pipeline.publish,
-            config.openkb.generated_wiki_path,
-            state_store,
-            retrying,
-        )
+        if "bookstack" in config.pipeline.publish.targets:
+            credential = resolve_credential(config.bookstack.publisher_credential, environ)
+            client = httpx.AsyncClient(
+                base_url=str(config.bookstack.base_url),
+                headers={
+                    "Authorization": (
+                        f"Token {credential['token_id']}:{credential['token_secret']}"
+                    )
+                },
+                timeout=60,
+            )
+            owned_clients.append(client)
+            retrying = RetryingHttpClient(
+                client, config.defaults.ingest.retry, config.defaults.ingest.rate_limit
+            )
+            publishers["bookstack"] = BookStackPublisher(
+                config.bookstack,
+                config.pipeline.publish,
+                config.openkb.generated_wiki_path,
+                state_store,
+                retrying,
+            )
+        if "wikijs" in config.pipeline.publish.targets:
+            credential = resolve_credential(config.wikijs.publisher_credential, environ)
+            client = httpx.AsyncClient(
+                base_url=str(config.wikijs.base_url),
+                headers={"Authorization": f"Bearer {credential['token']}"},
+                timeout=60,
+            )
+            owned_clients.append(client)
+            retrying = RetryingHttpClient(
+                client, config.defaults.ingest.retry, config.defaults.ingest.rate_limit
+            )
+            publishers["wikijs"] = WikiJSPublisher(
+                config.wikijs,
+                config.pipeline.publish,
+                config.openkb.generated_wiki_path,
+                state_store,
+                retrying,
+            )
 
-    pipeline = PipelineService(config, ingestion, coordinator, openkb, publisher)
+    pipeline = PipelineService(config, ingestion, coordinator, openkb, publishers)
     scheduler = _build_scheduler(config, pipeline)
     return ApplicationContext(
         config=config,
@@ -228,7 +250,7 @@ def _register_routes(application: FastAPI, context: ApplicationContext) -> None:
         for document in context.state_store.list_documents():
             source_name = str(document["source"])
             document_counts[source_name] = document_counts.get(source_name, 0) + 1
-        names = [*context.config.sources, "bookstack"]
+        names = [*context.config.sources, "bookstack", "wikijs"]
         enabled = set(context.config.enabled_source_names())
         return [
             {
@@ -311,7 +333,7 @@ def _register_routes(application: FastAPI, context: ApplicationContext) -> None:
 
     @application.post("/publish", status_code=status.HTTP_202_ACCEPTED)
     async def publish_wiki() -> dict[str, Any]:
-        """manual BookStack publishをsubmitする。
+        """設定済みtargetへのmanual publishをsubmitする。
 
         Returns:
             acceptedまたはpending状態。

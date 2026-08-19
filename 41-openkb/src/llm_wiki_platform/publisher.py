@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from llm_wiki_platform.config import BookStackConfig, PublishConfig
 from llm_wiki_platform.connectors.base import RetryingHttpClient, require_mapping
@@ -20,7 +20,7 @@ _UNAVAILABLE_MARKER = "**Generated source unavailable.**"
 
 @dataclass(frozen=True, slots=True)
 class PublishResult:
-    """BookStack publishの集計結果。"""
+    """1つの公開先に対するpublish集計結果。"""
 
     generated: int
     created: int
@@ -43,6 +43,18 @@ class PublishResult:
             "unavailable": self.unavailable,
             "dry_run": self.dry_run,
         }
+
+
+class Publisher(Protocol):
+    """Generated Wiki公開先が実装する共通interface。"""
+
+    async def publish(self) -> PublishResult:
+        """Generated Wikiを公開先へ反映する。
+
+        Returns:
+            公開先単位のpublish集計結果。
+        """
+        ...
 
 
 class BookStackPublisher:
