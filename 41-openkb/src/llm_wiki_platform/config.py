@@ -184,8 +184,6 @@ class CredentialRefs(StrictModel):
     api_key_env: str | None = None
     username_env: str | None = None
     password_env: str | None = None
-    token_id_env: str | None = None
-    token_secret_env: str | None = None
 
     def environment_names(self) -> tuple[str, ...]:
         """設定された環境変数名を列挙する。
@@ -237,60 +235,6 @@ class OpenKBConfig(StrictModel):
     generated_wiki_path: Path
     credential: OpenKBCredential = Field(default_factory=OpenKBCredential)
     llm: OpenKBLLMConfig
-
-
-class WikiBoundaryConfig(StrictModel):
-    """BookStack内のWiki境界をshelf名で表す。"""
-
-    shelf: str = Field(min_length=1)
-
-
-class LLMWikiBoundaryConfig(WikiBoundaryConfig):
-    """LLM Wiki shelfとGenerated Wiki categoryのbook mapping。"""
-
-    books: dict[str, str] = Field(
-        default_factory=lambda: {
-            "concepts": "Concepts",
-            "entities": "Entities",
-            "projects": "Projects",
-            "systems": "Systems",
-            "decisions": "Decisions",
-            "sources": "Sources",
-            "summaries": "Summaries",
-            "syntheses": "Syntheses",
-        }
-    )
-
-
-class BookStackIngestConfig(SourceIngestConfig):
-    """BookStack Human Wiki取込の有効状態を含む設定。"""
-
-    enabled: bool
-
-
-class BookStackConfig(StrictModel):
-    """BookStackの読取・公開設定。"""
-
-    base_url: AnyHttpUrl
-    human_wiki: WikiBoundaryConfig
-    llm_wiki: LLMWikiBoundaryConfig
-    ingest: BookStackIngestConfig
-    reader_credential: CredentialRefs
-    publisher_credential: CredentialRefs
-
-    @model_validator(mode="after")
-    def validate_wiki_boundary(self) -> BookStackConfig:
-        """Human WikiとLLM Wikiが別shelfか検証する。
-
-        Returns:
-            検証済み設定自身。
-
-        Raises:
-            ValueError: 同一shelfが指定された場合。
-        """
-        if self.human_wiki.shelf == self.llm_wiki.shelf:
-            raise ValueError("Human WikiとLLM Wikiは別shelfにしてください")
-        return self
 
 
 class WikiJSBoundaryConfig(StrictModel):
@@ -392,7 +336,7 @@ class PublishConfig(StrictModel):
     """publishの起動条件と削除方針。"""
 
     enabled: bool
-    targets: tuple[Literal["bookstack", "wikijs"], ...] = ("bookstack",)
+    targets: tuple[Literal["wikijs"], ...] = ("wikijs",)
     mode: Literal["after_successful_compile", "manual"]
     require_validation: Literal[False] = False
     dry_run: bool = False
@@ -439,7 +383,6 @@ class AppConfig(StrictModel):
     defaults: DefaultsConfig
     sources: dict[str, SourceConfig]
     openkb: OpenKBConfig
-    bookstack: BookStackConfig
     wikijs: WikiJSConfig
     pipeline: PipelineConfig
 
@@ -490,34 +433,21 @@ class AppConfig(StrictModel):
                 raise ValueError(
                     f"{source_name} credential参照が不足しています: {', '.join(missing)}"
                 )
-        if self.bookstack.ingest.enabled:
-            _require_fields(
-                self.bookstack.reader_credential,
-                ("token_id_env", "token_secret_env"),
-                "bookstack reader",
-            )
         if self.wikijs.ingest.enabled:
             _require_fields(self.wikijs.reader_credential, ("token_env",), "wikijs reader")
-        if self.pipeline.publish.enabled:
-            if "bookstack" in self.pipeline.publish.targets:
-                _require_fields(
-                    self.bookstack.publisher_credential,
-                    ("token_id_env", "token_secret_env"),
-                    "bookstack publisher",
-                )
-            if "wikijs" in self.pipeline.publish.targets:
-                _require_fields(
-                    self.wikijs.publisher_credential,
-                    ("token_env",),
-                    "wikijs publisher",
-                )
+        if self.pipeline.publish.enabled and "wikijs" in self.pipeline.publish.targets:
+            _require_fields(
+                self.wikijs.publisher_credential,
+                ("token_env",),
+                "wikijs publisher",
+            )
         return self
 
     def effective_ingest(self, source_name: str) -> EffectiveIngestConfig:
         """source共通既定値へsource別overrideを適用する。
 
         Args:
-            source_name: `sources`のkey、`bookstack`、または`wikijs`。
+            source_name: `sources`のkeyまたは`wikijs`。
 
         Returns:
             解決済みingest設定。
@@ -527,9 +457,7 @@ class AppConfig(StrictModel):
             ValueError: 解決後のretry delayが不正な場合。
         """
         source_ingest: SourceIngestConfig
-        if source_name == "bookstack":
-            source_ingest = self.bookstack.ingest
-        elif source_name == "wikijs":
+        if source_name == "wikijs":
             source_ingest = self.wikijs.ingest
         else:
             source_ingest = self.sources[source_name].ingest
@@ -551,8 +479,6 @@ class AppConfig(StrictModel):
             config順を維持したsource名。
         """
         names = [name for name, source in self.sources.items() if source.enabled]
-        if self.bookstack.ingest.enabled:
-            names.append("bookstack")
         if self.wikijs.ingest.enabled:
             names.append("wikijs")
         return tuple(names)
@@ -639,15 +565,10 @@ def validate_environment(config: AppConfig, environ: Mapping[str, str]) -> None:
     for source in config.sources.values():
         if source.enabled:
             required.update(source.credential.environment_names())
-    if config.bookstack.ingest.enabled:
-        required.update(config.bookstack.reader_credential.environment_names())
     if config.wikijs.ingest.enabled:
         required.update(config.wikijs.reader_credential.environment_names())
-    if config.pipeline.publish.enabled:
-        if "bookstack" in config.pipeline.publish.targets:
-            required.update(config.bookstack.publisher_credential.environment_names())
-        if "wikijs" in config.pipeline.publish.targets:
-            required.update(config.wikijs.publisher_credential.environment_names())
+    if config.pipeline.publish.enabled and "wikijs" in config.pipeline.publish.targets:
+        required.update(config.wikijs.publisher_credential.environment_names())
     if config.enabled_source_names() or config.pipeline.compile.enabled:
         token_env = config.openkb.credential.token_env
         if token_env:

@@ -10,14 +10,6 @@ repos:
         pass_filenames: false
         always_run: true
 
-      - id: compose-smoke-bookstack-init
-        name: "Compose smoke: BookStack init"
-        entry: script/verify-compose-smoke.sh bookstack-init
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [manual]
-
       - id: compose-smoke-dify-postgres-init
         name: "Compose smoke: Dify PostgreSQL init"
         entry: script/verify-compose-smoke.sh dify-postgres-init
@@ -37,14 +29,6 @@ repos:
       - id: compose-smoke-langfuse-bucket-init
         name: "Compose smoke: Langfuse bucket init"
         entry: script/verify-compose-smoke.sh langfuse-bucket-init
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [manual]
-
-      - id: playwright-smoke-bookstack
-        name: "Playwright smoke: BookStack"
-        entry: tests/e2e/run-playwright-smoke.sh bookstack
         language: system
         pass_filenames: false
         always_run: true

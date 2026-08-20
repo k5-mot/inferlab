@@ -87,31 +87,6 @@ openkb:
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
 
-bookstack:
-  base_url: http://bookstack
-  human_wiki:
-    shelf: Human Wiki
-  llm_wiki:
-    shelf: LLM Wiki
-    books:
-      concepts: Concepts
-      entities: Entities
-      projects: Projects
-      systems: Systems
-      decisions: Decisions
-      sources: Sources
-      summaries: Summaries
-      syntheses: Syntheses
-  ingest:
-    enabled: false
-    schedule: "*/10 * * * *"
-  reader_credential:
-    token_id_env: BOOKSTACK_READER_TOKEN_ID
-    token_secret_env: BOOKSTACK_READER_TOKEN_SECRET
-  publisher_credential:
-    token_id_env: BOOKSTACK_PUBLISHER_TOKEN_ID
-    token_secret_env: BOOKSTACK_PUBLISHER_TOKEN_SECRET
-
 wikijs:
   base_url: http://wikijs:3000
   human_wiki:

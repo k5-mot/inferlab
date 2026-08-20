@@ -1,4 +1,4 @@
-# 32-wikijs
+# 31-wikijs
 
 Wiki.jsと依存するPostgreSQLだけを提供するWiki stackである。
 
@@ -19,7 +19,7 @@ sudo docker compose --env-file .env --profile wikijs up -d
 期待結果:
 
 - `wikijs-postgres`と`wikijs`がhealthyになる。
-- Wiki.jsを`http://${PUBLIC_HOST}:33200`で表示できる。
+- Wiki.jsを`http://${PUBLIC_HOST}:33100`で表示できる。
 - 未初期化時はsetup wizard、初期化済みならWiki画面が表示される。
 
 失敗条件:
@@ -30,7 +30,7 @@ sudo docker compose --env-file .env --profile wikijs up -d
 
 ## 初期設定
 
-ブラウザで`http://${PUBLIC_HOST}:33200`を開き、管理者mail address、password、site URLを設定する。site URLには外部から利用する`http://${PUBLIC_HOST}:33200`を指定する。
+ブラウザで`http://${PUBLIC_HOST}:33100`を開き、管理者mail address、password、site URLを設定する。site URLには外部から利用する`http://${PUBLIC_HOST}:33100`を指定する。
 
 OpenKB連携では管理画面のAPI設定を有効化し、次の2用途のAPI keyを分けて発行することを推奨する。
 
@@ -57,7 +57,7 @@ OpenKB連携では管理画面のAPI設定を有効化し、次の2用途のAPI 
 sudo docker compose --env-file .env --profile wikijs ps
 
 # Wiki.js HTTP endpointの応答を確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:33200/" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:33100/" >/dev/null
 ```
 
 期待結果:

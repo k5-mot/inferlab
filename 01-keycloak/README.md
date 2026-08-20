@@ -14,7 +14,7 @@ Keycloakを中心にした認証stack。HTTP公開用の`keycloak`と、HTTPS is
 4. `keycloak-config`が`keycloak/config.yaml`を適用し、realm user、group、OIDC clientを同期する。
 5. `keycloak-config`が正常終了した後、`keycloak-https`を起動する。
 
-`keycloak-https`は同じDBを参照し、`keycloak/certs/keycloak.crt`と`keycloak/certs/keycloak.key`を使ってHTTPS issuerを提供する。BookStackとZulipはHTTPS issuerを使うため、この証明書が必要になる。
+`keycloak-https`は同じDBを参照し、`keycloak/certs/keycloak.crt`と`keycloak/certs/keycloak.key`を使ってHTTPS issuerを提供する。ZulipはHTTPS issuerを使うため、この証明書が必要になる。
 
 ## 事前準備
 
@@ -49,7 +49,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 - `keycloak`が`http://${PUBLIC_HOST}:30001`で応答する。
 - `keycloak-https`が`https://${PUBLIC_HOST}:30002`で応答する。
 - `prod` realmが作成される。
-- Open WebUI、Dify、Nextcloud、Langfuse、Leantime、BookStack、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
+- Open WebUI、Dify、Nextcloud、Langfuse、Leantime、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
 
 失敗条件:
 

@@ -51,18 +51,6 @@ function artifactTimestamp() {
 }
 
 /**
- * BookStackの未認証login flow内URLかどうかを判定する。
- *
- * @param {URL} url - 判定対象のURL。
- * @param {string} baseUrl - BookStackのbase URL。
- * @returns {boolean} `/login`または`/oidc/login`にいる場合はtrue、それ以外はfalse。
- */
-function isBookStackLoginFlowUrl(url, baseUrl) {
-  const base = new URL(baseUrl);
-  return url.origin === base.origin && (url.pathname === '/login' || url.pathname === '/oidc/login');
-}
-
-/**
  * 検証失敗時の調査用artifactを保存する。
  *
  * @param {import('playwright').Page} page - 保存対象のbrowser page。
@@ -211,87 +199,6 @@ async function loginViaKeycloak(page, config, options) {
       throw new Error(`OIDC provider login failed at ${page.url()}`);
     });
   await Promise.race([appReturn, providerFailure]);
-}
-
-/**
- * BookStackのOIDC入口からKeycloak認証を完了する。
- *
- * @param {import('playwright').Page} page - 操作対象のbrowser page。
- * @param {{baseUrl: string, username: string, password: string}} config - BookStackとKeycloakの検証設定。
- * @returns {Promise<void>} BookStackへ戻ったら解決するPromise。
- * @throws {Error} OIDC login linkが見つからない、または認証後にBookStackへ戻らない場合に送出する。
- */
-async function loginToBookStack(page, config) {
-  await page.goto(`${config.baseUrl}/login`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 60000,
-  });
-
-  const oidcLink = page
-    .locator('#oidc-login, form[action*="/oidc/login"] button, a[href*="/oidc/login"]')
-    .first();
-  await oidcLink.waitFor({ state: 'visible', timeout: 60000 });
-  await Promise.all([
-    page.waitForURL((url) => !isBookStackLoginFlowUrl(url, config.baseUrl), {
-      timeout: 60000,
-    }),
-    oidcLink.click(),
-  ]);
-
-  if (!page.url().startsWith(config.baseUrl)) {
-    await submitKeycloakLogin(page, {
-      username: config.username,
-      password: config.password,
-    });
-  }
-
-  await page.waitForURL((url) => {
-    const base = new URL(config.baseUrl);
-    return url.origin === base.origin && !isBookStackLoginFlowUrl(url, config.baseUrl);
-  }, {
-    timeout: 90000,
-  });
-}
-
-/**
- * BookStackへ新規Bookを作成する。
- *
- * @param {import('playwright').Page} page - 操作対象のbrowser page。
- * @param {string} baseUrl - BookStackのbase URL。
- * @param {string} title - 作成するBook名。
- * @returns {Promise<void>} 作成後画面でBook名が確認できたら解決するPromise。
- * @throws {Error} 作成form、保存button、または作成結果が確認できない場合に送出する。
- */
-async function createBook(page, baseUrl, title) {
-  await page.goto(`${baseUrl}/create-book`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 60000,
-  });
-
-  const nameInput = page.locator('input[name="name"], input#name').first();
-  await nameInput.waitFor({ state: 'visible', timeout: 60000 });
-  await nameInput.fill(title);
-
-  const description = page
-    .locator('textarea[name="description"], textarea[name="description_html"]')
-    .first();
-  if ((await description.count()) && (await description.isVisible())) {
-    await description.fill('Playwright smoke testで作成した検証用Bookです。');
-  }
-
-  const saveButton = page
-    .locator('button[type="submit"], input[type="submit"]')
-    .filter({ hasText: /Create|Save|作成|保存|新規/i })
-    .first();
-  await Promise.all([
-    page.waitForURL(/\/books\/.+/, { timeout: 60000 }).catch(() => undefined),
-    saveButton.click(),
-  ]);
-
-  await page.locator('body').filter({ hasText: title }).waitFor({
-    state: 'visible',
-    timeout: 60000,
-  });
 }
 
 /**
@@ -594,37 +501,18 @@ async function runBrowserSmoke(config, operation) {
 }
 
 /**
- * BookStackの認証と基本操作を検証する。
- *
- * @param {{baseUrl: string, readyUrl: string, username: string, password: string, artifactRoot: string}} config - BookStack検証設定。
- * @returns {Promise<void>} 検証が成功したら解決するPromise。
- * @throws {Error} 認証またはBook作成が失敗した場合に送出する。
- */
-async function runBookStackSmoke(config) {
-  await runBrowserSmoke(config, async (page) => {
-    const title = `Codex Smoke Book ${artifactTimestamp()}`;
-    await loginToBookStack(page, config);
-    await createBook(page, config.baseUrl, title);
-    console.log(`BookStack smoke passed: created "${title}"`);
-  });
-}
-
-/**
  * command line引数に対応するsmoke testを実行する。
  *
  * @returns {Promise<void>} 指定されたsmoke testが完了したら解決するPromise。
  * @throws {Error} 未知のsmoke case、またはsmoke test失敗時に送出する。
  */
 async function main() {
-  const smokeCase = process.argv[2] ?? 'bookstack';
+  const smokeCase = process.argv[2] ?? 'nextcloud';
   const config = buildSmokeConfig(smokeCase);
 
   switch (smokeCase) {
     case 'nextcloud':
       await runBrowserSmoke(config, verifyNextcloud);
-      break;
-    case 'bookstack':
-      await runBookStackSmoke(config);
       break;
     case 'kaneo':
       await runBrowserSmoke(config, verifyKaneo);

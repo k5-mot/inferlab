@@ -36,9 +36,6 @@ packages = ["src/llm_wiki_platform"]
 addopts = "-q"
 asyncio_mode = "auto"
 testpaths = ["tests"]
-markers = [
-    "integration: 実際の外部serviceへ接続するintegration test",
-]
 
 [tool.ruff]
 line-length = 100

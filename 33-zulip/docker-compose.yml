@@ -10,7 +10,7 @@ services:
     environment:
       CERTIFICATES: self-signed
       TZ: Asia/Tokyo
-      SETTING_EXTERNAL_HOST: ${PUBLIC_HOST}:33400
+      SETTING_EXTERNAL_HOST: ${PUBLIC_HOST}:33300
       SETTING_TIME_ZONE: Asia/Tokyo
       SETTING_ZULIP_ADMINISTRATOR: ${ZULIP_ADMIN_EMAIL:-admin@example.com}
       SETTING_EMAIL_HOST: ${ZULIP_EMAIL_HOST:-}
@@ -91,9 +91,9 @@ services:
             "on",
         }
     ports:
-      - "33402:80"
-      - "33400:443"
-      - "33425:25"
+      - "33302:80"
+      - "33300:443"
+      - "33325:25"
     volumes:
       - zulip-data:/data
       - ./local-static:/home/zulip/local-static:ro
@@ -116,9 +116,9 @@ services:
       zulip-redis:
         condition: service_healthy
     labels:
-      - homepage.group=34-zulip
+      - homepage.group=33-zulip
       - homepage.name=Zulip
-      - homepage.href=https://${PUBLIC_HOST}:33400/
+      - homepage.href=https://${PUBLIC_HOST}:33300/
       - homepage.description=Team chat platform
       - homepage.icon=/icons/zulip.png
     healthcheck:
@@ -154,7 +154,7 @@ services:
       start_period: 10s
     labels:
       - homepage.icon=/icons/postgresql.png
-      - homepage.group=34-zulip
+      - homepage.group=33-zulip
       - homepage.name=Zulip-Postgres
       - homepage.description=Relational database
 
@@ -187,7 +187,7 @@ services:
       retries: 5
       start_period: 10s
     labels:
-      - homepage.group=34-zulip
+      - homepage.group=33-zulip
       - homepage.name=Zulip-Memcached
       - homepage.description=In-memory cache
       - homepage.icon=/icons/memcached.png
@@ -222,7 +222,7 @@ services:
       start_period: 20s
     labels:
       - homepage.icon=/icons/rabbitmq.png
-      - homepage.group=34-zulip
+      - homepage.group=33-zulip
       - homepage.name=Zulip-RabbitMQ
       - homepage.description=Reliable message broker
 
@@ -254,7 +254,7 @@ services:
       start_period: 5s
     labels:
       - homepage.icon=/icons/redis.png
-      - homepage.group=34-zulip
+      - homepage.group=33-zulip
       - homepage.name=Zulip-Redis
       - homepage.description=In-memory data store
 

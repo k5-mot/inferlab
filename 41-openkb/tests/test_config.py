@@ -49,21 +49,6 @@ openkb:
     model: openai/test-model
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
-bookstack:
-  base_url: http://bookstack
-  human_wiki:
-    shelf: Human Wiki
-  llm_wiki:
-    shelf: LLM Wiki
-  ingest:
-    enabled: false
-    schedule: "*/10 * * * *"
-  reader_credential:
-    token_id_env: BOOKSTACK_READER_TOKEN_ID
-    token_secret_env: BOOKSTACK_READER_TOKEN_SECRET
-  publisher_credential:
-    token_id_env: BOOKSTACK_PUBLISHER_TOKEN_ID
-    token_secret_env: BOOKSTACK_PUBLISHER_TOKEN_SECRET
 wikijs:
   base_url: http://wikijs:3000
   human_wiki:
@@ -154,18 +139,6 @@ def test_unknown_source_fails_fast(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ConfigLoadError, match="未対応source"):
-        load_config(config_path, {})
-
-
-def test_human_and_llm_shelves_must_be_distinct(tmp_path: Path) -> None:
-    """Human WikiとLLM Wikiが同一shelfなら起動失敗することを検証する。"""
-    config_path = _write_config(tmp_path / "config.yaml", "  {}")
-    content = config_path.read_text(encoding="utf-8").replace(
-        "shelf: LLM Wiki", "shelf: Human Wiki"
-    )
-    config_path.write_text(content, encoding="utf-8")
-
-    with pytest.raises(ConfigLoadError, match="別shelf"):
         load_config(config_path, {})
 
 

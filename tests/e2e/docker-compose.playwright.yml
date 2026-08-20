@@ -10,14 +10,6 @@ services:
     volumes: !override
       - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}:/opt/keycloak/certs:ro
 
-  bookstack:
-    extra_hosts:
-      - host.docker.internal:host-gateway
-    volumes: !override
-      - bookstack-config:/config
-      - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
-      - bookstack-custom-cont-init:/custom-cont-init.d:ro
-
   nextcloud:
     environment:
       OVERWRITECLIURL: http://${PUBLIC_HOST}:33000
@@ -31,8 +23,8 @@ services:
 
   kaneo:
     environment:
-      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:33300
-      KANEO_API_URL: http://${PUBLIC_HOST}:33300
+      KANEO_CLIENT_URL: http://${PUBLIC_HOST}:33200
+      KANEO_API_URL: http://${PUBLIC_HOST}:33200
       CUSTOM_OAUTH_DISCOVERY_URL: http://${PUBLIC_HOST}:30001/realms/prod/.well-known/openid-configuration
       CUSTOM_OAUTH_LOGOUT_URL: http://${PUBLIC_HOST}:30001/realms/prod/protocol/openid-connect/logout
     extra_hosts:
@@ -42,7 +34,7 @@ services:
     mem_limit: 3g
     memswap_limit: 3g
     environment:
-      SETTING_EXTERNAL_HOST: ${PUBLIC_HOST}:33400
+      SETTING_EXTERNAL_HOST: ${PUBLIC_HOST}:33300
       CONFIG_http_proxy__allow_addresses: ${PUBLIC_HOST}
       CONFIG_application_server__uwsgi_processes: "3"
       CONFIG_application_server__queue_workers_multiprocess: "false"
@@ -51,9 +43,9 @@ services:
       - host.docker.internal:host-gateway
     volumes: !override
       - zulip-data:/data
-      - ./34-zulip/local-static:/home/zulip/local-static:ro
-      - ./34-zulip/nginx/app.d/usability-css.conf:/etc/nginx/zulip-include/app.d/usability-css.conf:ro
-      - ./34-zulip/post-setup.d:/data/post-setup.d:ro
+      - ./33-zulip/local-static:/home/zulip/local-static:ro
+      - ./33-zulip/nginx/app.d/usability-css.conf:/etc/nginx/zulip-include/app.d/usability-css.conf:ro
+      - ./33-zulip/post-setup.d:/data/post-setup.d:ro
       - ${PLAYWRIGHT_KEYCLOAK_CERT_DIR:?PLAYWRIGHT_KEYCLOAK_CERT_DIR must be set}/keycloak.crt:/usr/local/share/ca-certificates/keycloak.crt:ro
 
   open-webui:

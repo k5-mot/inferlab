@@ -479,31 +479,6 @@ services:
   #     - homepage.name=Pulp Redis Exporter
   #     - homepage.description=Pulp cache metrics exporter
 
-  # bookstack-mysqld-exporter:
-  #   image: docker.io/prom/mysqld-exporter:v0.19.0
-  #   container_name: ${STACK_NAME}-bookstack-mysqld-exporter
-  #   restart: unless-stopped
-  #   profiles:
-  #     - o11y
-  #   command:
-  #     - --mysqld.address=bookstack-mariadb:3306
-  #     - --mysqld.username=root
-  #   environment:
-  #     MYSQLD_EXPORTER_PASSWORD: bs_db_root_password
-  #   networks:
-  #     - internal-nw
-  #   healthcheck:
-  #     test: [ "CMD-SHELL", "wget --spider -q -T 3 http://127.0.0.1:9104/metrics || exit 1" ]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 10s
-  #   labels:
-  #     - homepage.icon=/icons/mariadb.png
-  #     - homepage.group=50-o11y
-  #     - homepage.name=BookStack MariaDB Exporter
-  #     - homepage.description=BookStack database metrics exporter
-
   # AMD ROCm対応GPU環境でのみ有効化する。/dev/kfdと/dev/driが必要。
   # amd-device-metrics-exporter:
   #   image: docker.io/rocm/device-metrics-exporter:v1.5.0

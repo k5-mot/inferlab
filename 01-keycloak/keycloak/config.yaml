@@ -237,50 +237,6 @@ clients:
           userinfo.token.claim: "true"
 
   #
-  # BookStack
-  #
-  - clientId: bookstack
-    name: BookStack
-    enabled: true
-    protocol: openid-connect
-
-    publicClient: false
-    clientAuthenticatorType: client-secret
-    secret: "$(env:BOOKSTACK_OIDC_CLIENT_SECRET)"
-
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-
-    rootUrl: "http://$(env:PUBLIC_HOST):33500/"
-
-    redirectUris:
-      - "http://localhost:33500/oidc/callback"
-      - "http://127.0.0.1:33500/oidc/callback"
-      - "http://$(env:PUBLIC_HOST):33500/oidc/callback"
-
-    webOrigins:
-      - "http://localhost:33500"
-      - "http://127.0.0.1:33500"
-      - "http://$(env:PUBLIC_HOST):33500"
-
-    protocolMappers:
-      - name: groups
-        protocol: openid-connect
-        protocolMapper: oidc-group-membership-mapper
-        consentRequired: false
-
-        config:
-          claim.name: groups
-          full.path: "false"
-          introspection.token.claim: "true"
-          multivalued: "true"
-          id.token.claim: "true"
-          access.token.claim: "true"
-          userinfo.token.claim: "true"
-
-  #
   # Kaneo
   #
   - clientId: kaneo
@@ -297,17 +253,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):33300/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33200/"
 
     redirectUris:
-      - "http://localhost:33300/api/auth/oauth2/callback/custom"
-      - "http://127.0.0.1:33300/api/auth/oauth2/callback/custom"
-      - "http://$(env:PUBLIC_HOST):33300/api/auth/oauth2/callback/custom"
+      - "http://localhost:33200/api/auth/oauth2/callback/custom"
+      - "http://127.0.0.1:33200/api/auth/oauth2/callback/custom"
+      - "http://$(env:PUBLIC_HOST):33200/api/auth/oauth2/callback/custom"
 
     webOrigins:
-      - "http://localhost:33300"
-      - "http://127.0.0.1:33300"
-      - "http://$(env:PUBLIC_HOST):33300"
+      - "http://localhost:33200"
+      - "http://127.0.0.1:33200"
+      - "http://$(env:PUBLIC_HOST):33200"
 
     protocolMappers:
       - name: groups
@@ -341,17 +297,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "https://$(env:PUBLIC_HOST):33400/"
+    rootUrl: "https://$(env:PUBLIC_HOST):33300/"
 
     redirectUris:
-      - "https://localhost:33400/complete/oidc/"
-      - "https://127.0.0.1:33400/complete/oidc/"
-      - "https://$(env:PUBLIC_HOST):33400/complete/oidc/"
+      - "https://localhost:33300/complete/oidc/"
+      - "https://127.0.0.1:33300/complete/oidc/"
+      - "https://$(env:PUBLIC_HOST):33300/complete/oidc/"
 
     webOrigins:
-      - "https://localhost:33400"
-      - "https://127.0.0.1:33400"
-      - "https://$(env:PUBLIC_HOST):33400"
+      - "https://localhost:33300"
+      - "https://127.0.0.1:33300"
+      - "https://$(env:PUBLIC_HOST):33300"
 
     protocolMappers:
       - name: groups
@@ -385,17 +341,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):33600/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33500/"
 
     redirectUris:
-      - "http://localhost:33600/users/auth/openid_connect/callback"
-      - "http://127.0.0.1:33600/users/auth/openid_connect/callback"
-      - "http://$(env:PUBLIC_HOST):33600/users/auth/openid_connect/callback"
+      - "http://localhost:33500/users/auth/openid_connect/callback"
+      - "http://127.0.0.1:33500/users/auth/openid_connect/callback"
+      - "http://$(env:PUBLIC_HOST):33500/users/auth/openid_connect/callback"
 
     webOrigins:
-      - "http://localhost:33600"
-      - "http://127.0.0.1:33600"
-      - "http://$(env:PUBLIC_HOST):33600"
+      - "http://localhost:33500"
+      - "http://127.0.0.1:33500"
+      - "http://$(env:PUBLIC_HOST):33500"
 
     protocolMappers:
       - name: groups

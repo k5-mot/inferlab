@@ -38,7 +38,7 @@ services:
       # Prometheus metricsを管理ポートで公開する。
       KC_METRICS_ENABLED: "true"
       KC_HTTP_MANAGEMENT_SCHEME: http
-      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
+      # ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
       QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: 512K
       QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: "524288"
     ports:
@@ -96,7 +96,6 @@ services:
       DIFY_OIDC_CLIENT_SECRET: ${DIFY_OIDC_CLIENT_SECRET:-sk-dify-oidc-client-secret-key}
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
       LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
-      BOOKSTACK_OIDC_CLIENT_SECRET: ${BOOKSTACK_OIDC_CLIENT_SECRET:-sk-bookstack-oidc-client-secret-key}
       KANEO_OIDC_CLIENT_SECRET: ${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}
       ZULIP_OIDC_CLIENT_SECRET: ${ZULIP_OIDC_CLIENT_SECRET:-sk-zulip-oidc-client-secret-key}
       GITLAB_OIDC_CLIENT_SECRET: ${GITLAB_OIDC_CLIENT_SECRET:-sk-gitlab-oidc-client-secret-key}
@@ -131,7 +130,7 @@ services:
       # HTTPS終端設定.
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key
-      # BookStack/ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
+      # ZulipのOIDC遷移でHTTP/2 header-list上限に当たるため拡張する。
       QUARKUS_HTTP_LIMITS_MAX_HEADER_SIZE: 512K
       QUARKUS_HTTP_LIMITS_MAX_HEADER_LIST_SIZE: "524288"
       # ヘルスチェックエンドポイントの有効化.

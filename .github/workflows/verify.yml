@@ -28,7 +28,6 @@ jobs:
       fail-fast: false
       matrix:
         smoke_case:
-          - bookstack-init
           - dify-postgres-init
           - oikb-bucket-init
           - langfuse-bucket-init
@@ -39,25 +38,3 @@ jobs:
 
       - name: Run minimal Compose smoke
         run: script/verify-compose-smoke.sh "${{ matrix.smoke_case }}"
-
-  playwright-e2e:
-    name: Playwright E2E (${{ matrix.smoke_case }})
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        smoke_case:
-          - bookstack
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Run minimal Playwright E2E
-        run: tests/e2e/run-playwright-smoke.sh "${{ matrix.smoke_case }}"

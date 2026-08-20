@@ -120,7 +120,7 @@ verify_compose_config() {
     owui
     dify
     nextcloud
-    bookstack
+    wikijs
     kaneo
     zulip
     obsidian

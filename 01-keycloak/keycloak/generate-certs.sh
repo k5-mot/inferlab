@@ -16,7 +16,7 @@ esac
 
 mkdir -p "$cert_dir"
 
-# BookStackのOIDC連携はHTTPS issuerを必須にするため、LAN用の自己署名証明書を生成する。
+# ZulipのOIDC連携に使うLAN用の自己署名証明書を生成する。
 openssl req \
   -x509 \
   -newkey rsa:2048 \

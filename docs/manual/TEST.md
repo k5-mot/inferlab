@@ -17,11 +17,9 @@
 | テスト | レベル | 確認する範囲 | 確認しない範囲 |
 | --- | --- | --- | --- |
 | `static-validation` | 1 | 追跡済みshell、Python、JavaScriptの構文と、root Composeおよび主要profileの設定解決 | container起動、初期化処理の実行、外部serviceとの通信、画面操作 |
-| `compose-smoke-bookstack-init` | 2 | `bookstack-custom-init`によるinit scriptのvolumeコピー、所有者、実行権限の設定 | MariaDBとBookStack本体の起動、script内容の実行、OIDC認証 |
 | `compose-smoke-dify-postgres-init` | 2 | 新規PostgreSQLのhealthcheck完了後に`dify_plugin` databaseを作成できること | 作成済みdatabaseに対する再実行、Dify API、worker、Web UI、plugin daemonの起動とmigration |
 | `compose-smoke-oikb-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`oikb-bucket`を作成できること | 作成済みbucketに対する再実行、Open WebUI、OIKB、Nextcloudの起動と同期 |
 | `compose-smoke-langfuse-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`langfuse-bucket`を作成できること | 作成済みbucketに対する再実行、Langfuse Web、worker、ClickHouse、PostgreSQLの起動とevent取込 |
-| `playwright-smoke-bookstack` | 3 | KeycloakとBookStackを起動し、OIDC認証後に新規Bookを1件作成できること | Book更新・削除、権限差、添付file、全文検索、他serviceの操作 |
 
 ## Level 1: 静的検証
 
@@ -88,9 +86,6 @@ Compose smokeは初期化対象ごとに必要なserviceだけを起動する。
 ### 実行手順
 
 ```bash
-# BookStackのinit script配置処理だけを検証する。
-script/verify-compose-smoke.sh bookstack-init
-
 # Difyのplugin用PostgreSQL database初期化だけを検証する。
 script/verify-compose-smoke.sh dify-postgres-init
 
@@ -105,9 +100,6 @@ script/verify-compose-smoke.sh langfuse-bucket-init
 pre-commitから個別に実行する場合は、対応するhook IDを指定する。
 
 ```bash
-# BookStackのinit smokeだけをmanual stageで実行する。
-pre-commit run compose-smoke-bookstack-init --hook-stage manual
-
 # DifyのPostgreSQL init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-dify-postgres-init --hook-stage manual
 
@@ -152,36 +144,39 @@ STACK_NAME=test-project-name docker compose down --volumes --remove-orphans
 
 ## Level 3: Playwright E2E検証
 
-Playwright E2Eはブラウザ、Keycloak、BookStackと関連databaseを使うため、通常のcommit前hookには含めない。pre-commitの`manual` stage、またはGitHub Actionsの`workflow_dispatch`から明示的に実行する。
+Playwright E2Eはブラウザ、Keycloak、対象serviceと関連databaseを使うため、通常のcommit前hookには含めない。必要なcaseをlocalで明示的に実行する。
 
 ### 前提
 
 - Docker daemon、Docker Compose plugin、Node.js、npm、Python 3、OpenSSLが必要。
-- `keycloak`と`bookstack` profileだけを一時Compose projectとして起動する。
+- 対象caseに必要なprofileだけを一時Compose projectとして起動する。
 - PlaywrightとChromiumはrepository外の一時cacheへ導入する。
 
 ### 実行手順
 
 ```bash
-# KeycloakとBookStackを起動し、OIDC認証後に新規Bookを作成する。
-tests/e2e/run-playwright-smoke.sh bookstack
+# 利用できるPlaywright smoke caseを一覧表示する。
+tests/e2e/run-playwright-smoke.sh --list
 
-# 同じBookStack E2Eをpre-commitのmanual stage経由で実行する。
-pre-commit run playwright-smoke-bookstack --hook-stage manual
+# NextcloudのOIDC認証とfolder作成を検証する。
+tests/e2e/run-playwright-smoke.sh nextcloud
+
+# 実装済みのPlaywright smoke caseを順番にすべて実行する。
+tests/e2e/run-playwright-smoke.sh all
 ```
 
 期待結果:
 
-- Keycloak、Keycloak HTTPS、BookStack、関連databaseだけが起動する。
-- BookStackのOIDC loginからKeycloak user `admin`で認証できる。
-- BookStackに`Codex Smoke Book ...`という検証用Bookを作成できる。
+- Keycloak、対象service、その関連databaseだけが起動する。
+- 対象serviceのOIDC loginからKeycloak user `admin`で認証できる。
+- caseごとの基本操作で検証用dataを作成できる。
 - 検証後、一時Compose projectのcontainer、volume、networkと一時証明書が削除される。
 
 失敗条件:
 
 - 必須commandのいずれかを利用できない。
-- KeycloakまたはBookStackが`healthy`にならない。
-- OIDC認証またはBookStackの新規Book作成に失敗する。
+- Keycloakまたは対象serviceが`healthy`にならない。
+- OIDC認証またはcase固有の基本操作に失敗する。
 - cleanup後もテスト用Compose resourceまたは一時証明書が残る。
 
 失敗時は調査用のscreenshotとHTMLを`tests/e2e/artifacts/`へ保存する。このdirectoryはGit管理対象外である。
@@ -209,5 +204,4 @@ STACK_NAME=e2e-project-name docker compose down --volumes --remove-orphans
 | Job | Trigger | 実行内容 |
 | --- | --- | --- |
 | `static` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 1を実行する |
-| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の4ケースをmatrixで実行する |
-| `playwright-e2e` | 手動実行のみ | Level 3のBookStackケースを実行する |
+| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の3ケースをmatrixで実行する |
