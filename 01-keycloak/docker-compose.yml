@@ -9,7 +9,7 @@
 #
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.0
+    image: quay.io/keycloak/keycloak:26.7.2
     container_name: ${STACK_NAME}-keycloak
     restart: unless-stopped
     profiles:
@@ -109,7 +109,7 @@ services:
         condition: service_healthy
 
   keycloak-https:
-    image: quay.io/keycloak/keycloak:26.7.0
+    image: quay.io/keycloak/keycloak:26.7.2
     container_name: ${STACK_NAME}-keycloak-https
     restart: unless-stopped
     profiles:
@@ -166,7 +166,7 @@ services:
       - homepage.description=HTTPS issuer for OIDC clients
 
   keycloak-postgres:
-    image: docker.io/library/postgres:18.4-trixie
+    image: docker.io/library/postgres:18.6-trixie
     container_name: ${STACK_NAME}-keycloak-postgres
     restart: unless-stopped
     profiles:

@@ -76,7 +76,7 @@ services:
       - homepage.icon=/icons/pypi.png
 
   verdaccio:
-    image: verdaccio/verdaccio:6.9.0
+    image: verdaccio/verdaccio:6.10.0
     container_name: ${STACK_NAME}-verdaccio
     restart: unless-stopped
     profiles:
@@ -169,7 +169,7 @@ services:
       start_period: 10s
 
   npm-importer:
-    image: node:22-alpine
+    image: node:22.22.3-alpine
     container_name: ${STACK_NAME}-npm-importer
     profiles:
       - registry
@@ -228,7 +228,7 @@ services:
       start_period: 10s
 
   rpm-dist:
-    image: nginxinc/nginx-unprivileged:1.31.3-alpine
+    image: nginxinc/nginx-unprivileged:1.31.4-alpine
     container_name: ${STACK_NAME}-rpm-dist
     restart: unless-stopped
     profiles:
@@ -261,7 +261,7 @@ services:
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: docker.io/eilandert/reprepro@sha256:7e448608d5ff4d22e6ddf2ddcdc2102f2f8abefa59c4324a6dc345881b1a586f
+    image: docker.io/eilandert/reprepro@sha256:96dbd4cdbbb5c26893a7270c8949393211aaa0ec3ff05bf1ebd22da35347e64c
     container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
@@ -295,7 +295,7 @@ services:
       - internal-nw
 
   deb-dist:
-    image: nginxinc/nginx-unprivileged:1.31.3-alpine
+    image: nginxinc/nginx-unprivileged:1.31.4-alpine
     container_name: ${STACK_NAME}-deb-dist
     restart: unless-stopped
     profiles:

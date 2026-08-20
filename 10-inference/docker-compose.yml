@@ -24,7 +24,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   litellm:
     <<: *external-dns-stabilizer
-    image: docker.io/litellm/litellm:v1.94.1
+    image: docker.io/litellm/litellm:v1.97.0
     container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
@@ -79,7 +79,7 @@ services:
 
   ollama:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.5
+    image: docker.io/ollama/ollama:0.32.15
     container_name: ${STACK_NAME}-ollama
     restart: unless-stopped
     profiles:
@@ -110,7 +110,7 @@ services:
 
   ollama-init:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.5
+    image: docker.io/ollama/ollama:0.32.15
     container_name: ${STACK_NAME}-ollama-init
     restart: no
     profiles:
@@ -256,7 +256,7 @@ services:
     cpus: 4.0
 
   kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.7.0
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.0
     container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
@@ -283,7 +283,7 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: docker.io/nousresearch/hermes-agent:v2026.8.3
+    image: docker.io/nousresearch/hermes-agent:v2026.8.18
     container_name: ${STACK_NAME}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -372,8 +372,8 @@ services:
       context: ./openclaw/custom-image
       dockerfile: Dockerfile
       args:
-        OPENCLAW_BASE_IMAGE: ghcr.io/openclaw/openclaw:2026.7.1-browser
-    # image: local/openclaw:2026.7.1-browser
+        OPENCLAW_BASE_IMAGE: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+    image: local/openclaw:2026.7.1-2-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:

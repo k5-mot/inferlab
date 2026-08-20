@@ -39,7 +39,7 @@ services:
       - homepage.icon=/icons/llm-wiki.png
 
   wikijs-postgres:
-    image: docker.io/library/postgres:17.6-alpine
+    image: docker.io/library/postgres:17.11-alpine
     container_name: ${STACK_NAME}-wikijs-postgres
     restart: unless-stopped
     profiles:

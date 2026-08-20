@@ -1,5 +1,5 @@
-ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1-browser
-FROM ghcr.io/astral-sh/uv:0.12.0 AS uv-bin
+ARG OPENCLAW_BASE_IMAGE=ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+FROM ghcr.io/astral-sh/uv:0.12.5 AS uv-bin
 FROM ${OPENCLAW_BASE_IMAGE}
 
 USER root

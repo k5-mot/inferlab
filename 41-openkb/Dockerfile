@@ -1,4 +1,4 @@
-FROM python:3.12.11-slim-bookworm
+FROM python:3.12.14-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -18,4 +18,3 @@ USER llm-wiki
 EXPOSE 8080
 
 CMD ["llm-wiki-api", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
-

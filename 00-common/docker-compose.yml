@@ -7,7 +7,7 @@
 #
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:v1.13.2
+    image: ghcr.io/gethomepage/homepage:v2.0.0
     container_name: ${STACK_NAME}-homepage
     restart: unless-stopped
     ports:
@@ -43,7 +43,7 @@ services:
       start_period: 20s
 
   whoami:
-    image: docker.io/traefik/whoami:v1.11
+    image: docker.io/traefik/whoami:v1.12.0
     container_name: ${STACK_NAME}-whoami
     restart: unless-stopped
     profiles:

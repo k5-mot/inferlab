@@ -10,7 +10,7 @@
 #
 services:
   gitlab:
-    image: gitlab/gitlab-ce:19.2.1-ce.0
+    image: gitlab/gitlab-ce:19.2.4-ce.0
     container_name: ${STACK_NAME}-gitlab
     restart: unless-stopped
     profiles:
@@ -52,7 +52,7 @@ services:
       - homepage.description=Git hosting and CI platform
 
   gitlab-runner-register:
-    image: gitlab/gitlab-runner:alpine-v19.2.1
+    image: gitlab/gitlab-runner:alpine-v19.2.2
     container_name: ${STACK_NAME}-gitlab-runner-register
     restart: "no"
     profiles:
@@ -94,7 +94,7 @@ services:
         condition: service_healthy
 
   gitlab-runner:
-    image: gitlab/gitlab-runner:alpine-v19.2.1
+    image: gitlab/gitlab-runner:alpine-v19.2.2
     container_name: ${STACK_NAME}-gitlab-runner
     restart: unless-stopped
     profiles:

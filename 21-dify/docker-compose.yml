@@ -424,7 +424,7 @@ services:
       - homepage.description=Forward proxy
 
   dify-postgres:
-    image: docker.io/library/postgres:15-alpine
+    image: docker.io/library/postgres:15.19-alpine
     container_name: ${STACK_NAME}-dify-postgres
     restart: unless-stopped
     profiles:
@@ -453,7 +453,7 @@ services:
       - homepage.description=Relational database
 
   dify-postgres-init:
-    image: docker.io/library/postgres:15-alpine
+    image: docker.io/library/postgres:15.19-alpine
     container_name: ${STACK_NAME}-dify-postgres-init
     restart: "no"
     profiles:
@@ -479,7 +479,7 @@ services:
         condition: service_healthy
 
   dify-redis:
-    image: docker.io/library/redis:8.8.0-alpine
+    image: docker.io/library/redis:8.10.0-alpine
     container_name: ${STACK_NAME}-dify-redis
     restart: unless-stopped
     profiles:
@@ -510,7 +510,7 @@ services:
 
   dify-qdrant:
     <<: *external-dns-stabilizer
-    image: docker.io/qdrant/qdrant:v1.18.3
+    image: docker.io/qdrant/qdrant:v1.19.0
     container_name: ${STACK_NAME}-dify-qdrant
     restart: unless-stopped
     profiles:
@@ -538,7 +538,7 @@ services:
       - homepage.description=Vector search database
 
   dify-nginx:
-    image: docker.io/library/nginx:1.31.3-alpine
+    image: docker.io/library/nginx:1.31.4-alpine
     container_name: ${STACK_NAME}-dify-nginx
     restart: unless-stopped
     profiles:

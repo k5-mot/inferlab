@@ -1,4 +1,4 @@
-FROM ghcr.io/open-webui/oikb:latest
+FROM ghcr.io/open-webui/oikb:0.4.0
 
 COPY --chown=appuser:appuser patch-openwebui-timeout.py /tmp/patch-openwebui-timeout.py
 RUN python /tmp/patch-openwebui-timeout.py && rm /tmp/patch-openwebui-timeout.py

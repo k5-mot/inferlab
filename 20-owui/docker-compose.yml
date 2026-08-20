@@ -247,7 +247,7 @@ services:
 
   open-terminal:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-terminal:0.11.33
+    image: ghcr.io/open-webui/open-terminal:0.11.35
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
@@ -284,8 +284,8 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    # 公式READMEのDocker usageが`ghcr.io/open-webui/mcpo:main`を指定しているため、mcpoのみ例外的にmain tagを採用する。
-    image: ghcr.io/open-webui/mcpo:main
+    # 公式releaseに対応するGHCR tagがないため、公式READMEのmainを検証済みdigestへ固定する。
+    image: ghcr.io/open-webui/mcpo:main@sha256:1e82c9555c19e50b80745705f32b47a2647589f35279527b5118ecd3a71bd467
     container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:
@@ -324,7 +324,7 @@ services:
 
   searxng:
     <<: *external-dns-stabilizer
-    image: docker.io/searxng/searxng:2026.7.3-80c9806de
+    image: docker.io/searxng/searxng:2026.8.20-8d3dd0cd4
     container_name: ${STACK_NAME}-searxng
     restart: unless-stopped
     profiles:
@@ -351,6 +351,7 @@ services:
         exec /usr/local/searxng/entrypoint.sh
     environment:
       SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-sk-searxng-secret-key}
+      SEARXNG_SETTINGS_PATH: /tmp/searxng/settings.yml
     ports:
       - 32002:8080
     volumes:
@@ -402,7 +403,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-bucket-init:
-    image: docker.io/amazon/aws-cli:2.36.14
+    image: docker.io/amazon/aws-cli:2.36.27
     container_name: ${STACK_NAME}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:
@@ -437,7 +438,7 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: local/oikb:latest
+    image: local/oikb:0.4.0
     container_name: ${STACK_NAME}-oikb
     restart: unless-stopped
     user: "1000:33"

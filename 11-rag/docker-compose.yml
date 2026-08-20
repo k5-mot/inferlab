@@ -22,7 +22,7 @@ services:
   docling:
     <<: *external-dns-stabilizer
     # image: quay.io/docling-project/docling-serve:v1.18.0
-    image: ghcr.io/k5-mot/docling-serve-jp:v1.26.0
+    image: ghcr.io/k5-mot/docling-serve-jp:v1.30.0
     container_name: ${STACK_NAME}-docling
     restart: unless-stopped
     profiles:
@@ -71,7 +71,7 @@ services:
 
   qdrant:
     <<: *external-dns-stabilizer
-    image: docker.io/qdrant/qdrant:v1.18.3
+    image: docker.io/qdrant/qdrant:v1.19.0
     container_name: ${STACK_NAME}-qdrant
     restart: unless-stopped
     profiles:

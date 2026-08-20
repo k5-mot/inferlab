@@ -1,6 +1,6 @@
 services:
   zulip:
-    image: ghcr.io/zulip/zulip-server:12.1-0
+    image: ghcr.io/zulip/zulip-server:12.2-0
     container_name: ${STACK_NAME}-zulip
     restart: unless-stopped
     profiles:
@@ -192,7 +192,7 @@ services:
       - homepage.description=In-memory cache
       - homepage.icon=/icons/memcached.png
   zulip-rabbitmq:
-    image: docker.io/library/rabbitmq:4.2
+    image: docker.io/library/rabbitmq:4.2.9
     container_name: ${STACK_NAME}-zulip-rabbitmq
     restart: unless-stopped
     profiles:
@@ -227,7 +227,7 @@ services:
       - homepage.description=Reliable message broker
 
   zulip-redis:
-    image: docker.io/library/redis:8.8.0-alpine
+    image: docker.io/library/redis:8.10.0-alpine
     container_name: ${STACK_NAME}-zulip-redis
     restart: unless-stopped
     profiles:
