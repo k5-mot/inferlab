@@ -383,7 +383,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-bucket-init:
-    image: docker.io/amazon/aws-cli:2.36.27
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
     container_name: ${STACK_NAME}-oikb-rustfs-bucket-init
     restart: "no"
     profiles:

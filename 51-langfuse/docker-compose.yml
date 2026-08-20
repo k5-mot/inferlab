@@ -5,7 +5,7 @@
 #
 services:
   langfuse-worker:
-    image: docker.io/langfuse/langfuse-worker:4.15.0
+    image: ghcr.io/langfuse/langfuse-worker:4.15.0
     container_name: ${STACK_NAME}-langfuse-worker
     restart: unless-stopped
     profiles:
@@ -81,7 +81,7 @@ services:
       - homepage.description=Langfuse platform
 
   langfuse-web:
-    image: docker.io/langfuse/langfuse:4.15.0
+    image: ghcr.io/langfuse/langfuse:4.15.0
     container_name: ${STACK_NAME}-langfuse-web
     restart: unless-stopped
     profiles:
@@ -205,7 +205,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   langfuse-rustfs-bucket-init:
-    image: docker.io/amazon/aws-cli:2.36.27
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
     container_name: ${STACK_NAME}-langfuse-rustfs-bucket-init
     restart: "no"
     profiles:
