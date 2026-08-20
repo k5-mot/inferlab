@@ -4,7 +4,8 @@ general:
   open_metrics: "sx_metrics_password"
 
 server:
-  secret_key: "__SEARXNG_SECRET_KEY__"
+  # ComposeのSEARXNG_SECRETがこの非機密placeholderを上書きする。
+  secret_key: "overridden-by-SEARXNG_SECRET"
   limiter: false
 
 search:

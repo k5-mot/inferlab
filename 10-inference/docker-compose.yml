@@ -331,7 +331,6 @@ services:
       VOICE_TOOLS_OPENAI_KEY: not-needed
       ### SearXNG
       SEARXNG_URL: "http://searxng:8080/"
-      SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-sk-searxng-secret-key}
       ### docling-serve
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}

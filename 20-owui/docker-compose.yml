@@ -329,39 +329,19 @@ services:
     restart: unless-stopped
     profiles:
       - owui
-    entrypoint:
-      - /bin/sh
-      - -ec
-    command:
-      - |
-        # SearXNG設定はsecret値を含めずrepositoryへ置くため、起動時にplaceholderを置換する。
-        mkdir -p /tmp/searxng
-        awk '
-        BEGIN {
-          searxng_secret_key = ENVIRON["SEARXNG_SECRET_KEY"]
-          gsub(/\\/, "\\\\", searxng_secret_key)
-          gsub(/&/, "\\&", searxng_secret_key)
-        }
-        {
-          gsub(/__SEARXNG_SECRET_KEY__/, searxng_secret_key)
-          print
-        }
-        ' /etc/searxng/settings.yml.template > /tmp/searxng/settings.yml
-        export __SEARXNG_CONFIG_PATH=/tmp/searxng
-        exec /usr/local/searxng/entrypoint.sh
     environment:
-      SEARXNG_SECRET_KEY: ${SEARXNG_SECRET_KEY:-sk-searxng-secret-key}
-      SEARXNG_SETTINGS_PATH: /tmp/searxng/settings.yml
+      # これはAPI認証keyではなく、SearXNG内部のsession署名値としてだけ使用する。
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-sk-searxng-internal-secret}
     ports:
       - 32002:8080
     volumes:
-      - ./searxng/settings.yml:/etc/searxng/settings.yml.template:ro
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks:
       - internal-nw
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "python -c \"import os, urllib.request; req=urllib.request.Request('http://127.0.0.1:8080/healthz', headers={'Authorization':'Bearer '+os.environ['SEARXNG_SECRET_KEY']}); print(urllib.request.urlopen(req).read().decode())\""
+        - "python -c \"import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8080/healthz').read().decode())\""
       interval: 30s
       timeout: 10s
       retries: 5
