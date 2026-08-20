@@ -18,7 +18,7 @@ readonly PROFILES=(
   "owui"
 #   "dify"
   "nextcloud"
-#   "bookstack"
+#   "wikijs"
 #   "kaneo"
 #   "zulip"
   "obsidian"

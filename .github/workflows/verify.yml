@@ -15,9 +15,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Verify shell, Python, and Compose config
+        env:
+          STACK_NAME: ci-static-validation
         run: script/verify-init-static.sh
 
   compose-smoke:
@@ -28,36 +30,12 @@ jobs:
       fail-fast: false
       matrix:
         smoke_case:
-          - bookstack-init
           - dify-postgres-init
           - oikb-bucket-init
           - langfuse-bucket-init
-          - gitea-keycloak-init
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run minimal Compose smoke
         run: script/verify-compose-smoke.sh "${{ matrix.smoke_case }}"
-
-  playwright-e2e:
-    name: Playwright E2E (${{ matrix.smoke_case }})
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        smoke_case:
-          - bookstack
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Run minimal Playwright E2E
-        run: tests/e2e/run-playwright-smoke.sh "${{ matrix.smoke_case }}"

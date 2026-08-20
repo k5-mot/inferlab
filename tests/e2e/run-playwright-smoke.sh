@@ -7,7 +7,6 @@ readonly COMPOSE_PLAYWRIGHT_FILE="${E2E_ROOT}/docker-compose.playwright.yml"
 readonly TEST_MANUAL="${REPO_ROOT}/docs/manual/TEST.md"
 readonly -a SMOKE_CASES=(
   nextcloud
-  bookstack
   kaneo
   zulip
   open-webui
@@ -249,21 +248,15 @@ configure_smoke_case() {
       ACTIVE_PROFILES+=(--profile nextcloud)
       ACTIVE_SERVICES+=(nextcloud)
       ;;
-    bookstack)
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33500"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33500"
-      ACTIVE_PROFILES+=(--profile bookstack)
-      ACTIVE_SERVICES+=(keycloak-https bookstack)
-      ;;
     kaneo)
-      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33300"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33300"
+      export PLAYWRIGHT_SMOKE_BASE_URL="http://${PUBLIC_HOST}:33200"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33200"
       ACTIVE_PROFILES+=(--profile kaneo)
       ACTIVE_SERVICES+=(kaneo)
       ;;
     zulip)
-      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:33400"
-      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33402"
+      export PLAYWRIGHT_SMOKE_BASE_URL="https://${PUBLIC_HOST}:33300"
+      export PLAYWRIGHT_SMOKE_READY_URL="http://127.0.0.1:33302"
       ACTIVE_PROFILES+=(--profile zulip)
       ACTIVE_SERVICES+=(keycloak-https zulip)
       ;;
@@ -363,8 +356,8 @@ run_all_smokes() {
   done
 }
 
-case "${1:-bookstack}" in
-  nextcloud | bookstack | kaneo | zulip | open-webui | grafana | langfuse)
+case "${1:-nextcloud}" in
+  nextcloud | kaneo | zulip | open-webui | grafana | langfuse)
     run_smoke "$1"
     ;;
   all)

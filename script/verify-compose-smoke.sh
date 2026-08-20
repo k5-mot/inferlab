@@ -7,7 +7,7 @@ readonly SMOKE_CASE="${1:-}"
 cd "${REPO_ROOT}"
 
 if [[ -z "${SMOKE_CASE}" ]]; then
-  echo "Usage: $0 {bookstack-init|dify-postgres-init|oikb-bucket-init|langfuse-bucket-init}" >&2
+  echo "Usage: $0 {dify-postgres-init|oikb-bucket-init|langfuse-bucket-init}" >&2
   exit 2
 fi
 
@@ -69,10 +69,6 @@ run_exit_service() {
 write_portless_override
 
 case "${SMOKE_CASE}" in
-  bookstack-init)
-    # BookStack本体は起動せず、custom init scriptのvolumeコピーだけを確認する。
-    run_exit_service bookstack-custom-init --profile bookstack
-    ;;
   dify-postgres-init)
     # Dify全体は起動せず、PostgreSQLとplugin DB作成serviceだけを確認する。
     run_exit_service dify-postgres-init --profile dify

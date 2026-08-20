@@ -2,7 +2,7 @@
 
 external_url ENV.fetch('GITLAB_EXTERNAL_URL')
 
-gitlab_rails['gitlab_shell_ssh_port'] = 33622
+gitlab_rails['gitlab_shell_ssh_port'] = 33522
 gitlab_rails['gitlab_ssh_host'] = ENV.fetch('GITLAB_SSH_HOST')
 
 nginx['listen_port'] = 80

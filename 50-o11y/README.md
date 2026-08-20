@@ -113,7 +113,6 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:35000/api/health" >/dev/null
 - `dify-redis-exporter:9121`
 - `zulip-redis-exporter:9121`
 - `pulp-redis-exporter:9121`
-- `bookstack-mysqld-exporter:9104`
 - `zulip-rabbitmq:15692`
 - `langfuse-clickhouse:9363`
 
@@ -133,7 +132,6 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:35000/api/health" >/dev/null
 | Qdrant | `api-key` header付きで`/metrics`をscrapeする。 |
 | PostgreSQL | `postgres_exporter` serviceを用意している。初期状態ではコメントアウト。 |
 | Redis/Valkey | `redis_exporter` serviceを用意している。初期状態ではコメントアウト。 |
-| MariaDB/MySQL | `mysqld_exporter` serviceを用意している。初期状態ではコメントアウト。 |
 | RabbitMQ | `rabbitmq_prometheus` pluginを有効化し、`15692`の`/metrics`をscrapeする。 |
 | ClickHouse | Prometheus protocolを`9363`で有効化し、`/metrics`をscrapeする。 |
 

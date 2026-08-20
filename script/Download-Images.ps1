@@ -100,7 +100,6 @@ $Images = @(
     "ghcr.io/remsky/kokoro-fastapi-cpu:v0.7.0",
     "ghcr.io/usekaneo/kaneo:2.12.1",
     "ghcr.io/zulip/zulip-server:12.1-0",
-    "lscr.io/linuxserver/bookstack:26.05.2",
     "lscr.io/linuxserver/mariadb:11.4.12",
     "nginxinc/nginx-unprivileged:1.31.3-alpine",
     "node:22-alpine",

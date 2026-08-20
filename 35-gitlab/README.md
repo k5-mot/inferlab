@@ -1,4 +1,4 @@
-# 36-gitlab
+# 35-gitlab
 
 GitLab CEとGitLab Runnerを提供するprofile。
 
@@ -17,7 +17,7 @@ sudo docker compose --env-file .env --profile gitlab up -d
 
 期待結果:
 
-- GitLabが`http://${PUBLIC_HOST}:33600`で応答する。
+- GitLabが`http://${PUBLIC_HOST}:33500`で応答する。
 - GitLab Service Pingは送信されない。
 - `GITLAB_RUNNER_TOKEN`が空の場合、runner登録はskipされ、runner本体は未登録状態で起動する。
 

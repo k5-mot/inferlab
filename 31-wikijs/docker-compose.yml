@@ -14,7 +14,7 @@ services:
       DB_PASS: ${WIKIJS_DB_PASSWORD:-wikijs_db_password}
       DB_NAME: wikijs
     ports:
-      - "33200:3000"
+      - "33100:3000"
     networks:
       - internal-nw
     depends_on:
@@ -32,9 +32,9 @@ services:
       retries: 10
       start_period: 60s
     labels:
-      - homepage.group=32-wikijs
+      - homepage.group=31-wikijs
       - homepage.name=Wiki.js
-      - homepage.href=http://${PUBLIC_HOST}:33200
+      - homepage.href=http://${PUBLIC_HOST}:33100
       - homepage.description=Wiki platform
       - homepage.icon=/icons/llm-wiki.png
 
@@ -62,7 +62,7 @@ services:
       retries: 10
       start_period: 10s
     labels:
-      - homepage.group=32-wikijs
+      - homepage.group=31-wikijs
       - homepage.name=Wiki.js-PostgreSQL
       - homepage.description=Relational database
       - homepage.icon=/icons/postgresql.png

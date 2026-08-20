@@ -8,7 +8,6 @@
     - http://nextcloud/status.php
     - http://oikb:8080/health
     - http://dify-nginx
-    - http://bookstack
     - http://gitlab/-/health
   labels:
     probe: http_2xx

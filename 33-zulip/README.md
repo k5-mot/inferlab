@@ -1,10 +1,10 @@
-# 34-zulip
+# 33-zulip
 
 Zulip、PostgreSQL、Memcached、RabbitMQ、Redisをまとめたchat stack。Keycloak OIDC loginと初期realm/user作成をCompose内で扱う。
 
 ## 起動時初期化
 
-Zulip本体は`/data/post-setup.d`を実行する。Composeでは`34-zulip/post-setup.d`をbind mountし、起動後に次の処理を適用する。
+Zulip本体は`/data/post-setup.d`を実行する。Composeでは`33-zulip/post-setup.d`をbind mountし、起動後に次の処理を適用する。
 
 | Script | 初期化内容 |
 | --- | --- |
@@ -23,7 +23,7 @@ sudo docker compose --env-file .env --profile zulip up -d
 期待結果:
 
 - `zulip-postgres`、`zulip-rabbitmq`、`zulip-redis`がhealthyになる。
-- `zulip`が`https://${PUBLIC_HOST}:33400`で応答する。
+- `zulip`が`https://${PUBLIC_HOST}:33300`で応答する。
 - 初期組織と初期管理者が作成される。
 - Keycloak OIDC provider設定が有効になる。
 
@@ -48,7 +48,7 @@ docker compose --profile zulip up -d zulip
 
 期待結果:
 
-- `https://${PUBLIC_HOST}:33400/local-static/themes/usability.css?v=20260802-collapse-divider`がHTTP 200を返す。
+- `https://${PUBLIC_HOST}:33300/local-static/themes/usability.css?v=20260802-collapse-divider`がHTTP 200を返す。
 - Zulipの通常画面HTMLに`/local-static/themes/usability.css`のstylesheet linkが含まれる。
 - sidebarとcontent areaの横余白が最小化される。
 - window端と左右sidebarの横余白が最小化される。
@@ -73,7 +73,7 @@ docker compose --profile zulip up -d zulip
 docker compose --profile zulip stop zulip zulip-postgres zulip-memcached zulip-rabbitmq zulip-redis
 ```
 
-`docker-compose.yml`から`local-static`と`usability-css.conf`のvolume mountを削除し、`34-zulip/local-static/themes/usability.css`と`34-zulip/nginx/app.d/usability-css.conf`を削除する。その後、Zulip関連containerとvolumeを削除してから再作成する。
+`docker-compose.yml`から`local-static`と`usability-css.conf`のvolume mountを削除し、`33-zulip/local-static/themes/usability.css`と`33-zulip/nginx/app.d/usability-css.conf`を削除する。その後、Zulip関連containerとvolumeを削除してから再作成する。
 
 ```bash
 # Zulip service群のcontainerを削除する。
@@ -101,7 +101,7 @@ docker compose --profile zulip up -d zulip
 
 ## 調整方針
 
-- CSSは`34-zulip/local-static/themes/usability.css`だけを編集する。
+- CSSは`33-zulip/local-static/themes/usability.css`だけを編集する。
 - 調整対象はwindow端、sidebar、content area、message入力欄、channel/topic item、message行の高さと余白に限定する。
 - 配色、font family、button colorはZulip標準を維持する。
 - Zulip本体のtemplateや`/home/zulip/prod-static`内の生成bundleは直接変更しない。
@@ -117,7 +117,7 @@ Zulipのuser default themeは`light`、fluid layoutは有効、Keycloak OIDC pro
 sudo docker compose --env-file .env --profile zulip ps
 
 # Zulip HTTPS endpointの応答を確認する。
-curl -kfsS "https://${PUBLIC_HOST:-localhost}:33400/" >/dev/null
+curl -kfsS "https://${PUBLIC_HOST:-localhost}:33300/" >/dev/null
 
 # 自動生成された初期管理者password fileを確認する。
 sudo docker compose --env-file .env --profile zulip exec zulip test -s /data/initial-admin-password

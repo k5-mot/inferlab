@@ -11,11 +11,11 @@
 - GitLabから情報を取り込む
 - Zulipから情報を取り込む
 - Nextcloudから文書を取り込む
-- BookStack Human Wikiから情報を取り込む
+- Wiki.js Human Wikiから情報を取り込む
 - Kaneoからプロジェクト・タスク情報を取り込む
 - 取り込んだ情報をOpenKBへ投入する
 - OpenKBにLLM Wikiを自由に生成・再構成させる
-- 生成されたLLM WikiをBookStackへ公開する
+- 生成されたLLM WikiをWiki.jsへ公開する
 
 以下は初期スコープ外とする。
 
@@ -52,7 +52,7 @@
  └───────────┘     │
                    │
  ┌──────────────┐  │
- │ BookStack    │  │
+ │ Wiki.js    │  │
  │ Human Wiki   │──┤
  └──────────────┘  │
                    │
@@ -67,7 +67,7 @@
  │ GitLab Adapter       │
  │ Zulip Adapter        │
  │ Nextcloud Adapter    │
- │ BookStack Adapter    │
+ │ Wiki.js Adapter    │
  │ Kaneo Adapter        │
  └──────────┬───────────┘
             │
@@ -87,12 +87,12 @@
             ▼
  ┌──────────────────────┐
  │ Publish Layer        │
- │ BookStack Publisher  │
+ │ Wiki.js Publisher  │
  └──────────┬───────────┘
             │
             ▼
  ┌──────────────────────┐
- │ BookStack            │
+ │ Wiki.js            │
  │ LLM Wiki             │
  └──────────────────────┘
 ```
@@ -116,7 +116,7 @@ Human Wikiは人間が責任を持って管理する正式情報とする。
 - ADR
 - 正式な技術判断
 
-Human WikiはBookStack上に配置する。
+Human WikiはWiki.js上に配置する。
 
 LLMはHuman Wikiを読み取り可能だが、初期フェーズでは書き換えない。
 
@@ -182,16 +182,16 @@ READ / REVIEW
 
 ---
 
-# 4. BookStack構成
+# 4. Wiki.js構成
 
-1つのBookStackインスタンス内でHuman WikiとLLM Wikiを分離する。
+1つのWiki.jsインスタンス内でHuman WikiとLLM Wikiを分離する。
 
 例:
 
 ```text
-BookStack
+Wiki.js
 
-Shelf: Human Wiki
+Path: /en/human
 │
 ├── Engineering
 ├── Product
@@ -199,7 +199,7 @@ Shelf: Human Wiki
 ├── Security
 └── Corporate
 
-Shelf: LLM Wiki
+Path: /en/llm
 │
 ├── Concepts
 ├── Systems
@@ -211,7 +211,7 @@ Shelf: LLM Wiki
 └── Sources
 ```
 
-論理的には別Wikiとして扱うが、同一BookStackに置く。
+論理的には別Wikiとして扱うが、同一Wiki.jsに置く。
 
 これにより、
 
@@ -225,7 +225,7 @@ Shelf: LLM Wiki
 
 を共通化できる。
 
-BookStackには外部連携用のREST APIがあり、インスタンス内の `/api/docs` からAPI仕様を確認できる。API利用には適切な権限を持つAPIアカウントを使用する。
+Wiki.jsには外部連携用のGraphQL APIがある。API利用には対象pathの読取または書込権限を持つAPI keyを使用する。
 
 ---
 
@@ -249,7 +249,7 @@ BookStackには外部連携用のREST APIがあり、インスタンス内の `/
  └─────────────┘         └────────┬────────────┘
                                   │
  ┌─────────────┐         ┌────────▼────────────┐
- │ BookStack   │────────▶│ BookStack Connector│
+ │ Wiki.js   │────────▶│ Wiki.js Connector│
  │ Human Wiki  │         └────────┬────────────┘
  └─────────────┘                  │
                                   │
@@ -284,12 +284,12 @@ BookStackには外部連携用のREST APIがあり、インスタンス内の `/
                                    │
                                    ▼
                         ┌─────────────────────┐
-                        │ BookStack Publisher │
+                        │ Wiki.js Publisher │
                         └──────────┬──────────┘
                                    │
                                    ▼
                          ┌───────────────────┐
-                         │    BookStack      │
+                         │    Wiki.js      │
                          │    LLM Wiki       │
                          └───────────────────┘
 ```
@@ -397,7 +397,7 @@ zulip:engineering:message:192848
 
 nextcloud:engineering:file:194834
 
-bookstack:human-wiki:page:481
+wikijs:human-wiki:page:481
 
 kaneo:platform:task:01JABCD
 ```
@@ -606,14 +606,14 @@ nextcloud:
 
 ---
 
-# 12. BookStack Human Wiki Ingest
+# 12. Wiki.js Human Wiki Ingest
 
-BookStack REST APIからHuman Wikiを取得する。
+Wiki.js GraphQL APIからHuman Wikiを取得する。
 
 対象範囲:
 
 ```text
-Shelf: Human Wiki
+/en/human
 ```
 
 配下のみとする。
@@ -749,14 +749,14 @@ raw/
 ├── gitlab/
 ├── zulip/
 ├── nextcloud/
-├── bookstack/
+├── wikijs/
 └── kaneo/
 
 normalized/
 ├── gitlab/
 ├── zulip/
 ├── nextcloud/
-├── bookstack/
+├── wikijs/
 └── kaneo/
 
 metadata/
@@ -789,7 +789,7 @@ normalized/
 │   └── engineering/
 │       └── authentication-design.pdf
 │
-├── bookstack/
+├── wikijs/
 │   └── human-wiki/
 │       └── authentication/
 │           └── oauth.md
@@ -837,7 +837,7 @@ Kaneo
 ただしmetadataにAuthorityを持たせる。
 
 ```text
-BookStack Human Wiki
+Wiki.js Human Wiki
     authority = authoritative
 
 GitLab
@@ -931,7 +931,7 @@ the structure of the Human Wiki.
 
 ## Sources
 
-- BookStack / Human Wiki / OAuth
+- Wiki.js / Human Wiki / OAuth
 - GitLab Issue #381
 - Zulip / engineering / Authentication redesign
 - authentication-design.pdf
@@ -942,7 +942,7 @@ the structure of the Human Wiki.
 
 ```yaml
 sources:
-  - bookstack:human-wiki:page:481
+  - wikijs:human-wiki:page:481
   - gitlab:platform:issue:381
   - zulip:engineering:message:18281
   - nextcloud:engineering:file:991
@@ -951,9 +951,9 @@ sources:
 
 ---
 
-# 21. BookStack Publisher
+# 21. Wiki.js Publisher
 
-OpenKB生成物をBookStack LLM Wikiへ反映する。
+OpenKB生成物をWiki.js LLM Wikiへ反映する。
 
 ```text
 OpenKB
@@ -962,33 +962,32 @@ OpenKB
 Generated Wiki
    │
    ▼
-BookStack Publisher
+Wiki.js Publisher
    │
    ▼
-BookStack
-Shelf: LLM Wiki
+Wiki.js
+Path: /en/llm
 ```
 
-BookStack Publisherの責務:
+Wiki.js Publisherの責務:
 
 - OpenKB Pageの取得
 - Page mapping
-- Book判定
-- Chapter判定
-- Markdown → BookStack形式変換
+- localeとpage pathの決定
+- Markdown → Wiki.js形式変換
 - internal link変換
 - page create
 - page update
 - removed page処理
 - source metadata追加
 
-BookStackのpage create APIは本文として非空の `markdown` または `html` を要求する。Publisherはpage IDを先に確保する場合でも、create requestへ未変換のGenerated Wiki Markdownを MUST 含める。全page IDの確定後、OpenKB wikilinkをBookStackの相対canonical path `/link/{bookstack_page_id}` へ変換して更新する。内部API hostnameを公開page本文へ MUST NOT 埋め込む。
+Wiki.jsの `pages.create` mutationは非空の `content`、`locale`、`path`を要求する。Publisherは全pageの公開pathを先に決定し、OpenKB wikilinkを `/{locale}/{path}` へ変換した本文でcreateまたはupdateする。内部API hostnameを公開page本文へ MUST NOT 埋め込む。
 
 ---
 
 # 22. Publish Mapping
 
-OpenKB側の論理分類をBookStackへマッピングする。
+OpenKB側の論理分類をWiki.jsへマッピングする。
 
 例:
 
@@ -1006,25 +1005,23 @@ source
 ↓
 
 ```text
-BookStack
+Wiki.js
 
-Shelf: LLM Wiki
-
-Book: Concepts
-Book: Entities
-Book: Projects
-Book: Systems
-Book: Decisions
-Book: Sources
+Path: /en/llm/concepts
+Path: /en/llm/entities
+Path: /en/llm/projects
+Path: /en/llm/systems
+Path: /en/llm/decisions
+Path: /en/llm/sources
 ```
 
 OpenKBのWiki構造が変化しても、Publisherで吸収する。
 
 ---
 
-# 23. BookStack Page Mapping DB
+# 23. Wiki.js Page Mapping DB
 
-OpenKB PageとBookStack Pageを対応付ける。
+OpenKB PageとWiki.js Pageを対応付ける。
 
 ```text
 publisher.db
@@ -1035,8 +1032,8 @@ publisher.db
 ```json
 {
   "openkb_id": "concept:access-token",
-  "bookstack_page_id": 914,
-  "bookstack_book_id": 27,
+  "wikijs_page_id": 914,
+  "wikijs_path": "llm/concepts/access-token",
   "last_published_hash": "82ad381...",
   "published_at": "2026-08-19T08:00:00+09:00"
 }
@@ -1064,7 +1061,7 @@ last_message_id
 Nextcloud
 etag / mtime
 
-BookStack
+Wiki.js
 updated_at
 
 Kaneo
@@ -1153,7 +1150,7 @@ KnowledgeとSource lifecycleを分離する。
 処理は `ingest`、`compile`、`publish` の3段階に分離する。
 
 `ingest` はSource Systemから差分を取得し、OpenKBへ投入するまでを指す。
-LLM Wikiの再構成やBookStackへの公開は含めない。
+LLM Wikiの再構成やWiki.jsへの公開は含めない。
 
 ```text
 Ingest
@@ -1188,7 +1185,7 @@ Compile
 4. Compile run state update
 ```
 
-`publish` はOpenKB上のGenerated WikiをBookStack LLM Wikiへ反映する処理である。
+`publish` はOpenKB上のGenerated WikiをWiki.js LLM Wikiへ反映する処理である。
 MVPでは成功した `compile` の後に自動実行する。
 
 ```text
@@ -1198,14 +1195,14 @@ Publish
 
 2. Publish plan
 
-3. BookStack publish
+3. Wiki.js publish
 
 4. Publish mapping update
 
 5. Publish run state update
 ```
 
-将来的には `Publish plan` と `BookStack publish` の間にGenerated Wiki validationを追加する。
+将来的には `Publish plan` と `Wiki.js publish` の間にGenerated Wiki validationを追加する。
 MVPではvalidation gateを実行しない。
 
 OpenKBの現行REST APIでは `POST /api/v1/add` がuploadとdocument compileを一体で実行し、uploadだけを行うendpointは提供されない。
@@ -1228,7 +1225,7 @@ API token、password、secret keyは環境変数またはsecret storeへ置き�
 - publish timing
 - source include / exclude
 - OpenKB接続先
-- BookStack接続先
+- Wiki.js接続先
 - retry
 - rate limit
 - authority mapping
@@ -1325,30 +1322,21 @@ openkb:
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
 
-bookstack:
-  base_url: https://bookstack.internal.example
+wikijs:
+  base_url: http://wikijs:3000
   human_wiki:
-    shelf: Human Wiki
+    path: human
+    locale: en
   llm_wiki:
-    shelf: LLM Wiki
-    books:
-      concepts: Concepts
-      entities: Entities
-      projects: Projects
-      systems: Systems
-      decisions: Decisions
-      sources: Sources
-      summaries: Summaries
-      syntheses: Syntheses
+    path: llm
+    locale: en
   ingest:
     enabled: true
     schedule: "*/10 * * * *"
   reader_credential:
-    token_id_env: BOOKSTACK_READER_TOKEN_ID
-    token_secret_env: BOOKSTACK_READER_TOKEN_SECRET
+    token_env: WIKIJS_READER_TOKEN
   publisher_credential:
-    token_id_env: BOOKSTACK_PUBLISHER_TOKEN_ID
-    token_secret_env: BOOKSTACK_PUBLISHER_TOKEN_SECRET
+    token_env: WIKIJS_PUBLISHER_TOKEN
 
 pipeline:
   compile:
@@ -1361,6 +1349,8 @@ pipeline:
 
   publish:
     enabled: true
+    targets:
+      - wikijs
     mode: after_successful_compile
     require_validation: false
     dry_run: false
@@ -1383,8 +1373,8 @@ MVPでは `config.yaml` をservice起動時に読み込む。
 - cron式が不正である
 - credential参照先の環境変数が存在しない
 - 未対応sourceが指定されている
-- BookStack Human WikiとLLM Wikiの境界設定が不正である
-- publish先がLLM Wiki shelf以外を指している
+- Wiki.js Human WikiとLLM Wikiの境界設定が不正である
+- publish先がLLM Wiki path以外を指している
 
 一部connectorだけを暗黙に無効化して起動継続しない。
 sourceを停止する場合は `enabled: false` を明示する。
@@ -1418,7 +1408,7 @@ Kaneo
 Zulip
 */10 * * * *
 
-BookStack Human Wiki
+Wiki.js Human Wiki
 */10 * * * *
 
 Nextcloud
@@ -1457,7 +1447,7 @@ job key:
 ingest:gitlab
 ingest:zulip
 ingest:nextcloud
-ingest:bookstack
+ingest:wikijs
 ingest:kaneo
 compile
 publish
@@ -1509,7 +1499,7 @@ OPENKB_RECOMPILE
 
 VALIDATE_WIKI
 
-PUBLISH_BOOKSTACK
+PUBLISH_WIKIJS
 ```
 
 ---
@@ -1533,7 +1523,7 @@ compile_runs
 
 wiki_pages
 
-publish_mappings
+wikijs_publish_mappings
 
 publish_runs
 
@@ -1554,7 +1544,7 @@ llm-wiki-platform/
 │   ├── gitlab/
 │   ├── zulip/
 │   ├── nextcloud/
-│   ├── bookstack/
+│   ├── wikijs/
 │   └── kaneo/
 │
 ├── core/
@@ -1569,7 +1559,7 @@ llm-wiki-platform/
 │   └── config/
 │
 ├── publishers/
-│   └── bookstack/
+│   └── wikijs/
 │
 ├── workers/
 │
@@ -1609,7 +1599,7 @@ class SourceConnector:
 
 # 36. Publisher Interface
 
-将来BookStack以外にも拡張できるようPublisherも抽象化する。
+将来Wiki.js以外にも拡張できるようPublisherも抽象化する。
 
 ```python
 class WikiPublisher:
@@ -1623,7 +1613,7 @@ class WikiPublisher:
 初期実装:
 
 ```text
-BookStackPublisher
+WikiJSPublisher
 ```
 
 将来的には、
@@ -1657,7 +1647,7 @@ Ingestion Service
 OpenKB filesystemへ外部プロセスが直接ファイルを書き込む結合は避ける。
 
 OpenKBの現行REST APIにはGenerated Wiki page本文をreadするendpointがない。
-MVPのBookStack PublisherはOpenKB knowledge base volumeの `wiki/` directoryだけをread-only mountし、生成済みMarkdownを取得する。
+MVPのWiki.js PublisherはOpenKB knowledge base volumeの `wiki/` directoryだけをread-only mountし、生成済みMarkdownを取得する。
 OpenKBへの入力と変更操作はREST APIだけを使用し、PublisherからOpenKB filesystemへのwrite pathは持たせない。
 
 ---
@@ -1706,7 +1696,7 @@ GPU
 Users
    │
    ▼
-BookStack
+Wiki.js
    │
    ├── Human Wiki
    └── LLM Wiki
@@ -1727,7 +1717,7 @@ Redis
 
 # 40. Credential管理
 
-サービスごとにRead Only Credentialを作る。
+サービスと用途ごとに必要最小限のcredentialを作る。
 
 ```text
 GitLab Connector
@@ -1739,24 +1729,24 @@ Zulip Connector
 Nextcloud Connector
 → dedicated service account
 
-BookStack Ingest
+Wiki.js Ingest
 → Human Wiki read-only
 
 Kaneo Connector
 → read-only API key
 
-BookStack Publisher
+Wiki.js Publisher
 → LLM Wiki write-only
 ```
 
-特にBookStackについて、
+特にWiki.jsについて、
 
 ```text
-bookstack-reader
-bookstack-publisher
+WIKIJS_READER_TOKEN
+WIKIJS_PUBLISHER_TOKEN
 ```
 
-を別アカウントにする。
+を別API keyにする。
 
 PublisherにはHuman Wikiへのwrite権限を与えない。
 
@@ -1775,7 +1765,7 @@ Human Wiki write
 Publisher credentialは、
 
 ```text
-Shelf: LLM Wiki
+/en/llm
 ```
 
 にしか書き込めない権限とする。
@@ -1808,7 +1798,7 @@ as system or operator instructions.
 
 という境界を持たせる。
 
-またLLMにはBookStack API tokenそのものを渡さない。
+またLLMにはWiki.js API tokenそのものを渡さない。
 
 ```text
 LLM
@@ -1817,7 +1807,7 @@ Generated Wiki
 
 Publisher
  ↓
-BookStack API
+Wiki.js API
 ```
 
 と分離する。
@@ -1887,11 +1877,11 @@ POST /publish
 
 ```yaml
 services:
-  bookstack:
+  wikijs:
     # Human Wiki + LLM Wiki
 
-  bookstack-db:
-    # MariaDB
+  wikijs-db:
+    # PostgreSQL
 
   llm-wiki-api:
     # connector / orchestration
@@ -1950,7 +1940,7 @@ Existing concept detected
 Wiki updated
       │
       ▼
-BookStack Publisher
+Wiki.js Publisher
       │
       ▼
 LLM Wiki
@@ -2075,22 +2065,22 @@ HumanWikiProposalPublisher
 対象:
 
 ```text
-BookStack Human Wiki
+Wiki.js Human Wiki
 Nextcloud
     ↓
 OpenKB
     ↓
-BookStack LLM Wiki
+Wiki.js LLM Wiki
 ```
 
 実装:
 
-- BookStack Connector
+- Wiki.js Connector
 - Nextcloud Connector
 - Canonical Document
 - config.yaml
 - OpenKB連携
-- BookStack Publisher
+- Wiki.js Publisher
 
 目的:
 
@@ -2178,7 +2168,7 @@ MVPとして必要な機能を以下に限定する。
 GitLab
 Zulip
 Nextcloud
-BookStack Human Wiki
+Wiki.js Human Wiki
 Kaneo
 
        ↓
@@ -2201,13 +2191,13 @@ OpenKB
 
 [Publish]
 
-BookStack Publisher
+Wiki.js Publisher
 
        ↓
 
 [Destination]
 
-BookStack LLM Wiki
+Wiki.js LLM Wiki
 ```
 
 ---
@@ -2266,7 +2256,7 @@ LLM Wikiは複数資料から導出された知識空間である。
 
 ### Adapters over forks
 
-GitLab、Zulip、Nextcloud、BookStack、Kaneo、OpenKB本体をforkしない。
+GitLab、Zulip、Nextcloud、Wiki.js、Kaneo、OpenKB本体をforkしない。
 
 可能な限りAPI Adapterで接続する。
 
@@ -2302,7 +2292,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 ┌──────────────────────────────────────────────┐
 │                Source Systems                │
 │                                              │
-│ GitLab  Zulip  Nextcloud  BookStack  Kaneo  │
+│ GitLab  Zulip  Nextcloud  Wiki.js  Kaneo  │
 └───┬──────┬────────┬──────────┬────────┬─────┘
     │      │        │          │        │
     ▼      ▼        ▼          ▼        ▼
@@ -2312,7 +2302,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 │ GitLab                                      │
 │ Zulip                                       │
 │ Nextcloud                                   │
-│ BookStack Human Wiki                        │
+│ Wiki.js Human Wiki                        │
 │ Kaneo                                       │
 └──────────────────────┬───────────────────────┘
                        │
@@ -2346,7 +2336,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 ┌──────────────────────────────────────────────┐
 │              Publisher Layer                 │
 │                                              │
-│ BookStack Publisher                         │
+│ Wiki.js Publisher                         │
 │ Page Mapping                                │
 │ Link Conversion                             │
 │ Provenance Rendering                        │
@@ -2354,7 +2344,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
                        │
                        ▼
 ┌──────────────────────────────────────────────┐
-│                  BookStack                   │
+│                  Wiki.js                   │
 │                                              │
 │  Human Wiki               LLM Wiki           │
 │                                              │
@@ -2370,8 +2360,8 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 
 | 領域                  | 採用候補           |
 | --------------------- | ------------------ |
-| Human Wiki            | BookStack          |
-| LLM Wiki UI           | BookStack          |
+| Human Wiki            | Wiki.js            |
+| LLM Wiki UI           | Wiki.js            |
 | Knowledge Compiler    | OpenKB             |
 | Ingestion API         | Python / FastAPI   |
 | Worker                | Celery / Dramatiq  |
@@ -2383,7 +2373,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 | GitLab integration    | GitLab REST API    |
 | Zulip integration     | Zulip REST API     |
 | Nextcloud integration | WebDAV             |
-| BookStack integration | BookStack REST API |
+| Wiki.js integration   | Wiki.js GraphQL API |
 | Kaneo integration     | Kaneo REST API     |
 | Deployment            | Docker Compose     |
 | Reverse Proxy         | Nginx / Traefik    |
@@ -2403,7 +2393,7 @@ PoCでは性能よりも以下を評価する。
 7. 情報の矛盾を消さずに表現できる
 8. Sourceへ逆引きできる
 9. 既存LLM Wikiを継続更新できる
-10. BookStackで人間が自然に閲覧できる
+10. Wiki.jsで人間が自然に閲覧できる
 
 特に以下を最重要指標とする。
 
@@ -2416,7 +2406,7 @@ LLM Wikiを見ることで現在の社内知識を把握できるか」
 
 # 57. 結論
 
-本システムではBookStackを、
+本システムではWiki.jsを、
 
 ```text
 Human Wiki
@@ -2432,7 +2422,7 @@ GitLab、Zulip、Nextcloud、Human Wiki、KaneoをSourceとしてIngestion Layer
 
 OpenKBはこれらすべてを入力として、Human Wikiの構造に縛られない新しい知識構造を生成する。
 
-生成された知識はBookStack Publisherを通してLLM Wikiへ反映する。
+生成された知識はWiki.js Publisherを通してLLM Wikiへ反映する。
 
 したがってデータフローは一貫して、
 
@@ -2447,7 +2437,7 @@ Kaneo ────────┘
                     ↓
                 LLM Wiki
                     ↓
-                 BookStack
+                 Wiki.js
 ```
 
 となる。
@@ -2469,7 +2459,7 @@ LLM WikiからHuman WikiへのFeedbackは、この基盤が十分に安定した
 - [OpenKB REST API](https://github.com/VectifyAI/OpenKB/blob/main/examples/rest-api/README.md)
 - [OpenKB on PyPI](https://pypi.org/project/openkb/)
 - [OpenKB 0.5.0rc1](https://pypi.org/project/openkb/0.5.0rc1/)
-- [BookStack API](https://www.bookstackapp.com/docs/admin/hacking-bookstack/)
+- [Wiki.js GraphQL API](https://docs.requarks.io/dev/api)
 - [GitLab REST API resources](https://docs.gitlab.com/api/api_resources/)
 - [Zulip REST API](https://zulip.com/api/rest)
 - [Nextcloud WebDAV API](https://docs.nextcloud.com/server/stable/developer_manual/client_apis/WebDAV/basic.html)

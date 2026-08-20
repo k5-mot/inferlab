@@ -79,13 +79,6 @@ class StateStore:
                     last_seen TEXT NOT NULL,
                     updated_at TEXT
                 );
-                CREATE TABLE IF NOT EXISTS publish_mappings (
-                    openkb_id TEXT PRIMARY KEY,
-                    bookstack_page_id INTEGER NOT NULL,
-                    bookstack_book_id INTEGER NOT NULL,
-                    last_published_hash TEXT NOT NULL,
-                    published_at TEXT NOT NULL
-                );
                 CREATE TABLE IF NOT EXISTS wikijs_publish_mappings (
                     openkb_id TEXT PRIMARY KEY,
                     wikijs_page_id INTEGER NOT NULL,
@@ -382,75 +375,6 @@ class StateStore:
                 (source_id, content_hash),
             )
         return cursor.rowcount == 1
-
-    def get_publish_mapping(self, openkb_id: str) -> dict[str, Any] | None:
-        """OpenKB page IDに対応するBookStack mappingを取得する。
-
-        Args:
-            openkb_id: Generated Wiki内のstable page ID。
-
-        Returns:
-            mapping情報。未登録ならNone。
-        """
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT * FROM publish_mappings WHERE openkb_id = ?", (openkb_id,)
-            ).fetchone()
-        return None if row is None else dict(row)
-
-    def list_publish_mappings(self) -> list[dict[str, Any]]:
-        """すべてのBookStack publish mappingを列挙する。
-
-        Returns:
-            OpenKB page ID順のmapping一覧。
-        """
-        with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT * FROM publish_mappings ORDER BY openkb_id"
-            ).fetchall()
-        return [dict(row) for row in rows]
-
-    def upsert_publish_mapping(
-        self,
-        *,
-        openkb_id: str,
-        bookstack_page_id: int,
-        bookstack_book_id: int,
-        content_hash: str,
-    ) -> None:
-        """OpenKB pageとBookStack pageの対応を保存する。
-
-        Args:
-            openkb_id: Generated Wiki内のstable page ID。
-            bookstack_page_id: BookStack page ID。
-            bookstack_book_id: 所属BookStack book ID。
-            content_hash: 最後に公開したMarkdownのSHA-256。
-
-        Returns:
-            なし。
-        """
-        published_at = datetime.now(UTC).isoformat()
-        with self._lock, self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO publish_mappings(
-                    openkb_id, bookstack_page_id, bookstack_book_id,
-                    last_published_hash, published_at
-                ) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(openkb_id) DO UPDATE SET
-                    bookstack_page_id = excluded.bookstack_page_id,
-                    bookstack_book_id = excluded.bookstack_book_id,
-                    last_published_hash = excluded.last_published_hash,
-                    published_at = excluded.published_at
-                """,
-                (
-                    openkb_id,
-                    bookstack_page_id,
-                    bookstack_book_id,
-                    content_hash,
-                    published_at,
-                ),
-            )
 
     def get_wikijs_publish_mapping(self, openkb_id: str) -> dict[str, Any] | None:
         """OpenKB page IDに対応するWiki.js mappingを取得する。

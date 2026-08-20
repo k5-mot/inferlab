@@ -43,23 +43,19 @@ layout:
       icon: /icons/nextcloud.png
       style: row
       columns: 4
-  - 32-wikijs:
+  - 31-wikijs:
       icon: /icons/llm-wiki.png
       style: row
       columns: 4
-  - 33-kaneo:
+  - 32-kaneo:
       icon: /icons/kaneo.png
       style: row
       columns: 4
-  - 34-zulip:
+  - 33-zulip:
       icon: /icons/zulip.png
       style: row
       columns: 4
-  - 35-bookstack:
-      icon: /icons/bookstack.png
-      style: row
-      columns: 4
-  - 36-gitlab:
+  - 35-gitlab:
       icon: /icons/gitlab.png
       style: row
       columns: 4

@@ -1,6 +1,6 @@
 # Keycloak HTTPS Certificates
 
-BookStack の OIDC 連携は issuer と各 OIDC endpoint に `https://` を要求するため、このディレクトリの自己署名証明書を `keycloak-https` で使用します。
+Zulip の OIDC 連携は HTTPS issuer を使用するため、このディレクトリの自己署名証明書を `keycloak-https` で使用します。
 
 `../generate-certs.sh` で `keycloak.crt` と `keycloak.key` を生成してください。秘密鍵をリポジトリへ保存しないため、生成物は `.gitignore` しています。
 

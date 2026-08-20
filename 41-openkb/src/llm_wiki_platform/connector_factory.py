@@ -8,7 +8,6 @@ import httpx
 
 from llm_wiki_platform.config import AppConfig, resolve_credential
 from llm_wiki_platform.connectors import (
-    BookStackConnector,
     GitLabConnector,
     KaneoConnector,
     NextcloudConnector,
@@ -98,19 +97,6 @@ def build_connector_registry(
         elif source_name == "kaneo":
             connectors[source_name] = KaneoConnector(source_config, retrying)
 
-    if config.bookstack.ingest.enabled:
-        effective = config.effective_ingest("bookstack")
-        credential = resolve_credential(config.bookstack.reader_credential, environ)
-        client = httpx.AsyncClient(
-            base_url=str(config.bookstack.base_url),
-            headers={
-                "Authorization": f"Token {credential['token_id']}:{credential['token_secret']}"
-            },
-            timeout=30,
-        )
-        clients.append(client)
-        retrying = RetryingHttpClient(client, effective.retry, effective.rate_limit)
-        connectors["bookstack"] = BookStackConnector(config.bookstack, retrying)
     if config.wikijs.ingest.enabled:
         effective = config.effective_ingest("wikijs")
         credential = resolve_credential(config.wikijs.reader_credential, environ)

@@ -1,4 +1,4 @@
-"""複数公開先を持つpipelineの公開結果を検証する。"""
+"""pipelineの公開結果記録を検証する。"""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ class _FakePublisher:
 
 
 def _config() -> AppConfig:
-    """BookStackとWiki.jsへの公開を有効にした設定を作成する。
+    """Wiki.jsへの公開を有効にした設定を作成する。
 
     Returns:
         schema検証済みAppConfig。
@@ -72,7 +72,7 @@ def _config() -> AppConfig:
     loaded = yaml.safe_load(source_path.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict)
     loaded["pipeline"]["publish"]["enabled"] = True
-    loaded["pipeline"]["publish"]["targets"] = ["bookstack", "wikijs"]
+    loaded["pipeline"]["publish"]["targets"] = ["wikijs"]
     return AppConfig.model_validate(loaded)
 
 
@@ -86,7 +86,6 @@ async def test_publish_records_result_for_each_target(tmp_path: Path) -> None:
         coordinator,
         None,
         {
-            "bookstack": _FakePublisher(1),
             "wikijs": _FakePublisher(2),
         },
     )
@@ -97,5 +96,4 @@ async def test_publish_records_result_for_each_target(tmp_path: Path) -> None:
 
     assert submission.accepted is True
     assert run["status"] == "succeeded"
-    assert run["detail"]["targets"]["bookstack"]["created"] == 1
     assert run["detail"]["targets"]["wikijs"]["created"] == 2
