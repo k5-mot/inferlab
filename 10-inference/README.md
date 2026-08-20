@@ -11,10 +11,48 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、QwenPaw、Kokoroをまとめ�
 | `ollama-init` | Compose内のinit commandで`OLLAMA_INIT_MODELS`に列挙したmodelを`ollama-cache` volumeへ順次pullする。Cloud modelのpullはsign in前でも成功するが、実行にはOllama serviceでのsign inが必要。 |
 | `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。Ollama chat modelはtool callの本文JSON漏れを避けるため、`ollama_chat/...` routeを使う。 |
 | `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
-| `openclaw` | custom imageでtemplate/schema/entrypointを同梱し、`.env`と環境変数から実行時設定を生成する。Langfuseへの送信はLiteLLMに集約する。 |
+| `openclaw-init` | OpenClaw公式imageに含まれないDiscord pluginを、初回だけ`openclaw-data` volumeへ導入する。 |
+| `openclaw` | 公式imageでread-onlyの`openclaw/openclaw.json`を読み込む。Langfuseへの送信はLiteLLMに集約する。 |
 | `qwenpaw` | 公式imageでConsoleとDiscord channelを起動する。model providerはLiteLLMへ向け、Langfuseへの送信はLiteLLMに集約する。 |
 
 `ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Ollama Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
+
+## OpenClaw構成
+
+OpenClawは`ghcr.io/openclaw/openclaw`の公式imageを直接使用する。設定は`openclaw/openclaw.json`を`/home/node/.openclaw/openclaw.managed.json`へread-onlyでmountし、`OPENCLAW_CONFIG_PATH`で参照する。設定のauthoritative sourceはrepositoryとし、Control UIやDiscord channelからの設定書き込みは無効にする。OpenClawが生成する`openclaw.managed.json.last-good`は、同じstate volumeへ保存する。
+
+LiteLLM API keyとDiscord bot tokenはOpenClawのSecretRefでprocess environmentから解決する。Discord guild IDとchannel IDはsecretではなくrouting識別子であり、`openclaw/openclaw.json`へ記録する。接続先を変更する場合は、同fileの`channels.discord.guilds`を更新する。
+
+`openclaw-init`はDiscord pluginが既に`openclaw-data` volumeへ導入済みの場合、再インストールせず正常終了する。Docling MCPは専用コンテナを増やさない方針とし、OpenClawとの連携対象に含めない。
+
+```bash
+# read-only設定をOpenClawのschemaで検証する。
+sudo docker compose --env-file .env --profile openclaw run --rm --no-deps openclaw node dist/index.js config validate
+
+# OpenClaw profileを起動し、初期化serviceを含めて反映する。
+sudo docker compose --env-file .env --profile openclaw up -d
+
+# Discord pluginの読み込み元と状態を確認する。
+sudo docker compose --env-file .env --profile openclaw exec openclaw node dist/index.js plugins list
+
+# Discord channelの接続状態を確認する。
+sudo docker compose --env-file .env --profile openclaw exec openclaw node dist/index.js channels status --channel discord --probe
+```
+
+期待結果:
+
+- `config validate`が成功する。
+- `openclaw-init`がexit code `0`で終了する。
+- `openclaw`がhealthyになる。
+- `plugins list`でDiscord pluginがloadedになる。
+- Discord channelのprobeが成功する。
+
+失敗条件:
+
+- read-only設定がschema validationに失敗する。
+- Discord pluginの導入または読み込みに失敗する。
+- Discord channelのprobeが接続に失敗する。
+- OpenClawが`http://127.0.0.1:18789/healthz`で応答しない。
 
 ## Ollama Cloudのsign in
 
@@ -169,3 +207,6 @@ sudo docker compose --env-file .env --profile inference exec -it ollama ollama s
 - [Ollama Cloud](https://docs.ollama.com/cloud)
 - [QwenPaw](https://github.com/agentscope-ai/QwenPaw)
 - [QwenPaw Docker Compose](https://raw.githubusercontent.com/agentscope-ai/QwenPaw/main/docker-compose.yml)
+- [OpenClaw Docker](https://docs.openclaw.ai/install/docker)
+- [OpenClaw Configuration](https://docs.openclaw.ai/gateway/configuration)
+- [OpenClaw Discord](https://docs.openclaw.ai/channels/discord)

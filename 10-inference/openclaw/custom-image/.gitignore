@@ -1,4 +1,0 @@
-# OpenClaw custom image build時のNode.js生成物
-node_modules/
-npm-debug.log*
-package-lock.json

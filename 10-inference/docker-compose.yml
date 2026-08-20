@@ -363,47 +363,83 @@ services:
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31001
 
-  # https://github.com/openclaw/openclaw/blob/main/docker-compose.yml
-  # https://docs.openclaw.ai/install/docker
-  openclaw:
+  # Discord pluginは公式imageとは別に永続volumeへ導入する。
+  openclaw-init:
     <<: *external-dns-stabilizer
-    build:
-      context: ./openclaw/custom-image
-      dockerfile: Dockerfile
-      args:
-        OPENCLAW_BASE_IMAGE: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
-    image: local/openclaw:2026.7.1-2-browser
-    container_name: ${STACK_NAME}-openclaw
-    restart: unless-stopped
+    image: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+    container_name: ${STACK_NAME}-openclaw-init
+    restart: "no"
     profiles:
       - inference
       - openclaw
     environment:
       HOME: /home/node
       OPENCLAW_HOME: /home/node
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      TZ: Asia/Tokyo
+    volumes:
+      - openclaw-data:/home/node/.openclaw
+    networks:
+      - internal-nw
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        set -eu
+        # 公式imageに含まれないDiscord pluginを、初回だけ永続volumeへ導入する。
+        if node dist/index.js plugins list --json | grep -Eq '"id"[[:space:]]*:[[:space:]]*"discord"'; then
+          echo "Discord plugin is already installed."
+          exit 0
+        fi
+        node dist/index.js plugins install @openclaw/discord@2026.7.1 --pin
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+
+  # https://github.com/openclaw/openclaw/blob/main/docker-compose.yml
+  # https://docs.openclaw.ai/install/docker
+  openclaw:
+    <<: *external-dns-stabilizer
+    image: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+    container_name: ${STACK_NAME}-openclaw
+    restart: unless-stopped
+    profiles:
+      - inference
+      - openclaw
+    depends_on:
+      openclaw-init:
+        condition: service_completed_successfully
+    environment:
+      HOME: /home/node
+      OPENCLAW_HOME: /home/node
       TERM: xterm-256color
       # host側.envのpathをcontainer内の実行時pathへ漏らさない。
       OPENCLAW_STATE_DIR: /home/node/.openclaw
-      OPENCLAW_CONFIG_TEMPLATE_SOURCE_PATH: /usr/local/share/openclaw/openclaw.template.json
-      OPENCLAW_CONFIG_SCHEMA_SOURCE_PATH: /usr/local/share/openclaw/openclaw.schema.json
-      OPENCLAW_CONFIG_TEMPLATE_PATH: /home/node/.openclaw/openclaw.template.json
-      OPENCLAW_CONFIG_SCHEMA_PATH: /home/node/.openclaw/openclaw.schema.json
-      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.json
+      OPENCLAW_CONFIG_PATH: /home/node/.openclaw/openclaw.managed.json
       OPENCLAW_CONFIG_DIR: /home/node/.openclaw
       OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspaces
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-sk-openclaw-gateway-token}
       OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ""
       OPENCLAW_DISABLE_BONJOUR: ""
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      DOCLING_SERVE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DISCORD_BOT_TOKEN: ${OPENCLAW_DISCORD_BOT_TOKEN:-}
-      DISCORD_GUILD_ID: ${OPENCLAW_DISCORD_GUILD_ID:-}
-      DISCORD_CHANNEL_ID: ${OPENCLAW_DISCORD_CHANNEL_ID:-}
       TZ: Asia/Tokyo
+    command:
+      - node
+      - dist/index.js
+      - gateway
+      - --bind
+      - lan
+      - --port
+      - "18789"
     ports:
       - 31002:18789
     volumes:
       - openclaw-data:/home/node/.openclaw
+      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.managed.json:ro
       - ./openclaw/AGENTS.md:/home/node/.openclaw/workspaces/AGENTS.md:ro
       - ./openclaw/IDENTITY.md:/home/node/.openclaw/workspaces/IDENTITY.md:ro
       - ./openclaw/SOUL.md:/home/node/.openclaw/workspaces/SOUL.md:ro

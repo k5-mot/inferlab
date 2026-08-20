@@ -93,6 +93,7 @@ $Images = @(
     "ghcr.io/google/cadvisor:v0.60.5",
     "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3",
     "ghcr.io/k5-mot/docling-serve-jp:v1.30.0",
+    "ghcr.io/openclaw/openclaw:2026.7.1-2-browser",
     "ghcr.io/open-webui/mcpo:main@sha256:1e82c9555c19e50b80745705f32b47a2647589f35279527b5118ecd3a71bd467",
     "ghcr.io/open-webui/open-terminal:0.11.35",
     "ghcr.io/open-webui/open-webui:0.11.0",
@@ -122,11 +123,6 @@ $LocalImages = @(
         Image = "local/oikb:0.4.0"
         Context = Join-Path $PSScriptRoot "..\20-owui\oikb"
         Dockerfile = "Containerfile"
-    },
-    @{
-        Image = "local/openclaw:2026.7.1-2-browser"
-        Context = Join-Path $PSScriptRoot "..\10-inference\openclaw\custom-image"
-        Dockerfile = "Dockerfile"
     },
     @{
         Image = "local/openkb:0.5.0rc1"
