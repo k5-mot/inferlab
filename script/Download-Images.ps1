@@ -64,7 +64,6 @@ $Images = @(
     "docker.io/langgenius/dify-plugin-daemon:0.6.8-local",
     "docker.io/langgenius/dify-sandbox:0.2.15",
     "docker.io/langgenius/dify-web:1.16.1",
-    "docker.io/library/busybox:1.38.0",
     "docker.io/library/couchdb:3.5.2.1",
     "docker.io/library/memcached:1.6.45-alpine",
     "docker.io/library/nextcloud:34.0.3-apache",

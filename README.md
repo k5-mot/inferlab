@@ -65,7 +65,6 @@
 | `owui` | `oikb-rustfs` | `32005`, `32006` | `20-owui/docker-compose.yml` |
 | `owui` | `oikb-rustfs-init` | - | `20-owui/docker-compose.yml` |
 | `owui` | `oikb` | `32001` | `20-owui/docker-compose.yml` |
-| `dify` | `dify-init-permissions` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-api` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-worker` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-worker-beat` | - | `21-dify/docker-compose.yml` |
@@ -77,7 +76,9 @@
 | `dify` | `dify-ssrf-proxy` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres-init` | - | `21-dify/docker-compose.yml` |
-| `dify` | `dify-redis` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-rustfs` | `32102`, `32103` | `21-dify/docker-compose.yml` |
+| `dify` | `dify-rustfs-bucket-init` | - | `21-dify/docker-compose.yml` |
+| `dify` | `dify-valkey` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-qdrant` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-nginx` | `32100` | `21-dify/docker-compose.yml` |
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
