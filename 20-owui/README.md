@@ -9,7 +9,7 @@ Open WebUI、Open Terminal、mcpo、SearXNG、OIKB、OIKB用RustFSをまとめ�
 | 対象 | 初期化内容 |
 | --- | --- |
 | `open-webui` | `open-webui/entrypoint_patch.sh`でDocling向けJSON設定をmultipart form用の文字列へ変換してからOpen WebUIを起動する。 |
-| `oikb-rustfs-bucket-init` | Compose内のinit commandでRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
+| `oikb-rustfs-init` | Compose内のinit commandでRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
 | `oikb` | Nextcloud volumeとRustFS bucketをsourceとしてOpen WebUI Knowledgeへ同期する。 |
 
 Open WebUIのKeycloak連携は、`OAUTH_CLIENT_SECRET`とKeycloak側`open-webui` client secretの一致が前提になる。
@@ -25,7 +25,7 @@ sudo docker compose --env-file .env --profile owui up -d
 
 - `searxng`、`open-terminal`、`mcpo`がhealthyになる。
 - `open-webui`が`http://${PUBLIC_HOST}:32000`で応答する。
-- `oikb-rustfs-bucket-init`が正常終了する。
+- `oikb-rustfs-init`が正常終了する。
 - `oikb`が`http://${PUBLIC_HOST}:32001`で応答する。
 
 失敗条件:
@@ -50,12 +50,12 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:32001/health" >/dev/null
 期待結果:
 
 - `open-webui`と`oikb`がhealthyになる。
-- `oikb-rustfs-bucket-init`が`exited (0)`になる。
+- `oikb-rustfs-init`が`exited (0)`になる。
 - RustFS上に`oikb-bucket`が存在する。
 
 失敗条件:
 
-- `oikb-rustfs-bucket-init`が繰り返し失敗する。
+- `oikb-rustfs-init`が繰り返し失敗する。
 - Open WebUIのOAuth loginがKeycloak client secret不一致で失敗する。
 - OIKBがNextcloudまたはRustFS sourceを読み取れない。
 
@@ -77,7 +77,7 @@ sudo docker compose --env-file .env --profile owui up -d
 期待結果:
 
 - RustFS data volumeが再作成される。
-- `oikb-rustfs-bucket-init`が`oikb-bucket`を再作成する。
+- `oikb-rustfs-init`が`oikb-bucket`を再作成する。
 
 失敗条件:
 

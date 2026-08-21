@@ -63,7 +63,7 @@
 | `owui` | `mcpo` | `32004` | `20-owui/docker-compose.yml` |
 | `owui` | `searxng` | `32002` | `20-owui/docker-compose.yml` |
 | `owui` | `oikb-rustfs` | `32005`, `32006` | `20-owui/docker-compose.yml` |
-| `owui` | `oikb-rustfs-bucket-init` | - | `20-owui/docker-compose.yml` |
+| `owui` | `oikb-rustfs-init` | - | `20-owui/docker-compose.yml` |
 | `owui` | `oikb` | `32001` | `20-owui/docker-compose.yml` |
 | `dify` | `dify-init-permissions` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-api` | - | `21-dify/docker-compose.yml` |

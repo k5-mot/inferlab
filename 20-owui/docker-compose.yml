@@ -382,9 +382,9 @@ services:
       - homepage.description=OIKB data source object storage
       - homepage.icon=/icons/rustfs.png
 
-  oikb-rustfs-bucket-init:
+  oikb-rustfs-init:
     image: public.ecr.aws/aws-cli/aws-cli:2.36.27
-    container_name: ${STACK_NAME}-oikb-rustfs-bucket-init
+    container_name: ${STACK_NAME}-oikb-rustfs-init
     restart: "no"
     profiles:
       - owui
@@ -451,7 +451,7 @@ services:
     networks:
       - internal-nw
     depends_on:
-      oikb-rustfs-bucket-init:
+      oikb-rustfs-init:
         condition: service_completed_successfully
     healthcheck:
       test: [ "CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8080/health', timeout=3).read()" ]

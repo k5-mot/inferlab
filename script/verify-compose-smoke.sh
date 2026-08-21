@@ -75,7 +75,7 @@ case "${SMOKE_CASE}" in
     ;;
   oikb-bucket-init)
     # Open WebUI本体は起動せず、RustFSとbucket初期化serviceだけを確認する。
-    run_exit_service oikb-rustfs-bucket-init --profile owui --profile nextcloud
+    run_exit_service oikb-rustfs-init --profile owui --profile nextcloud
     ;;
   langfuse-bucket-init)
     # Langfuse本体は起動せず、RustFSとbucket初期化serviceだけを確認する。
