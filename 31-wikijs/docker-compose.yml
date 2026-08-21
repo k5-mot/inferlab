@@ -36,7 +36,7 @@ services:
       - homepage.name=Wiki.js
       - homepage.href=http://${PUBLIC_HOST}:33100
       - homepage.description=Wiki platform
-      - homepage.icon=/icons/llm-wiki.png
+      - homepage.icon=/icons/wikijs.png
 
   wikijs-postgres:
     image: docker.io/library/postgres:17.11-alpine
