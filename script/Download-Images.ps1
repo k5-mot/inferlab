@@ -120,11 +120,6 @@ $LocalImages = @(
         Dockerfile = "Dockerfile"
     },
     @{
-        Image = "local/oikb:0.4.0"
-        Context = Join-Path $PSScriptRoot "..\20-owui\oikb"
-        Dockerfile = "Containerfile"
-    },
-    @{
         Image = "local/openkb:0.5.0rc1"
         Context = Join-Path $PSScriptRoot "..\41-openkb"
         Dockerfile = "Dockerfile.openkb"

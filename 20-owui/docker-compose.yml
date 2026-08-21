@@ -418,7 +418,6 @@ services:
     build:
       context: ./oikb
       dockerfile: Containerfile
-    image: local/oikb:0.4.0
     container_name: ${STACK_NAME}-oikb
     restart: unless-stopped
     user: "1000:33"
