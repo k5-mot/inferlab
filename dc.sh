@@ -17,6 +17,7 @@ readonly PROFILES=(
 #   "registry"
   "owui"
 #   "dify"
+#   "ragflow"
   "nextcloud"
 #   "wikijs"
 #   "kaneo"

@@ -26,6 +26,14 @@ repos:
         always_run: true
         stages: [manual]
 
+      - id: compose-smoke-ragflow-bucket-init
+        name: "Compose smoke: RAGFlow bucket init"
+        entry: script/verify-compose-smoke.sh ragflow-bucket-init
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
+
       - id: compose-smoke-langfuse-bucket-init
         name: "Compose smoke: Langfuse bucket init"
         entry: script/verify-compose-smoke.sh langfuse-bucket-init

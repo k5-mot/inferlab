@@ -39,6 +39,9 @@ layout:
       icon: /icons/dify.png
       style: row
       columns: 4
+  - 22-ragflow:
+      style: row
+      columns: 4
   - 30-nextcloud:
       icon: /icons/nextcloud.png
       style: row

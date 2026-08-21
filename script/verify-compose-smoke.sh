@@ -7,7 +7,7 @@ readonly SMOKE_CASE="${1:-}"
 cd "${REPO_ROOT}"
 
 if [[ -z "${SMOKE_CASE}" ]]; then
-  echo "Usage: $0 {dify-postgres-init|oikb-bucket-init|langfuse-bucket-init}" >&2
+  echo "Usage: $0 {dify-postgres-init|oikb-bucket-init|ragflow-bucket-init|langfuse-bucket-init}" >&2
   exit 2
 fi
 
@@ -34,6 +34,8 @@ services:
   oikb-rustfs:
     ports: !reset []
   langfuse-rustfs:
+    ports: !reset []
+  ragflow-rustfs:
     ports: !reset []
 YAML
 }
@@ -76,6 +78,10 @@ case "${SMOKE_CASE}" in
   oikb-bucket-init)
     # Open WebUI本体は起動せず、RustFSとbucket初期化serviceだけを確認する。
     run_exit_service oikb-rustfs-init --profile owui --profile nextcloud
+    ;;
+  ragflow-bucket-init)
+    # RAGFlow本体は起動せず、RustFSとbucket初期化serviceだけを確認する。
+    run_exit_service ragflow-rustfs-bucket-init --profile ragflow
     ;;
   langfuse-bucket-init)
     # Langfuse本体は起動せず、RustFSとbucket初期化serviceだけを確認する。

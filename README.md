@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`wikijs`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`wikijs`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -16,6 +16,7 @@
 | `registry` | `12-registry/docker-compose.yml` | 開発用パッケージ配布 |
 | `owui` | `20-owui/docker-compose.yml` | Open WebUI、検索、ツール連携、Knowledge同期 |
 | `dify` | `21-dify/docker-compose.yml` | 自動化 |
+| `ragflow` | `22-ragflow/docker-compose.yml` | RAGとAgent platform |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
 | `wikijs` | `31-wikijs/docker-compose.yml` | Wiki |
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
@@ -81,6 +82,12 @@
 | `dify` | `dify-valkey` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-qdrant` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-nginx` | `32100` | `21-dify/docker-compose.yml` |
+| `ragflow` | `ragflow` | `32200`, `32201` | `22-ragflow/docker-compose.yml` |
+| `ragflow` | `ragflow-elasticsearch` | - | `22-ragflow/docker-compose.yml` |
+| `ragflow` | `ragflow-mysql` | - | `22-ragflow/docker-compose.yml` |
+| `ragflow` | `ragflow-rustfs` | `32202`, `32203` | `22-ragflow/docker-compose.yml` |
+| `ragflow` | `ragflow-rustfs-bucket-init` | - | `22-ragflow/docker-compose.yml` |
+| `ragflow` | `ragflow-valkey` | - | `22-ragflow/docker-compose.yml` |
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
@@ -138,6 +145,7 @@
 - [Registry](12-registry/README.md)
 - [Open WebUI](20-owui/README.md)
 - [Dify](21-dify/README.md)
+- [RAGFlow](22-ragflow/README.md)
 - [Nextcloud](30-nextcloud/README.md)
 - [Wiki.js](31-wikijs/README.md)
 - [Zulip](33-zulip/README.md)

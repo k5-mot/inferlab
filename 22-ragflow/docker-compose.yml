@@ -1,0 +1,273 @@
+x-external-dns-stabilizer: &external-dns-stabilizer
+  dns:
+    - 1.1.1.1
+    - 8.8.8.8
+  dns_search:
+    - .
+  dns_opt:
+    - "timeout:1"
+    - "attempts:2"
+    - "ndots:1"
+
+services:
+  ragflow:
+    <<: *external-dns-stabilizer
+    image: docker.io/infiniflow/ragflow:v0.26.4
+    container_name: ${STACK_NAME}-ragflow
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - --enable-adminserver
+      - --init-model-provider-tables
+    environment:
+      RAGFLOW_HOST: 0.0.0.0
+      RAGFLOW_SECRET_KEY: ${RAGFLOW_SECRET_KEY:-sk-ragflow-session-secret-key-change-me}
+      API_PROXY_SCHEME: python
+      DOC_ENGINE: elasticsearch
+      ES_HOST: ragflow-elasticsearch
+      ES_USER: elastic
+      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-ragflow_elastic_password}
+      MYSQL_HOST: ragflow-mysql
+      MYSQL_PORT: 3306
+      MYSQL_DBNAME: rag_flow
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${RAGFLOW_MYSQL_PASSWORD:-ragflow_mysql_password}
+      MYSQL_MAX_PACKET: 1073741824
+      STORAGE_IMPL: MINIO
+      MINIO_HOST: ragflow-rustfs
+      MINIO_USER: ${RAGFLOW_RUSTFS_ACCESS_KEY:-ragflow_rustfs_key}
+      MINIO_PASSWORD: ${RAGFLOW_RUSTFS_SECRET_KEY:-ragflow_rustfs_secret}
+      MINIO_BUCKET: ragflow-bucket
+      REDIS_HOST: ragflow-valkey
+      REDIS_PASSWORD: ${RAGFLOW_VALKEY_PASSWORD:-ragflow_valkey_password}
+      REGISTER_ENABLED: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TZ: Asia/Tokyo
+    ports:
+      - 32200:80
+      - 32201:9380
+    volumes:
+      - ragflow-logs:/ragflow/logs
+    networks:
+      - internal-nw
+    depends_on:
+      ragflow-elasticsearch:
+        condition: service_healthy
+      ragflow-mysql:
+        condition: service_healthy
+      ragflow-rustfs-bucket-init:
+        condition: service_completed_successfully
+      ragflow-valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:9380/api/v1/system/healthz >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: 8g
+    memswap_limit: 9g
+    pids_limit: 2048
+    labels:
+      - homepage.group=22-ragflow
+      - homepage.name=RAGFlow
+      - homepage.href=http://${PUBLIC_HOST}:32200
+      - homepage.description=Retrieval-augmented generation platform
+
+  ragflow-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    container_name: ${STACK_NAME}-ragflow-elasticsearch
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    environment:
+      node.name: ragflow-elasticsearch
+      discovery.type: single-node
+      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-ragflow_elastic_password}
+      ES_JAVA_OPTS: -Xms2g -Xmx2g
+      bootstrap.memory_lock: "false"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      cluster.routing.allocation.disk.watermark.low: 5gb
+      cluster.routing.allocation.disk.watermark.high: 3gb
+      cluster.routing.allocation.disk.watermark.flood_stage: 2gb
+    tmpfs:
+      - /tmp:mode=1777,size=512m
+    volumes:
+      - ragflow-elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS -u "elastic:$${ELASTIC_PASSWORD}" "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65535
+        hard: 65535
+    mem_limit: 8g
+    memswap_limit: 9g
+    pids_limit: 2048
+    labels:
+      - homepage.group=22-ragflow
+      - homepage.name=RAGFlow-Elasticsearch
+      - homepage.description=Document search engine
+
+  ragflow-mysql:
+    image: docker.io/library/mysql:8.0.39
+    container_name: ${STACK_NAME}-ragflow-mysql
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - --max_connections=1000
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --tls_version=TLSv1.2,TLSv1.3
+      - --max_allowed_packet=1073741824
+      - --binlog_expire_logs_seconds=604800
+    environment:
+      MYSQL_ROOT_PASSWORD: ${RAGFLOW_MYSQL_PASSWORD:-ragflow_mysql_password}
+      MYSQL_DATABASE: rag_flow
+      TZ: Asia/Tokyo
+    volumes:
+      - ragflow-mysql-data:/var/lib/mysql
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p"$${MYSQL_ROOT_PASSWORD}" --silent
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+    mem_limit: 2g
+    memswap_limit: 3g
+    pids_limit: 1024
+    labels:
+      - homepage.icon=/icons/mysql.png
+      - homepage.group=22-ragflow
+      - homepage.name=RAGFlow-MySQL
+      - homepage.description=Relational database
+
+  ragflow-rustfs:
+    image: docker.io/rustfs/rustfs:1.0.0-beta.12
+    container_name: ${STACK_NAME}-ragflow-rustfs
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    environment:
+      RUSTFS_ACCESS_KEY: ${RAGFLOW_RUSTFS_ACCESS_KEY:-ragflow_rustfs_key}
+      RUSTFS_SECRET_KEY: ${RAGFLOW_RUSTFS_SECRET_KEY:-ragflow_rustfs_secret}
+    ports:
+      - 32202:9000
+      - 32203:9001
+    volumes:
+      - ragflow-rustfs-data:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:9000/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    labels:
+      - homepage.icon=/icons/rustfs.png
+      - homepage.group=22-ragflow
+      - homepage.name=RAGFlow-RustFS
+      - homepage.href=http://${PUBLIC_HOST}:32203
+      - homepage.description=S3-compatible object storage
+
+  ragflow-rustfs-bucket-init:
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
+    container_name: ${STACK_NAME}-ragflow-rustfs-bucket-init
+    restart: "no"
+    profiles:
+      - ragflow
+    environment:
+      AWS_ACCESS_KEY_ID: ${RAGFLOW_RUSTFS_ACCESS_KEY:-ragflow_rustfs_key}
+      AWS_SECRET_ACCESS_KEY: ${RAGFLOW_RUSTFS_SECRET_KEY:-ragflow_rustfs_secret}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://ragflow-rustfs:9000
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_PAGER: ""
+      RUSTFS_DEFAULT_BUCKET: ragflow-bucket
+    entrypoint:
+      - /bin/sh
+      - -euc
+    command:
+      - |
+        # RAGFlowの単一bucket modeを使うため、起動前に対象bucketを冪等作成する。
+        if aws s3api head-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"; then
+          echo "Bucket already exists: $${RUSTFS_DEFAULT_BUCKET}"
+        else
+          echo "Creating bucket: $${RUSTFS_DEFAULT_BUCKET}"
+          aws s3api create-bucket --bucket "$${RUSTFS_DEFAULT_BUCKET}"
+        fi
+    networks:
+      - internal-nw
+    depends_on:
+      ragflow-rustfs:
+        condition: service_healthy
+
+  ragflow-valkey:
+    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    container_name: ${STACK_NAME}-ragflow-valkey
+    restart: unless-stopped
+    profiles:
+      - ragflow
+    command:
+      - valkey-server
+      - --requirepass
+      - ${RAGFLOW_VALKEY_PASSWORD:-ragflow_valkey_password}
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+    environment:
+      REDISCLI_AUTH: ${RAGFLOW_VALKEY_PASSWORD:-ragflow_valkey_password}
+    volumes:
+      - ragflow-valkey-data:/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - valkey-cli ping | grep -q PONG
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    labels:
+      - homepage.icon=/icons/valkey.png
+      - homepage.group=22-ragflow
+      - homepage.name=RAGFlow-Valkey
+      - homepage.description=Inmemory key-value NoSQL database
+
+volumes:
+  ragflow-logs:
+  ragflow-elasticsearch-data:
+  ragflow-mysql-data:
+  ragflow-rustfs-data:
+  ragflow-valkey-data:
+
+networks:
+  internal-nw:

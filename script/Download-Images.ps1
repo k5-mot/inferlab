@@ -49,6 +49,7 @@ $Platform = "linux/amd64"
 $Overwrite = $true
 
 $Images = @(
+    "docker.elastic.co/elasticsearch/elasticsearch:8.11.3",
     "docker.io/adorsys/keycloak-config-cli:6.5.1-26",
     "docker.io/agentscope/qwenpaw:v2.1.0",
     "public.ecr.aws/aws-cli/aws-cli:2.36.27",
@@ -56,6 +57,7 @@ $Images = @(
     "docker.io/cloudflare/cloudflared:2026.8.2",
     "docker.io/eilandert/reprepro@sha256:96dbd4cdbbb5c26893a7270c8949393211aaa0ec3ff05bf1ebd22da35347e64c",
     "docker.io/grafana/grafana:13.2.0",
+    "docker.io/infiniflow/ragflow:v0.26.4",
     "ghcr.io/langfuse/langfuse-worker:4.15.0",
     "ghcr.io/langfuse/langfuse:4.15.0",
     "docker.io/langgenius/dify-agent-backend:1.16.1",
@@ -66,6 +68,7 @@ $Images = @(
     "docker.io/langgenius/dify-web:1.16.1",
     "docker.io/library/couchdb:3.5.2.1",
     "docker.io/library/memcached:1.6.45-alpine",
+    "docker.io/library/mysql:8.0.39",
     "docker.io/library/nextcloud:34.0.3-apache",
     "docker.io/library/nginx:1.31.4-alpine",
     "docker.io/library/postgres:15.19-alpine",

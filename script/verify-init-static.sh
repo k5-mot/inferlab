@@ -119,6 +119,7 @@ verify_compose_config() {
     registry
     owui
     dify
+    ragflow
     nextcloud
     wikijs
     kaneo

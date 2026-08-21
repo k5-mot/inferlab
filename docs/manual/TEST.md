@@ -19,6 +19,7 @@
 | `static-validation` | 1 | 追跡済みshell、Python、JavaScriptの構文と、root Composeおよび主要profileの設定解決 | container起動、初期化処理の実行、外部serviceとの通信、画面操作 |
 | `compose-smoke-dify-postgres-init` | 2 | 新規PostgreSQLのhealthcheck完了後に`dify_plugin` databaseを作成できること | 作成済みdatabaseに対する再実行、Dify API、worker、Web UI、plugin daemonの起動とmigration |
 | `compose-smoke-oikb-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`oikb-bucket`を作成できること | 作成済みbucketに対する再実行、Open WebUI、OIKB、Nextcloudの起動と同期 |
+| `compose-smoke-ragflow-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`ragflow-bucket`を作成できること | 作成済みbucketに対する再実行、RAGFlow、Elasticsearch、MySQL、Valkeyの起動と文書取込 |
 | `compose-smoke-langfuse-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`langfuse-bucket`を作成できること | 作成済みbucketに対する再実行、Langfuse Web、worker、ClickHouse、PostgreSQLの起動とevent取込 |
 
 ## Level 1: 静的検証
@@ -92,6 +93,9 @@ script/verify-compose-smoke.sh dify-postgres-init
 # OIKB用RustFS bucket初期化だけを検証する。
 script/verify-compose-smoke.sh oikb-bucket-init
 
+# RAGFlow用RustFS bucket初期化だけを検証する。
+script/verify-compose-smoke.sh ragflow-bucket-init
+
 # Langfuse用RustFS bucket初期化だけを検証する。
 script/verify-compose-smoke.sh langfuse-bucket-init
 
@@ -105,6 +109,9 @@ pre-commit run compose-smoke-dify-postgres-init --hook-stage manual
 
 # OIKBのbucket init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-oikb-bucket-init --hook-stage manual
+
+# RAGFlowのbucket init smokeだけをmanual stageで実行する。
+pre-commit run compose-smoke-ragflow-bucket-init --hook-stage manual
 
 # Langfuseのbucket init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-langfuse-bucket-init --hook-stage manual

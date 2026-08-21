@@ -397,6 +397,7 @@ service_catalog: {
 
     21_dify: {
       label: "21-dify"
+      grid-columns: 2
       style: {
         fill: "#fff7ed"
         stroke: "#ea580c"
@@ -409,6 +410,42 @@ service_catalog: {
         style: {
           fill: "#ffffff"
           stroke: "#ea580c"
+        }
+      }
+
+      rustfs: {
+        label: "Dify-RustFS\n32102 / 32103"
+        icon: "../../00-common/homepage/icons/rustfs.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#ea580c"
+        }
+      }
+    }
+
+    22_ragflow: {
+      label: "22-ragflow"
+      grid-columns: 2
+      style: {
+        fill: "#fefce8"
+        stroke: "#ca8a04"
+        stroke-width: 2
+      }
+
+      ragflow: {
+        label: "RAGFlow\n32200 / 32201"
+        style: {
+          fill: "#ffffff"
+          stroke: "#ca8a04"
+        }
+      }
+
+      rustfs: {
+        label: "RAGFlow-RustFS\n32202 / 32203"
+        icon: "../../00-common/homepage/icons/rustfs.png"
+        style: {
+          fill: "#ffffff"
+          stroke: "#ca8a04"
         }
       }
     }
@@ -590,6 +627,8 @@ service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.mcpo
 service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.searxng
 service_catalog.row_3.20_owui.open_webui -> service_catalog.row_3.20_owui.oikb
 service_catalog.row_3.20_owui.oikb -> service_catalog.row_3.20_owui.oikb_rustfs
+service_catalog.row_3.21_dify.dify -> service_catalog.row_3.21_dify.rustfs
+service_catalog.row_3.22_ragflow.ragflow -> service_catalog.row_3.22_ragflow.rustfs
 # service_catalog.row_3.20_owui.open_webui -> service_catalog.row_2.11_rag.docling
 # service_catalog.row_3.20_owui.open_webui -> service_catalog.row_2.11_rag.qdrant
 

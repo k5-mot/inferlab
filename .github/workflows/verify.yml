@@ -32,6 +32,7 @@ jobs:
         smoke_case:
           - dify-postgres-init
           - oikb-bucket-init
+          - ragflow-bucket-init
           - langfuse-bucket-init
     steps:
       - name: Checkout
