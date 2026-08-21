@@ -340,6 +340,8 @@ services:
       # HERMES_HOME: /opt/data
       UV_LINK_MODE: copy
       UV_NO_CACHE: "true"
+      HERMES_UID: 1000
+      HERMES_GID: 1000
     ports:
       - 31001:9119
     volumes:
