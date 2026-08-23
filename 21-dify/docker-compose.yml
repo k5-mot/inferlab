@@ -34,8 +34,8 @@ services:
       DB_TYPE: postgresql
       DB_HOST: dify-postgres
       DB_PORT: 5432
-      DB_USERNAME: dify_db_user
-      DB_PASSWORD: dify_db_password
+      DB_USERNAME: ${DIFY_DB_USER:-dify_user}
+      DB_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       DB_DATABASE: dify_db
       REDIS_HOST: dify-valkey
       REDIS_PORT: 6379
@@ -222,8 +222,8 @@ services:
     environment:
       DB_HOST: dify-postgres
       DB_PORT: 5432
-      DB_USERNAME: dify_db_user
-      DB_PASSWORD: dify_db_password
+      DB_USERNAME: ${DIFY_DB_USER:-dify_user}
+      DB_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       DB_DATABASE: dify_plugin
       DB_SSL_MODE: disable
       REDIS_HOST: dify-valkey
@@ -408,18 +408,18 @@ services:
       - homepage.description=Forward proxy
 
   dify-postgres:
-    image: docker.io/library/postgres:15.19-alpine
+    image: docker.io/library/postgres:18.6-trixie
     container_name: ${STACK_NAME}-dify-postgres
     restart: unless-stopped
     profiles:
       - dify
     environment:
-      POSTGRES_USER: dify_db_user
-      POSTGRES_PASSWORD: dify_db_password
+      POSTGRES_USER: ${DIFY_DB_USER:-dify_user}
+      POSTGRES_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       POSTGRES_DB: dify_db
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - dify-postgres-data:/var/lib/postgresql/data
+      - dify-postgres-18-data:/var/lib/postgresql
     networks:
       - internal-nw
     healthcheck:
@@ -437,14 +437,14 @@ services:
       - homepage.description=Relational database
 
   dify-postgres-init:
-    image: docker.io/library/postgres:15.19-alpine
+    image: docker.io/library/postgres:18.6-trixie
     container_name: ${STACK_NAME}-dify-postgres-init
     restart: "no"
     profiles:
       - dify
     environment:
-      DIFY_DB_USER: dify_db_user
-      PGPASSWORD: dify_db_password
+      DIFY_DB_USER: ${DIFY_DB_USER:-dify_user}
+      PGPASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
     command:
       - sh
       - -euc
@@ -524,7 +524,7 @@ services:
         condition: service_healthy
 
   dify-valkey:
-    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    image: docker.io/valkey/valkey:9.1.1-alpine3.24
     container_name: ${STACK_NAME}-dify-valkey
     restart: unless-stopped
     profiles:
@@ -620,7 +620,7 @@ volumes:
   dify-plugin-daemon:
   dify-sandbox-dependencies:
   dify-sandbox-conf:
-  dify-postgres-data:
+  dify-postgres-18-data:
   dify-rustfs-data:
   dify-valkey-data:
   dify-qdrant-storage:
