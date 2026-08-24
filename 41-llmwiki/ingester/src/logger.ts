@@ -1,7 +1,7 @@
 export type LogLevel = 'info' | 'warn' | 'error';
 
 /**
- * credentialを含まない構造化eventを標準出力へ記録する。
+ * credentialを含まないIngester eventを標準出力へ記録する。
  * @param level log level。
  * @param event event名。
  * @param detail event固有の追加情報。

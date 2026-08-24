@@ -1,14 +1,14 @@
 import {spawn, type ChildProcess} from 'node:child_process';
 import {readFile, unlink} from 'node:fs/promises';
 import path from 'node:path';
-import type {RuntimeConfig, SourceConfig} from './config.js';
+import type {IngesterConfig, SourceConfig} from './config.js';
 import {log} from './logger.js';
 import {createSourceAdapterRegistry, type InputCommand, type SourceAdapterRegistry} from './source-adapter.js';
 import {signalViewerReload} from './viewer-generation.js';
 
 export class LlmWikiClient {
   readonly #binary: string;
-  readonly #config: RuntimeConfig;
+  readonly #config: IngesterConfig;
   readonly #environment: NodeJS.ProcessEnv;
   readonly #sourceAdapters: SourceAdapterRegistry;
 
@@ -19,7 +19,7 @@ export class LlmWikiClient {
    * @param environment upstreamへ渡す環境変数。
    * @returns 初期化済みclient instance。
    */
-  constructor(binary: string, config: RuntimeConfig, environment: NodeJS.ProcessEnv) {
+  constructor(binary: string, config: IngesterConfig, environment: NodeJS.ProcessEnv) {
     this.#binary = binary;
     this.#config = config;
     this.#environment = environment;

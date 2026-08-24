@@ -3,41 +3,6 @@ version: 1
 project:
   root: /data/llmwiki
 
-scheduler:
-  timezone: Asia/Tokyo
-
-defaults:
-  ingest:
-    enabled: false
-    schedule: "0 * * * *"
-    timeout_seconds: 600
-
-# source別のingest設定はdefaults.ingestを上書きする。
-sources:
-  - id: obsidian-couchdb
-    adapter: couchdb
-    url: http://couchdb:5984
-    database: obsidian
-    username_env: COUCHDB_USERNAME
-    password_env: COUCHDB_PASSWORD
-    # Obsidianの全folder名とnote名を空白で連結してsource titleにする。
-    title_strategy: hierarchy
-    exclude_path_prefixes:
-      # Self-hosted LiveSyncが生成するObsidian設定とplugin snapshotを除外する。
-      - "ix:"
-    max_documents: 1000
-    ingest:
-      enabled: true
-      schedule: "0 */6 * * *"
-
-compile:
-  enabled: false
-  schedule: "*/30 * * * *"
-  on_ingest: true
-  concurrency: 5
-  review: false
-  timeout_seconds: 3600
-
 provider:
   kind: openai
   model: openai/gpt-oss:20b
@@ -54,20 +19,57 @@ provider:
 output:
   language: Japanese
 
-quality:
-  lint:
-    enabled: true
-  eval:
-    enabled: true
-    suite: fast
+runtime:
+  viewer:
+    internal_port: 54321
+    public_host: 0.0.0.0
+    public_port: 8080
+    startup_timeout_seconds: 30
+    reload_poll_seconds: 2
 
-viewer:
-  internal_port: 54321
-  public_host: 0.0.0.0
-  public_port: 8080
-  startup_timeout_seconds: 30
-  reload_poll_seconds: 2
+ingester:
+  scheduler:
+    timezone: Asia/Tokyo
 
-validation:
-  # 初期MVPではfalseのみを許可する。
-  enabled: false
+  defaults:
+    ingest:
+      enabled: false
+      schedule: "0 * * * *"
+      timeout_seconds: 600
+
+  # source別のingest設定はdefaults.ingestを上書きする。
+  sources:
+    - id: obsidian-couchdb
+      adapter: couchdb
+      url: http://couchdb:5984
+      database: obsidian
+      username_env: COUCHDB_USERNAME
+      password_env: COUCHDB_PASSWORD
+      # Obsidianの全folder名とnote名を空白で連結してsource titleにする。
+      title_strategy: hierarchy
+      exclude_path_prefixes:
+        # Self-hosted LiveSyncが生成するObsidian設定とplugin snapshotを除外する。
+        - "ix:"
+      max_documents: 1000
+      ingest:
+        enabled: true
+        schedule: "0 */6 * * *"
+
+  compile:
+    enabled: false
+    schedule: "*/30 * * * *"
+    on_ingest: true
+    concurrency: 5
+    review: false
+    timeout_seconds: 3600
+
+  quality:
+    lint:
+      enabled: true
+    eval:
+      enabled: true
+      suite: fast
+
+  validation:
+    # 初期MVPではfalseのみを許可する。
+    enabled: false

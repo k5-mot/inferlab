@@ -15,7 +15,7 @@ Knowledge Compiler と Presentation System には `llm-wiki-compiler` を使用�
 - compile成功後に`llmwiki lint`と`llmwiki eval`を実行し、診断結果を保存する。
 - `llm-wiki-compiler` の `view` で生成 Wiki を閲覧する。
 - `llm-wiki-compiler` の `serve` をstdio MCP serverとして利用できるようにする。
-- Viewer/MCP実行環境とIngesterを別containerにし、project volume以外の責務を共有しない。
+- Viewer/MCP実行環境とIngesterを別container、別build context、別Node packageにし、project volume以外の実装と依存関係を共有しない。
 - ingest と compile の実行時刻を `config.yaml` で設定する。
 - source 共通の ingest 既定値と source 別 override を `config.yaml` で設定する。
 - provider、chat/embedding model、出力言語、並列数、review mode、viewer を `config.yaml` で設定する。
@@ -70,6 +70,19 @@ llmwiki-project named volume
   `- sources/ + wiki/ + .llmwiki/ + artifacts/
 ```
 
+source treeとbuild境界は次としなければならない（MUST）。
+
+```text
+runtime/                 ingester/
+  Dockerfile               Dockerfile
+  package.json             package.json
+  pnpm-lock.yaml           pnpm-lock.yaml
+  src/                     src/
+  tests/                   tests/
+```
+
+RuntimeとIngesterは相互にsource codeをimportしてはならない（MUST NOT）。各Docker build contextは自身のdirectoryだけとし、他方のsource、package manifest、lockfileをimageへ取り込んではならない（MUST NOT）。同じupstream versionを使用する場合も、各packageが自身のlockfileで固定しなければならない（MUST）。
+
 `llmwiki view`はwildcard addressへのbindを拒否する。Runtimeはviewerをloopbackで起動し、同一process内のread-only proxyを通してComposeのportへ公開しなければならない（MUST）。proxyはupstream viewerのHost/Origin検査を通過させるため、upstream側へ送るrequest headerをloopback originに正規化しなければならない（MUST）。
 
 viewerは起動時snapshotを保持する。Ingesterはcompile成功後に共有volumeのgeneration markerを更新しなければならない（MUST）。Runtimeはmarker変更を検知してviewer processを再起動し、新しいWikiを表示しなければならない（MUST）。
@@ -97,7 +110,7 @@ CouchDB adapterはSelf-hosted LiveSyncの非削除Markdown親documentを対象�
 
 ## 5. 設定
 
-`config.yaml` は次を唯一の運用設定とする。
+`config.yaml` は次を唯一の運用設定とする。`runtime` sectionはRuntime processだけが所有し、`ingester` sectionはIngester processだけが所有する。project、provider、outputはupstream project contractとして両processが参照する。
 
 - project root
 - timezone
@@ -116,9 +129,9 @@ credential の値は `config.yaml` へ直接書いてはならない（MUST NOT�
 
 ## 6. Scheduling
 
-source ごとの実効 ingest 設定は、`defaults.ingest` に `sources[].ingest` を上書きして決定する。
+source ごとの実効 ingest 設定は、`ingester.defaults.ingest` に `ingester.sources[].ingest` を上書きして決定する。
 
-Ingester内のingest、compile、lint、evalは直列化しなければならない（MUST）。前のjobが実行中の場合、後続jobは待機する。source ingestが成功し、`compile.on_ingest`が有効な場合は同じjob内で増分compile、lint、evalを順番に実行する。lintまたはevalの診断結果は初期MVPのvalidation gateに使用してはならない（MUST NOT）。
+Ingester内のingest、compile、lint、evalは直列化しなければならない（MUST）。前のjobが実行中の場合、後続jobは待機する。source ingestが成功し、`ingester.compile.on_ingest`が有効な場合は同じjob内で増分compile、lint、evalを順番に実行する。lintまたはevalの診断結果は初期MVPのvalidation gateに使用してはならない（MUST NOT）。
 
 schedule はコンテナ再起動後の次回該当時刻から実行する。起動直後の自動 ingest または compile は行わない。
 

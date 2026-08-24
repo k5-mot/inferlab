@@ -1,9 +1,8 @@
 services:
   llmwiki:
     build:
-      context: .
+      context: ./runtime
       dockerfile: Dockerfile
-      target: runtime
     container_name: ${STACK_NAME}-llmwiki
     restart: unless-stopped
     profiles:
@@ -38,9 +37,8 @@ services:
 
   llmwiki-ingester:
     build:
-      context: .
+      context: ./ingester
       dockerfile: Dockerfile
-      target: ingester
     container_name: ${STACK_NAME}-llmwiki-ingester
     restart: unless-stopped
     profiles:

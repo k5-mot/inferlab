@@ -1,6 +1,26 @@
 # LLM Wiki
 
-`llm-wiki-compiler` 1.1.0 をKnowledge Compiler、MCP server、read-only Viewerに使用する。実行環境は、upstreamのViewerとMCPを提供する`llmwiki` containerと、adapterおよび`ingest -> compile -> lint -> eval` pipelineを実行する`llmwiki-ingester` containerに分離する。両containerは`llmwiki-project` named volumeだけを共有する。
+`llm-wiki-compiler` 1.1.0 をKnowledge Compiler、MCP server、read-only Viewerに使用する。実行環境は、upstreamのViewerとMCPだけを提供する`llmwiki` containerと、adapterおよび`ingest -> compile -> lint -> eval` pipelineだけを実行する`llmwiki-ingester` containerに分離する。両containerは`llmwiki-project` named volumeだけを共有する。
+
+コードとbuildも分離する。`runtime/`と`ingester/`は独立したNode packageであり、それぞれ専用の`package.json`、`pnpm-lock.yaml`、Dockerfile、TypeScript設定、source、testを持つ。一方のimage build contextから他方のsource codeは参照できない。
+
+```text
+41-llmwiki/
+  runtime/                # Viewer、MCP、世代監視
+    src/
+    tests/
+    Dockerfile
+    package.json
+    pnpm-lock.yaml
+  ingester/               # adapter、scheduler、compile/lint/eval
+    src/
+    tests/
+    Dockerfile
+    package.json
+    pnpm-lock.yaml
+  config.yaml             # 両processの運用設定
+  docker-compose.yml
+```
 
 OpenKB、Wiki.js publish、OKF importは使用しない。OKF importは完成済みpageを`wiki/`へ直接書き、adapterとcompilerの`sources/`境界を迂回するためである。OKF exportはupstream CLIまたはMCPの`export_okf`をそのまま使用できる。
 
@@ -12,60 +32,70 @@ source-system固有処理は`llmwiki-ingester`のsource adapter interfaceの背�
 
 設定は container 起動時に一度だけ読み込む。変更後は container を再起動する。
 
-source 共通設定へ source 別設定を上書きする例は次のとおり。
+`runtime`と`ingester`は各processが所有する設定境界である。source 共通設定へ source 別設定を上書きする例は次のとおり。
 
 ```yaml
-defaults:
-  ingest:
-    enabled: false
-    schedule: "0 * * * *"
-    timeout_seconds: 600
-
-sources:
-  - id: engineering-handbook
-    adapter: input
-    input: https://example.internal/engineering/handbook
+ingester:
+  defaults:
     ingest:
-      enabled: true
-      schedule: "*/15 * * * *"
+      enabled: false
+      schedule: "0 * * * *"
+      timeout_seconds: 600
+  sources:
+    - id: engineering-handbook
+      adapter: input
+      input: https://example.internal/engineering/handbook
+      ingest:
+        enabled: true
+        schedule: "*/15 * * * *"
 ```
 
 現在の設定は`40-obsidian`のCouchDB `obsidian` databaseを6時間ごとに同期し、同期成功後に増分compileする。LiveSyncの非削除Markdown親documentだけを対象に、`children`順でleaf chunkを復元する。hidden path、Markdown以外、空本文はWikiへ取り込まない。前回manifestにだけ残るsource fileはsnapshot同期時に削除する。
 
 `title_strategy`はCouchDB document pathからLLMWiki source titleを生成する方式を指定する。`path`は従来どおりpathをそのまま使用する。`hierarchy`は末尾の`.md`を除去し、すべてのfolder名とnote名を空白で連結する。階層名の重複は除去しないため、`AWS/AWS CLF/事前テスト.md`は`AWS AWS CLF 事前テスト`になる。
 
-compile成功後はIngesterが共有volumeの`.llmwiki/viewer-generation`を更新する。`llmwiki` containerは`viewer.reload_poll_seconds`間隔でmarkerを確認し、新しいfilesystem snapshotでViewerを再起動する。lintとevalはdiagnosticとして実行し、初期MVPではpipelineの公開可否を判定するvalidation gateには使用しない。
+compile成功後はIngesterが共有volumeの`.llmwiki/viewer-generation`を更新する。`llmwiki` containerは`runtime.viewer.reload_poll_seconds`間隔でmarkerを確認し、新しいfilesystem snapshotでViewerを再起動する。lintとevalはdiagnosticとして実行し、初期MVPではpipelineの公開可否を判定するvalidation gateには使用しない。
 
 CouchDBのcredentialは値ではなく参照環境変数名を設定する。
 
 ```yaml
-sources:
-  - id: obsidian-couchdb
-    adapter: couchdb
-    url: http://couchdb:5984
-    database: obsidian
-    username_env: COUCHDB_USERNAME
-    password_env: COUCHDB_PASSWORD
-    title_strategy: hierarchy
-    exclude_path_prefixes:
-      - "ix:"
-    max_documents: 1000
-    ingest:
-      enabled: true
-      schedule: "0 */6 * * *"
+ingester:
+  sources:
+    - id: obsidian-couchdb
+      adapter: couchdb
+      url: http://couchdb:5984
+      database: obsidian
+      username_env: COUCHDB_USERNAME
+      password_env: COUCHDB_PASSWORD
+      title_strategy: hierarchy
+      exclude_path_prefixes:
+        - "ix:"
+      max_documents: 1000
+      ingest:
+        enabled: true
+        schedule: "0 */6 * * *"
 ```
 
 ## 開発
 
 ```bash
-# RuntimeとIngesterの依存関係を固定lockfileから導入する。
-pnpm --dir 41-llmwiki install --ignore-workspace --frozen-lockfile
+# Runtimeの依存関係をRuntime専用lockfileから導入する。
+pnpm --dir 41-llmwiki/runtime install --ignore-workspace --frozen-lockfile
 
-# TypeScriptの型検査を実行する。
-pnpm --dir 41-llmwiki typecheck
+# Ingesterの依存関係をIngester専用lockfileから導入する。
+pnpm --dir 41-llmwiki/ingester install --ignore-workspace --frozen-lockfile
 
-# buildとunit testを実行する。
-pnpm --dir 41-llmwiki test
+# Runtimeの型検査を実行する。
+pnpm --dir 41-llmwiki/runtime typecheck
+
+# Runtimeのunit testを実行する。
+pnpm --dir 41-llmwiki/runtime test
+
+# Ingesterの型検査を実行する。
+pnpm --dir 41-llmwiki/ingester typecheck
+
+# Ingesterのunit testを実行する。
+pnpm --dir 41-llmwiki/ingester test
 ```
 
 期待結果:

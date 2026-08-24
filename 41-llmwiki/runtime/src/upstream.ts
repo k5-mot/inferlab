@@ -2,7 +2,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 /**
- * package localへ固定installしたllmwiki executableを解決する。
+ * Runtime packageへ固定installしたllmwiki executableを解決する。
  * @returns llmwiki executableの絶対path。
  */
 export function resolveLlmWikiBinary(): string {

@@ -32,9 +32,22 @@ const couchDbSourceSchema = z.strictObject({
 
 const sourceSchema = z.union([inputSourceSchema, couchDbSourceSchema]);
 
-const configSchema = z.strictObject({
-  version: z.literal(1),
-  project: z.strictObject({root: z.string().min(1)}),
+const providerSchema = z.strictObject({
+  kind: z.literal('openai'),
+  model: z.string().min(1),
+  base_url: z.string().url(),
+  credential_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
+  embedding: z.strictObject({
+    kind: z.literal('openai'),
+    model: z.string().min(1),
+    base_url: z.string().url(),
+    credential_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
+    batch_size: z.number().int().positive(),
+    strict: z.boolean(),
+  }),
+});
+
+const ingesterSchema = z.strictObject({
   scheduler: z.strictObject({timezone: z.string().min(1)}),
   defaults: z.strictObject({ingest: ingestSchema}),
   sources: z.array(sourceSchema),
@@ -46,21 +59,6 @@ const configSchema = z.strictObject({
     review: z.boolean(),
     timeout_seconds: z.number().int().positive(),
   }),
-  provider: z.strictObject({
-    kind: z.literal('openai'),
-    model: z.string().min(1),
-    base_url: z.string().url(),
-    credential_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
-    embedding: z.strictObject({
-      kind: z.literal('openai'),
-      model: z.string().min(1),
-      base_url: z.string().url(),
-      credential_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
-      batch_size: z.number().int().positive(),
-      strict: z.boolean(),
-    }),
-  }),
-  output: z.strictObject({language: z.string().min(1)}),
   quality: z.strictObject({
     lint: z.strictObject({enabled: z.boolean()}),
     eval: z.strictObject({
@@ -68,14 +66,16 @@ const configSchema = z.strictObject({
       suite: z.enum(['fast', 'full']),
     }),
   }),
-  viewer: z.strictObject({
-    internal_port: z.number().int().min(1).max(65535),
-    public_host: z.string().min(1),
-    public_port: z.number().int().min(1).max(65535),
-    startup_timeout_seconds: z.number().int().positive(),
-    reload_poll_seconds: z.number().positive(),
-  }),
   validation: z.strictObject({enabled: z.literal(false)}),
+});
+
+const configSchema = z.strictObject({
+  version: z.literal(1),
+  project: z.strictObject({root: z.string().min(1)}),
+  provider: providerSchema,
+  output: z.strictObject({language: z.string().min(1)}),
+  runtime: z.unknown(),
+  ingester: ingesterSchema,
 });
 
 type ParsedConfig = z.infer<typeof configSchema>;
@@ -109,7 +109,7 @@ export interface CouchDbSourceConfig extends SourceConfigBase {
 
 export type SourceConfig = InputSourceConfig | CouchDbSourceConfig;
 
-export interface RuntimeConfig {
+export interface IngesterConfig {
   projectRoot: string;
   timezone: string;
   sources: SourceConfig[];
@@ -140,48 +140,41 @@ export interface RuntimeConfig {
     lint: {enabled: boolean};
     eval: {enabled: boolean; suite: 'fast' | 'full'};
   };
-  viewer: {
-    internalPort: number;
-    publicHost: string;
-    publicPort: number;
-    startupTimeoutSeconds: number;
-    reloadPollSeconds: number;
-  };
 }
 
 /**
- * YAML設定を読み込み、未知項目を含めて厳格に検証する。
+ * Ingesterが所有する設定をYAMLから読み込む。
  * @param configPath 読み込む設定ファイルのpath。
- * @returns source既定値を解決した実行時設定。
- * @throws ファイル読込、YAML parse、schema検証に失敗した場合。
+ * @returns source既定値を解決したIngester設定。
+ * @throws file読込、YAML parse、Ingester schema検証に失敗した場合。
  */
-export async function loadConfig(configPath: string): Promise<RuntimeConfig> {
+export async function loadConfig(configPath: string): Promise<IngesterConfig> {
   const source = await readFile(configPath, 'utf8');
   return parseConfig(loadYaml(source));
 }
 
 /**
- * 未検証の設定値を実行時設定へ変換する。
+ * 未検証値からIngester設定を抽出する。
  * @param value YAML parserが返した未検証値。
- * @returns source既定値を解決した実行時設定。
- * @throws schema違反がある場合。
+ * @returns source既定値を解決したIngester設定。
+ * @throws Ingesterが所有する設定にschema違反がある場合。
  */
-export function parseConfig(value: unknown): RuntimeConfig {
+export function parseConfig(value: unknown): IngesterConfig {
   const parsed = configSchema.parse(value);
-  assertUniqueSourceIds(parsed.sources);
-  return toRuntimeConfig(parsed);
+  assertUniqueSourceIds(parsed.ingester.sources);
+  return toIngesterConfig(parsed);
 }
 
 /**
- * compile実行時にllmwikiへ渡すprovider環境変数を構築する。
- * @param config 実行時設定。
+ * compile時にupstream CLIへ渡すprovider環境変数を構築する。
+ * @param config Ingester設定。
  * @param environ credentialを参照する環境変数map。
  * @param forceProvider scheduleに関係なくproviderを必須にする場合はtrue。
  * @returns upstream CLI向け環境変数。
  * @throws compileが実行され得る状態でcredentialが未設定の場合。
  */
 export function buildProviderEnvironment(
-  config: RuntimeConfig,
+  config: IngesterConfig,
   environ: NodeJS.ProcessEnv,
   forceProvider = false,
 ): NodeJS.ProcessEnv {
@@ -214,13 +207,13 @@ export function buildProviderEnvironment(
 
 /**
  * 有効なCouchDB sourceが参照するcredential環境変数を検証する。
- * @param config 実行時設定。
+ * @param config Ingester設定。
  * @param environ credentialを参照する環境変数map。
  * @returns 戻り値はない。
  * @throws 有効なCouchDB sourceのcredentialが未設定の場合。
  */
 export function validateSourceEnvironment(
-  config: RuntimeConfig,
+  config: IngesterConfig,
   environ: NodeJS.ProcessEnv,
 ): void {
   for (const source of config.sources) {
@@ -240,7 +233,7 @@ export function validateSourceEnvironment(
  * @returns 戻り値はない。
  * @throws 同じIDが複数指定された場合。
  */
-function assertUniqueSourceIds(sources: ParsedConfig['sources']): void {
+function assertUniqueSourceIds(sources: ParsedConfig['ingester']['sources']): void {
   const ids = new Set<string>();
   for (const source of sources) {
     if (ids.has(source.id)) throw new Error(`source IDが重複しています: ${source.id}`);
@@ -251,15 +244,15 @@ function assertUniqueSourceIds(sources: ParsedConfig['sources']): void {
 /**
  * schema検証済み設定へsource共通既定値を適用する。
  * @param parsed schema検証済み設定。
- * @returns RuntimeとIngesterが利用する正規化済み設定。
+ * @returns 正規化済みIngester設定。
  */
-function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
-  const sources = parsed.sources.map((source): SourceConfig => {
+function toIngesterConfig(parsed: ParsedConfig): IngesterConfig {
+  const settings = parsed.ingester;
+  const sources = settings.sources.map((source): SourceConfig => {
     const ingest = {
-      enabled: source.ingest.enabled ?? parsed.defaults.ingest.enabled,
-      schedule: source.ingest.schedule ?? parsed.defaults.ingest.schedule,
-      timeoutSeconds:
-        source.ingest.timeout_seconds ?? parsed.defaults.ingest.timeout_seconds,
+      enabled: source.ingest.enabled ?? settings.defaults.ingest.enabled,
+      schedule: source.ingest.schedule ?? settings.defaults.ingest.schedule,
+      timeoutSeconds: source.ingest.timeout_seconds ?? settings.defaults.ingest.timeout_seconds,
     };
     if (source.adapter === 'couchdb') {
       return {
@@ -279,15 +272,15 @@ function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
   });
   return {
     projectRoot: parsed.project.root,
-    timezone: parsed.scheduler.timezone,
+    timezone: settings.scheduler.timezone,
     sources,
     compile: {
-      enabled: parsed.compile.enabled,
-      schedule: parsed.compile.schedule,
-      onIngest: parsed.compile.on_ingest,
-      concurrency: parsed.compile.concurrency,
-      review: parsed.compile.review,
-      timeoutSeconds: parsed.compile.timeout_seconds,
+      enabled: settings.compile.enabled,
+      schedule: settings.compile.schedule,
+      onIngest: settings.compile.on_ingest,
+      concurrency: settings.compile.concurrency,
+      review: settings.compile.review,
+      timeoutSeconds: settings.compile.timeout_seconds,
     },
     provider: {
       kind: parsed.provider.kind,
@@ -304,23 +297,16 @@ function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
       },
     },
     outputLanguage: parsed.output.language,
-    quality: parsed.quality,
-    viewer: {
-      internalPort: parsed.viewer.internal_port,
-      publicHost: parsed.viewer.public_host,
-      publicPort: parsed.viewer.public_port,
-      startupTimeoutSeconds: parsed.viewer.startup_timeout_seconds,
-      reloadPollSeconds: parsed.viewer.reload_poll_seconds,
-    },
+    quality: settings.quality,
   };
 }
 
 /**
  * 起動後にproviderを必要とするjobが存在するか判定する。
- * @param config 実行時設定。
+ * @param config Ingester設定。
  * @returns 定期compileまたはingest後compileが有効ならtrue。
  */
-function requiresProvider(config: RuntimeConfig): boolean {
+function requiresProvider(config: IngesterConfig): boolean {
   if (config.compile.enabled) return true;
   return config.compile.onIngest && config.sources.some((source) => source.ingest.enabled);
 }

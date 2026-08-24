@@ -1,5 +1,5 @@
 import {Cron} from 'croner';
-import type {RuntimeConfig, SourceConfig} from './config.js';
+import type {IngesterConfig, SourceConfig} from './config.js';
 import type {LlmWikiClient} from './llmwiki-client.js';
 import {log} from './logger.js';
 
@@ -39,7 +39,7 @@ export class SerialJobQueue {
 }
 
 export class WikiJobs {
-  readonly #config: RuntimeConfig;
+  readonly #config: IngesterConfig;
   readonly #client: LlmWikiClient;
 
   /**
@@ -48,7 +48,7 @@ export class WikiJobs {
    * @param client upstream CLI client。
    * @returns 初期化済みjob集合。
    */
-  constructor(config: RuntimeConfig, client: LlmWikiClient) {
+  constructor(config: IngesterConfig, client: LlmWikiClient) {
     this.#config = config;
     this.#client = client;
   }
@@ -86,7 +86,7 @@ export class WikiJobs {
  * @sideeffect 有効なscheduleを直ちに登録する。
  */
 export function startSchedules(
-  config: RuntimeConfig,
+  config: IngesterConfig,
   jobs: WikiJobs,
   queue: SerialJobQueue,
 ): Cron[] {

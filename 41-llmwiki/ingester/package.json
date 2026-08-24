@@ -1,5 +1,5 @@
 {
-  "name": "inferlab-llmwiki-runner",
+  "name": "inferlab-llmwiki-ingester",
   "version": "0.1.0",
   "private": true,
   "type": "module",

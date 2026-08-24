@@ -11,7 +11,7 @@ import {resolveLlmWikiBinary} from './upstream.js';
 async function main(): Promise<void> {
   const configPath = process.env.CONFIG_PATH ?? '/app/config.yaml';
   const config = await loadConfig(configPath);
-  const environment = buildProviderEnvironment(config, process.env);
+  const environment = buildProviderEnvironment(config, process.env, true);
   const child = spawn(
     resolveLlmWikiBinary(),
     ['serve', '--root', config.projectRoot],
