@@ -33,7 +33,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$ImageDirectory = "/srv/oci-archive",
+    [string]$ImageDirectory = "/srv/oci",
 
     [Alias("h")]
     [switch]$Help

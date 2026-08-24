@@ -50,18 +50,8 @@ services:
     ports:
       - 31100:5001
     volumes:
-      - type: bind
-        source: /srv/docling
-        target: /opt/app-root/src/.cache/docling/models
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: /srv/docling/tesseract
-        target: /usr/share/tesseract/tessdata
-        read_only: true
-        bind:
-          create_host_path: false
+      - /srv/docling:/opt/app-root/src/.cache/docling/models:ro
+      - /srv/docling/tesseract:/usr/share/tesseract/tessdata:ro
       - docling-data:/data
     networks:
       - internal-nw

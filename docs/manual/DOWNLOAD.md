@@ -87,7 +87,7 @@ Linux/macOS shellでDocling資材を取得する場合:
 - `/srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg`が作成され、SHA-256検証が成功する。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
 - `/srv/huggingface/`に`owner--repo`形式のmodel repository directoryが作成される。
-- `out/srv/docling/`直下にmodel catalog各stageで⭐が付いたmodelがDocling公式CLIで取得される。
+- `out/srv/docling/`直下に指定したDocling modelとHugging Face repositoryがDocling公式CLIで取得される。
 - `out/srv/docling/tesseract/`にchecksum検証済みの英語・日本語traineddataが作成される。
 - `/srv/12-registry/pypi/*`にpackage archiveが作成される。
 - `/srv/12-registry/npm-packages/*.tgz`が作成される。
@@ -102,7 +102,7 @@ Linux/macOS shellでDocling資材を取得する場合:
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
 - Dify plugin、内包requirements、依存wheelの取得またはchecksum検証に失敗する。
 - `huggingface-cli`が見つからない、またはmodel repositoryの取得に失敗する。
-- `uvx`経由の`docling-tools`によるmodel取得、traineddataのdownload、またはchecksum検証に失敗する。
+- `uvx`経由の`models download`、`models download-hf-repo`、traineddataのdownload、またはchecksum検証に失敗する。
 - `pip download`が失敗する。
 - `npm install`または`npm pack`が失敗する。
 - RPM repository metadataまたはpackage fileの取得に失敗する。

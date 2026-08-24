@@ -11,7 +11,7 @@ Qdrantはhostへportを公開していないため、動作確認は同じCompos
 
 Doclingはhost上の次の資材をread-onlyで利用する。
 
-- `/srv/docling/`: `uvx --from docling==2.118.0 docling-tools models download`で取得したmodel catalogの各stageで⭐が付いたmodel。
+- `/srv/docling/`: `docling-tools models download`で取得したmodelと、`docling-tools models download-hf-repo`で取得したHugging Face repository。
 - `/srv/docling/tesseract/`: 英語・日本語のTesseract traineddata。
 
 オンライン端末のrepository rootで実行する。
@@ -30,13 +30,14 @@ LinuxまたはmacOSではShell版を実行できる。
 
 期待結果:
 
-- `out/srv/docling/`直下に`layout`、`tableformer`、`rapidocr`、`picture_classifier`、`granitedocling`、`smolvlm`、`code_formula`のmodel directoryが作成される。
+- `layout`、`tableformer`、`tableformerv2`、`picture_classifier`、`granitedocling`、`smolvlm`、`code_formula`の取得が成功する。
+- `out/srv/docling/`直下に`docling-project--docling-layout-heron`、`docling-project--docling-layout-heron-101`、`docling-project--DocumentFigureClassifier-v2.5`、`docling-project--CodeFormulaV2`が作成される。
 - `out/srv/docling/tesseract/`に`eng`、`jpn`、`jpn_vert`、`osd`、`script/Japanese`、`script/Japanese_vert`のtraineddataが作成される。
 - traineddataのSHA-256検証が成功する。
 
 失敗条件:
 
-- `uvx`を利用できない、またはuvx経由の`docling-tools`実行に失敗する。
+- `uvx`を利用できない、またはuvx経由の`models download`または`models download-hf-repo`実行に失敗する。
 - traineddataのdownloadまたはSHA-256検証に失敗する。
 - airgap serverへ資材を転送した後、bind mount元のdirectoryまたはfileが不足する。
 

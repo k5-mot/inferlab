@@ -5,16 +5,21 @@ output_directory="out"
 docling_package_spec="docling==2.118.0"
 tessdata_revision="e12c65a915945e4c28e237a9b52bc4a8f39a0cec"
 tessdata_base_url="https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/${tessdata_revision}"
-# model catalogの⭐を明示的なCLI IDへ固定し、--allによる対象外modelの混入を防ぐ。
-# v1.30.0のOCR Auto warm-upはRapidOCRを選ぶため、rapidocrとTesseract traineddataの両方を取得する。
+# 必要なCLI model IDを固定し、--allによる対象外modelの混入を防ぐ。
 docling_models=(
   layout
   tableformer
-  rapidocr
+  tableformerv2
   picture_classifier
   granitedocling
   smolvlm
   code_formula
+)
+docling_hugging_face_repositories=(
+  docling-project/docling-layout-heron
+  docling-project/docling-layout-heron-101
+  docling-project/DocumentFigureClassifier-v2.5
+  docling-project/CodeFormulaV2
 )
 tessdata_assets=(
   "eng.traineddata|8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
@@ -33,7 +38,7 @@ usage() {
   cat <<'EOF'
 Usage: download-docling-assets.sh [--output-directory DIRECTORY] [--help]
 
-Docling modelとTesseract traineddataを事前取得します。
+Docling model、Hugging Face repository、Tesseract traineddataを事前取得します。
 
 Options:
   --output-directory DIRECTORY  srv/docling/を作成する出力先（default: out）
@@ -66,6 +71,20 @@ download_docling_models() {
   uvx --from "${docling_package_spec}" docling-tools models download \
     --output-dir "${model_directory}" \
     "${docling_models[@]}"
+}
+
+# download_docling_hugging_face_repositories:
+# 用途: Docling公式CLIで指定したHugging Face repositoryを保存先へ取得する。
+# 引数: $1にrepository保存先directoryを指定する。
+# 戻り値: download成功時は0、uvx経由のdocling-tools失敗時はその終了codeを返す。
+# 副作用: 保存先directoryのrepository fileを作成または更新する。
+download_docling_hugging_face_repositories() {
+  local model_directory="$1"
+
+  mkdir -p "${model_directory}"
+  uvx --from "${docling_package_spec}" docling-tools models download-hf-repo \
+    --output-dir "${model_directory}" \
+    "${docling_hugging_face_repositories[@]}"
 }
 
 # download_tessdata:
@@ -135,6 +154,7 @@ main() {
   local expected_sha256
 
   download_docling_models "${docling_directory}"
+  download_docling_hugging_face_repositories "${docling_directory}"
 
   for asset in "${tessdata_assets[@]}"; do
     IFS='|' read -r relative_path expected_sha256 <<<"${asset}"

@@ -9,7 +9,7 @@ Docling Serveは公式image `quay.io/docling-project/docling-serve:v1.30.0`を�
 | `/srv/docling` | `/opt/app-root/src/.cache/docling/models` | Doclingのlayout、table、OCR補助、enrichment model | read-only |
 | `/srv/docling/tesseract` | `/usr/share/tesseract/tessdata` | Tesseractのlanguage・script traineddata | read-only |
 
-Docling modelは、Docling Serve v1.30.0と互換性のある`docling-tools models download`を`uvx`経由でhost上から実行し、model catalogで⭐が付いた各stageのmodelを事前配置する。Tesseract traineddataは、`tesseract-ocr/tessdata_best`のcommitを固定して取得する。取得scriptはDockerまたはWSLへ依存させず、PowerShell版は`uvx`と`Invoke-WebRequest`、Shell版は`uvx`と`curl`を使用する。
+Docling modelは、Docling Serve v1.30.0と互換性のある`docling-tools models download`と`docling-tools models download-hf-repo`を`uvx`経由でhost上から実行し、指定したmodelとHugging Face repositoryを事前配置する。Tesseract traineddataは、`tesseract-ocr/tessdata_best`のcommitを固定して取得する。取得scriptはDockerまたはWSLへ依存させず、PowerShell版は`uvx`と`Invoke-WebRequest`、Shell版は`uvx`と`curl`を使用する。
 
 この構成ではbind mountがimage内の同一pathを隠す。host側が空または不完全な状態で起動してはならない（MUST NOT）。`DOCLING_SERVE_ARTIFACTS_PATH`と`TESSDATA_PREFIX`はmount先と完全に一致させなければならない（MUST）。
 
@@ -25,19 +25,18 @@ Open WebUIは`ocr_preset: "tesseract"`と`ocr_lang: ["jpn", "jpn_vert", "eng"]`�
 
 Docling公式は、offline利用向けに`docling-tools models download`でmodelを事前取得し、DoclingまたはDocling Serveへartifacts pathを渡す方法を案内している。現行scriptではDocling Serve v1.30.0に含まれるDocling 2.118.0を`uvx --from docling==2.118.0`で一時環境へ導入して実行する。Docling Serveでは`DOCLING_SERVE_ARTIFACTS_PATH`を使用する。
 
-Docling 2.118.0を含むDocling Serve v1.30.0のCLI model IDとmodel catalogの⭐を対応させると、取得対象は次のとおりになる。
+Docling 2.118.0を含むDocling Serve v1.30.0に対して、今回指定するCLI model IDは次のとおりである。
 
-| stage | model catalogの⭐ | CLI model ID |
+| stage | model | CLI model ID |
 |---|---|---|
 | Layout | `docling-layout-heron` | `layout` |
-| OCR | Auto | `rapidocr`。Tesseract利用向けtraineddataも別途配置する |
-| Table Structure | TableFormer accurate mode | `tableformer` |
+| Table Structure | TableFormerとTableFormer v2 | `tableformer`、`tableformerv2` |
 | Picture Classifier | `DocumentFigureClassifier-v2.5` | `picture_classifier` |
 | VLM Convert | Granite-Docling-258M | `granitedocling` |
 | Picture Description | SmolVLM-256M | `smolvlm` |
 | Code & Formula | CodeFormulaV2 | `code_formula` |
 
-OCRの⭐はmodelではなくengine選択のAutoである。Docling Serve v1.30.0の起動時warm-upはAutoをRapidOCRへ解決するため、`rapidocr`がoffline model rootに必要である。Open WebUIからの変換ではTesseractを明示指定するため、英語・日本語traineddataも併せて配置する。
+Open WebUIからの変換ではTesseractを明示指定するため、英語・日本語traineddataを別途配置する。Docling Serve v1.30.0の起動時warm-upでOCR Autoを使用する場合はRapidOCRも必要になるため、既存の`RapidOcr` directoryは削除しない。
 
 `--all`は⭐対象外のGranite Vision、SmolDocling、Nemotron OCRなども取得するため使用しない。model catalogと取得対象の対応をreview可能にするため、model IDを明示する。
 
@@ -49,15 +48,24 @@ Docling Serve v1.30.0のruntime userはUID `1001`、GID `0`である。取得環
 # 配布先と同じDocling directory treeを作成する。
 mkdir -p out/srv/docling
 
-# model catalogの⭐対象modelをDocling公式CLIでdownloadする。
+# 指定したCLI modelをDocling公式CLIでdownloadする。
 uvx --from docling==2.118.0 docling-tools models download \
   --output-dir out/srv/docling \
-  layout tableformer rapidocr picture_classifier granitedocling smolvlm code_formula
+  layout tableformer tableformerv2 picture_classifier granitedocling smolvlm code_formula
+
+# 指定したHugging Face repositoryをmodel directoryへdownloadする。
+uvx --from docling==2.118.0 docling-tools models download-hf-repo \
+  --output-dir out/srv/docling \
+  docling-project/docling-layout-heron \
+  docling-project/docling-layout-heron-101 \
+  docling-project/DocumentFigureClassifier-v2.5 \
+  docling-project/CodeFormulaV2
 ```
 
 期待結果:
 
-- `out/srv/docling/`直下にlayout、TableFormer、RapidOCR、picture classifier、Granite-Docling、SmolVLM、CodeFormulaV2のmodel directoryが作られる。
+- 指定した7つのDocling CLI model IDのdownloadが成功する。
+- `out/srv/docling/`直下に指定した4つのHugging Face repository directoryが作られる。
 - download commandが0で終了する。
 - UID `1001`のcontainer processから全directoryとfileを読み取れる。
 
@@ -248,6 +256,10 @@ Tesseract traineddataはcommit SHAを明示的に更新する。浮動する`mai
 - [Docling: Advanced options - Model prefetching and offline usage](https://docling-project.github.io/docling/usage/advanced_options/)
 - [Docling: `docling-tools` CLI reference](https://docling-project.github.io/docling/reference/cli/)
 - [Docling: Model catalog](https://github.com/docling-project/docling/blob/main/docs/usage/model_catalog.md)
+- [Hugging Face: docling-layout-heron](https://huggingface.co/docling-project/docling-layout-heron)
+- [Hugging Face: docling-layout-heron-101](https://huggingface.co/docling-project/docling-layout-heron-101)
+- [Hugging Face: DocumentFigureClassifier-v2.5](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.5)
+- [Hugging Face: CodeFormulaV2](https://huggingface.co/docling-project/CodeFormulaV2)
 - [Docling: Installation - OCR engines](https://docling-project.github.io/docling/getting_started/installation/)
 - [Docling: Pipeline options](https://docling-project.github.io/docling/reference/pipeline_options/)
 - [Docling Serve v1.30.0: Containerfile](https://github.com/docling-project/docling-serve/blob/v1.30.0/Containerfile)

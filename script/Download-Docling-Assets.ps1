@@ -3,7 +3,7 @@
 DoclingのmodelとTesseract traineddataを取得します。
 
 .DESCRIPTION
-uvx経由のDocling公式CLIでmodel catalogの各stageで⭐が付いたmodelを取得し、checksumで検証したTesseract traineddataを取得します。
+uvx経由のDocling公式CLIで指定modelとHugging Face repositoryを取得し、checksumで検証したTesseract traineddataを取得します。
 既定では`out/srv/docling/`配下へ、airgap serverへそのまま配置できる構造で保存します。
 
 .PARAMETER OutputDirectory
@@ -41,16 +41,21 @@ if ($Help) {
 
 $ErrorActionPreference = "Stop"
 $DoclingPackageSpec = "docling==2.118.0"
-# model catalogの⭐を明示的なCLI IDへ固定し、`--all`による対象外modelの混入を防ぎます。
-# v1.30.0のOCR Auto warm-upはRapidOCRを選ぶため、rapidocrとTesseract traineddataの両方を取得します。
+# 必要なCLI model IDを固定し、`--all`による対象外modelの混入を防ぎます。
 $DoclingModels = @(
     "layout",
     "tableformer",
-    "rapidocr",
+    "tableformerv2",
     "picture_classifier",
     "granitedocling",
     "smolvlm",
     "code_formula"
+)
+$DoclingHuggingFaceRepositories = @(
+    "docling-project/docling-layout-heron",
+    "docling-project/docling-layout-heron-101",
+    "docling-project/DocumentFigureClassifier-v2.5",
+    "docling-project/CodeFormulaV2"
 )
 $TessdataRevision = "e12c65a915945e4c28e237a9b52bc4a8f39a0cec"
 $TessdataBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/$TessdataRevision"
@@ -128,6 +133,45 @@ function Save-DoclingModels {
 
 <#
 .SYNOPSIS
+Docling公式CLIで指定したHugging Face repositoryをhost directoryへ取得します。
+
+.PARAMETER PackageSpec
+uvxが一時環境へ導入するDocling packageのversion付きspecifierです。
+
+.PARAMETER ModelDirectory
+Hugging Face repositoryの保存先directoryです。
+
+.PARAMETER Repositories
+取得するHugging Face repository IDの配列です。
+
+.OUTPUTS
+値は返しません。
+
+.NOTES
+保存先へrepository snapshotをdownloadします。uvx経由のdocling-tools実行に失敗した場合は例外を送出します。
+#>
+function Save-DoclingHuggingFaceRepositories {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageSpec,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ModelDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Repositories
+    )
+
+    Write-Host "Download Docling Hugging Face repositories: $($Repositories -join ', ')"
+    & uvx --from $PackageSpec docling-tools models download-hf-repo --output-dir $ModelDirectory $Repositories
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docling Hugging Face repositoryの取得に失敗しました: $ModelDirectory"
+    }
+}
+
+<#
+.SYNOPSIS
 Tesseract traineddataを取得してchecksumを検証します。
 
 .PARAMETER BaseUrl
@@ -190,6 +234,11 @@ Save-DoclingModels `
     -PackageSpec $DoclingPackageSpec `
     -ModelDirectory $DoclingDirectory `
     -Models $DoclingModels
+
+Save-DoclingHuggingFaceRepositories `
+    -PackageSpec $DoclingPackageSpec `
+    -ModelDirectory $DoclingDirectory `
+    -Repositories $DoclingHuggingFaceRepositories
 
 foreach ($Asset in $TessdataAssets) {
     Save-VerifiedTessdata `
