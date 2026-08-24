@@ -1,0 +1,74 @@
+services:
+  xwiki:
+    image: docker.io/library/xwiki:18.4.4-postgres-tomcat
+    container_name: ${STACK_NAME}-xwiki
+    restart: unless-stopped
+    init: true
+    profiles:
+      - xwiki
+    environment:
+      DB_USER: xwiki_db_user
+      DB_PASSWORD: ${XWIKI_DB_PASSWORD:-xwiki_db_password}
+      DB_DATABASE: xwiki
+      DB_HOST: xwiki-postgres
+    ports:
+      - "33100:8080"
+    volumes:
+      - xwiki-data:/usr/local/xwiki
+    networks:
+      - internal-nw
+    depends_on:
+      xwiki-postgres:
+        condition: service_healthy
+    mem_limit: 2g
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    labels:
+      - homepage.group=31-xwiki
+      - homepage.name=XWiki
+      - homepage.href=http://${PUBLIC_HOST}:33100
+      - homepage.description=Wiki platform
+      - homepage.icon=/icons/llm-wiki.png
+
+  xwiki-postgres:
+    image: docker.io/library/postgres:18.6-trixie
+    container_name: ${STACK_NAME}-xwiki-postgres
+    restart: unless-stopped
+    profiles:
+      - xwiki
+    environment:
+      POSTGRES_DB: xwiki
+      POSTGRES_USER: xwiki_db_user
+      POSTGRES_PASSWORD: ${XWIKI_DB_PASSWORD:-xwiki_db_password}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=builtin --locale=C.UTF-8
+    volumes:
+      - xwiki-postgres-data:/var/lib/postgresql
+    networks:
+      - internal-nw
+    mem_limit: 512m
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U xwiki_db_user -d xwiki
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=31-xwiki
+      - homepage.name=XWiki-PostgreSQL
+      - homepage.description=Relational database
+      - homepage.icon=/icons/postgresql.png
+
+volumes:
+  xwiki-data:
+  xwiki-postgres-data:
+
+networks:
+  internal-nw:

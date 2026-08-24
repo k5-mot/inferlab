@@ -207,11 +207,12 @@ verify_compose_config() {
     dify
     ragflow
     nextcloud
-    wikijs
+    xwiki
     kaneo
     zulip
-    obsidian
     gitlab
+    wikijs
+    obsidian
     o11y
     langfuse
   )

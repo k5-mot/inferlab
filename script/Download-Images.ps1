@@ -78,6 +78,7 @@ $Images = @(
     "docker.io/library/rabbitmq:4.2.9",
     "docker.io/library/redis:8.10.0-alpine",
     "docker.io/library/registry:3.1.1",
+    "docker.io/library/xwiki:18.4.4-postgres-tomcat",
     "docker.io/litellm/litellm:v1.97.0",
     "docker.io/nousresearch/hermes-agent:v2026.8.18",
     "docker.io/ollama/ollama:0.32.15",

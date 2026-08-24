@@ -297,17 +297,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):33500/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33400/"
 
     redirectUris:
-      - "http://localhost:33500/users/auth/openid_connect/callback"
-      - "http://127.0.0.1:33500/users/auth/openid_connect/callback"
-      - "http://$(env:PUBLIC_HOST):33500/users/auth/openid_connect/callback"
+      - "http://localhost:33400/users/auth/openid_connect/callback"
+      - "http://127.0.0.1:33400/users/auth/openid_connect/callback"
+      - "http://$(env:PUBLIC_HOST):33400/users/auth/openid_connect/callback"
 
     webOrigins:
-      - "http://localhost:33500"
-      - "http://127.0.0.1:33500"
-      - "http://$(env:PUBLIC_HOST):33500"
+      - "http://localhost:33400"
+      - "http://127.0.0.1:33400"
+      - "http://$(env:PUBLIC_HOST):33400"
 
     protocolMappers:
       - name: groups

@@ -20,15 +20,15 @@ services:
     environment:
       GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD:-pw-gitlab-root-password-change-me}
       GITLAB_OMNIBUS_CONFIG: "from_file('/etc/gitlab/omnibus_config.rb')"
-      GITLAB_EXTERNAL_URL: http://${PUBLIC_HOST}:33500
+      GITLAB_EXTERNAL_URL: http://${PUBLIC_HOST}:33400
       GITLAB_SSH_HOST: ${PUBLIC_HOST}
       GITLAB_OIDC_ISSUER: http://${PUBLIC_HOST}:30001/realms/prod
       GITLAB_OIDC_CLIENT_ID: gitlab
       GITLAB_OIDC_CLIENT_SECRET: ${GITLAB_OIDC_CLIENT_SECRET:-sk-gitlab-oidc-client-secret-key}
-      GITLAB_OIDC_REDIRECT_URI: http://${PUBLIC_HOST}:33500/users/auth/openid_connect/callback
+      GITLAB_OIDC_REDIRECT_URI: http://${PUBLIC_HOST}:33400/users/auth/openid_connect/callback
     ports:
-      - "33500:80"
-      - "33522:22"
+      - "33400:80"
+      - "33422:22"
     volumes:
       - gitlab-config:/etc/gitlab
       - gitlab-logs:/var/log/gitlab
@@ -46,9 +46,9 @@ services:
       start_period: 300s
     labels:
       - homepage.icon=/icons/gitlab.png
-      - homepage.group=35-gitlab
+      - homepage.group=34-gitlab
       - homepage.name=GitLab
-      - homepage.href=http://${PUBLIC_HOST}:33500
+      - homepage.href=http://${PUBLIC_HOST}:33400
       - homepage.description=Git hosting and CI platform
 
   gitlab-runner-register:
@@ -109,7 +109,7 @@ services:
         condition: service_completed_successfully
     labels:
       - homepage.icon=/icons/gitlab.png
-      - homepage.group=35-gitlab
+      - homepage.group=34-gitlab
       - homepage.name=GitLab Runner
       - homepage.description=CI runner
 
