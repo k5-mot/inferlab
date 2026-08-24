@@ -124,7 +124,7 @@ STACK_NAME=airgap docker compose --env-file .env --profile dify config --quiet
 
 ## Difyと内部PyPIを起動する
 
-`dify` profileはplugin daemonより先に`pypiserver`を起動する。`/srv/12-registry/pypi`はread-onlyでmountされる。
+`dify` profileはplugin daemonより先に`pypiserver`を起動する。`pypiserver`はUID/GID `9898`の非root userで本体processを直接起動し、`/srv/12-registry/pypi`はread-onlyでmountされる。package資材の所有権変更や書き込みは行わない。
 
 ```bash
 # Dify、plugin daemon、内部PyPIと依存serviceを起動する。

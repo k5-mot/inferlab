@@ -7,7 +7,7 @@ readonly SMOKE_CASE="${1:-}"
 cd "${REPO_ROOT}"
 
 if [[ -z "${SMOKE_CASE}" ]]; then
-  echo "Usage: $0 {dify-postgres-init|oikb-bucket-init|ragflow-bucket-init|langfuse-bucket-init}" >&2
+  echo "Usage: $0 {dify-postgres-init|pypiserver-readonly|oikb-bucket-init|ragflow-bucket-init|langfuse-bucket-init}" >&2
   exit 2
 fi
 
@@ -17,6 +17,7 @@ export PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
 
 readonly TEMP_DIR="$(mktemp -d)"
 readonly PORTLESS_OVERRIDE_FILE="${TEMP_DIR}/compose.portless.yml"
+readonly PYPISERVER_PACKAGES_DIR="${TEMP_DIR}/pypi"
 
 COMPOSE_BASE_ARGS=(-f docker-compose.yml -f "${PORTLESS_OVERRIDE_FILE}")
 COMPOSE_ARGS=()
@@ -29,8 +30,17 @@ COMPOSE_ARGS=()
 # 副作用:
 #   一時directory配下にCompose override fileを作成する。
 write_portless_override() {
-  cat >"${PORTLESS_OVERRIDE_FILE}" <<'YAML'
+  mkdir -p "${PYPISERVER_PACKAGES_DIR}"
+  chmod 0755 "${PYPISERVER_PACKAGES_DIR}"
+  cat >"${PORTLESS_OVERRIDE_FILE}" <<YAML
 services:
+  pypiserver:
+    ports: !reset []
+    volumes:
+      - type: bind
+        source: ${PYPISERVER_PACKAGES_DIR}
+        target: /data/packages
+        read_only: true
   oikb-rustfs:
     ports: !reset []
   langfuse-rustfs:
@@ -68,12 +78,32 @@ run_exit_service() {
   docker compose "${COMPOSE_BASE_ARGS[@]}" "${COMPOSE_ARGS[@]}" up --abort-on-container-exit --exit-code-from "${service}" "${service}"
 }
 
+# 指定した常駐serviceがhealthyになるまで、必要なprofileだけでComposeを起動する。
+# 引数:
+#   $1: healthcheckを検証するservice名。
+#   $2以降: `docker compose`へ渡すprofile引数。
+# 戻り値:
+#   対象serviceがhealthyになった場合は0、失敗またはtimeoutの場合は非0を返す。
+# 副作用:
+#   `STACK_NAME`で隔離されたcontainer、network、volumeを作成する。
+run_healthy_service() {
+  local service="$1"
+  shift
+  COMPOSE_ARGS=("$@")
+  trap cleanup_project EXIT
+  docker compose "${COMPOSE_BASE_ARGS[@]}" "${COMPOSE_ARGS[@]}" up --detach --wait "${service}"
+}
+
 write_portless_override
 
 case "${SMOKE_CASE}" in
   dify-postgres-init)
     # Dify全体は起動せず、PostgreSQLとplugin DB作成serviceだけを確認する。
     run_exit_service dify-postgres-init --profile dify
+    ;;
+  pypiserver-readonly)
+    # plugin用Python packageを変更せず配信できることを確認する。
+    run_healthy_service pypiserver --profile dify
     ;;
   oikb-bucket-init)
     # Open WebUI本体は起動せず、RustFSとbucket初期化serviceだけを確認する。

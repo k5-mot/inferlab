@@ -48,9 +48,12 @@ services:
     image: pypiserver/pypiserver:v2.4.1
     container_name: ${STACK_NAME}-pypiserver
     restart: unless-stopped
+    user: "9898:9898"
     profiles:
       - registry
       - dify
+    entrypoint:
+      - pypi-server
     command:
       - run
     ports:

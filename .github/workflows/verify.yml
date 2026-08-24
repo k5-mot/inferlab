@@ -31,6 +31,7 @@ jobs:
       matrix:
         smoke_case:
           - dify-postgres-init
+          - pypiserver-readonly
           - oikb-bucket-init
           - ragflow-bucket-init
           - langfuse-bucket-init
