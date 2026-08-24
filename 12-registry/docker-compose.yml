@@ -50,6 +50,7 @@ services:
     restart: unless-stopped
     profiles:
       - registry
+      - dify
     command:
       - run
     ports:

@@ -87,7 +87,6 @@ $Images = @(
     "docker.io/rustfs/rustfs:1.0.0-beta.12",
     "docker.io/searxng/searxng:2026.8.20-8d3dd0cd4",
     "docker.io/traefik/whoami:v1.12.0",
-    "docker.io/ubuntu/squid@sha256:6a097f68bae708cedbabd6188d68c7e2e7a38cedd05a176e1cc0ba29e3bbe029",
     "docker.io/valkey/valkey:8.1.9-alpine3.24",
     "docker.io/valkey/valkey:9.1.1-alpine3.24",
     "ghcr.io/coder/code-marketplace:v2.4.2",

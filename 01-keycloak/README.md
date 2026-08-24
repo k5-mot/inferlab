@@ -49,7 +49,7 @@ sudo docker compose --env-file .env --profile keycloak up -d
 - `keycloak`が`http://${PUBLIC_HOST}:30001`で応答する。
 - `keycloak-https`が`https://${PUBLIC_HOST}:30002`で応答する。
 - `prod` realmが作成される。
-- Open WebUI、Dify、Nextcloud、Langfuse、Leantime、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
+- Open WebUI、Nextcloud、Langfuse、Leantime、Kaneo、Zulip、GitLab、Grafana向けOIDC clientが同期される。
 
 失敗条件:
 

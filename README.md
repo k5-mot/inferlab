@@ -75,7 +75,6 @@
 | `dify` | `dify-sandbox` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-local-sandbox` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-agent-backend` | - | `21-dify/docker-compose.yml` |
-| `dify` | `dify-ssrf-proxy` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres-init` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-rustfs` | `32102`, `32103` | `21-dify/docker-compose.yml` |

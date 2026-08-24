@@ -96,50 +96,6 @@ clients:
           userinfo.token.claim: "true"
 
   #
-  # Dify
-  #
-  - clientId: dify
-    name: Dify
-    enabled: true
-    protocol: openid-connect
-
-    publicClient: false
-    clientAuthenticatorType: client-secret
-    secret: "$(env:DIFY_OIDC_CLIENT_SECRET)"
-
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-
-    rootUrl: "http://$(env:PUBLIC_HOST):32100/"
-
-    redirectUris:
-      - "http://localhost:32100/console/api/oauth/authorize/keycloak"
-      - "http://127.0.0.1:32100/console/api/oauth/authorize/keycloak"
-      - "http://$(env:PUBLIC_HOST):32100/console/api/oauth/authorize/keycloak"
-
-    webOrigins:
-      - "http://localhost:32100"
-      - "http://127.0.0.1:32100"
-      - "http://$(env:PUBLIC_HOST):32100"
-
-    protocolMappers:
-      - name: groups
-        protocol: openid-connect
-        protocolMapper: oidc-group-membership-mapper
-        consentRequired: false
-
-        config:
-          claim.name: groups
-          full.path: "false"
-          introspection.token.claim: "true"
-          multivalued: "true"
-          id.token.claim: "true"
-          access.token.claim: "true"
-          userinfo.token.claim: "true"
-
-  #
   # Langfuse
   #
   - clientId: langfuse

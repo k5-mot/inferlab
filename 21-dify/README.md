@@ -1,6 +1,6 @@
 # 21-dify
 
-Dify、plugin daemon、agent backend、sandbox、PostgreSQL、RustFS、Valkey、Qdrant、nginxをまとめたworkflow stack。
+Dify、plugin daemon、agent backend、sandbox、PostgreSQL、RustFS、Valkey、Qdrant、nginx、内部PyPIをまとめたworkflow stack。
 
 Dify 1.16.1のapplication storageにはS3 backendを指定し、S3互換endpointとしてRustFSを使用する。Difyが発行するpresigned URLをbrowserからも開けるように、`PUBLIC_HOST`はDify containerと利用者端末の両方から到達できるhost名またはIP addressにしなければならない（MUST）。
 
@@ -22,7 +22,9 @@ productionでは`.env`の`DIFY_DB_USER`、`DIFY_DB_PASSWORD`、`DIFY_RUSTFS_ACCE
 | `dify-plugin-daemon` | `dify-postgres-init`完了後にplugin storageとplugin APIを起動する。 |
 | `dify-nginx` | API、Web、plugin daemonがhealthyになってから公開endpointを起動する。 |
 
-Dify OSS版は、このComposeだけでは汎用OIDC/Keycloak SSOを有効化しない。管理者userはDifyの初回セットアップ画面で作成する。
+Difyの認証はDify自身のemail/password認証に限定する。管理者userはDifyの初回セットアップ画面で作成する。
+
+Marketplace、update確認、website reader、sandbox network、public DNSは無効化する。plugin daemonは`pypiserver`だけをPython package indexとして使用する。air-gap向けの資材取得、plugin導入、egress境界、検証は[docs/manual/DIFY_AIRGAP.md](../docs/manual/DIFY_AIRGAP.md)に従う。
 
 ## 起動
 
@@ -36,6 +38,7 @@ sudo docker compose --env-file .env --profile dify up -d
 - `dify-rustfs-bucket-init`と`dify-postgres-init`が正常終了する。
 - `dify-postgres`がPostgreSQL 18.6でhealthyになる。
 - `dify-api`、`dify-worker`、`dify-web`、`dify-plugin-daemon`がhealthyになる。
+- `pypiserver`がhealthyになり、plugin daemonから内部wheelを取得できる。
 - `dify-rustfs`とValkey 9.1.1の`dify-valkey`がhealthyになる。
 - `dify-nginx`が`http://${PUBLIC_HOST}:32100`で応答する。
 

@@ -1,6 +1,6 @@
 # ダウンロード
 
-`script/Download-Images.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-HuggingFace-Repos.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
+`script/Download-Images.ps1`、`script/Download-Dify-Plugins.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-HuggingFace-Repos.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
 
 ## 前提
 
@@ -14,6 +14,7 @@
 - 取得済みcontainer image archiveは`/srv/oci-archive/`へ保存される。
 - Hugging Face repositoryは`/srv/huggingface/<owner>--<repo>/`へ保存される。
 - Nextcloud OIDC app archiveは`/srv/30-nextcloud/apps/`へ保存される。
+- Dify pluginは`/srv/21-dify/plugins/`へ保存される。
 - PyPI package archiveは`/srv/12-registry/pypi/`へ保存される。
 - npm package archiveは`/srv/12-registry/npm-packages/`へ保存される。
 - RPM packageは`/srv/12-registry/rpm/`へ保存される。
@@ -33,7 +34,10 @@
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # root stackのimage archiveを取得する。
-.\script\Download-Images.ps1
+.\script\Download-Images.ps1 -ImageDirectory /srv/oci-archive
+
+# 署名付きDify pluginとLinux x86_64向け依存wheelを取得する。
+.\script\Download-Dify-Plugins.ps1
 
 # Nextcloud OIDC app archiveを取得する。
 .\script\Download-Nextcloud-Oidc.ps1
@@ -68,6 +72,7 @@ sudo ./script/Download-Nextcloud-Oidc.sh
 
 - `/srv/oci-archive/*.tar`が作成される。
 - `/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
+- `/srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg`が作成され、SHA-256検証が成功する。
 - `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
 - `/srv/huggingface/`に`owner--repo`形式のmodel repository directoryが作成される。
 - `/srv/12-registry/pypi/*`にpackage archiveが作成される。
@@ -81,6 +86,7 @@ sudo ./script/Download-Nextcloud-Oidc.sh
 - `crane`またはDocker CLIが見つからない。
 - container imageの取得に失敗する。
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
+- Dify plugin、内包requirements、依存wheelの取得またはchecksum検証に失敗する。
 - `huggingface-cli`が見つからない、またはmodel repositoryの取得に失敗する。
 - `pip download`が失敗する。
 - `npm install`または`npm pack`が失敗する。
@@ -96,6 +102,9 @@ Get-ChildItem /srv/oci-archive/*.tar | Measure-Object
 
 # Nextcloud OIDC app archiveのchecksumを確認する。
 Get-FileHash -Algorithm SHA256 /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
+
+# Dify plugin packageのchecksumを確認する。
+Get-FileHash -Algorithm SHA256 /srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg
 
 # 取得したHugging Face repositoryの件数を確認する。
 Get-ChildItem /srv/huggingface -Directory | Measure-Object
@@ -120,6 +129,7 @@ Get-ChildItem /srv/12-registry/vsix/*.vsix | Measure-Object
 
 - `/srv/oci-archive/`に複数の`.tar` fileがある。
 - OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
+- Dify plugin packageのhashが`807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86`と一致する。
 - Hugging Face repository directoryが存在する。
 - PyPI package archiveが存在する。
 - npm package archiveが存在する。
@@ -131,6 +141,7 @@ Get-ChildItem /srv/12-registry/vsix/*.vsix | Measure-Object
 
 - `/srv/oci-archive/`が空である。
 - OIDC app archiveが存在しない、またはhashが一致しない。
+- Dify plugin packageが存在しない、またはhashが一致しない。
 - Hugging Face repository directoryが存在しない。
 - PyPI package archiveが存在しない。
 - npm package archiveが存在しない。
@@ -146,6 +157,9 @@ scp -r /srv/oci-archive <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 
 # Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
 scp -r /srv/30-nextcloud <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
+
+# Dify plugin packageとchecksum一覧をairgap serverへ転送する。
+scp -r /srv/21-dify <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 
 # Hugging Face repositoryをairgap serverのbind mount元へ転送する。
 scp -r /srv/huggingface <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
@@ -170,6 +184,7 @@ scp -r /srv/12-registry/vsix <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
 
 - airgap server上に`/srv/oci-archive/*.tar`がある。
 - airgap server上に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
+- airgap server上に`/srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg`がある。
 - airgap server上に`/srv/huggingface/*`がある。
 - airgap server上に`/srv/12-registry/pypi/*`がある。
 - airgap server上に`/srv/12-registry/npm-packages/*.tgz`がある。

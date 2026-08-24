@@ -93,7 +93,6 @@ services:
       # prod realmのadminユーザー.
       KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD:-admin}
       OPEN_WEBUI_OIDC_CLIENT_SECRET: ${OPEN_WEBUI_OIDC_CLIENT_SECRET:-open-webui-oauth-client-secret-key}
-      DIFY_OIDC_CLIENT_SECRET: ${DIFY_OIDC_CLIENT_SECRET:-sk-dify-oidc-client-secret-key}
       NEXTCLOUD_OIDC_CLIENT_SECRET: ${NEXTCLOUD_OIDC_CLIENT_SECRET:-sk-nextcloud-oidc-client-secret-key}
       LANGFUSE_OIDC_CLIENT_SECRET: ${LANGFUSE_OIDC_CLIENT_SECRET:-sk-langfuse-oidc-client-secret-key}
       KANEO_OIDC_CLIENT_SECRET: ${KANEO_OIDC_CLIENT_SECRET:-sk-kaneo-oidc-client-secret-key}
