@@ -185,9 +185,11 @@ Keycloak側のprotocol mapperには、少なくとも次の設定が必要であ
 
 ## logout
 
-XWiki OIDC Authenticatorはprovider metadataの`end_session_endpoint`を検出し、XWikiからのlogout時にKeycloakへRP-Initiated Logoutを送る。XWiki 2.25.4は`client_id`、保持しているID Token、`post_logout_redirect_uri`をlogout requestへ設定する。
+XWiki OIDC Authenticator 2.25.4には、provider metadataの`end_session_endpoint`を検出し、`client_id`、保持しているID Token、`post_logout_redirect_uri`を使ってRP-Initiated Logoutを送る実装がある。
 
-Keycloakは`post_logout_redirect_uri`がclientのValid Post Logout Redirect URIと一致することを要求する。この構成では、XWiki側を`oidc.afterLogoutURL=/`、Keycloak側を`http://${PUBLIC_HOST}:33100/`へ揃える。
+ただし、local認証による復旧経路を残す`oidc.tryLocal=true`の実環境では、XWikiのlogout actionはKeycloakのlogout endpointを経由せず、XWiki homeへ直接redirectした。この構成で保証する範囲はXWiki sessionの終了までであり、Keycloak sessionのSingle Logoutは含めない。
+
+RP-Initiated Logoutを別途有効化する場合、Keycloakは`post_logout_redirect_uri`がclientのValid Post Logout Redirect URIと一致することを要求する。XWiki側の`oidc.afterLogoutURL=/`と、Keycloak側の`http://${PUBLIC_HOST}:33100/`は一致させてあるが、local認証の復旧性を失う`oidc.tryLocal=false`への変更は、別の管理者復旧経路を用意してから検証する必要がある。
 
 Keycloak管理画面や別clientからのlogoutもXWiki sessionへ伝播させる場合は、XWikiが公開する`/oidc/authenticator/backchannel_logout`をKeycloak clientのBackchannel Logout URLへ設定できる。共通Docker networkから到達させる場合の候補は`http://xwiki:8080/oidc/authenticator/backchannel_logout`である。これは通常loginとRP-Initiated Logoutの確認後に追加検証する。
 
@@ -239,11 +241,10 @@ sudo docker compose --env-file .env --profile keycloak --profile xwiki logs --ta
 ### logout検証
 
 1. XWikiからlogoutする。
-2. Keycloakのlogout endpointを経由することを確認する。
-3. `http://${PUBLIC_HOST}:33100/`へ戻ることを確認する。
-4. XWikiへ再accessしたとき、Keycloak loginが再度必要になることを確認する。
+2. `http://${PUBLIC_HOST}:33100/bin/view/Main/`へredirectされることを確認する。
+3. XWiki sessionが終了していることを確認する。
 
-Keycloakが`invalid_redirect_uri`を返す場合は、clientの`post.logout.redirect.uris`とXWikiが送信した`post_logout_redirect_uri`を比較する。
+期待結果はXWiki sessionの終了である。Keycloak sessionも終了させるSingle Logoutが必要な場合、この構成をそのまま合格とせず、`oidc.tryLocal=false`または専用logout導線を別途検証する。
 
 ## rollback
 
