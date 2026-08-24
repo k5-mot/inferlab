@@ -13,12 +13,25 @@ defaults:
     timeout_seconds: 600
 
 # source別のingest設定はdefaults.ingestを上書きする。
-sources: []
+sources:
+  - id: obsidian-couchdb
+    adapter: couchdb
+    url: http://couchdb:5984
+    database: obsidian
+    username_env: COUCHDB_USERNAME
+    password_env: COUCHDB_PASSWORD
+    exclude_path_prefixes:
+      # Self-hosted LiveSyncが生成するObsidian設定とplugin snapshotを除外する。
+      - "ix:"
+    max_documents: 1000
+    ingest:
+      enabled: true
+      schedule: "0 */6 * * *"
 
 compile:
   enabled: false
   schedule: "*/30 * * * *"
-  on_ingest: false
+  on_ingest: true
   concurrency: 5
   review: false
   timeout_seconds: 3600

@@ -8,11 +8,28 @@ const ingestSchema = z.strictObject({
   timeout_seconds: z.number().int().positive(),
 });
 
-const sourceSchema = z.strictObject({
+const sourceIngestSchema = ingestSchema.partial().default({});
+
+const inputSourceSchema = z.strictObject({
   id: z.string().min(1).regex(/^[a-z0-9][a-z0-9-]*$/),
+  adapter: z.literal('input'),
   input: z.string().min(1),
-  ingest: ingestSchema.partial().default({}),
+  ingest: sourceIngestSchema,
 });
+
+const couchDbSourceSchema = z.strictObject({
+  id: z.string().min(1).regex(/^[a-z0-9][a-z0-9-]*$/),
+  adapter: z.literal('couchdb'),
+  url: z.string().url(),
+  database: z.string().min(1).regex(/^[a-z][a-z0-9_$()+/-]*$/),
+  username_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
+  password_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
+  exclude_path_prefixes: z.array(z.string().min(1)).default([]),
+  max_documents: z.number().int().positive().max(10000).default(1000),
+  ingest: sourceIngestSchema,
+});
+
+const sourceSchema = z.union([inputSourceSchema, couchDbSourceSchema]);
 
 const configSchema = z.strictObject({
   version: z.literal(1),
@@ -60,11 +77,27 @@ export interface EffectiveIngestConfig {
   timeoutSeconds: number;
 }
 
-export interface SourceConfig {
+interface SourceConfigBase {
   id: string;
-  input: string;
   ingest: EffectiveIngestConfig;
 }
+
+export interface InputSourceConfig extends SourceConfigBase {
+  adapter: 'input';
+  input: string;
+}
+
+export interface CouchDbSourceConfig extends SourceConfigBase {
+  adapter: 'couchdb';
+  url: string;
+  database: string;
+  usernameEnv: string;
+  passwordEnv: string;
+  excludePathPrefixes: string[];
+  maxDocuments: number;
+}
+
+export type SourceConfig = InputSourceConfig | CouchDbSourceConfig;
 
 export interface RuntimeConfig {
   projectRoot: string;
@@ -165,6 +198,28 @@ export function buildProviderEnvironment(
 }
 
 /**
+ * 有効なCouchDB sourceが参照するcredential環境変数を検証する。
+ * @param config 実行時設定。
+ * @param environ credentialを参照する環境変数map。
+ * @returns 戻り値はない。
+ * @throws 有効なCouchDB sourceのcredentialが未設定の場合。
+ */
+export function validateSourceEnvironment(
+  config: RuntimeConfig,
+  environ: NodeJS.ProcessEnv,
+): void {
+  for (const source of config.sources) {
+    if (source.adapter !== 'couchdb' || !source.ingest.enabled) continue;
+    if (!environ[source.usernameEnv]) {
+      throw new Error(`必要なCouchDB username環境変数が未設定です: ${source.usernameEnv}`);
+    }
+    if (!environ[source.passwordEnv]) {
+      throw new Error(`必要なCouchDB password環境変数が未設定です: ${source.passwordEnv}`);
+    }
+  }
+}
+
+/**
  * source IDの重複を検出し、schedule job名の衝突を防ぐ。
  * @param sources 検証済みsource設定。
  * @returns 戻り値はない。
@@ -184,16 +239,28 @@ function assertUniqueSourceIds(sources: ParsedConfig['sources']): void {
  * @returns runnerが利用する正規化済み設定。
  */
 function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
-  const sources = parsed.sources.map((source): SourceConfig => ({
-    id: source.id,
-    input: source.input,
-    ingest: {
+  const sources = parsed.sources.map((source): SourceConfig => {
+    const ingest = {
       enabled: source.ingest.enabled ?? parsed.defaults.ingest.enabled,
       schedule: source.ingest.schedule ?? parsed.defaults.ingest.schedule,
       timeoutSeconds:
         source.ingest.timeout_seconds ?? parsed.defaults.ingest.timeout_seconds,
-    },
-  }));
+    };
+    if (source.adapter === 'couchdb') {
+      return {
+        adapter: 'couchdb',
+        id: source.id,
+        url: source.url,
+        database: source.database,
+        usernameEnv: source.username_env,
+        passwordEnv: source.password_env,
+        excludePathPrefixes: source.exclude_path_prefixes,
+        maxDocuments: source.max_documents,
+        ingest,
+      };
+    }
+    return {adapter: 'input', id: source.id, input: source.input, ingest};
+  });
   return {
     projectRoot: parsed.project.root,
     timezone: parsed.scheduler.timezone,

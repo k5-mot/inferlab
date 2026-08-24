@@ -1,16 +1,15 @@
 import {spawn, type ChildProcess} from 'node:child_process';
+import {readFile, unlink} from 'node:fs/promises';
+import path from 'node:path';
 import type {RuntimeConfig, SourceConfig} from './config.js';
 import {log} from './logger.js';
-
-export interface CliCommand {
-  args: string[];
-  timeoutSeconds: number;
-}
+import {createSourceAdapterRegistry, type InputCommand, type SourceAdapterRegistry} from './source-adapter.js';
 
 export class LlmWikiClient {
   readonly #binary: string;
   readonly #config: RuntimeConfig;
   readonly #environment: NodeJS.ProcessEnv;
+  readonly #sourceAdapters: SourceAdapterRegistry;
 
   /**
    * upstream CLI clientを生成する。
@@ -23,6 +22,7 @@ export class LlmWikiClient {
     this.#binary = binary;
     this.#config = config;
     this.#environment = environment;
+    this.#sourceAdapters = createSourceAdapterRegistry((command) => this.#run(command));
   }
 
   /**
@@ -33,9 +33,9 @@ export class LlmWikiClient {
    * @sideeffect project root配下のsources/を更新する。
    */
   async ingest(source: SourceConfig): Promise<void> {
-    await this.#run({
-      args: ['ingest', source.input],
-      timeoutSeconds: source.ingest.timeoutSeconds,
+    await this.#sourceAdapters.synchronize(source, {
+      projectRoot: this.#config.projectRoot,
+      environment: this.#environment,
     });
   }
 
@@ -46,6 +46,7 @@ export class LlmWikiClient {
    * @sideeffect project root配下のwiki/と.llmwiki/を更新する。
    */
   async compile(): Promise<void> {
+    await removeStaleCompileLock(this.#config.projectRoot);
     const args = ['compile', '--concurrency', String(this.#config.compile.concurrency)];
     if (this.#config.compile.review) args.push('--review');
     await this.#run({args, timeoutSeconds: this.#config.compile.timeoutSeconds});
@@ -74,7 +75,7 @@ export class LlmWikiClient {
    * @returns command成功時にresolveするPromise。
    * @throws spawn失敗、timeout、非zero終了codeの場合。
    */
-  async #run(command: CliCommand): Promise<void> {
+  async #run(command: InputCommand): Promise<void> {
     log('info', 'llmwiki.command.started', {command: command.args[0]});
     const child = spawn(this.#binary, command.args, {
       cwd: this.#config.projectRoot,
@@ -84,6 +85,76 @@ export class LlmWikiClient {
     await waitForChild(child, command.timeoutSeconds);
     log('info', 'llmwiki.command.completed', {command: command.args[0]});
   }
+}
+
+/**
+ * 永続volumeへ残ったcompile lockをPID確認後に除去する。
+ * @param projectRoot LLMWiki project root。
+ * @returns stale lockを削除した場合はtrue、それ以外はfalse。
+ * @throws lock形式が不正、またはfile操作に失敗した場合。
+ * @sideeffect 実行processが存在しない場合だけ.llmwiki/lockを削除する。
+ */
+export async function removeStaleCompileLock(projectRoot: string): Promise<boolean> {
+  const lockPath = path.join(projectRoot, '.llmwiki', 'lock');
+  let lockText: string;
+  try {
+    lockText = await readFile(lockPath, 'utf8');
+  } catch (error) {
+    if (isFileNotFound(error)) return false;
+    throw error;
+  }
+  const lockValue: unknown = JSON.parse(lockText);
+  const pid = lockPid(lockValue);
+  if (isProcessRunning(pid)) return false;
+  await unlink(lockPath);
+  log('warn', 'llmwiki.compile.stale_lock_removed', {pid});
+  return true;
+}
+
+/**
+ * 未検証lock JSONから正のPIDを取得する。
+ * @param value JSON parserが返した未検証値。
+ * @returns lockを所有したprocessのPID。
+ * @throws `{pid: positive integer}`形式でない場合。
+ */
+function lockPid(value: unknown): number {
+  if (
+    typeof value !== 'object'
+    || value === null
+    || !('pid' in value)
+    || typeof value.pid !== 'number'
+    || !Number.isSafeInteger(value.pid)
+    || value.pid <= 0
+  ) {
+    throw new Error('llmwiki compile lockの形式が不正です');
+  }
+  return value.pid;
+}
+
+/**
+ * PIDが現在のPID namespaceで実行中か確認する。
+ * @param pid 確認するprocess ID。
+ * @returns processが存在するか、権限不足で判定不能ならtrue。
+ * @throws ESRCHとEPERM以外のprocess確認errorが発生した場合。
+ */
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ESRCH') return false;
+    if (error instanceof Error && 'code' in error && error.code === 'EPERM') return true;
+    throw error;
+  }
+}
+
+/**
+ * filesystem errorがfile未存在を表すか判定する。
+ * @param error filesystem APIから受け取った値。
+ * @returns error codeがENOENTならtrue。
+ */
+function isFileNotFound(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }
 
 /**

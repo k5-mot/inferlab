@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {buildProviderEnvironment, parseConfig} from '../dist/config.js';
+import {
+  buildProviderEnvironment,
+  parseConfig,
+  validateSourceEnvironment,
+} from '../dist/config.js';
 
 /**
  * testごとに変更できる最小の有効設定を生成する。
@@ -52,6 +56,7 @@ test('source共通既定値へsource別overrideを適用する', () => {
   const value = baseConfig();
   value.sources = [{
     id: 'handbook',
+    adapter: 'input',
     input: 'https://example.test/handbook',
     ingest: {enabled: true, schedule: '*/5 * * * *'},
   }];
@@ -101,4 +106,57 @@ test('viewerのみの起動ではprovider credentialを要求しない', () => {
   assert.equal(environment.LLMWIKI_PROVIDER, 'openai');
   assert.equal(environment.LLMWIKI_EMBEDDING_MODEL, 'cl-nagoya/ruri-v3:310m');
   assert.equal(environment.LLMWIKI_EMBED_BATCH_SIZE, '2');
+});
+
+test('CouchDB sourceをadapter用の実行時設定へ変換する', () => {
+  const value = baseConfig();
+  value.sources = [{
+    id: 'obsidian-couchdb',
+    adapter: 'couchdb',
+    url: 'http://couchdb:5984',
+    database: 'obsidian',
+    username_env: 'COUCHDB_USERNAME',
+    password_env: 'COUCHDB_PASSWORD',
+    exclude_path_prefixes: ['ix:'],
+    max_documents: 1000,
+    ingest: {enabled: true},
+  }];
+
+  const config = parseConfig(value);
+
+  assert.deepEqual(config.sources[0], {
+    adapter: 'couchdb',
+    id: 'obsidian-couchdb',
+    url: 'http://couchdb:5984',
+    database: 'obsidian',
+    usernameEnv: 'COUCHDB_USERNAME',
+    passwordEnv: 'COUCHDB_PASSWORD',
+    excludePathPrefixes: ['ix:'],
+    maxDocuments: 1000,
+    ingest: {enabled: true, schedule: '0 * * * *', timeoutSeconds: 600},
+  });
+});
+
+test('有効なCouchDB sourceは参照credentialを必須にする', () => {
+  const value = baseConfig();
+  value.sources = [{
+    id: 'obsidian-couchdb',
+    adapter: 'couchdb',
+    url: 'http://couchdb:5984',
+    database: 'obsidian',
+    username_env: 'COUCHDB_USERNAME',
+    password_env: 'COUCHDB_PASSWORD',
+    ingest: {enabled: true},
+  }];
+  const config = parseConfig(value);
+
+  assert.throws(() => validateSourceEnvironment(config, {}), /COUCHDB_USERNAME/);
+  assert.throws(
+    () => validateSourceEnvironment(config, {COUCHDB_USERNAME: 'reader'}),
+    /COUCHDB_PASSWORD/,
+  );
+  assert.doesNotThrow(() => validateSourceEnvironment(config, {
+    COUCHDB_USERNAME: 'reader',
+    COUCHDB_PASSWORD: 'secret',
+  }));
 });

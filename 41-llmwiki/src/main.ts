@@ -1,7 +1,7 @@
 import {mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {buildProviderEnvironment, loadConfig} from './config.js';
+import {buildProviderEnvironment, loadConfig, validateSourceEnvironment} from './config.js';
 import {LlmWikiClient} from './llmwiki-client.js';
 import {log} from './logger.js';
 import {ViewerProxy} from './proxy.js';
@@ -16,18 +16,28 @@ import {ViewerSupervisor} from './viewer.js';
  */
 async function main(): Promise<void> {
   const mode = process.argv[2];
-  if (mode !== undefined && mode !== 'compile') {
+  if (mode !== undefined && mode !== 'compile' && mode !== 'ingest') {
     throw new Error(`未対応のrunner modeです: ${mode}`);
   }
   const configPath = process.env.CONFIG_PATH ?? '/app/config.yaml';
   const config = await loadConfig(configPath);
   const environment = buildProviderEnvironment(config, process.env, mode === 'compile');
+  validateSourceEnvironment(config, process.env);
   await prepareProject(config.projectRoot);
 
   const binary = resolveLlmWikiBinary();
   const client = new LlmWikiClient(binary, config, environment);
   if (mode === 'compile') {
     await client.compile();
+    return;
+  }
+  if (mode === 'ingest') {
+    const sourceId = process.argv[3];
+    if (!sourceId) throw new Error('ingest modeにはsource IDが必要です');
+    const source = config.sources.find((candidate) => candidate.id === sourceId);
+    if (!source) throw new Error(`source IDが見つかりません: ${sourceId}`);
+    await client.ingest(source);
+    if (config.compile.onIngest) await client.compile();
     return;
   }
   const viewer = new ViewerSupervisor(client, config.viewer);

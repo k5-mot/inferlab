@@ -1,8 +1,8 @@
 # LLM Wiki
 
-`llm-wiki-compiler` 1.1.0 を Knowledge Compiler と read-only viewer に使用する。独自 runner は `config.yaml` の定期実行、job 直列化、compile 後の viewer 再起動、Compose 向け HTTP proxy だけを担当する。
+`llm-wiki-compiler` 1.1.0 を Knowledge Compiler と read-only viewer に使用する。独自 runner は `config.yaml` の定期実行、source adapter、job 直列化、compile 後の viewer 再起動、Compose 向け HTTP proxy を担当する。
 
-OpenKB と Wiki.js publish は使用しない。source-system 固有 adapter は、upstream の [`sources/` Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md) に従う独立 producer として追加する。
+OpenKB と Wiki.js publish は使用しない。source-system 固有処理は共通のsource adapter interfaceの背後へ置く。runnerとschedulerはsource種別を判定せず、registryを通じて同期する。新しいデータソースは設定schema、正規化済み設定、adapterを追加し、upstreamの[`sources/` Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md)に従って`ingestText`またはCLIへ委譲する。
 
 ## 設定
 
@@ -21,13 +21,32 @@ defaults:
 
 sources:
   - id: engineering-handbook
+    adapter: input
     input: https://example.internal/engineering/handbook
     ingest:
       enabled: true
       schedule: "*/15 * * * *"
 ```
 
-初期設定では ingest と compile を無効化している。viewer だけが起動し、外部 source や LLM provider へ request を送らない。
+現在の設定は`40-obsidian`のCouchDB `obsidian` databaseを6時間ごとに同期し、同期成功後に増分compileする。LiveSyncの非削除Markdown親documentだけを対象に、`children`順でleaf chunkを復元する。hidden path、Markdown以外、空本文はWikiへ取り込まない。前回manifestにだけ残るsource fileはsnapshot同期時に削除する。
+
+CouchDBのcredentialは値ではなく参照環境変数名を設定する。
+
+```yaml
+sources:
+  - id: obsidian-couchdb
+    adapter: couchdb
+    url: http://couchdb:5984
+    database: obsidian
+    username_env: COUCHDB_USERNAME
+    password_env: COUCHDB_PASSWORD
+    exclude_path_prefixes:
+      - "ix:"
+    max_documents: 1000
+    ingest:
+      enabled: true
+      schedule: "0 */6 * * *"
+```
 
 ## 開発
 
@@ -69,7 +88,7 @@ docker compose exec -w /data/llmwiki llmwiki llmwiki status
 
 - `llmwiki` container が healthy になる。
 - `http://localhost:34100` で upstream viewer を表示できる。
-- 初期設定では scheduled job 数が 0 と記録される。
+- CouchDB同期とingest後compileのscheduled jobが登録される。
 
 失敗基準:
 
@@ -79,8 +98,8 @@ docker compose exec -w /data/llmwiki llmwiki llmwiki status
 ## 手動確認
 
 ```bash
-# image同梱のsample sourceをupstream ingestへ渡す。
-docker compose exec -w /data/llmwiki llmwiki llmwiki ingest /opt/llmwiki-samples/overview.md
+# CouchDBの現在snapshotをsourceへ同期し、on_ingest設定に従ってcompileする。
+docker compose exec llmwiki node /app/dist/main.js ingest obsidian-couchdb
 
 # config.yamlのprovider設定でone-shot compileを実行する。
 docker compose exec -w /data/llmwiki llmwiki node /app/dist/main.js compile
@@ -89,7 +108,18 @@ docker compose exec -w /data/llmwiki llmwiki node /app/dist/main.js compile
 docker compose restart llmwiki
 ```
 
-手動 `llmwiki compile` は runner 外で実行されるため、viewer 自動再起動の対象にならない。定常運用では `config.yaml` の schedule または `compile.on_ingest` を使用する。
+期待結果:
+
+- CouchDB同期logに対象document数と`created`、`updated`、`unchanged`、`removed`が記録される。
+- `sources/`へMarkdown sourceが生成され、compile後に`wiki/`が更新される。
+- runner再起動後に`http://localhost:34100`で生成Wikiを表示できる。
+
+失敗基準:
+
+- CouchDBの認証、HTTP応答、LiveSync chunk参照のいずれかが不正な場合、snapshotを成功扱いにしてはならない。
+- 対象Markdown数が`max_documents`を超えた場合、同期を中止する。
+
+手動 `llmwiki compile` は runner 外で実行されるため、viewer 自動再起動の対象にならない。定常運用では `config.yaml` のscheduleまたは`compile.on_ingest`を使用する。
 
 ## Rollback
 
@@ -100,9 +130,17 @@ docker compose stop llmwiki
 
 停止後も `llmwiki-project` volume 内の `sources/`、`wiki/`、`.llmwiki/` は保持される。
 
+```bash
+# LLMWikiだけを初期化する場合に、停止済みproject volumeを削除する。
+docker volume rm "${STACK_NAME}_llmwiki-project"
+```
+
+volumeを削除すると生成済みsource、Wiki、同期manifestは復旧できない。CouchDBの原本は削除されないため、再起動後の同期とcompileで再生成できる。
+
 ## References
 
 - [llm-wiki-compiler](https://github.com/atomicstrata/llm-wiki-compiler)
 - [Viewer CLI](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/cli/view.mdx)
 - [Environment Variables](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/configuration/environment-variables.mdx)
 - [sources Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md)
+- [Apache CouchDB `_all_docs`](https://docs.couchdb.org/en/stable/api/database/bulk-api.html#db-all-docs)

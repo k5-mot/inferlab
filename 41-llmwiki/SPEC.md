@@ -10,7 +10,7 @@ Knowledge Compiler と Presentation System には `llm-wiki-compiler` を使用�
 
 初期 MVP は次を実現しなければならない（MUST）。
 
-- `llm-wiki-compiler` の `ingest` で URL またはファイルを `sources/` へ取り込む。
+- source adapterを通じてURL、ファイル、CouchDB LiveSync snapshotを`sources/`へ取り込む。
 - `llm-wiki-compiler` の `compile` で `sources/` を `wiki/` へ増分コンパイルする。
 - `llm-wiki-compiler` の `view` で生成 Wiki を閲覧する。
 - ingest と compile の実行時刻を `config.yaml` で設定する。
@@ -22,7 +22,7 @@ Knowledge Compiler と Presentation System には `llm-wiki-compiler` を使用�
 
 - OpenKB を Knowledge Compiler として併用する。
 - 生成 Wiki を Wiki.js へ publish する。
-- GitLab、Zulip、Nextcloud、Wiki.js、Kaneo 固有の API client を compiler process に組み込む。
+- GitLab、Zulip、Nextcloud、Wiki.js、Kaneo固有のclientをcompiler processへ組み込む。
 - 生成内容の validation gate を有効化する。
 
 validation は将来の拡張対象とする。`llmwiki lint`、`llmwiki eval`、review policy を組み合わせる設計を別途定義するまで、自動 publish の可否判定には使用しない。
@@ -30,9 +30,9 @@ validation は将来の拡張対象とする。`llmwiki lint`、`llmwiki eval`�
 ## 3. アーキテクチャ
 
 ```text
-Source System / File / URL
+Source System / File / URL / CouchDB
           |
-          | llmwiki ingest または外部 producer
+          | Source Adapter Registry
           v
   sources/*.md
           |
@@ -51,6 +51,9 @@ Source System / File / URL
 llmwiki-runner
   |- Config Loader
   |- Cron Scheduler
+  |- Source Adapter Registry
+  |    |- Input Adapter
+  |    `- CouchDB LiveSync Adapter
   |- llmwiki CLI 1.1.0
   |- llmwiki Viewer (127.0.0.1 only)
   `- Viewer Proxy (0.0.0.0:8080)
@@ -73,7 +76,9 @@ project/
   log.md
 ```
 
-外部 source-system adapter は独立した producer とし、`llm-wiki-compiler` の `sources/` Input Contract に従う Markdown を `sources/` へ出力しなければならない（MUST）。compiler は元の API へ到達してはならない（MUST NOT）。
+source-system固有実装は、共通のsource adapter interfaceを実装しなければならない（MUST）。runnerとschedulerはsource種別を判定せず、registryへ正規化済みsource設定を渡さなければならない（MUST）。adapterは`llm-wiki-compiler`の`sources/` Input Contractに従うMarkdownを`sources/`へ出力し、compilerは元のAPIへ到達してはならない（MUST NOT）。
+
+CouchDB adapterはSelf-hosted LiveSyncの非削除Markdown親documentを対象とし、親documentの`children`順にleaf chunkを連結しなければならない（MUST）。hidden path、`exclude_path_prefixes`に一致するpath、Markdown以外のdocumentを取り込んではならない（MUST NOT）。前回snapshotから消えたdocumentについては、adapter自身が所有するsource fileだけを削除しなければならない（MUST）。
 
 各 source file は `title`、`source`、`ingestedAt` を frontmatter に持たなければならない（MUST）。source の更新判定と ownership は upstream の `.llmwiki/state.json` に委譲する。
 
@@ -84,7 +89,7 @@ project/
 - project root
 - timezone
 - source 共通 ingest 設定
-- source ごとの input、enabled、ingest override
+- sourceごとのadapter、接続設定、enabled、ingest override
 - compile schedule、ingest 後 compile、並列数、review mode
 - chat/embedding provider、model、API endpoint、credential 環境変数名
 - 出力言語
@@ -121,7 +126,7 @@ schedule はコンテナ再起動後の次回該当時刻から実行する。�
 
 次は初期 MVP 外とする。
 
-- source-system 固有 producer の追加
+- GitLab、Zulip、Nextcloudなどのsource adapter追加
 - MCP server の常駐公開
 - validation、lint、eval による quality gate
 - review candidate の承認 UI
