@@ -10,7 +10,7 @@ services:
       DEPLOY_ENV: PRODUCTION
       LOG_LEVEL: INFO
       SECRET_KEY: ${DIFY_SECRET_KEY:-sk-dify-secret-key}
-      INIT_PASSWORD: ${DIFY_INIT_PASSWORD:?DIFY_INIT_PASSWORD is required}
+      INIT_PASSWORD: ${DIFY_INIT_PASSWORD:-admin}
       MIGRATION_ENABLED: "true"
       CHECK_UPDATE_URL: ""
       OPENAI_API_BASE: http://litellm:4000/v1

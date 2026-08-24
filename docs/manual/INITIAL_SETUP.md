@@ -107,7 +107,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 ## 5. Dify管理者アカウントを作成する
 
 DifyはDify自身のemail/password認証を使用する。管理者アカウントはDifyの初回セットアップ画面で作成する。
-事前に`.env`の`DIFY_INIT_PASSWORD`を空ではない推測困難な一時passwordへ変更しなければならない（MUST）。air-gap環境では先に[Dify Air-gap Setup](DIFY_AIRGAP.md)の資材取得と検証を完了する。
+`DIFY_INIT_PASSWORD`の既定値は`admin`である。productionでは事前に`.env`の値を推測困難な一時passwordへ変更しなければならない（MUST）。air-gap環境では先に[Dify Air-gap Setup](DIFY_AIRGAP.md)の資材取得と検証を完了する。
 
 ```bash
 # Dify profileを起動する。
@@ -115,7 +115,7 @@ sudo docker compose --env-file .env --profile dify up -d
 ```
 
 1. `http://${PUBLIC_HOST}:32100/install`を開く。
-2. `.env`の`DIFY_INIT_PASSWORD`を入力する。
+2. `.env`の`DIFY_INIT_PASSWORD`を入力する。未変更の場合は`admin`を入力する。
 3. 管理者のemail、username、passwordを設定して初回セットアップを完了する。
 4. `http://${PUBLIC_HOST}:32100/signin`を開き、作成した管理者アカウントでログインする。
 5. 管理画面のmember一覧で作成したアカウントがownerであることを確認する。

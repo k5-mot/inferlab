@@ -8,7 +8,7 @@ cd "${REPO_ROOT}"
 export PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
 : "${STACK_NAME:?STACK_NAME is required}"
 export STACK_NAME
-export DIFY_INIT_PASSWORD="${DIFY_INIT_PASSWORD:-static-validation-only}"
+export DIFY_INIT_PASSWORD="${DIFY_INIT_PASSWORD:-admin}"
 export PYTHONDONTWRITEBYTECODE=1
 
 # 追跡済みshell scriptの構文を検証する。
@@ -148,6 +148,7 @@ verify_dify_airgap_configuration() {
     'dify-ssrf-proxy'
   )
   local required_patterns=(
+    'INIT_PASSWORD: ${DIFY_INIT_PASSWORD:-admin}'
     'CHECK_UPDATE_URL: ""'
     'OPENAI_API_BASE: http://litellm:4000/v1'
     'DISABLE_TELEMETRY: "true"'

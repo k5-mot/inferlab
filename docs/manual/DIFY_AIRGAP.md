@@ -78,7 +78,7 @@ checksum検証に失敗した資材は使用してはならない（MUST NOT）�
 
 ## Dify用secretを設定する
 
-`.env.sample`を複製し、少なくとも次の値を推測困難な値へ変更する。`DIFY_INIT_PASSWORD`に既定値はない。
+`.env.sample`を複製し、少なくとも次の値を推測困難な値へ変更する。`DIFY_INIT_PASSWORD`の既定値は`admin`であるが、productionで使用してはならない（MUST NOT）。
 
 ```bash
 # Difyの初期セットアップgateで使う一時passwordを生成する。
@@ -97,17 +97,17 @@ openssl rand -hex 32
 
 失敗条件:
 
-- `docker compose config`が`DIFY_INIT_PASSWORD is required`で失敗する。
+- productionの`.env`で`DIFY_INIT_PASSWORD=admin`を使用している。
 - `.env.sample`の例示値をproductionで使用している。
 
 ## 起動前に閉域設定を検証する
 
 ```bash
 # Difyの認証分離、外部endpoint除去、plugin lock、全Compose profileを静的検証する。
-STACK_NAME=airgap DIFY_INIT_PASSWORD=static-verification-only bash script/verify-init-static.sh
+STACK_NAME=airgap bash script/verify-init-static.sh
 
 # Dify profileがInternetへ接続せず解決できることを確認する。
-STACK_NAME=airgap DIFY_INIT_PASSWORD=static-verification-only docker compose --env-file .env --profile dify config --quiet
+STACK_NAME=airgap docker compose --env-file .env --profile dify config --quiet
 ```
 
 期待結果:
