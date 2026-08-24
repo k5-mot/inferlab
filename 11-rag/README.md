@@ -11,7 +11,7 @@ Qdrantはhostへportを公開していないため、動作確認は同じCompos
 
 Doclingはhost上の次の資材をread-onlyで利用する。
 
-- `/srv/docling/`: `docling-tools models download`で取得したmodel catalogの各stageで⭐が付いたmodel。
+- `/srv/docling/`: `uvx --from docling==2.118.0 docling-tools models download`で取得したmodel catalogの各stageで⭐が付いたmodel。
 - `/srv/docling/tesseract/`: 英語・日本語のTesseract traineddata。
 
 オンライン端末のrepository rootで実行する。
@@ -36,7 +36,7 @@ LinuxまたはmacOSではShell版を実行できる。
 
 失敗条件:
 
-- `docling-tools`を利用できない。
+- `uvx`を利用できない、またはuvx経由の`docling-tools`実行に失敗する。
 - traineddataのdownloadまたはSHA-256検証に失敗する。
 - airgap serverへ資材を転送した後、bind mount元のdirectoryまたはfileが不足する。
 
@@ -130,6 +130,7 @@ sudo docker compose --env-file .env --profile rag down
 
 ## References
 
+- [uv: Using tools](https://docs.astral.sh/uv/guides/tools/)
 - [Docling Serve](https://github.com/docling-project/docling-serve)
 - [Docling model prefetching and offline usage](https://docling-project.github.io/docling/usage/advanced_options/#model-prefetching-and-offline-usage)
 - [Docling CLI reference](https://github.com/docling-project/docling/blob/main/docs/reference/cli.md#docling-tools-models)

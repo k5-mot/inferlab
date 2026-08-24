@@ -2,6 +2,7 @@
 set -euo pipefail
 
 output_directory="out"
+docling_package_spec="docling==2.118.0"
 tessdata_revision="e12c65a915945e4c28e237a9b52bc4a8f39a0cec"
 tessdata_base_url="https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/${tessdata_revision}"
 # model catalogの⭐を明示的なCLI IDへ固定し、--allによる対象外modelの混入を防ぐ。
@@ -56,13 +57,13 @@ require_command() {
 # download_docling_models:
 # 用途: Docling公式CLIで選択したmodelを保存先へ取得する。
 # 引数: $1にmodel保存先directoryを指定する。
-# 戻り値: download成功時は0、docling-tools失敗時はその終了codeを返す。
+# 戻り値: download成功時は0、uvx経由のdocling-tools失敗時はその終了codeを返す。
 # 副作用: 保存先directoryのmodel fileを作成または更新する。
 download_docling_models() {
   local model_directory="$1"
 
   mkdir -p "${model_directory}"
-  docling-tools models download \
+  uvx --from "${docling_package_spec}" docling-tools models download \
     --output-dir "${model_directory}" \
     "${docling_models[@]}"
 }
@@ -123,7 +124,7 @@ main() {
     esac
   done
 
-  require_command docling-tools
+  require_command uvx
   require_command curl
   require_command sha256sum
 

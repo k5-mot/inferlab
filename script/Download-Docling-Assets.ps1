@@ -3,7 +3,7 @@
 DoclingのmodelとTesseract traineddataを取得します。
 
 .DESCRIPTION
-Docling公式CLIでmodel catalogの各stageで⭐が付いたmodelを取得し、checksumで検証したTesseract traineddataを取得します。
+uvx経由のDocling公式CLIでmodel catalogの各stageで⭐が付いたmodelを取得し、checksumで検証したTesseract traineddataを取得します。
 既定では`out/srv/docling/`配下へ、airgap serverへそのまま配置できる構造で保存します。
 
 .PARAMETER OutputDirectory
@@ -24,7 +24,7 @@ Docling資材を`D:\airgap\srv\docling\`へ取得します。
 
 .NOTES
 副作用として指定directory配下へfileを作成または上書きします。
-実行にはPowerShell、docling-tools、internet接続が必要です。
+実行にはPowerShell、uvx、internet接続が必要です。
 #>
 [CmdletBinding()]
 param (
@@ -40,6 +40,7 @@ if ($Help) {
 }
 
 $ErrorActionPreference = "Stop"
+$DoclingPackageSpec = "docling==2.118.0"
 # model catalogの⭐を明示的なCLI IDへ固定し、`--all`による対象外modelの混入を防ぎます。
 # v1.30.0のOCR Auto warm-upはRapidOCRを選ぶため、rapidocrとTesseract traineddataの両方を取得します。
 $DoclingModels = @(
@@ -90,6 +91,9 @@ function Assert-CommandAvailable {
 .SYNOPSIS
 Docling公式CLIで選択したmodelをhost directoryへ取得します。
 
+.PARAMETER PackageSpec
+uvxが一時環境へ導入するDocling packageのversion付きspecifierです。
+
 .PARAMETER ModelDirectory
 Docling modelの保存先directoryです。
 
@@ -100,10 +104,13 @@ Docling modelの保存先directoryです。
 値は返しません。
 
 .NOTES
-保存先へmodelをdownloadします。docling-tools実行に失敗した場合は例外を送出します。
+保存先へmodelをdownloadします。uvx経由のdocling-tools実行に失敗した場合は例外を送出します。
 #>
 function Save-DoclingModels {
     param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageSpec,
+
         [Parameter(Mandatory = $true)]
         [string]$ModelDirectory,
 
@@ -112,7 +119,7 @@ function Save-DoclingModels {
     )
 
     Write-Host "Download Docling models: $($Models -join ', ')"
-    docling-tools models download --output-dir $ModelDirectory $Models
+    & uvx --from $PackageSpec docling-tools models download --output-dir $ModelDirectory $Models
 
     if ($LASTEXITCODE -ne 0) {
         throw "Docling modelの取得に失敗しました: $ModelDirectory"
@@ -170,7 +177,7 @@ function Save-VerifiedTessdata {
     }
 }
 
-Assert-CommandAvailable -Name "docling-tools"
+Assert-CommandAvailable -Name "uvx"
 
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
 $DoclingDirectory = Join-Path $OutputDirectory "srv/docling"
@@ -180,6 +187,7 @@ New-Item -ItemType Directory -Path $DoclingDirectory -Force | Out-Null
 New-Item -ItemType Directory -Path $TessdataDirectory -Force | Out-Null
 
 Save-DoclingModels `
+    -PackageSpec $DoclingPackageSpec `
     -ModelDirectory $DoclingDirectory `
     -Models $DoclingModels
 

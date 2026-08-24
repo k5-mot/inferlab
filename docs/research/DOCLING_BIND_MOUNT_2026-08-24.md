@@ -9,7 +9,7 @@ Docling Serveは公式image `quay.io/docling-project/docling-serve:v1.30.0`を�
 | `/srv/docling` | `/opt/app-root/src/.cache/docling/models` | Doclingのlayout、table、OCR補助、enrichment model | read-only |
 | `/srv/docling/tesseract` | `/usr/share/tesseract/tessdata` | Tesseractのlanguage・script traineddata | read-only |
 
-Docling modelは、Docling Serve v1.30.0と互換性のある`docling-tools models download`をhostで実行し、model catalogで⭐が付いた各stageのmodelを事前配置する。Tesseract traineddataは、`tesseract-ocr/tessdata_best`のcommitを固定して取得する。取得scriptはDockerまたはWSLへ依存させず、PowerShell版は`docling-tools`と`Invoke-WebRequest`、Shell版は`docling-tools`と`curl`を使用する。
+Docling modelは、Docling Serve v1.30.0と互換性のある`docling-tools models download`を`uvx`経由でhost上から実行し、model catalogで⭐が付いた各stageのmodelを事前配置する。Tesseract traineddataは、`tesseract-ocr/tessdata_best`のcommitを固定して取得する。取得scriptはDockerまたはWSLへ依存させず、PowerShell版は`uvx`と`Invoke-WebRequest`、Shell版は`uvx`と`curl`を使用する。
 
 この構成ではbind mountがimage内の同一pathを隠す。host側が空または不完全な状態で起動してはならない（MUST NOT）。`DOCLING_SERVE_ARTIFACTS_PATH`と`TESSDATA_PREFIX`はmount先と完全に一致させなければならない（MUST）。
 
@@ -23,7 +23,7 @@ Open WebUIは`ocr_preset: "tesseract"`と`ocr_lang: ["jpn", "jpn_vert", "eng"]`�
 
 ### modelの選択
 
-Docling公式は、offline利用向けに`docling-tools models download`でmodelを事前取得し、DoclingまたはDocling Serveへartifacts pathを渡す方法を案内している。Docling Serveでは`DOCLING_SERVE_ARTIFACTS_PATH`を使用する。
+Docling公式は、offline利用向けに`docling-tools models download`でmodelを事前取得し、DoclingまたはDocling Serveへartifacts pathを渡す方法を案内している。現行scriptではDocling Serve v1.30.0に含まれるDocling 2.118.0を`uvx --from docling==2.118.0`で一時環境へ導入して実行する。Docling Serveでは`DOCLING_SERVE_ARTIFACTS_PATH`を使用する。
 
 Docling 2.118.0を含むDocling Serve v1.30.0のCLI model IDとmodel catalogの⭐を対応させると、取得対象は次のとおりになる。
 
@@ -43,14 +43,15 @@ OCRの⭐はmodelではなくengine選択のAutoである。Docling Serve v1.30.
 
 ### download手順
 
-Docling Serve v1.30.0のruntime userはUID `1001`、GID `0`である。取得環境ではDocling CLIを直接実行し、`out/srv/docling/`へ配布先と同じtreeを作成する。
+Docling Serve v1.30.0のruntime userはUID `1001`、GID `0`である。取得環境ではDocling CLIをuvx経由で実行し、`out/srv/docling/`へ配布先と同じtreeを作成する。
 
 ```bash
 # 配布先と同じDocling directory treeを作成する。
 mkdir -p out/srv/docling
 
 # model catalogの⭐対象modelをDocling公式CLIでdownloadする。
-docling-tools models download --output-dir out/srv/docling \
+uvx --from docling==2.118.0 docling-tools models download \
+  --output-dir out/srv/docling \
   layout tableformer rapidocr picture_classifier granitedocling smolvlm code_formula
 ```
 
@@ -72,11 +73,13 @@ EasyOCRまたはlocal VLMは必要になった時点で明示的に追加する�
 
 ```bash
 # 日本語と英語向けEasyOCR modelを既存のmodel directoryへ追加する。
-docling-tools models download --output-dir out/srv/docling \
+uvx --from docling==2.118.0 docling-tools models download \
+  --output-dir out/srv/docling \
   easyocr --easyocr-lang ja --easyocr-lang en
 
 # Granite Doclingをlocal VLMとして使用する場合だけmodelを追加する。
-docling-tools models download --output-dir out/srv/docling granitedocling
+uvx --from docling==2.118.0 docling-tools models download \
+  --output-dir out/srv/docling granitedocling
 ```
 
 ## Tesseract traineddataの事前配置
@@ -241,6 +244,7 @@ Tesseract traineddataはcommit SHAを明示的に更新する。浮動する`mai
 
 ## References
 
+- [uv: Using tools](https://docs.astral.sh/uv/guides/tools/)
 - [Docling: Advanced options - Model prefetching and offline usage](https://docling-project.github.io/docling/usage/advanced_options/)
 - [Docling: `docling-tools` CLI reference](https://docling-project.github.io/docling/reference/cli/)
 - [Docling: Model catalog](https://github.com/docling-project/docling/blob/main/docs/usage/model_catalog.md)

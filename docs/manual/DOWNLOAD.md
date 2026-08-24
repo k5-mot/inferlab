@@ -5,7 +5,7 @@
 ## 前提
 
 - オンライン端末でPowerShell、`crane`、Docker CLI、Python 3、pip、Node.js、npmを実行できる。
-- Docling資材の取得ではDockerまたはWSLを使用せず、PowerShell版は`docling-tools`、Shell版は`docling-tools`、`curl`、`sha256sum`を使用する。
+- Docling資材の取得ではDockerまたはWSLを使用せず、PowerShell版は`uvx`と`Invoke-WebRequest`、Shell版は`uvx`、`curl`、`sha256sum`を使用する。
 - repository rootでこの手順を実行する。
 - scriptは引数なしで実行できる。
 - container imageの取得対象platformはscript既定値の`linux/amd64`。
@@ -102,7 +102,7 @@ Linux/macOS shellでDocling資材を取得する場合:
 - `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
 - Dify plugin、内包requirements、依存wheelの取得またはchecksum検証に失敗する。
 - `huggingface-cli`が見つからない、またはmodel repositoryの取得に失敗する。
-- `docling-tools`によるmodel取得、traineddataのdownload、またはchecksum検証に失敗する。
+- `uvx`経由の`docling-tools`によるmodel取得、traineddataのdownload、またはchecksum検証に失敗する。
 - `pip download`が失敗する。
 - `npm install`または`npm pack`が失敗する。
 - RPM repository metadataまたはpackage fileの取得に失敗する。
@@ -346,6 +346,7 @@ sudo docker compose --env-file .env --profile common --profile keycloak --profil
 
 ## References
 
+- [uv: Using tools](https://docs.astral.sh/uv/guides/tools/)
 - [Docling model prefetching and offline usage](https://docling-project.github.io/docling/usage/advanced_options/#model-prefetching-and-offline-usage)
 - [Docling CLI reference](https://github.com/docling-project/docling/blob/main/docs/reference/cli.md#docling-tools-models)
 - [Docling model catalog](https://github.com/docling-project/docling/blob/main/docs/usage/model_catalog.md)
