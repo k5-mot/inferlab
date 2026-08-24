@@ -4,6 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {
+  couchDbDocumentTitle,
   fetchCouchDbDocuments,
   synchronizeCouchDbSource,
 } from '../dist/couchdb-source.js';
@@ -21,12 +22,28 @@ function couchDbSource(overrides = {}) {
     database: 'obsidian',
     usernameEnv: 'COUCHDB_USERNAME',
     passwordEnv: 'COUCHDB_PASSWORD',
+    titleStrategy: 'hierarchy',
     excludePathPrefixes: ['ix:'],
     maxDocuments: 1000,
     ingest: {enabled: true, schedule: '0 * * * *', timeoutSeconds: 10},
     ...overrides,
   };
 }
+
+test('Obsidian階層を重複を保ったsource titleへ変換する', () => {
+  assert.equal(
+    couchDbDocumentTitle('AWS/AWS CLF/事前テスト.md', 'hierarchy'),
+    'AWS AWS CLF 事前テスト',
+  );
+  assert.equal(couchDbDocumentTitle('AWS/AWS CLF/事前テスト.md', 'path'), 'AWS/AWS CLF/事前テスト.md');
+});
+
+test('階層titleは末尾のMarkdown拡張子だけを除去する', () => {
+  assert.equal(
+    couchDbDocumentTitle('notes/archive.md/設計.MD', 'hierarchy'),
+    'notes archive.md 設計',
+  );
+});
 
 /**
  * `_all_docs`互換responseを返すFetch fakeを生成する。
@@ -114,6 +131,38 @@ test('snapshotから消えたdocumentのsource fileを削除する', async () =>
       'utf8',
     ));
     assert.deepEqual(Object.keys(manifest), ['note-1']);
+  } finally {
+    await rm(projectRoot, {recursive: true, force: true});
+  }
+});
+
+test('Obsidian階層titleをInput Contract frontmatterへ保存する', async () => {
+  const projectRoot = await mkdtemp(join(tmpdir(), 'inferlab-llmwiki-title-'));
+  const rows = [
+    {
+      doc: {
+        _id: 'aws-test',
+        type: 'plain',
+        path: 'AWS/AWS CLF/事前テスト.md',
+        children: ['aws-test-leaf'],
+      },
+    },
+    {doc: {_id: 'aws-test-leaf', type: 'leaf', data: '# 事前テスト\n\n本文'}},
+  ];
+
+  try {
+    await synchronizeCouchDbSource(
+      projectRoot,
+      couchDbSource(),
+      {COUCHDB_USERNAME: 'reader', COUCHDB_PASSWORD: 'secret'},
+      couchDbFetch(rows),
+    );
+    const [filename] = await readdir(join(projectRoot, 'sources'));
+    const source = await readFile(join(projectRoot, 'sources', filename), 'utf8');
+
+    assert.match(source, /^title: AWS AWS CLF 事前テスト$/m);
+    assert.match(source, /^sourceType: file$/m);
+    assert.match(source, /# 事前テスト\n\n本文$/);
   } finally {
     await rm(projectRoot, {recursive: true, force: true});
   }

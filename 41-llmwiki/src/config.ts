@@ -24,6 +24,7 @@ const couchDbSourceSchema = z.strictObject({
   database: z.string().min(1).regex(/^[a-z][a-z0-9_$()+/-]*$/),
   username_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
   password_env: z.string().min(1).regex(/^[A-Z][A-Z0-9_]*$/),
+  title_strategy: z.enum(['path', 'hierarchy']),
   exclude_path_prefixes: z.array(z.string().min(1)).default([]),
   max_documents: z.number().int().positive().max(10000).default(1000),
   ingest: sourceIngestSchema,
@@ -60,11 +61,19 @@ const configSchema = z.strictObject({
     }),
   }),
   output: z.strictObject({language: z.string().min(1)}),
+  quality: z.strictObject({
+    lint: z.strictObject({enabled: z.boolean()}),
+    eval: z.strictObject({
+      enabled: z.boolean(),
+      suite: z.enum(['fast', 'full']),
+    }),
+  }),
   viewer: z.strictObject({
     internal_port: z.number().int().min(1).max(65535),
     public_host: z.string().min(1),
     public_port: z.number().int().min(1).max(65535),
     startup_timeout_seconds: z.number().int().positive(),
+    reload_poll_seconds: z.number().positive(),
   }),
   validation: z.strictObject({enabled: z.literal(false)}),
 });
@@ -93,6 +102,7 @@ export interface CouchDbSourceConfig extends SourceConfigBase {
   database: string;
   usernameEnv: string;
   passwordEnv: string;
+  titleStrategy: 'path' | 'hierarchy';
   excludePathPrefixes: string[];
   maxDocuments: number;
 }
@@ -126,11 +136,16 @@ export interface RuntimeConfig {
     };
   };
   outputLanguage: string;
+  quality: {
+    lint: {enabled: boolean};
+    eval: {enabled: boolean; suite: 'fast' | 'full'};
+  };
   viewer: {
     internalPort: number;
     publicHost: string;
     publicPort: number;
     startupTimeoutSeconds: number;
+    reloadPollSeconds: number;
   };
 }
 
@@ -236,7 +251,7 @@ function assertUniqueSourceIds(sources: ParsedConfig['sources']): void {
 /**
  * schema検証済み設定へsource共通既定値を適用する。
  * @param parsed schema検証済み設定。
- * @returns runnerが利用する正規化済み設定。
+ * @returns RuntimeとIngesterが利用する正規化済み設定。
  */
 function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
   const sources = parsed.sources.map((source): SourceConfig => {
@@ -254,6 +269,7 @@ function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
         database: source.database,
         usernameEnv: source.username_env,
         passwordEnv: source.password_env,
+        titleStrategy: source.title_strategy,
         excludePathPrefixes: source.exclude_path_prefixes,
         maxDocuments: source.max_documents,
         ingest,
@@ -288,11 +304,13 @@ function toRuntimeConfig(parsed: ParsedConfig): RuntimeConfig {
       },
     },
     outputLanguage: parsed.output.language,
+    quality: parsed.quality,
     viewer: {
       internalPort: parsed.viewer.internal_port,
       publicHost: parsed.viewer.public_host,
       publicPort: parsed.viewer.public_port,
       startupTimeoutSeconds: parsed.viewer.startup_timeout_seconds,
+      reloadPollSeconds: parsed.viewer.reload_poll_seconds,
     },
   };
 }

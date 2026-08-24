@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runtime
     container_name: ${STACK_NAME}-llmwiki
     restart: unless-stopped
     profiles:
@@ -10,8 +11,6 @@ services:
     environment:
       CONFIG_PATH: /app/config.yaml
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      COUCHDB_USERNAME: ${OBSIDIAN_COUCHDB_USER:-obs_couchdb_user}
-      COUCHDB_PASSWORD: ${OBSIDIAN_COUCHDB_PASSWORD:-obs_couchdb_password}
     ports:
       - "34100:8080"
     volumes:
@@ -19,10 +18,7 @@ services:
       - llmwiki-project:/data/llmwiki
     networks:
       - internal-nw
-    depends_on:
-      couchdb:
-        condition: service_healthy
-    mem_limit: 2g
+    mem_limit: 1g
     pids_limit: 512
     healthcheck:
       test:
@@ -39,6 +35,31 @@ services:
       - homepage.name=LLM Wiki
       - homepage.href=http://${PUBLIC_HOST}:34100
       - homepage.description=Compiled knowledge viewer
+
+  llmwiki-ingester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ingester
+    container_name: ${STACK_NAME}-llmwiki-ingester
+    restart: unless-stopped
+    profiles:
+      - llmwiki
+    environment:
+      CONFIG_PATH: /app/config.yaml
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      COUCHDB_USERNAME: ${OBSIDIAN_COUCHDB_USER:-obs_couchdb_user}
+      COUCHDB_PASSWORD: ${OBSIDIAN_COUCHDB_PASSWORD:-obs_couchdb_password}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - llmwiki-project:/data/llmwiki
+    networks:
+      - internal-nw
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    mem_limit: 2g
+    pids_limit: 512
 
 volumes:
   llmwiki-project:

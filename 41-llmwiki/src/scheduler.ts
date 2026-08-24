@@ -2,7 +2,6 @@ import {Cron} from 'croner';
 import type {RuntimeConfig, SourceConfig} from './config.js';
 import type {LlmWikiClient} from './llmwiki-client.js';
 import {log} from './logger.js';
-import type {ViewerSupervisor} from './viewer.js';
 
 type Job = () => Promise<void>;
 
@@ -42,19 +41,16 @@ export class SerialJobQueue {
 export class WikiJobs {
   readonly #config: RuntimeConfig;
   readonly #client: LlmWikiClient;
-  readonly #viewer: ViewerSupervisor;
 
   /**
    * ingestとcompileのapplication jobを生成する。
-   * @param config runner設定。
+   * @param config Ingester設定。
    * @param client upstream CLI client。
-   * @param viewer compile後に更新するviewer supervisor。
    * @returns 初期化済みjob集合。
    */
-  constructor(config: RuntimeConfig, client: LlmWikiClient, viewer: ViewerSupervisor) {
+  constructor(config: RuntimeConfig, client: LlmWikiClient) {
     this.#config = config;
     this.#client = client;
-    this.#viewer = viewer;
   }
 
   /**
@@ -69,19 +65,20 @@ export class WikiJobs {
   }
 
   /**
-   * Wikiを増分compileし、成功後にviewer snapshotを更新する。
-   * @returns compileとviewer再起動の完了Promise。
-   * @throws upstream CLIまたはviewer更新に失敗した場合。
+   * Wikiを増分compileし、設定されたlintとevalを順に実行する。
+   * @returns compileと品質処理の完了Promise。
+   * @throws upstream CLI実行に失敗した場合。
    */
   async compile(): Promise<void> {
     await this.#client.compile();
-    await this.#viewer.restart();
+    if (this.#config.quality.lint.enabled) await this.#client.lint();
+    if (this.#config.quality.eval.enabled) await this.#client.eval();
   }
 }
 
 /**
  * 設定されたcron jobを登録する。
- * @param config scheduleとtimezoneを含むrunner設定。
+ * @param config scheduleとtimezoneを含むIngester設定。
  * @param jobs ingestとcompileの実処理。
  * @param queue jobを直列化するqueue。
  * @returns 停止時に破棄するCron instance一覧。
@@ -117,7 +114,7 @@ export function startSchedules(
 }
 
 /**
- * cron式とtimezoneをrunner起動時に検証する。
+ * cron式とtimezoneをIngester起動時に検証する。
  * @param expression 検証するcron式。
  * @param timezone IANA timezone名。
  * @returns 戻り値はない。

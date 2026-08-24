@@ -1,8 +1,10 @@
 # LLM Wiki
 
-`llm-wiki-compiler` 1.1.0 を Knowledge Compiler と read-only viewer に使用する。独自 runner は `config.yaml` の定期実行、source adapter、job 直列化、compile 後の viewer 再起動、Compose 向け HTTP proxy を担当する。
+`llm-wiki-compiler` 1.1.0 をKnowledge Compiler、MCP server、read-only Viewerに使用する。実行環境は、upstreamのViewerとMCPを提供する`llmwiki` containerと、adapterおよび`ingest -> compile -> lint -> eval` pipelineを実行する`llmwiki-ingester` containerに分離する。両containerは`llmwiki-project` named volumeだけを共有する。
 
-OpenKB と Wiki.js publish は使用しない。source-system 固有処理は共通のsource adapter interfaceの背後へ置く。runnerとschedulerはsource種別を判定せず、registryを通じて同期する。新しいデータソースは設定schema、正規化済み設定、adapterを追加し、upstreamの[`sources/` Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md)に従って`ingestText`またはCLIへ委譲する。
+OpenKB、Wiki.js publish、OKF importは使用しない。OKF importは完成済みpageを`wiki/`へ直接書き、adapterとcompilerの`sources/`境界を迂回するためである。OKF exportはupstream CLIまたはMCPの`export_okf`をそのまま使用できる。
+
+source-system固有処理は`llmwiki-ingester`のsource adapter interfaceの背後へ置く。adapterはupstreamの[`sources/` Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md)に従うMarkdownを共有volumeの`sources/`へ生成し、以降のcompile、lint、evalはupstream CLIへ委譲する。
 
 ## 設定
 
@@ -30,6 +32,10 @@ sources:
 
 現在の設定は`40-obsidian`のCouchDB `obsidian` databaseを6時間ごとに同期し、同期成功後に増分compileする。LiveSyncの非削除Markdown親documentだけを対象に、`children`順でleaf chunkを復元する。hidden path、Markdown以外、空本文はWikiへ取り込まない。前回manifestにだけ残るsource fileはsnapshot同期時に削除する。
 
+`title_strategy`はCouchDB document pathからLLMWiki source titleを生成する方式を指定する。`path`は従来どおりpathをそのまま使用する。`hierarchy`は末尾の`.md`を除去し、すべてのfolder名とnote名を空白で連結する。階層名の重複は除去しないため、`AWS/AWS CLF/事前テスト.md`は`AWS AWS CLF 事前テスト`になる。
+
+compile成功後はIngesterが共有volumeの`.llmwiki/viewer-generation`を更新する。`llmwiki` containerは`viewer.reload_poll_seconds`間隔でmarkerを確認し、新しいfilesystem snapshotでViewerを再起動する。lintとevalはdiagnosticとして実行し、初期MVPではpipelineの公開可否を判定するvalidation gateには使用しない。
+
 CouchDBのcredentialは値ではなく参照環境変数名を設定する。
 
 ```yaml
@@ -40,6 +46,7 @@ sources:
     database: obsidian
     username_env: COUCHDB_USERNAME
     password_env: COUCHDB_PASSWORD
+    title_strategy: hierarchy
     exclude_path_prefixes:
       - "ix:"
     max_documents: 1000
@@ -51,7 +58,7 @@ sources:
 ## 開発
 
 ```bash
-# runner依存関係を固定lockfileから導入する。
+# RuntimeとIngesterの依存関係を固定lockfileから導入する。
 pnpm --dir 41-llmwiki install --ignore-workspace --frozen-lockfile
 
 # TypeScriptの型検査を実行する。
@@ -74,11 +81,11 @@ pnpm --dir 41-llmwiki test
 ## 起動
 
 ```bash
-# llmwiki imageをbuildしてviewerを起動する。
-docker compose --profile llmwiki up -d --build llmwiki
+# RuntimeとIngester imageをbuildして2 containerを起動する。
+docker compose --profile llmwiki up -d --build llmwiki llmwiki-ingester
 
-# containerとhealth状態を確認する。
-docker compose ps llmwiki
+# RuntimeとIngesterの状態を確認する。
+docker compose ps llmwiki llmwiki-ingester
 
 # upstreamが認識しているproject状態を確認する。
 docker compose exec -w /data/llmwiki llmwiki llmwiki status
@@ -86,46 +93,71 @@ docker compose exec -w /data/llmwiki llmwiki llmwiki status
 
 期待結果:
 
-- `llmwiki` container が healthy になる。
+- `llmwiki` containerがhealthyになり、`llmwiki-ingester` containerがrunningになる。
 - `http://localhost:34100` で upstream viewer を表示できる。
-- CouchDB同期とingest後compileのscheduled jobが登録される。
+- IngesterへCouchDB同期とcompileのscheduled jobが登録される。
 
 失敗基準:
 
-- config schema、cron、timezone、必要 credential が不正な場合、runner は起動に失敗する。
+- config schema、cron、timezone、必要credentialが不正な場合、該当containerは起動に失敗する。
 - viewer または proxy が起動できない場合、container は healthy にならない。
+
+## MCP
+
+`llmwiki serve`はTCP serverではなくstdio transportである。MCP clientはRuntime container内へ`docker exec -i`し、接続ごとにstdio serverを起動する。
+
+```json
+{
+  "mcpServers": {
+    "llmwiki": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "inferlab-llmwiki",
+        "node",
+        "/app/dist/serve.js"
+      ]
+    }
+  }
+}
+```
+
+Runtime wrapperは`config.yaml`からprovider、model、project rootを読み、upstream `llmwiki serve --root /data/llmwiki`へstdioをそのまま接続する。
 
 ## 手動確認
 
 ```bash
-# CouchDBの現在snapshotをsourceへ同期し、on_ingest設定に従ってcompileする。
-docker compose exec llmwiki node /app/dist/main.js ingest obsidian-couchdb
+# CouchDB snapshotをsourceへ同期し、compile、lint、evalを順に実行する。
+docker compose exec llmwiki-ingester node /app/dist/main.js ingest obsidian-couchdb
 
-# config.yamlのprovider設定でone-shot compileを実行する。
-docker compose exec -w /data/llmwiki llmwiki node /app/dist/main.js compile
+# config.yamlのprovider設定でone-shot compile、lint、evalを実行する。
+docker compose exec -w /data/llmwiki llmwiki-ingester node /app/dist/main.js compile
 
-# compile後にrunnerを再起動してviewer snapshotを更新する。
-docker compose restart llmwiki
+# upstream機能で現在WikiのOKF bundleを生成する。
+docker compose exec -w /data/llmwiki llmwiki llmwiki export --target okf --out artifacts/okf
 ```
 
 期待結果:
 
 - CouchDB同期logに対象document数と`created`、`updated`、`unchanged`、`removed`が記録される。
 - `sources/`へMarkdown sourceが生成され、compile後に`wiki/`が更新される。
-- runner再起動後に`http://localhost:34100`で生成Wikiを表示できる。
+- `.llmwiki/last-lint.json`と`.llmwiki/eval/history.jsonl`が更新される。
+- generation marker検知後に`http://localhost:34100`で生成Wikiを表示できる。
+- `artifacts/okf`へOKF bundleが生成される。
 
 失敗基準:
 
 - CouchDBの認証、HTTP応答、LiveSync chunk参照のいずれかが不正な場合、snapshotを成功扱いにしてはならない。
 - 対象Markdown数が`max_documents`を超えた場合、同期を中止する。
 
-手動 `llmwiki compile` は runner 外で実行されるため、viewer 自動再起動の対象にならない。定常運用では `config.yaml` のscheduleまたは`compile.on_ingest`を使用する。
+Runtime containerでupstream `llmwiki compile`を直接実行した場合はgeneration markerが更新されない。定常運用と手動pipelineは`llmwiki-ingester`を使用する。
 
 ## Rollback
 
 ```bash
-# project volumeを保持したままrunnerを停止する。
-docker compose stop llmwiki
+# project volumeを保持したままRuntimeとIngesterを停止する。
+docker compose stop llmwiki llmwiki-ingester
 ```
 
 停止後も `llmwiki-project` volume 内の `sources/`、`wiki/`、`.llmwiki/` は保持される。
@@ -143,4 +175,6 @@ volumeを削除すると生成済みsource、Wiki、同期manifestは復旧で�
 - [Viewer CLI](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/cli/view.mdx)
 - [Environment Variables](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/configuration/environment-variables.mdx)
 - [sources Input Contract](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/SOURCES_CONTRACT.md)
+- [MCP Server](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/cli/serve.mdx)
+- [Open Knowledge Format](https://github.com/atomicstrata/llm-wiki-compiler/blob/v1.1.0/docs/guides/open-knowledge-format.mdx)
 - [Apache CouchDB `_all_docs`](https://docs.couchdb.org/en/stable/api/database/bulk-api.html#db-all-docs)

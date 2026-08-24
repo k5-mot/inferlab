@@ -1,8 +1,11 @@
+import {createHash} from 'node:crypto';
 import {mkdir, readFile, rename, unlink, writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {createWiki, type WriteStatus} from 'llm-wiki-compiler';
+import {dump as dumpYaml, load as loadYaml} from 'js-yaml';
 import type {CouchDbSourceConfig} from './config.js';
 import {log} from './logger.js';
+
+const MAX_SOURCE_CHARS = 100_000;
 
 export interface CouchDbSourceDocument {
   id: string;
@@ -39,10 +42,9 @@ export async function synchronizeCouchDbSource(
   fetchImpl: FetchLike = fetch,
 ): Promise<CouchDbSyncSummary> {
   const documents = await fetchCouchDbDocuments(source, environ, fetchImpl);
-  const wiki = createWiki({root: projectRoot});
   const previousManifest = await readManifest(projectRoot, source.id);
   const nextManifest: SourceManifest = {};
-  const statuses: Record<WriteStatus, number> = {created: 0, updated: 0, unchanged: 0};
+  const statuses = {created: 0, updated: 0, unchanged: 0};
   let skippedEmpty = 0;
 
   for (const document of documents) {
@@ -50,13 +52,14 @@ export async function synchronizeCouchDbSource(
       skippedEmpty += 1;
       continue;
     }
-    const result = await wiki.ingestText({
-      title: document.path,
-      text: document.content,
+    const filename = previousManifest[document.id] ?? sourceFilename(source.id, document.id);
+    const writeStatus = await writeSourceDocument(projectRoot, filename, {
+      title: couchDbDocumentTitle(document.path, source.titleStrategy),
       source: couchDbDocumentUrl(source, document.id),
+      content: document.content,
     });
-    statuses[result.writeStatus] = (statuses[result.writeStatus] ?? 0) + 1;
-    nextManifest[document.id] = result.filename;
+    statuses[writeStatus] += 1;
+    nextManifest[document.id] = filename;
   }
 
   const removed = await removeStaleSources(projectRoot, previousManifest, nextManifest);
@@ -121,6 +124,162 @@ export async function fetchCouchDbDocuments(
   }
   return parents.map((parent) => restoreDocument(parent, documentsById))
     .sort((left, right) => left.path.localeCompare(right.path));
+}
+
+/**
+ * Obsidian note pathからLLMWiki source titleを生成する。
+ * @param notePath Obsidian vault rootからのnote path。
+ * @param strategy pathを保持するか、階層を空白区切りのtitleへ変換する方式。
+ * @returns 設定した方式で生成したsource title。
+ */
+export function couchDbDocumentTitle(
+  notePath: string,
+  strategy: CouchDbSourceConfig['titleStrategy'],
+): string {
+  if (strategy === 'path') return notePath;
+  return notePath
+    .split('/')
+    .filter((segment) => segment.length > 0)
+    .map((segment, index, segments) => (
+      index === segments.length - 1 ? segment.replace(/\.md$/i, '') : segment
+    ))
+    .join(' ');
+}
+
+interface SourceDocumentInput {
+  title: string;
+  source: string;
+  content: string;
+}
+
+/**
+ * CouchDB document IDからadapter所有の安定したsource file名を生成する。
+ * @param sourceId source設定を識別するID。
+ * @param documentId CouchDB document ID。
+ * @returns sources直下へ保存できるMarkdown file名。
+ */
+function sourceFilename(sourceId: string, documentId: string): string {
+  const digest = createHash('sha256').update(documentId).digest('hex').slice(0, 16);
+  return `couchdb-${sourceId}-${digest}.md`;
+}
+
+/**
+ * Input Contract形式のsource fileを必要な場合だけ作成または更新する。
+ * @param projectRoot llmwiki project root。
+ * @param filename sources直下のadapter所有file名。
+ * @param input source title、identity、Markdown本文。
+ * @returns source fileの書込結果。
+ * @throws 既存file読込またはatomic書込に失敗した場合。
+ * @sideeffect project rootのsourcesを更新する。
+ */
+async function writeSourceDocument(
+  projectRoot: string,
+  filename: string,
+  input: SourceDocumentInput,
+): Promise<'created' | 'updated' | 'unchanged'> {
+  const target = path.join(projectRoot, 'sources', filename);
+  let existing: string | undefined;
+  try {
+    existing = await readFile(target, 'utf8');
+  } catch (error) {
+    if (!isFileNotFound(error)) throw error;
+  }
+  const limited = limitSourceContent(input.content);
+  if (existing !== undefined && sourceMatches(existing, input, limited.content)) {
+    return 'unchanged';
+  }
+  const rendered = renderSourceDocument(input, limited);
+  const temporary = `${target}.${process.pid}.tmp`;
+  await mkdir(path.dirname(target), {recursive: true});
+  await writeFile(temporary, rendered, 'utf8');
+  await rename(temporary, target);
+  return existing === undefined ? 'created' : 'updated';
+}
+
+interface LimitedContent {
+  content: string;
+  originalChars: number;
+  truncated: boolean;
+}
+
+/**
+ * upstream Input Contractの本文長上限へMarkdownを収める。
+ * @param content CouchDBから復元したMarkdown本文。
+ * @returns 上限適用後本文と切り詰め情報。
+ */
+function limitSourceContent(content: string): LimitedContent {
+  if (content.length <= MAX_SOURCE_CHARS) {
+    return {content, originalChars: content.length, truncated: false};
+  }
+  return {
+    content: content.slice(0, MAX_SOURCE_CHARS),
+    originalChars: content.length,
+    truncated: true,
+  };
+}
+
+/**
+ * source title、identity、本文が既存fileと一致するか確認する。
+ * @param existing 既存source file全体。
+ * @param input 比較するsource入力。
+ * @param limitedContent 上限適用後の本文。
+ * @returns ingest時刻以外のcontract内容が同一ならtrue。
+ */
+function sourceMatches(
+  existing: string,
+  input: SourceDocumentInput,
+  limitedContent: string,
+): boolean {
+  const parsed = parseSourceDocument(existing);
+  return parsed !== undefined
+    && parsed.title === input.title
+    && parsed.source === input.source
+    && parsed.content === limitedContent;
+}
+
+/**
+ * 既存source fileから比較に必要なfrontmatterと本文を取り出す。
+ * @param value parseするsource file全体。
+ * @returns 有効なfrontmatterを持つsource、形式不正時はundefined。
+ */
+function parseSourceDocument(
+  value: string,
+): {title: string; source: string; content: string} | undefined {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(value);
+  if (!match) return undefined;
+  const frontmatter = match[1];
+  const body = match[2];
+  if (frontmatter === undefined || body === undefined) return undefined;
+  try {
+    const metadata = recordValue(loadYaml(frontmatter));
+    const title = stringValue(metadata?.title);
+    const source = stringValue(metadata?.source);
+    if (!title || !source) return undefined;
+    return {title, source, content: body.replace(/^\r?\n/, '')};
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * upstream `sources/` Input Contract準拠Markdownを生成する。
+ * @param input source title、identity、元本文。
+ * @param limited 上限適用後本文と切り詰め情報。
+ * @returns frontmatterと本文を含むsource file内容。
+ */
+function renderSourceDocument(input: SourceDocumentInput, limited: LimitedContent): string {
+  const metadata: Record<string, unknown> = {
+    title: input.title,
+    source: input.source,
+    ingestedAt: new Date().toISOString(),
+    sourceType: 'file',
+  };
+  if (limited.truncated) {
+    metadata.truncated = true;
+    metadata.originalChars = limited.originalChars;
+  }
+  const frontmatter = dumpYaml(metadata, {lineWidth: -1, quotingType: '"'}).trimEnd();
+  return `---\n${frontmatter}\n---\n\n${limited.content}`;
 }
 
 /**

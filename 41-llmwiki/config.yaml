@@ -20,6 +20,8 @@ sources:
     database: obsidian
     username_env: COUCHDB_USERNAME
     password_env: COUCHDB_PASSWORD
+    # Obsidianの全folder名とnote名を空白で連結してsource titleにする。
+    title_strategy: hierarchy
     exclude_path_prefixes:
       # Self-hosted LiveSyncが生成するObsidian設定とplugin snapshotを除外する。
       - "ix:"
@@ -52,11 +54,19 @@ provider:
 output:
   language: Japanese
 
+quality:
+  lint:
+    enabled: true
+  eval:
+    enabled: true
+    suite: fast
+
 viewer:
   internal_port: 54321
   public_host: 0.0.0.0
   public_port: 8080
   startup_timeout_seconds: 30
+  reload_poll_seconds: 2
 
 validation:
   # 初期MVPではfalseのみを許可する。

@@ -1,22 +1,32 @@
-import type {ChildProcess} from 'node:child_process';
+import {spawn, type ChildProcess} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import type {RuntimeConfig} from './config.js';
-import type {LlmWikiClient} from './llmwiki-client.js';
 import {log} from './logger.js';
 
 export class ViewerSupervisor {
-  readonly #client: LlmWikiClient;
+  readonly #binary: string;
+  readonly #environment: NodeJS.ProcessEnv;
+  readonly #projectRoot: string;
   readonly #config: RuntimeConfig['viewer'];
   #child: ChildProcess | undefined;
 
   /**
    * viewer process supervisorを生成する。
-   * @param client viewerを起動できるupstream client。
+   * @param binary llmwiki executableのpath。
+   * @param environment upstreamへ渡す環境変数。
+   * @param projectRoot llmwiki project root。
    * @param config viewer設定。
    * @returns 初期化済みsupervisor。
    */
-  constructor(client: LlmWikiClient, config: RuntimeConfig['viewer']) {
-    this.#client = client;
+  constructor(
+    binary: string,
+    environment: NodeJS.ProcessEnv,
+    projectRoot: string,
+    config: RuntimeConfig['viewer'],
+  ) {
+    this.#binary = binary;
+    this.#environment = environment;
+    this.#projectRoot = projectRoot;
     this.#config = config;
   }
 
@@ -28,7 +38,15 @@ export class ViewerSupervisor {
    */
   async start(): Promise<void> {
     if (this.#child) throw new Error('viewerはすでに起動しています');
-    const child = this.#client.startViewer();
+    const child = spawn(
+      this.#binary,
+      ['view', '--port', String(this.#config.internalPort)],
+      {
+        cwd: this.#projectRoot,
+        env: this.#environment,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
     this.#child = child;
     child.stdout?.on('data', (chunk: Buffer) => process.stdout.write(chunk));
     child.stderr?.on('data', (chunk: Buffer) => process.stderr.write(chunk));

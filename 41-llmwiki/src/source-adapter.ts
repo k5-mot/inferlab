@@ -14,6 +14,7 @@ export interface SourceAdapter {
 export interface InputCommand {
   args: string[];
   timeoutSeconds: number;
+  acceptedExitCodes?: number[];
 }
 
 type InputCommandRunner = (command: InputCommand) => Promise<void>;

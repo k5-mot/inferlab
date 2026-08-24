@@ -42,11 +42,16 @@ function baseConfig() {
       },
     },
     output: {language: 'Japanese'},
+    quality: {
+      lint: {enabled: true},
+      eval: {enabled: true, suite: 'fast'},
+    },
     viewer: {
       internal_port: 54321,
       public_host: '0.0.0.0',
       public_port: 8080,
       startup_timeout_seconds: 30,
+      reload_poll_seconds: 2,
     },
     validation: {enabled: false},
   };
@@ -117,6 +122,7 @@ test('CouchDB sourceをadapter用の実行時設定へ変換する', () => {
     database: 'obsidian',
     username_env: 'COUCHDB_USERNAME',
     password_env: 'COUCHDB_PASSWORD',
+    title_strategy: 'hierarchy',
     exclude_path_prefixes: ['ix:'],
     max_documents: 1000,
     ingest: {enabled: true},
@@ -131,6 +137,7 @@ test('CouchDB sourceをadapter用の実行時設定へ変換する', () => {
     database: 'obsidian',
     usernameEnv: 'COUCHDB_USERNAME',
     passwordEnv: 'COUCHDB_PASSWORD',
+    titleStrategy: 'hierarchy',
     excludePathPrefixes: ['ix:'],
     maxDocuments: 1000,
     ingest: {enabled: true, schedule: '0 * * * *', timeoutSeconds: 600},
@@ -146,6 +153,7 @@ test('有効なCouchDB sourceは参照credentialを必須にする', () => {
     database: 'obsidian',
     username_env: 'COUCHDB_USERNAME',
     password_env: 'COUCHDB_PASSWORD',
+    title_strategy: 'path',
     ingest: {enabled: true},
   }];
   const config = parseConfig(value);

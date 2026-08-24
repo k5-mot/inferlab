@@ -4,6 +4,7 @@ import path from 'node:path';
 import type {RuntimeConfig, SourceConfig} from './config.js';
 import {log} from './logger.js';
 import {createSourceAdapterRegistry, type InputCommand, type SourceAdapterRegistry} from './source-adapter.js';
+import {signalViewerReload} from './viewer-generation.js';
 
 export class LlmWikiClient {
   readonly #binary: string;
@@ -14,7 +15,7 @@ export class LlmWikiClient {
   /**
    * upstream CLI clientを生成する。
    * @param binary llmwiki executableのpath。
-   * @param config runner設定。
+   * @param config Ingester設定。
    * @param environment upstreamへ渡す環境変数。
    * @returns 初期化済みclient instance。
    */
@@ -50,23 +51,35 @@ export class LlmWikiClient {
     const args = ['compile', '--concurrency', String(this.#config.compile.concurrency)];
     if (this.#config.compile.review) args.push('--review');
     await this.#run({args, timeoutSeconds: this.#config.compile.timeoutSeconds});
+    await signalViewerReload(this.#config.projectRoot);
   }
 
   /**
-   * read-only viewer processをloopbackで起動する。
-   * @returns 起動した子process。
-   * @sideeffect 指定portでupstream viewerをlistenする。
+   * Wikiへrule-based lintを実行する。
+   * @returns lint完了時にresolveするPromise。
+   * @throws command起動またはtimeoutに失敗した場合。
+   * @sideeffect `.llmwiki/last-lint.json`を更新する。
    */
-  startViewer(): ChildProcess {
-    return spawn(
-      this.#binary,
-      ['view', '--port', String(this.#config.viewer.internalPort)],
-      {
-        cwd: this.#config.projectRoot,
-        env: this.#environment,
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
+  async lint(): Promise<void> {
+    await this.#run({
+      args: ['lint'],
+      timeoutSeconds: this.#config.compile.timeoutSeconds,
+      acceptedExitCodes: [0, 1],
+    });
+  }
+
+  /**
+   * Wiki品質evalを設定suiteで実行する。
+   * @returns eval完了時にresolveするPromise。
+   * @throws command起動またはtimeoutに失敗した場合。
+   * @sideeffect `.llmwiki/eval/history.jsonl`へ評価結果を追記する。
+   */
+  async eval(): Promise<void> {
+    await this.#run({
+      args: ['eval', '--suite', this.#config.quality.eval.suite],
+      timeoutSeconds: this.#config.compile.timeoutSeconds,
+      acceptedExitCodes: [0, 1],
+    });
   }
 
   /**
@@ -82,7 +95,7 @@ export class LlmWikiClient {
       env: this.#environment,
       stdio: 'inherit',
     });
-    await waitForChild(child, command.timeoutSeconds);
+    await waitForChild(child, command.timeoutSeconds, command.acceptedExitCodes);
     log('info', 'llmwiki.command.completed', {command: command.args[0]});
   }
 }
@@ -164,7 +177,11 @@ function isFileNotFound(error: unknown): boolean {
  * @returns 正常終了時にresolveするPromise。
  * @throws spawn失敗、timeout、非zero終了codeの場合。
  */
-export function waitForChild(child: ChildProcess, timeoutSeconds: number): Promise<void> {
+export function waitForChild(
+  child: ChildProcess,
+  timeoutSeconds: number,
+  acceptedExitCodes: readonly number[] = [0],
+): Promise<void> {
   return new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -185,7 +202,7 @@ export function waitForChild(child: ChildProcess, timeoutSeconds: number): Promi
 
     child.once('error', (error) => finish(error));
     child.once('exit', (code, signal) => {
-      if (code === 0) finish();
+      if (code !== null && acceptedExitCodes.includes(code)) finish();
       else finish(new Error(`llmwiki commandが終了しました: code=${code}, signal=${signal}`));
     });
   });
