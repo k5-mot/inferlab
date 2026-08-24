@@ -18,6 +18,7 @@
 | --- | --- | --- | --- |
 | `static-validation` | 1 | 追跡済みshell、Python、JavaScriptの構文と、root Composeおよび主要profileの設定解決 | container起動、初期化処理の実行、外部serviceとの通信、画面操作 |
 | `compose-smoke-dify-postgres-init` | 2 | 新規PostgreSQLのhealthcheck完了後に`dify_plugin` databaseを作成できること | 作成済みdatabaseに対する再実行、Dify API、worker、Web UI、plugin daemonの起動とmigration |
+| `compose-smoke-pypiserver-readonly` | 2 | 非rootのPyPIserverがread-onlyのpackage directoryを配信し、healthyになること | wheelの完全性、plugin daemonによるinstall、外部通信の有無 |
 | `compose-smoke-oikb-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`oikb-bucket`を作成できること | 作成済みbucketに対する再実行、Open WebUI、OIKB、Nextcloudの起動と同期 |
 | `compose-smoke-ragflow-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`ragflow-bucket`を作成できること | 作成済みbucketに対する再実行、RAGFlow、Elasticsearch、MySQL、Valkeyの起動と文書取込 |
 | `compose-smoke-langfuse-bucket-init` | 2 | 新規RustFSのhealthcheck完了後に`langfuse-bucket`を作成できること | 作成済みbucketに対する再実行、Langfuse Web、worker、ClickHouse、PostgreSQLの起動とevent取込 |
@@ -90,6 +91,9 @@ Compose smokeは初期化対象ごとに必要なserviceだけを起動する。
 # Difyのplugin用PostgreSQL database初期化だけを検証する。
 script/verify-compose-smoke.sh dify-postgres-init
 
+# read-onlyのpackage directoryでPyPIserverの起動を検証する。
+script/verify-compose-smoke.sh pypiserver-readonly
+
 # OIKB用RustFS bucket初期化だけを検証する。
 script/verify-compose-smoke.sh oikb-bucket-init
 
@@ -107,6 +111,9 @@ pre-commitから個別に実行する場合は、対応するhook IDを指定す
 # DifyのPostgreSQL init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-dify-postgres-init --hook-stage manual
 
+# PyPIserverのread-only package配信だけをmanual stageで実行する。
+pre-commit run compose-smoke-pypiserver-readonly --hook-stage manual
+
 # OIKBのbucket init smokeだけをmanual stageで実行する。
 pre-commit run compose-smoke-oikb-bucket-init --hook-stage manual
 
@@ -121,6 +128,7 @@ pre-commit run compose-smoke-langfuse-bucket-init --hook-stage manual
 期待結果:
 
 - 対象のinit serviceが`exited (0)`になる。
+- PyPIserverの検証では、read-onlyのpackage directoryを維持したままserviceが`healthy`になる。
 - 依存serviceが必要な場合だけ起動する。
 - 検証終了後、一時Compose projectのcontainer、volume、networkが削除される。
 
@@ -211,4 +219,4 @@ STACK_NAME=e2e-project-name docker compose down --volumes --remove-orphans
 | Job | Trigger | 実行内容 |
 | --- | --- | --- |
 | `static` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 1を実行する |
-| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の3ケースをmatrixで実行する |
+| `compose-smoke` | `main`・`develop`へのpush、Pull Request、手動実行 | Level 2の5ケースをmatrixで実行する |

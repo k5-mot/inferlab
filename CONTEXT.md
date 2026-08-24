@@ -9,13 +9,13 @@ Inferlabは、社内向けLLM基盤と周辺サービスを組み合わせて、
 _Avoid_: 設定ファイル, config, 環境変数設定
 
 **知識コンパイル**:
-OpenKBが取り込み済み資料をもとにLLM Wikiのページ、リンク、要約、矛盾情報を再構成する処理。高頻度の取り込みとは独立した周期で実行する。
+llm-wiki-compilerが`sources/`の変更をもとに、引用追跡可能なpage、link、metadataを`wiki/`へ増分生成する処理。取り込みとは独立した周期で実行できる。
 _Avoid_: compile, 再生成, Wiki生成
 
 **取り込み**:
-Source Systemから差分を取得し、Canonical Documentへ正規化してOpenKB投入待ちとしてstagingするまでの処理。OpenKBの現行APIでは投入とdocument compileを分離できないため、実際のOpenKB addは知識コンパイル開始時に行う。LLM Wikiの再構成やWiki.jsへの公開は含めない。
+URLまたはfileをllm-wiki-compilerの`sources/` Input Contractへ変換し、`sources/`へ保存するまでの処理。知識コンパイルとviewer更新は含めない。Source System固有の処理は独立producerが所有する。
 _Avoid_: ingest, クロール, 同期
 
-**公開**:
-OpenKB上のGenerated WikiをWiki.jsのLLM Wikiへ反映する処理。Human Wikiへの書き込みや外部sourceへの書き戻しは含めない。
-_Avoid_: publish, 同期, 反映
+**閲覧**:
+llm-wiki-compilerが生成した`wiki/`を内蔵read-only viewerで検索、参照、graph表示する処理。Wiki内容の編集、外部Wikiへの転記、Source Systemへの書き戻しは含めない。
+_Avoid_: viewer, publish, 公開

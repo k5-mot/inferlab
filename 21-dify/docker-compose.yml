@@ -1,17 +1,5 @@
-x-external-dns-stabilizer: &external-dns-stabilizer
-  dns:
-    - 1.1.1.1
-    - 8.8.8.8
-  dns_search:
-    - .
-  dns_opt:
-    - "timeout:1"
-    - "attempts:2"
-    - "ndots:1"
-
 services:
   dify-api:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME}-dify-api
     restart: unless-stopped
@@ -24,6 +12,22 @@ services:
       SECRET_KEY: ${DIFY_SECRET_KEY:-sk-dify-secret-key}
       INIT_PASSWORD: ${DIFY_INIT_PASSWORD:-admin}
       MIGRATION_ENABLED: "true"
+      CHECK_UPDATE_URL: ""
+      OPENAI_API_BASE: http://litellm:4000/v1
+      API_SENTRY_DSN: ""
+      AMPLITUDE_API_KEY: ""
+      DISABLE_TELEMETRY: "true"
+      DO_NOT_TRACK: "true"
+      TELEMETRY_ENDPOINT: ""
+      TELEMETRY_FALLBACK_ENDPOINT: ""
+      ENABLE_WEBSITE_JINAREADER: "false"
+      ENABLE_WEBSITE_FIRECRAWL: "false"
+      ENABLE_WEBSITE_WATERCRAWL: "false"
+      HOSTED_FETCH_APP_TEMPLATES_MODE: builtin
+      HOSTED_FETCH_APP_TEMPLATES_REMOTE_DOMAIN: http://dify-nginx
+      HOSTED_FETCH_PIPELINE_TEMPLATES_MODE: builtin
+      HOSTED_FETCH_PIPELINE_TEMPLATES_REMOTE_DOMAIN: http://dify-nginx
+      ENABLE_CHECK_UPGRADABLE_PLUGIN_TASK: "false"
       CONSOLE_WEB_URL: http://${PUBLIC_HOST}:32100
       CONSOLE_API_URL: http://${PUBLIC_HOST}:32100
       SERVICE_API_URL: http://${PUBLIC_HOST}:32100
@@ -34,8 +38,8 @@ services:
       DB_TYPE: postgresql
       DB_HOST: dify-postgres
       DB_PORT: 5432
-      DB_USERNAME: dify_db_user
-      DB_PASSWORD: dify_db_password
+      DB_USERNAME: ${DIFY_DB_USER:-dify_user}
+      DB_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       DB_DATABASE: dify_db
       REDIS_HOST: dify-valkey
       REDIS_PORT: 6379
@@ -61,9 +65,10 @@ services:
       INNER_API_KEY_FOR_PLUGIN: ${DIFY_PLUGIN_INNER_API_KEY:-sk-dify-plugin-inner-api-key}
       AGENT_BACKEND_BASE_URL: http://dify-agent-backend:5050
       MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
-      MARKETPLACE_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_API_URL: http://dify-nginx
+      MARKETPLACE_URL: http://dify-nginx
       CREATORS_PLATFORM_FEATURES_ENABLED: "false"
+      CREATORS_PLATFORM_API_URL: http://dify-nginx
     networks:
       - internal-nw
     depends_on:
@@ -96,7 +101,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-worker:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME}-dify-worker
     restart: unless-stopped
@@ -105,10 +109,6 @@ services:
     environment:
       <<: *dify-api-env
       MODE: worker
-      MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
-      MARKETPLACE_URL: "https://marketplace.dify.ai"
-      CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     networks:
       - internal-nw
     depends_on:
@@ -141,7 +141,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-worker-beat:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-api:1.16.1
     container_name: ${STACK_NAME}-dify-worker-beat
     restart: unless-stopped
@@ -150,10 +149,6 @@ services:
     environment:
       <<: *dify-api-env
       MODE: beat
-      MARKETPLACE_ENABLED: "false"
-      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
-      MARKETPLACE_URL: "https://marketplace.dify.ai"
-      CREATORS_PLATFORM_FEATURES_ENABLED: "false"
     networks:
       - internal-nw
     depends_on:
@@ -178,7 +173,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-web:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-web:1.16.1
     container_name: ${STACK_NAME}-dify-web
     restart: unless-stopped
@@ -189,8 +183,9 @@ services:
       SERVER_CONSOLE_API_URL: http://dify-api:5001
       APP_API_URL: http://${PUBLIC_HOST}:32100
       NEXT_PUBLIC_SOCKET_URL: ws://${PUBLIC_HOST}:32100
-      MARKETPLACE_API_URL: "https://marketplace.dify.ai"
-      MARKETPLACE_URL: "https://marketplace.dify.ai"
+      MARKETPLACE_API_URL: http://dify-nginx
+      MARKETPLACE_URL: http://dify-nginx
+      WEB_SENTRY_DSN: ""
       NEXT_TELEMETRY_DISABLED: "1"
     networks:
       - internal-nw
@@ -213,7 +208,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-plugin-daemon:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-plugin-daemon:0.6.8-local
     container_name: ${STACK_NAME}-dify-plugin-daemon
     restart: unless-stopped
@@ -222,8 +216,8 @@ services:
     environment:
       DB_HOST: dify-postgres
       DB_PORT: 5432
-      DB_USERNAME: dify_db_user
-      DB_PASSWORD: dify_db_password
+      DB_USERNAME: ${DIFY_DB_USER:-dify_user}
+      DB_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       DB_DATABASE: dify_plugin
       DB_SSL_MODE: disable
       REDIS_HOST: dify-valkey
@@ -251,6 +245,13 @@ services:
       AWS_REGION: us-east-1
       FORCE_VERIFYING_SIGNATURE: "true"
       MARKETPLACE_ENABLED: "false"
+      MARKETPLACE_API_URL: http://dify-nginx
+      PIP_MIRROR_AUTO_DETECT: "false"
+      PIP_MIRROR_URL: http://pypiserver:8080/simple/
+      PIP_TRUSTED_HOST: pypiserver
+      UV_INSECURE_HOST: pypiserver
+      PLUGIN_IGNORE_UV_LOCK: "true"
+      ENABLE_OTEL: "false"
     volumes:
       - dify-plugin-daemon:/app/storage
     networks:
@@ -261,6 +262,8 @@ services:
       dify-rustfs-bucket-init:
         condition: service_completed_successfully
       dify-valkey:
+        condition: service_healthy
+      pypiserver:
         condition: service_healthy
     healthcheck:
       test:
@@ -277,7 +280,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-sandbox:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-sandbox:0.2.15
     container_name: ${STACK_NAME}-dify-sandbox
     restart: unless-stopped
@@ -287,18 +289,13 @@ services:
       API_KEY: ${DIFY_SANDBOX_API_KEY:-dify-sandbox-key}
       GIN_MODE: release
       WORKER_TIMEOUT: 15
-      ENABLE_NETWORK: "true"
-      HTTP_PROXY: http://dify-ssrf-proxy:3128
-      HTTPS_PROXY: http://dify-ssrf-proxy:3128
+      ENABLE_NETWORK: "false"
       SANDBOX_PORT: 8194
     volumes:
       - dify-sandbox-dependencies:/dependencies
       - dify-sandbox-conf:/conf
     networks:
       - internal-nw
-    depends_on:
-      dify-ssrf-proxy:
-        condition: service_started
     healthcheck:
       test:
         - CMD-SHELL
@@ -314,7 +311,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-local-sandbox:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-local-sandbox:1.16.1
     container_name: ${STACK_NAME}-dify-local-sandbox
     restart: unless-stopped
@@ -339,7 +335,6 @@ services:
       - homepage.description=AI workflow platform
 
   dify-agent-backend:
-    <<: *external-dns-stabilizer
     image: docker.io/langgenius/dify-agent-backend:1.16.1
     container_name: ${STACK_NAME}-dify-agent-backend
     restart: unless-stopped
@@ -381,45 +376,19 @@ services:
       - homepage.name=Dify-Agent-Backend
       - homepage.description=AI workflow platform
 
-  dify-ssrf-proxy:
-    <<: *external-dns-stabilizer
-    image: docker.io/ubuntu/squid@sha256:6a097f68bae708cedbabd6188d68c7e2e7a38cedd05a176e1cc0ba29e3bbe029
-    container_name: ${STACK_NAME}-dify-ssrf-proxy
-    restart: unless-stopped
-    profiles:
-      - dify
-    environment:
-      HTTP_PORT: 3128
-      COREDUMP_DIR: /var/spool/squid
-    networks:
-      - internal-nw
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - squid -k check >/dev/null 2>&1
-      interval: 30s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    labels:
-      - homepage.icon=/icons/squidex.png
-      - homepage.group=21-dify
-      - homepage.name=Dify-SSRF-Proxy
-      - homepage.description=Forward proxy
-
   dify-postgres:
-    image: docker.io/library/postgres:15.19-alpine
+    image: docker.io/library/postgres:18.6-trixie
     container_name: ${STACK_NAME}-dify-postgres
     restart: unless-stopped
     profiles:
       - dify
     environment:
-      POSTGRES_USER: dify_db_user
-      POSTGRES_PASSWORD: dify_db_password
+      POSTGRES_USER: ${DIFY_DB_USER:-dify_user}
+      POSTGRES_PASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
       POSTGRES_DB: dify_db
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - dify-postgres-data:/var/lib/postgresql/data
+      - dify-postgres-18-data:/var/lib/postgresql
     networks:
       - internal-nw
     healthcheck:
@@ -437,14 +406,14 @@ services:
       - homepage.description=Relational database
 
   dify-postgres-init:
-    image: docker.io/library/postgres:15.19-alpine
+    image: docker.io/library/postgres:18.6-trixie
     container_name: ${STACK_NAME}-dify-postgres-init
     restart: "no"
     profiles:
       - dify
     environment:
-      DIFY_DB_USER: dify_db_user
-      PGPASSWORD: dify_db_password
+      DIFY_DB_USER: ${DIFY_DB_USER:-dify_user}
+      PGPASSWORD: ${DIFY_DB_PASSWORD:-dify_password}
     command:
       - sh
       - -euc
@@ -524,7 +493,7 @@ services:
         condition: service_healthy
 
   dify-valkey:
-    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    image: docker.io/valkey/valkey:9.1.1-alpine3.24
     container_name: ${STACK_NAME}-dify-valkey
     restart: unless-stopped
     profiles:
@@ -554,7 +523,6 @@ services:
       - homepage.description=Inmemory key-value NoSQL database
 
   dify-qdrant:
-    <<: *external-dns-stabilizer
     image: docker.io/qdrant/qdrant:v1.19.0
     container_name: ${STACK_NAME}-dify-qdrant
     restart: unless-stopped
@@ -620,7 +588,7 @@ volumes:
   dify-plugin-daemon:
   dify-sandbox-dependencies:
   dify-sandbox-conf:
-  dify-postgres-data:
+  dify-postgres-18-data:
   dify-rustfs-data:
   dify-valkey-data:
   dify-qdrant-storage:

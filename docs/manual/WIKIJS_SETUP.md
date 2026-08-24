@@ -2,13 +2,13 @@
 
 ## 目的
 
-この手順は、`31-wikijs`のWiki.js 2.5.314を初期化し、`01-keycloak`の`prod` realmを認証元として追加するためのものである。
+この手順は、`37-wikijs`のWiki.js 2.5.314を初期化し、`01-keycloak`の`prod` realmを認証元として追加するためのものである。
 
 対象構成は次のとおりである。
 
 | 項目 | 値 |
 | --- | --- |
-| Wiki.js | `http://${PUBLIC_HOST}:33100` |
+| Wiki.js | `http://${PUBLIC_HOST}:33700` |
 | Keycloak | `http://${PUBLIC_HOST}:30001` |
 | Keycloak realm | `prod` |
 | Keycloak client ID | `wikijs` |
@@ -32,7 +32,7 @@ Wiki.jsのDBへ直接認証設定を投入する方法は、この手順の対�
 
 ## Repositoryの現状と事前条件
 
-Wiki.jsとPostgreSQLのimage、port、DB接続は[Wiki.js Compose定義](../../31-wikijs/docker-compose.yml)にある。Keycloakは[Keycloak Compose定義](../../01-keycloak/docker-compose.yml)により`prod` realmを作成し、[Keycloak宣言設定](../../01-keycloak/keycloak/config.yaml)を同期する。
+Wiki.jsとPostgreSQLのimage、port、DB接続は[Wiki.js Compose定義](../../37-wikijs/docker-compose.yml)にある。Keycloakは[Keycloak Compose定義](../../01-keycloak/docker-compose.yml)により`prod` realmを作成し、[Keycloak宣言設定](../../01-keycloak/keycloak/config.yaml)を同期する。
 
 2026-08-21時点のKeycloak宣言設定には`wikijs` clientがない。そのままでは連携できないため、本手順ではsetup後にKeycloak管理consoleでclientを作成する。clientを宣言管理へ移す場合は、strategy UUIDを確定した後に、少なくともclient ID、client secret、厳密なredirect URI、Web OriginをKeycloak宣言設定へ反映する。
 
@@ -66,7 +66,7 @@ sudo docker compose --env-file .env --profile keycloak --profile wikijs ps --all
 curl -fsS "http://${PUBLIC_HOST:-localhost}:30001/realms/prod/.well-known/openid-configuration" >/dev/null
 
 # Wiki.jsのHTTP endpointが応答することを確認する。
-curl -fsS "http://${PUBLIC_HOST:-localhost}:33100/" >/dev/null
+curl -fsS "http://${PUBLIC_HOST:-localhost}:33700/" >/dev/null
 ```
 
 期待結果:
@@ -85,10 +85,10 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:33100/" >/dev/null
 
 ## Wiki.jsの初期セットアップ
 
-1. Browserで`http://${PUBLIC_HOST}:33100`を開く。
+1. Browserで`http://${PUBLIC_HOST}:33700`を開く。
 2. `Administrator Email`へ初期管理者のmail addressを入力する。
 3. `Password`と`Confirm Password`へ同じ十分に強いpasswordを入力する。
-4. `Site URL`へ末尾slashなしで`http://${PUBLIC_HOST}:33100`を入力する。
+4. `Site URL`へ末尾slashなしで`http://${PUBLIC_HOST}:33700`を入力する。
 5. Telemetryを利用方針に合わせて選択する。
 6. `Install`を選択し、`/login`へ遷移するまで待つ。
 7. `Local`を選択し、入力した初期管理者credentialでloginする。
@@ -144,13 +144,13 @@ Keycloak認証に成功しただけではWiki.jsのpage権限は付与されな�
 callback URLは次の形式だが、`<strategy UUID>`は環境ごとに異なる。例のUUIDを流用してはならない。
 
 ```text
-http://${PUBLIC_HOST}:33100/login/<strategy UUID>/callback
+http://${PUBLIC_HOST}:33700/login/<strategy UUID>/callback
 ```
 
 期待結果:
 
-- `Allowed Web Origins`が`http://${PUBLIC_HOST}:33100`になる。
-- callback URLが`http://${PUBLIC_HOST}:33100/login/`で始まり、`/callback`で終わる。
+- `Allowed Web Origins`が`http://${PUBLIC_HOST}:33700`になる。
+- callback URLが`http://${PUBLIC_HOST}:33700/login/`で始まり、`/callback`で終わる。
 - UUIDを含むcallback URLをそのまま控えられる。
 
 失敗条件:
@@ -167,9 +167,9 @@ http://${PUBLIC_HOST}:33100/login/<strategy UUID>/callback
 4. `Client ID`を`wikijs`、nameを`Wiki.js`にする。
 5. `Client authentication`を有効、`Standard Flow`を有効にする。Wiki.jsはserver側でcodeをtokenへ交換するため、client secretを持つconfidential clientとして構成する。
 6. `Direct Access Grants`、`Implicit Flow`、`Service Accounts`は無効にする。
-7. `Root URL`と`Home URL`へ`http://${PUBLIC_HOST}:33100/`を設定する。
+7. `Root URL`と`Home URL`へ`http://${PUBLIC_HOST}:33700/`を設定する。
 8. `Valid redirect URIs`へWiki.jsから控えたcallback URLを完全一致で1件登録する。
-9. `Web origins`へ`http://${PUBLIC_HOST}:33100`を登録する。
+9. `Web origins`へ`http://${PUBLIC_HOST}:33700`を登録する。
 10. 保存後、`Credentials`でclient secretを取得し、安全なcredential storeへ保存する。
 
 [KeycloakのAuthorization Code Flow](https://www.keycloak.org/docs/latest/server_admin/#_oidc-auth-flows)では、認証後にclientが指定したcallback URLへ一時codeを返し、confidential clientはtoken交換時にclient secretを提示する。`Valid redirect URIs`へ広いwildcardを設定すると、意図しないredirect先を許可する範囲が広がるため、strategy UUIDの確定後はWiki.js画面に表示されたURIを完全一致で登録する。
@@ -237,7 +237,7 @@ sudo docker compose --env-file .env --profile keycloak --profile wikijs logs --s
 
 次に、既存local管理者sessionを残したまま、private browsing windowなど別sessionで確認する。
 
-1. `http://${PUBLIC_HOST}:33100/login`を開く。
+1. `http://${PUBLIC_HOST}:33700/login`を開く。
 2. `Keycloak`を選択する。
 3. `prod` realmのuserで認証する。
 4. Wiki.jsへ戻り、login済みになることを確認する。
@@ -352,6 +352,6 @@ sudo docker compose --env-file .env --profile wikijs up -d
 - [Wiki.js v2.5.314 user profile processing source](https://github.com/requarks/wiki/blob/v2.5.314/server/models/users.js)
 - [Keycloak Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin/)
 - [Keycloak OpenID Connect endpoints](https://www.keycloak.org/securing-apps/oidc-layers)
-- [Wiki.js Compose定義](../../31-wikijs/docker-compose.yml)
+- [Wiki.js Compose定義](../../37-wikijs/docker-compose.yml)
 - [Keycloak Compose定義](../../01-keycloak/docker-compose.yml)
 - [Keycloak宣言設定](../../01-keycloak/keycloak/config.yaml)

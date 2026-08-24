@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<jobRequest xmlns="http://www.xwiki.org">
+  <id>
+    <element>extension</element>
+    <element>provision</element>
+    <element>inferlab-oidc-authenticator-2.25.4</element>
+  </id>
+  <interactive>false</interactive>
+  <remote>false</remote>
+  <verbose>true</verbose>
+  <property>
+    <key>extensions</key>
+    <value>
+      <list xmlns="" xmlns:ns2="http://www.xwiki.org">
+        <org.xwiki.extension.ExtensionId>
+          <id>org.xwiki.contrib.oidc:oidc-authenticator</id>
+          <version class="org.xwiki.extension.version.internal.DefaultVersion" serialization="custom">
+            <org.xwiki.extension.version.internal.DefaultVersion>
+              <string>2.25.4</string>
+            </org.xwiki.extension.version.internal.DefaultVersion>
+          </version>
+        </org.xwiki.extension.ExtensionId>
+      </list>
+    </value>
+  </property>
+  <property>
+    <key>extensions.excluded</key>
+    <value>
+      <set xmlns="" xmlns:ns2="http://www.xwiki.org"/>
+    </value>
+  </property>
+  <property>
+    <key>interactive</key>
+    <value>
+      <boolean xmlns="" xmlns:ns2="http://www.xwiki.org">false</boolean>
+    </value>
+  </property>
+  <property>
+    <key>namespaces</key>
+    <value>
+      <list xmlns="" xmlns:ns2="http://www.xwiki.org">
+        <null/>
+      </list>
+    </value>
+  </property>
+</jobRequest>

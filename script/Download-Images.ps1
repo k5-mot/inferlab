@@ -33,7 +33,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$ImageDirectory = "/srv/oci-archive",
+    [string]$ImageDirectory = "/srv/oci",
 
     [Alias("h")]
     [switch]$Help
@@ -78,6 +78,7 @@ $Images = @(
     "docker.io/library/rabbitmq:4.2.9",
     "docker.io/library/redis:8.10.0-alpine",
     "docker.io/library/registry:3.1.1",
+    "docker.io/library/xwiki:18.4.4-postgres-tomcat",
     "docker.io/litellm/litellm:v1.97.0",
     "docker.io/nousresearch/hermes-agent:v2026.8.18",
     "docker.io/ollama/ollama:0.32.15",
@@ -87,14 +88,12 @@ $Images = @(
     "docker.io/rustfs/rustfs:1.0.0-beta.12",
     "docker.io/searxng/searxng:2026.8.20-8d3dd0cd4",
     "docker.io/traefik/whoami:v1.12.0",
-    "docker.io/ubuntu/squid@sha256:6a097f68bae708cedbabd6188d68c7e2e7a38cedd05a176e1cc0ba29e3bbe029",
     "docker.io/valkey/valkey:8.1.9-alpine3.24",
     "docker.io/valkey/valkey:9.1.1-alpine3.24",
     "ghcr.io/coder/code-marketplace:v2.4.2",
     "ghcr.io/gethomepage/homepage:v2.0.0",
     "ghcr.io/google/cadvisor:v0.60.5",
     "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3",
-    "ghcr.io/k5-mot/docling-serve-jp:v1.30.0",
     "ghcr.io/openclaw/openclaw:2026.7.1-2-browser",
     "ghcr.io/open-webui/mcpo:main@sha256:1e82c9555c19e50b80745705f32b47a2647589f35279527b5118ecd3a71bd467",
     "ghcr.io/open-webui/open-terminal:0.11.35",
@@ -107,7 +106,9 @@ $Images = @(
     "gitlab/gitlab-runner:alpine-v19.2.2",
     "nginxinc/nginx-unprivileged:1.31.4-alpine",
     "node:22.22.3-alpine",
+    "node:24.16.0-bookworm-slim",
     "pypiserver/pypiserver:v2.4.1",
+    "quay.io/docling-project/docling-serve:v1.30.0",
     "quay.io/keycloak/keycloak:26.7.2",
     "quay.io/prometheus/blackbox-exporter:v0.28.0",
     "quay.io/prometheus/node-exporter:v1.12.1",
@@ -117,14 +118,9 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "local/llm-wiki-platform:0.1.0"
-        Context = Join-Path $PSScriptRoot "..\41-openkb"
+        Image = "local/llmwiki:1.1.0"
+        Context = Join-Path $PSScriptRoot "..\41-llmwiki"
         Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "local/openkb:0.5.0rc1"
-        Context = Join-Path $PSScriptRoot "..\41-openkb"
-        Dockerfile = "Dockerfile.openkb"
     }
 )
 

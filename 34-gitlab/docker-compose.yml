@@ -1,0 +1,123 @@
+#
+# 参考資料:
+# - GitLab Docker
+#   - https://docs.gitlab.com/install/docker/installation/
+#   - https://docs.gitlab.com/install/docker/configuration/
+# - GitLab OpenID Connect
+#   - https://docs.gitlab.com/administration/auth/oidc/
+# - GitLab Runner Docker
+#   - https://docs.gitlab.com/runner/install/docker/
+#
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:19.2.4-ce.0
+    container_name: ${STACK_NAME}-gitlab
+    restart: unless-stopped
+    profiles:
+      - gitlab
+    shm_size: 256m
+    hostname: ${PUBLIC_HOST}
+    environment:
+      GITLAB_ROOT_PASSWORD: ${GITLAB_ROOT_PASSWORD:-pw-gitlab-root-password-change-me}
+      GITLAB_OMNIBUS_CONFIG: "from_file('/etc/gitlab/omnibus_config.rb')"
+      GITLAB_EXTERNAL_URL: http://${PUBLIC_HOST}:33400
+      GITLAB_SSH_HOST: ${PUBLIC_HOST}
+      GITLAB_OIDC_ISSUER: http://${PUBLIC_HOST}:30001/realms/prod
+      GITLAB_OIDC_CLIENT_ID: gitlab
+      GITLAB_OIDC_CLIENT_SECRET: ${GITLAB_OIDC_CLIENT_SECRET:-sk-gitlab-oidc-client-secret-key}
+      GITLAB_OIDC_REDIRECT_URI: http://${PUBLIC_HOST}:33400/users/auth/openid_connect/callback
+    ports:
+      - "33400:80"
+      - "33422:22"
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+      - ./gitlab/omnibus_config.rb:/etc/gitlab/omnibus_config.rb:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent http://127.0.0.1/-/health > /dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 300s
+    labels:
+      - homepage.icon=/icons/gitlab.png
+      - homepage.group=34-gitlab
+      - homepage.name=GitLab
+      - homepage.href=http://${PUBLIC_HOST}:33400
+      - homepage.description=Git hosting and CI platform
+
+  gitlab-runner-register:
+    image: gitlab/gitlab-runner:alpine-v19.2.2
+    container_name: ${STACK_NAME}-gitlab-runner-register
+    restart: "no"
+    profiles:
+      - gitlab
+    command:
+      - sh
+      - -ec
+      - |
+        # GitLab Runner authentication tokenはUIで発行するため、未設定なら登録処理だけskipする。
+        if [ -z "$${GITLAB_RUNNER_TOKEN}" ]; then
+          echo "GITLAB_RUNNER_TOKEN is empty; skip runner registration."
+          exit 0
+        fi
+        if gitlab-runner list 2>&1 | grep -q "$${GITLAB_RUNNER_DESCRIPTION}"; then
+          echo "Runner $${GITLAB_RUNNER_DESCRIPTION} is already registered."
+          exit 0
+        fi
+        gitlab-runner register \
+          --non-interactive \
+          --url "$${GITLAB_URL}" \
+          --token "$${GITLAB_RUNNER_TOKEN}" \
+          --executor docker \
+          --description "$${GITLAB_RUNNER_DESCRIPTION}" \
+          --docker-image "$${GITLAB_RUNNER_DOCKER_IMAGE}" \
+          --docker-volumes /var/run/docker.sock:/var/run/docker.sock \
+          --docker-volumes /cache
+    environment:
+      GITLAB_URL: http://gitlab
+      GITLAB_RUNNER_TOKEN: ${GITLAB_RUNNER_TOKEN:-}
+      GITLAB_RUNNER_DESCRIPTION: local-docker-runner
+      GITLAB_RUNNER_DOCKER_IMAGE: docker:28.5.1-cli
+    volumes:
+      - gitlab-runner-config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - internal-nw
+    depends_on:
+      gitlab:
+        condition: service_healthy
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine-v19.2.2
+    container_name: ${STACK_NAME}-gitlab-runner
+    restart: unless-stopped
+    profiles:
+      - gitlab
+    volumes:
+      - gitlab-runner-config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - internal-nw
+    depends_on:
+      gitlab-runner-register:
+        condition: service_completed_successfully
+    labels:
+      - homepage.icon=/icons/gitlab.png
+      - homepage.group=34-gitlab
+      - homepage.name=GitLab Runner
+      - homepage.description=CI runner
+
+volumes:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:
+  gitlab-runner-config:
+
+networks:
+  internal-nw:

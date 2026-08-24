@@ -21,21 +21,25 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   docling:
     <<: *external-dns-stabilizer
-    # image: quay.io/docling-project/docling-serve:v1.18.0
-    image: ghcr.io/k5-mot/docling-serve-jp:v1.30.0
+    image: quay.io/docling-project/docling-serve:v1.30.0
+    # image: ghcr.io/k5-mot/docling-serve-jp:v1.30.0
     container_name: ${STACK_NAME}-docling
     restart: unless-stopped
     profiles:
       - rag
     environment:
       HF_HUB_DISABLE_TELEMETRY: "1"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
       GRADIO_ANALYTICS_ENABLED: "false"
+      TESSDATA_PREFIX: /usr/share/tesseract/tessdata/
       DOCLING_SERVE_HOST: 0.0.0.0
       DOCLING_SERVE_PORT: 5001
       DOCLING_SERVE_ENABLE_UI: "true"
       DOCLING_SERVE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DOCLING_SERVE_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
-      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
+      DOCLING_ARTIFACTS_PATH: /opt/app-root/src/.cache/docling/models
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "true"
       DOCLING_SERVE_MAX_SYNC_WAIT: 36000
       DOCLING_SERVE_ENABLE_REMOTE_SERVICES: "true"
       DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG: "true"
@@ -46,6 +50,8 @@ services:
     ports:
       - 31100:5001
     volumes:
+      - /srv/docling:/opt/app-root/src/.cache/docling/models:ro
+      - /srv/docling/tesseract:/usr/share/tesseract/tessdata:ro
       - docling-data:/data
     networks:
       - internal-nw
@@ -54,7 +60,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 180s
     ulimits:
       nofile:
         soft: 65535

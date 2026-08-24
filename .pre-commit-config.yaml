@@ -18,6 +18,14 @@ repos:
         always_run: true
         stages: [manual]
 
+      - id: compose-smoke-pypiserver-readonly
+        name: "Compose smoke: PyPIserver read-only packages"
+        entry: script/verify-compose-smoke.sh pypiserver-readonly
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
+
       - id: compose-smoke-oikb-bucket-init
         name: "Compose smoke: OIKB bucket init"
         entry: script/verify-compose-smoke.sh oikb-bucket-init

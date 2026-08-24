@@ -39,8 +39,7 @@
       ],
       "matchPackageNames": [
         "ghcr.io/k5-mot/oikb",
-        "docker.io/eilandert/reprepro",
-        "docker.io/ubuntu/squid"
+        "docker.io/eilandert/reprepro"
       ],
       "enabled": false
     }

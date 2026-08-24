@@ -8,6 +8,7 @@ cd "${REPO_ROOT}"
 export PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
 : "${STACK_NAME:?STACK_NAME is required}"
 export STACK_NAME
+export DIFY_INIT_PASSWORD="${DIFY_INIT_PASSWORD:-admin}"
 export PYTHONDONTWRITEBYTECODE=1
 
 # 追跡済みshell scriptの構文を検証する。
@@ -102,6 +103,91 @@ verify_javascript_syntax() {
   done
 }
 
+# Difyの認証設定がKeycloakへ再接続されていないことを検証する。
+# 引数:
+#   なし。
+# 戻り値:
+#   Dify向けOIDC設定が無い場合は0、残存する場合は非0を返す。
+# 副作用:
+#   残存する設定file pathと内容を標準エラー出力へ表示する。
+verify_dify_local_authentication() {
+  local forbidden_patterns=(
+    'DIFY_OIDC_CLIENT_SECRET'
+    'clientId:[[:space:]]*dify'
+    '32100/console/api/oauth/authorize/keycloak'
+  )
+  local pattern
+
+  for pattern in "${forbidden_patterns[@]}"; do
+    if git grep -n -E "${pattern}" -- . ':!script/verify-init-static.sh' >&2; then
+      echo "Dify向けKeycloak/OIDC設定が残っています: ${pattern}" >&2
+      return 1
+    fi
+  done
+}
+
+# Difyのair-gap設定と固定plugin inventoryを検証する。
+# 引数:
+#   なし。
+# 戻り値:
+#   外部接続設定が無くplugin lockが期待値と一致する場合は0、違反がある場合は非0を返す。
+# 副作用:
+#   違反した設定または不足した必須設定を標準エラー出力へ表示する。
+verify_dify_airgap_configuration() {
+  local compose_file="21-dify/docker-compose.yml"
+  local lock_file="21-dify/plugins/plugins.lock.json"
+  local forbidden_patterns=(
+    'marketplace\.dify\.ai'
+    'updates\.dify\.ai'
+    'api\.openai\.com'
+    '1\.1\.1\.1'
+    '8\.8\.8\.8'
+    'MARKETPLACE_ENABLED:[[:space:]]*"?true'
+    'ENABLE_NETWORK:[[:space:]]*"?true'
+    'PIP_MIRROR_AUTO_DETECT:[[:space:]]*"?true'
+    'dify-ssrf-proxy'
+  )
+  local required_patterns=(
+    'INIT_PASSWORD: ${DIFY_INIT_PASSWORD:-admin}'
+    'CHECK_UPDATE_URL: ""'
+    'OPENAI_API_BASE: http://litellm:4000/v1'
+    'DISABLE_TELEMETRY: "true"'
+    'DO_NOT_TRACK: "true"'
+    'TELEMETRY_ENDPOINT: ""'
+    'TELEMETRY_FALLBACK_ENDPOINT: ""'
+    'MARKETPLACE_ENABLED: "false"'
+    'ENABLE_WEBSITE_JINAREADER: "false"'
+    'ENABLE_WEBSITE_FIRECRAWL: "false"'
+    'ENABLE_WEBSITE_WATERCRAWL: "false"'
+    'HOSTED_FETCH_APP_TEMPLATES_MODE: builtin'
+    'HOSTED_FETCH_PIPELINE_TEMPLATES_MODE: builtin'
+    'ENABLE_CHECK_UPGRADABLE_PLUGIN_TASK: "false"'
+    'FORCE_VERIFYING_SIGNATURE: "true"'
+    'PIP_MIRROR_AUTO_DETECT: "false"'
+    'PIP_MIRROR_URL: http://pypiserver:8080/simple/'
+    'PIP_TRUSTED_HOST: pypiserver'
+    'UV_INSECURE_HOST: pypiserver'
+    'ENABLE_NETWORK: "false"'
+  )
+  local pattern
+
+  for pattern in "${forbidden_patterns[@]}"; do
+    if grep -n -E "${pattern}" "${compose_file}" >&2; then
+      echo "Difyのair-gap禁止設定が見つかりました: ${pattern}" >&2
+      return 1
+    fi
+  done
+
+  for pattern in "${required_patterns[@]}"; do
+    if ! grep -q -F "${pattern}" "${compose_file}"; then
+      echo "Difyのair-gap必須設定がありません: ${pattern}" >&2
+      return 1
+    fi
+  done
+
+  python3 -c 'import json, pathlib, sys; data=json.loads(pathlib.Path(sys.argv[1]).read_text()); plugins=data.get("plugins", []); expected={"id":"langgenius/openai_api_compatible","version":"0.0.64","sha256":"807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86","requirementsSha256":"893906c1f3b3e26afbf186fe68fb8ca517a2e4b72458947b10e6ec03c5d4f278"}; sys.exit(0 if data.get("schemaVersion") == 1 and len(plugins) == 1 and all(plugins[0].get(key) == value for key, value in expected.items()) else 1)' "${lock_file}"
+}
+
 # root Compose構成と主要profileの解決結果を検証する。
 # 引数:
 #   なし。
@@ -121,11 +207,12 @@ verify_compose_config() {
     dify
     ragflow
     nextcloud
-    wikijs
+    xwiki
     kaneo
     zulip
-    obsidian
     gitlab
+    wikijs
+    obsidian
     o11y
     langfuse
   )
@@ -143,5 +230,7 @@ verify_compose_config() {
 verify_shell_syntax
 verify_python_syntax
 verify_javascript_syntax
+verify_dify_local_authentication
+verify_dify_airgap_configuration
 tests/e2e/test-run-playwright-smoke.sh
 verify_compose_config

@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`wikijs`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`xwiki`、`wikijs`、`kaneo`、`zulip`、`gitlab`、`llmwiki` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -18,11 +18,13 @@
 | `dify` | `21-dify/docker-compose.yml` | 自動化 |
 | `ragflow` | `22-ragflow/docker-compose.yml` | RAGとAgent platform |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
-| `wikijs` | `31-wikijs/docker-compose.yml` | Wiki |
+| `xwiki` | `31-xwiki/docker-compose.yml` | Wiki |
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
 | `zulip` | `33-zulip/docker-compose.yml` | チャット |
-| `gitlab` | `35-gitlab/docker-compose.yml` | Git 管理とCI |
+| `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
+| `wikijs` | `37-wikijs/docker-compose.yml` | Wiki |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
+| `llmwiki` | `41-llmwiki/docker-compose.yml` | LLM Wiki compilerとviewer |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
@@ -74,7 +76,6 @@
 | `dify` | `dify-sandbox` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-local-sandbox` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-agent-backend` | - | `21-dify/docker-compose.yml` |
-| `dify` | `dify-ssrf-proxy` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-postgres-init` | - | `21-dify/docker-compose.yml` |
 | `dify` | `dify-rustfs` | `32102`, `32103` | `21-dify/docker-compose.yml` |
@@ -91,8 +92,8 @@
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
-| `wikijs` | `wikijs` | `33100` | `31-wikijs/docker-compose.yml` |
-| `wikijs` | `wikijs-postgres` | - | `31-wikijs/docker-compose.yml` |
+| `xwiki` | `xwiki` | `33100` | `31-xwiki/docker-compose.yml` |
+| `xwiki` | `xwiki-postgres` | - | `31-xwiki/docker-compose.yml` |
 | `kaneo` | `kaneo` | `33200` | `32-kaneo/docker-compose.yml` |
 | `kaneo` | `kaneo-postgres` | - | `32-kaneo/docker-compose.yml` |
 | `zulip` | `zulip` | `33302`, `33300`, `33325` | `33-zulip/docker-compose.yml` |
@@ -100,10 +101,13 @@
 | `zulip` | `zulip-memcached` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-rabbitmq` | - | `33-zulip/docker-compose.yml` |
 | `zulip` | `zulip-redis` | - | `33-zulip/docker-compose.yml` |
-| `gitlab` | `gitlab` | `33500`, `33522` | `35-gitlab/docker-compose.yml` |
-| `gitlab` | `gitlab-runner-register` | - | `35-gitlab/docker-compose.yml` |
-| `gitlab` | `gitlab-runner` | - | `35-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab` | `33400`, `33422` | `34-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab-runner-register` | - | `34-gitlab/docker-compose.yml` |
+| `gitlab` | `gitlab-runner` | - | `34-gitlab/docker-compose.yml` |
+| `wikijs` | `wikijs` | `33700` | `37-wikijs/docker-compose.yml` |
+| `wikijs` | `wikijs-postgres` | - | `37-wikijs/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
+| `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
@@ -147,9 +151,11 @@
 - [Dify](21-dify/README.md)
 - [RAGFlow](22-ragflow/README.md)
 - [Nextcloud](30-nextcloud/README.md)
-- [Wiki.js](31-wikijs/README.md)
+- [XWiki](31-xwiki/README.md)
 - [Zulip](33-zulip/README.md)
-- [GitLab](35-gitlab/README.md)
+- [GitLab](34-gitlab/README.md)
+- [Wiki.js](37-wikijs/README.md)
+- [LLM Wiki](41-llmwiki/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 
