@@ -18,6 +18,7 @@ include:
   - ./37-wikijs/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
   - ./41-llmwiki/docker-compose.yml
+  - ./42-openkb/docker-compose.yml
   - ./50-o11y/docker-compose.yml
   - ./51-langfuse/docker-compose.yml
 

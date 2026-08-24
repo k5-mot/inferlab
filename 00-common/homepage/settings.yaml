@@ -74,6 +74,10 @@ layout:
       icon: /icons/llm-wiki.png
       style: row
       columns: 4
+  - 42-openkb:
+      icon: /icons/llm-wiki.png
+      style: row
+      columns: 4
   - 50-o11y:
       icon: /icons/grafana.png
       style: row

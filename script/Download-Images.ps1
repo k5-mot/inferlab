@@ -118,9 +118,24 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "local/llmwiki:1.1.0"
-        Context = Join-Path $PSScriptRoot "..\41-llmwiki"
+        Image = "local/llmwiki-runtime:1.1.0"
+        Context = Join-Path $PSScriptRoot "..\41-llmwiki\runtime"
         Dockerfile = "Dockerfile"
+    },
+    @{
+        Image = "local/llmwiki-ingester:1.1.0"
+        Context = Join-Path $PSScriptRoot "..\41-llmwiki\ingester"
+        Dockerfile = "Dockerfile"
+    },
+    @{
+        Image = "local/llm-wiki-platform:0.1.0"
+        Context = Join-Path $PSScriptRoot "..\42-openkb"
+        Dockerfile = "Dockerfile"
+    },
+    @{
+        Image = "local/openkb:0.5.0rc1"
+        Context = Join-Path $PSScriptRoot "..\42-openkb"
+        Dockerfile = "Dockerfile.openkb"
     }
 )
 
