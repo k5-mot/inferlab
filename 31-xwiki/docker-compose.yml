@@ -11,6 +11,25 @@ services:
       DB_PASSWORD: ${XWIKI_DB_PASSWORD:-xwiki_db_password}
       DB_DATABASE: xwiki
       DB_HOST: xwiki-postgres
+      # 初期provisioningとOIDC障害時の復旧に使用するroot管理credential。
+      XCONF_xwikicfg_xwiki_superadminpassword: ${XWIKI_SUPERADMIN_PASSWORD:-xwiki-superadmin-password}
+      # root namespaceへOIDC Authenticatorを導入した後に標準認証を切り替える。
+      XCONF_xwikicfg_xwiki_authentication_authclass: ${XWIKI_AUTHCLASS:-com.xpn.xwiki.user.impl.xwiki.XWikiAuthServiceImpl}
+      # Keycloak tokenのissuerと完全一致する公開URLからmetadataを取得する。
+      XCONF_xwikiproperties_oidc_provider: http://${PUBLIC_HOST}:30001/realms/prod
+      XCONF_xwikiproperties_oidc_clientid: xwiki
+      XCONF_xwikiproperties_oidc_secret: ${XWIKI_OIDC_CLIENT_SECRET:-sk-xwiki-oidc-client-secret-key}
+      XCONF_xwikiproperties_oidc_scope: openid,profile,email
+      XCONF_xwikiproperties_oidc_endpoint_token_auth_method: client_secret_basic
+      # XWikiのusernameへ利用可能な文字だけを残し、小文字へ正規化する。
+      XCONF_xwikiproperties_oidc_user_nameFormater: $${oidc.user.preferredUsername._clean._lowerCase}
+      # Keycloakのgroups claimから管理者groupだけを明示的に同期する。
+      XCONF_xwikiproperties_oidc_groups_claim: groups
+      XCONF_xwikiproperties_oidc_userinfoclaims: xwiki_user_accessibility,xwiki_user_company,xwiki_user_displayHiddenDocuments,xwiki_user_editor,xwiki_user_usertype,groups
+      XCONF_xwikiproperties_oidc_groups_mapping: XWikiAdminGroup=admins
+      # OIDC障害時もlocal userとsuperadminで復旧できる状態を維持する。
+      XCONF_xwikiproperties_oidc_tryLocal: "true"
+      XCONF_xwikiproperties_oidc_afterLogoutURL: /
     ports:
       - "33100:8080"
     volumes:

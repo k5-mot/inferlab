@@ -143,6 +143,53 @@ clients:
           userinfo.token.claim: "true"
 
   #
+  # XWiki
+  #
+  - clientId: xwiki
+    name: XWiki
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:XWIKI_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):33100/"
+
+    attributes:
+      post.logout.redirect.uris: "http://$(env:PUBLIC_HOST):33100/"
+
+    redirectUris:
+      - "http://localhost:33100/oidc/authenticator/callback"
+      - "http://127.0.0.1:33100/oidc/authenticator/callback"
+      - "http://$(env:PUBLIC_HOST):33100/oidc/authenticator/callback"
+
+    webOrigins:
+      - "http://localhost:33100"
+      - "http://127.0.0.1:33100"
+      - "http://$(env:PUBLIC_HOST):33100"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
   # Nextcloud
   #
   - clientId: nextcloud
