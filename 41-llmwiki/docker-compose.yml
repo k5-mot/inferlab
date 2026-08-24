@@ -1,0 +1,42 @@
+services:
+  llmwiki:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${STACK_NAME}-llmwiki
+    restart: unless-stopped
+    profiles:
+      - llmwiki
+    environment:
+      CONFIG_PATH: /app/config.yaml
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+    ports:
+      - "34100:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - llmwiki-project:/data/llmwiki
+    networks:
+      - internal-nw
+    mem_limit: 2g
+    pids_limit: 512
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:8080/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - homepage.group=41-llmwiki
+      - homepage.name=LLM Wiki
+      - homepage.href=http://${PUBLIC_HOST}:34100
+      - homepage.description=Compiled knowledge viewer
+
+volumes:
+  llmwiki-project:
+
+networks:
+  internal-nw:

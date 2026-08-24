@@ -1,0 +1,50 @@
+version: 1
+
+project:
+  root: /data/llmwiki
+
+scheduler:
+  timezone: Asia/Tokyo
+
+defaults:
+  ingest:
+    enabled: false
+    schedule: "0 * * * *"
+    timeout_seconds: 600
+
+# source別のingest設定はdefaults.ingestを上書きする。
+sources: []
+
+compile:
+  enabled: false
+  schedule: "*/30 * * * *"
+  on_ingest: false
+  concurrency: 5
+  review: false
+  timeout_seconds: 3600
+
+provider:
+  kind: openai
+  model: openai/gpt-oss:20b
+  base_url: http://litellm:4000/v1
+  credential_env: LITELLM_MASTER_KEY
+  embedding:
+    kind: openai
+    model: cl-nagoya/ruri-v3:310m
+    base_url: http://litellm:4000/v1
+    credential_env: LITELLM_MASTER_KEY
+    batch_size: 2
+    strict: false
+
+output:
+  language: Japanese
+
+viewer:
+  internal_port: 54321
+  public_host: 0.0.0.0
+  public_port: 8080
+  startup_timeout_seconds: 30
+
+validation:
+  # 初期MVPではfalseのみを許可する。
+  enabled: false

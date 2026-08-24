@@ -7,7 +7,7 @@ Wiki.jsと依存するPostgreSQLだけを提供するWiki stackである。
 - `wikijs`: Wiki.js 2.5.314本体。
 - `wikijs-postgres`: Wiki.jsの設定とpageを保持するPostgreSQL。
 
-初期設定用containerやAPI key発行用sidecarは配置しない。Wiki.jsの初期設定は本体のsetup wizardで行い、OpenKB連携用API keyは管理画面で発行する。
+初期設定用containerやAPI key発行用sidecarは配置しない。Wiki.jsの初期設定は本体のsetup wizardで行う。
 
 ## 起動手順
 
@@ -32,23 +32,15 @@ sudo docker compose --env-file .env --profile wikijs up -d
 
 ブラウザで`http://${PUBLIC_HOST}:33100`を開き、管理者mail address、password、site URLを設定する。site URLには外部から利用する`http://${PUBLIC_HOST}:33100`を指定する。
 
-OpenKB連携では管理画面のAPI設定を有効化し、次の2用途のAPI keyを分けて発行することを推奨する。
-
-| 用途 | 必要な操作 |
-| --- | --- |
-| source reader | Human Wiki path配下のpage listとsource読取 |
-| LLM Wiki publisher | LLM Wiki path配下のpage作成・更新・source読取 |
-
 期待結果:
 
-- `/graphql`がGraphQL requestを受け付ける。
-- Human WikiとLLM Wikiに異なるpath prefixを設定できる。
+- 管理者accountでWiki.jsへloginできる。
+- Human Wikiのpageを作成、更新、閲覧できる。
 
 失敗条件:
 
-- APIが無効でAPI keyを利用できない。
-- API keyのpage ruleが対象pathを許可していない。
-- Human WikiとLLM Wikiに同じpath prefixを設定する。
+- 管理者accountでloginできない。
+- pageの保存または再表示に失敗する。
 
 ## 確認手順
 

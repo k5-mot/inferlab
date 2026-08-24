@@ -1,0 +1,23 @@
+{
+  "name": "inferlab-llmwiki-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm build && node --test tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "croner": "10.0.1",
+    "js-yaml": "4.1.0",
+    "llm-wiki-compiler": "1.1.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "24.10.1",
+    "typescript": "5.9.2"
+  }
+}

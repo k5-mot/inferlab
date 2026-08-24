@@ -107,6 +107,7 @@ $Images = @(
     "gitlab/gitlab-runner:alpine-v19.2.2",
     "nginxinc/nginx-unprivileged:1.31.4-alpine",
     "node:22.22.3-alpine",
+    "node:24.16.0-bookworm-slim",
     "pypiserver/pypiserver:v2.4.1",
     "quay.io/keycloak/keycloak:26.7.2",
     "quay.io/prometheus/blackbox-exporter:v0.28.0",
@@ -117,14 +118,9 @@ $Images = @(
 
 $LocalImages = @(
     @{
-        Image = "local/llm-wiki-platform:0.1.0"
-        Context = Join-Path $PSScriptRoot "..\41-openkb"
+        Image = "local/llmwiki:1.1.0"
+        Context = Join-Path $PSScriptRoot "..\41-llmwiki"
         Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "local/openkb:0.5.0rc1"
-        Context = Join-Path $PSScriptRoot "..\41-openkb"
-        Dockerfile = "Dockerfile.openkb"
     }
 )
 

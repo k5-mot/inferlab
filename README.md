@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`wikijs`、`kaneo`、`zulip`、`gitlab` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`wikijs`、`kaneo`、`zulip`、`gitlab`、`llmwiki` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -23,6 +23,7 @@
 | `zulip` | `33-zulip/docker-compose.yml` | チャット |
 | `gitlab` | `35-gitlab/docker-compose.yml` | Git 管理とCI |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
+| `llmwiki` | `41-llmwiki/docker-compose.yml` | LLM Wiki compilerとviewer |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
@@ -104,6 +105,7 @@
 | `gitlab` | `gitlab-runner-register` | - | `35-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner` | - | `35-gitlab/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
+| `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
@@ -150,6 +152,7 @@
 - [Wiki.js](31-wikijs/README.md)
 - [Zulip](33-zulip/README.md)
 - [GitLab](35-gitlab/README.md)
+- [LLM Wiki](41-llmwiki/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 
