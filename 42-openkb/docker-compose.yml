@@ -80,8 +80,8 @@ services:
     labels:
       - homepage.group=42-openkb
       - homepage.name=LLM Wiki Platform
-      - homepage.href=http://${PUBLIC_HOST}:34200/docs
-      - homepage.description=Ingest, compile and publish orchestration
+      - homepage.href=http://${PUBLIC_HOST}:34200/dashboard
+      - homepage.description=Source sync status and manual triggers
 
   openkb-viewer:
     build:

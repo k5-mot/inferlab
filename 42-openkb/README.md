@@ -60,6 +60,7 @@ docker compose ps openkb llm-wiki-api openkb-viewer
 
 - `openkb`、`llm-wiki-api`、`openkb-viewer`がhealthyになる。
 - 管理APIのSwagger UIを `http://localhost:34200/docs` で表示できる。
+- 同期dashboardを `http://localhost:34200/dashboard` で表示できる。
 - Mintlify Viewerを `http://localhost:34201` で表示できる。
 - Viewerの `Graph View` でGenerated Wikiの記事とWiki linkを表示できる。
 - CouchDB ingestのscheduled jobが登録され、CouchDBは `openkb` profileで自動起動する。
@@ -112,6 +113,7 @@ docker compose stop openkb-viewer llm-wiki-api openkb
 ## References
 
 - [OpenKB REST API](https://github.com/VectifyAI/OpenKB/blob/main/examples/rest-api/README.md)
+- [Tabler](https://docs.tabler.io/)
 - [Mintlify CLI preview](https://www.mintlify.com/docs/cli/preview)
 - [Mintlify navigation](https://www.mintlify.com/docs/organize/navigation)
 - [Mintlify images and embeds](https://www.mintlify.com/docs/create/image-embeds)

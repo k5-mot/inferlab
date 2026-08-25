@@ -39,6 +39,7 @@ def test_management_api_reports_disabled_pipeline(tmp_path: Path) -> None:
 
     with TestClient(application) as client:
         health = client.get("/health")
+        dashboard = client.get("/dashboard")
         connectors = client.get("/connectors")
         sources = client.get("/sources")
         compile_response = client.post("/compile")
@@ -46,6 +47,8 @@ def test_management_api_reports_disabled_pipeline(tmp_path: Path) -> None:
         reload_response = client.post("/config/reload")
 
     assert health.json() == {"status": "ok", "jobs": {}}
+    assert dashboard.status_code == 200
+    assert "OpenKB Sync Control" in dashboard.text
     assert connectors.json() == {"enabled": []}
     assert len(sources.json()) == 6
     assert compile_response.status_code == 409
