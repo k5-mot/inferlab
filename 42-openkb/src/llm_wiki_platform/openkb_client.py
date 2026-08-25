@@ -108,18 +108,28 @@ class OpenKBClient:
             await self._http.request(
                 "POST", "/api/v1/status", json={"kb": self._config.knowledge_base}
             )
-            return
         except httpx.HTTPStatusError as error:
             if error.response.status_code != 400:
                 raise
-        api_key = self._environ[self._config.llm.api_key_env]
+            api_key = self._environ[self._config.llm.api_key_env]
+            await self._http.request(
+                "POST",
+                "/api/v1/init",
+                json={
+                    "kb": self._config.knowledge_base,
+                    "model": self._config.llm.model,
+                    "api_key": api_key,
+                    "openai_api_base": str(self._config.llm.openai_api_base),
+                },
+            )
+            return
         await self._http.request(
-            "POST",
-            "/api/v1/init",
+            "PATCH",
+            "/api/v1/kb/config",
             json={
                 "kb": self._config.knowledge_base,
-                "model": self._config.llm.model,
-                "api_key": api_key,
+                "config": {"model": self._config.llm.model},
+                "api_key": self._environ[self._config.llm.api_key_env],
                 "openai_api_base": str(self._config.llm.openai_api_base),
             },
         )

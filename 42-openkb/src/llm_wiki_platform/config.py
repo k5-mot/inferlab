@@ -23,7 +23,7 @@ from pydantic import (
     model_validator,
 )
 
-SUPPORTED_SOURCES = frozenset({"gitlab", "zulip", "nextcloud", "kaneo"})
+SUPPORTED_SOURCES = frozenset({"gitlab", "zulip", "nextcloud", "kaneo", "couchdb"})
 _DURATION_PATTERN = re.compile(r"^(?P<value>[1-9][0-9]*)(?P<unit>s|m|h|d)$")
 
 
@@ -196,7 +196,7 @@ class CredentialRefs(StrictModel):
 
 
 class SourceConfig(StrictModel):
-    """GitLab、Zulip、Nextcloud、Kaneoに共通する設定。"""
+    """外部sourceに共通する設定とConnector固有option。"""
 
     enabled: bool
     base_url: AnyHttpUrl
@@ -204,6 +204,9 @@ class SourceConfig(StrictModel):
     ingest: SourceIngestConfig
     include: dict[str, list[str]] = Field(default_factory=dict)
     exclude: dict[str, list[str]] = Field(default_factory=dict)
+    database: str | None = Field(default=None, min_length=1)
+    title_strategy: Literal["path", "hierarchy"] = "path"
+    max_documents: int = Field(default=1000, ge=1)
 
 
 class StorageConfig(StrictModel):
@@ -449,6 +452,7 @@ class AppConfig(StrictModel):
             "zulip": ("email_env", "api_key_env"),
             "nextcloud": ("username_env", "password_env"),
             "kaneo": ("token_env",),
+            "couchdb": ("username_env", "password_env"),
         }
         for source_name, source in self.sources.items():
             if not source.enabled:
@@ -462,6 +466,8 @@ class AppConfig(StrictModel):
                 raise ValueError(
                     f"{source_name} credential参照が不足しています: {', '.join(missing)}"
                 )
+            if source_name == "couchdb" and source.database is None:
+                raise ValueError("couchdb databaseが未設定です")
         if self.wikijs.ingest.enabled:
             _require_fields(self.wikijs.reader_credential, ("token_env",), "wikijs reader")
         if self.pipeline.publish.enabled and "wikijs" in self.pipeline.publish.targets:

@@ -14,6 +14,7 @@ import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from fastapi import FastAPI, HTTPException, Query, status
+from fastapi.responses import FileResponse
 
 from llm_wiki_platform.config import AppConfig, load_config, resolve_credential
 from llm_wiki_platform.connector_factory import ConnectorRegistry, build_connector_registry
@@ -26,6 +27,8 @@ from llm_wiki_platform.publisher import Publisher
 from llm_wiki_platform.source_store import SourceStore, serialize_document_state
 from llm_wiki_platform.state import StateStore, decode_run_detail
 from llm_wiki_platform.wikijs_publisher import WikiJSPublisher
+
+_DASHBOARD_PATH = Path(__file__).parent / "static" / "dashboard.html"
 
 
 @dataclass(slots=True)
@@ -215,6 +218,15 @@ def _register_routes(application: FastAPI, context: ApplicationContext) -> None:
             health statusとjob snapshot。
         """
         return {"status": "ok", "jobs": await context.coordinator.snapshot()}
+
+    @application.get("/dashboard", response_class=FileResponse)
+    async def dashboard() -> FileResponse:
+        """同期状態の表示とmanual triggerを提供するdashboardを返す。
+
+        Returns:
+            package内のdashboard HTML response。
+        """
+        return FileResponse(_DASHBOARD_PATH)
 
     @application.get("/sources")
     async def sources() -> list[dict[str, Any]]:

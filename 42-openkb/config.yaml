@@ -75,6 +75,23 @@ sources:
     include:
       projects: []
 
+  couchdb:
+    enabled: true
+    base_url: http://couchdb:5984
+    database: obsidian
+    credential:
+      username_env: COUCHDB_USERNAME
+      password_env: COUCHDB_PASSWORD
+    ingest:
+      schedule: "0 */6 * * *"
+      rate_limit:
+        requests_per_minute: 240
+    title_strategy: hierarchy
+    max_documents: 1000
+    exclude:
+      paths:
+        - "ix:"
+
 openkb:
   base_url: http://openkb:7566
   knowledge_base: internal-wiki
@@ -83,7 +100,7 @@ openkb:
   credential:
     token_env: OPENKB_TOKEN
   llm:
-    model: openai/gpt-oss:20b
+    model: openai/openai/gpt-oss:20b
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
 
@@ -120,7 +137,7 @@ wikijs:
 
 pipeline:
   compile:
-    enabled: false
+    enabled: true
     schedule: "*/30 * * * *"
     trigger:
       on_ingest_batch_completed: false
