@@ -79,6 +79,44 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:34200/docs
       - homepage.description=Ingest, compile and publish orchestration
 
+  openkb-viewer:
+    build:
+      context: ./viewer
+      dockerfile: Dockerfile
+    image: local/openkb-mintlify-viewer:0.1.0
+    container_name: ${STACK_NAME}-openkb-viewer
+    restart: unless-stopped
+    profiles:
+      - openkb
+    environment:
+      CONFIG_PATH: /app/config.yaml
+    ports:
+      - "34201:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - openkb-kbs:/openkb-kbs:ro
+    networks:
+      - internal-nw
+    depends_on:
+      openkb:
+        condition: service_healthy
+    mem_limit: 1g
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    labels:
+      - homepage.group=42-openkb
+      - homepage.name=OpenKB Viewer
+      - homepage.href=http://${PUBLIC_HOST}:34201
+      - homepage.description=Mintlify knowledge viewer and graph
+
 volumes:
   llm-wiki-source:
   openkb-kbs:

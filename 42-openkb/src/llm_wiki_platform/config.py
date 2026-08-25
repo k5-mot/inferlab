@@ -237,6 +237,34 @@ class OpenKBConfig(StrictModel):
     llm: OpenKBLLMConfig
 
 
+class MintlifyColorsConfig(StrictModel):
+    """Mintlify Viewerのlight/dark color設定。"""
+
+    primary: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    light: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    dark: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+
+
+class MintlifyViewerConfig(StrictModel):
+    """Mintlify preview processとbrandingの設定。"""
+
+    internal_port: int = Field(ge=1, le=65535)
+    public_host: str = Field(min_length=1)
+    public_port: int = Field(ge=1, le=65535)
+    name: str = Field(min_length=1)
+    theme: str = Field(min_length=1)
+    colors: MintlifyColorsConfig
+
+
+class ViewerConfig(StrictModel):
+    """Generated Wikiを表示するViewer containerの設定。"""
+
+    workspace_path: Path
+    poll_seconds: float = Field(gt=0)
+    startup_timeout_seconds: float = Field(gt=0)
+    mintlify: MintlifyViewerConfig
+
+
 class WikiJSBoundaryConfig(StrictModel):
     """Wiki.js内のWiki境界をlocaleとpath prefixで表す。"""
 
@@ -383,6 +411,7 @@ class AppConfig(StrictModel):
     defaults: DefaultsConfig
     sources: dict[str, SourceConfig]
     openkb: OpenKBConfig
+    viewer: ViewerConfig | None = None
     wikijs: WikiJSConfig
     pipeline: PipelineConfig
 

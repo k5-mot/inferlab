@@ -182,3 +182,14 @@ def test_invalid_cron_expression_fails_fast(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigLoadError, match="cron"):
         load_config(config_path, {})
+
+
+def test_repository_config_contains_valid_viewer_settings() -> None:
+    """repositoryの共通configに有効なMintlify Viewer設定があることを検証する。"""
+    config_path = Path(__file__).parents[1] / "config.yaml"
+
+    config = load_config(config_path, {})
+
+    assert config.viewer is not None
+    assert config.viewer.mintlify.public_port == 8080
+    assert config.viewer.mintlify.colors.primary == "#0f766e"

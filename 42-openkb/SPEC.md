@@ -15,7 +15,8 @@
 - Kaneoからプロジェクト・タスク情報を取り込む
 - 取り込んだ情報をOpenKBへ投入する
 - OpenKBにLLM Wikiを自由に生成・再構成させる
-- 生成されたLLM WikiをWiki.jsへ公開する
+- 生成されたLLM WikiをMintlify Viewerで閲覧する
+- 必要に応じて生成されたLLM WikiをWiki.jsへ公開する
 
 以下は初期スコープ外とする。
 
@@ -339,6 +340,22 @@ APScheduler / cron
 ```
 
 でもよい。
+
+## 6.2 Mintlify Viewer
+
+OpenKBのGenerated Wikiを人間が閲覧する標準Presentation Layerとする。
+
+責務:
+
+- OpenKB knowledge base volumeの `wiki/` directoryをread-only mountする
+- Generated WikiのMarkdownをMintlify用workspaceへ複製する
+- directory階層から `docs.json` のnavigationを生成する
+- 解決可能なOpenKB wikilinkをViewer内URLへ変換する
+- 記事をnode、解決済みWiki linkをedgeとするGraph dataを生成する
+- Generated Wikiの変更をpollし、変更時だけMintlify previewを再起動する
+- Generated Wikiが空の場合も空状態pageを表示する
+
+ViewerはOpenKB filesystemへ MUST NOT 書き込む。Graph UIはMintlifyのMDX pageからsame-origin iframeとして表示し、Cytoscape.jsをlayoutとinteractionへ使用する。
 
 ---
 
@@ -1230,6 +1247,8 @@ API token、password、secret keyは環境変数またはsecret storeへ置き�
 - rate limit
 - authority mapping
 - source store path
+- Viewer workspaceとpoll間隔
+- Mintlifyのport、theme、site名、color
 
 設定例:
 
@@ -1321,6 +1340,21 @@ openkb:
     model: openai/gpt-oss:20b
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
+
+viewer:
+  workspace_path: /data/mintlify/site
+  poll_seconds: 5
+  startup_timeout_seconds: 120
+  mintlify:
+    internal_port: 3000
+    public_host: 0.0.0.0
+    public_port: 8080
+    name: OpenKB Knowledge
+    theme: maple
+    colors:
+      primary: "#0f766e"
+      light: "#14b8a6"
+      dark: "#172033"
 
 wikijs:
   base_url: http://wikijs:3000
@@ -1647,8 +1681,8 @@ Ingestion Service
 OpenKB filesystemへ外部プロセスが直接ファイルを書き込む結合は避ける。
 
 OpenKBの現行REST APIにはGenerated Wiki page本文をreadするendpointがない。
-MVPのWiki.js PublisherはOpenKB knowledge base volumeの `wiki/` directoryだけをread-only mountし、生成済みMarkdownを取得する。
-OpenKBへの入力と変更操作はREST APIだけを使用し、PublisherからOpenKB filesystemへのwrite pathは持たせない。
+MVPのMintlify ViewerとWiki.js PublisherはOpenKB knowledge base volumeの `wiki/` directoryだけをread-only mountし、生成済みMarkdownを取得する。
+OpenKBへの入力と変更操作はREST APIだけを使用し、ViewerまたはPublisherからOpenKB filesystemへのwrite pathは持たせない。
 
 ---
 
@@ -1898,6 +1932,9 @@ services:
   openkb:
     # LLM knowledge compiler
 
+  openkb-viewer:
+    # Mintlify viewer / graph view
+
   ollama:
     # PoC LLM
 
@@ -1907,7 +1944,8 @@ services:
 
 MVPでは `llm-wiki-api` processが管理API、scheduler、job実行を所有する。
 同じscheduleを複数processが登録することを避けるため、MVPでは `llm-wiki-worker` を分離しない。
-設定変更時は `llm-wiki-api` containerを再起動する。
+`openkb-viewer` は表示変換とMintlify previewだけを所有し、ingest、compile、publish jobを実行しない。
+設定変更時は `llm-wiki-api` と `openkb-viewer` containerを再起動する。
 
 GitLab、Zulip、Nextcloud、Kaneoは既存サービスとして外部接続する。
 
@@ -2189,15 +2227,16 @@ OpenKB
 
        ↓
 
-[Publish]
+[Presentation]
 
-Wiki.js Publisher
+Mintlify Viewer
 
        ↓
 
-[Destination]
+[Optional Publish]
 
-Wiki.js LLM Wiki
+Wiki.js Publisher
+Wiki.js LLM Wiki (optional)
 ```
 
 ---
@@ -2225,9 +2264,7 @@ Generated Wiki validation
 
 独自RAG
 
-独自Wiki UI
-
-LLM Wiki専用Frontend
+Mintlifyを置き換える独自Wiki UI
 ```
 
 既存OSSで提供される機能を最大限利用する。
@@ -2333,25 +2370,21 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 └──────────────────────┬───────────────────────┘
                        │
                        ▼
-┌──────────────────────────────────────────────┐
-│              Publisher Layer                 │
-│                                              │
-│ Wiki.js Publisher                         │
-│ Page Mapping                                │
-│ Link Conversion                             │
-│ Provenance Rendering                        │
-└──────────────────────┬───────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────┐
-│                  Wiki.js                   │
-│                                              │
-│  Human Wiki               LLM Wiki           │
-│                                              │
-│  Human managed            LLM managed        │
-│  authoritative            derived            │
-│  READ by LLM              WRITE by LLM       │
-└──────────────────────────────────────────────┘
+            ┌──────────┴──────────┐
+            │                     │
+            ▼                     ▼
+┌─────────────────────┐  ┌─────────────────────┐
+│ Mintlify Viewer     │  │ Wiki.js Publisher │
+│                     │  │ optional            │
+│ Article navigation  │  │ Page Mapping        │
+│ Graph View          │  │ Link Conversion     │
+└─────────────────────┘  └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │ Wiki.js LLM Wiki  │
+                         │ optional            │
+                         └─────────────────────┘
 ```
 
 ---
@@ -2361,7 +2394,8 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 | 領域                  | 採用候補           |
 | --------------------- | ------------------ |
 | Human Wiki            | Wiki.js            |
-| LLM Wiki UI           | Wiki.js            |
+| LLM Wiki UI           | Mintlify           |
+| Knowledge Graph       | Cytoscape.js       |
 | Knowledge Compiler    | OpenKB             |
 | Ingestion API         | Python / FastAPI   |
 | Worker                | Celery / Dramatiq  |
@@ -2393,7 +2427,8 @@ PoCでは性能よりも以下を評価する。
 7. 情報の矛盾を消さずに表現できる
 8. Sourceへ逆引きできる
 9. 既存LLM Wikiを継続更新できる
-10. Wiki.jsで人間が自然に閲覧できる
+10. Mintlify Viewerで人間が自然に閲覧できる
+11. Graph Viewで記事間linkを探索できる
 
 特に以下を最重要指標とする。
 
@@ -2406,7 +2441,9 @@ LLM Wikiを見ることで現在の社内知識を把握できるか」
 
 # 57. 結論
 
-本システムではWiki.jsを、
+本システムではMintlifyをGenerated Wikiの標準Viewerとして利用する。
+
+Wiki.jsは、
 
 ```text
 Human Wiki
@@ -2414,7 +2451,7 @@ Human Wiki
 LLM Wiki
 ```
 
-の共通Presentation Layerとして利用する。
+を管理し、LLM Wikiの任意publish先として利用する。
 
 Human Wikiは人間が管理する正式情報とし、LLMからはRead Onlyとする。
 
@@ -2422,7 +2459,7 @@ GitLab、Zulip、Nextcloud、Human Wiki、KaneoをSourceとしてIngestion Layer
 
 OpenKBはこれらすべてを入力として、Human Wikiの構造に縛られない新しい知識構造を生成する。
 
-生成された知識はWiki.js Publisherを通してLLM Wikiへ反映する。
+生成された知識はMintlify Viewerへread-onlyで反映し、必要な場合だけWiki.js Publisherを通してWiki.js LLM Wikiへ公開する。
 
 したがってデータフローは一貫して、
 
@@ -2436,8 +2473,10 @@ Kaneo ────────┘
                  OpenKB
                     ↓
                 LLM Wiki
-                    ↓
-                 Wiki.js
+              ┌─────┴─────┐
+              ▼           ▼
+      Mintlify Viewer   Wiki.js Publisher
+          / Graph          optional
 ```
 
 となる。
@@ -2459,6 +2498,11 @@ LLM WikiからHuman WikiへのFeedbackは、この基盤が十分に安定した
 - [OpenKB REST API](https://github.com/VectifyAI/OpenKB/blob/main/examples/rest-api/README.md)
 - [OpenKB on PyPI](https://pypi.org/project/openkb/)
 - [OpenKB 0.5.0rc1](https://pypi.org/project/openkb/0.5.0rc1/)
+- [Mintlify CLI preview](https://www.mintlify.com/docs/cli/preview)
+- [Mintlify navigation](https://www.mintlify.com/docs/organize/navigation)
+- [Mintlify images and embeds](https://www.mintlify.com/docs/create/image-embeds)
+- [Mintlify custom scripts](https://www.mintlify.com/docs/customize/custom-scripts)
+- [Cytoscape.js](https://js.cytoscape.org/)
 - [Wiki.js GraphQL API](https://docs.requarks.io/dev/api)
 - [GitLab REST API resources](https://docs.gitlab.com/api/api_resources/)
 - [Zulip REST API](https://zulip.com/api/rest)
