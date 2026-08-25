@@ -111,6 +111,7 @@
 | `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
 | `openkb` | `openkb` | - | `42-openkb/docker-compose.yml` |
 | `openkb` | `llm-wiki-api` | `34200` | `42-openkb/docker-compose.yml` |
+| `openkb` | `openkb-viewer` | `34201` | `42-openkb/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |

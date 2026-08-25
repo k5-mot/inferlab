@@ -1,0 +1,15 @@
+allowBuilds:
+  '@scarf/scarf': false
+  esbuild: true
+  keytar: true
+  puppeteer: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@mintlify/cli@4.0.1424'
+  - '@mintlify/common@1.0.1106'
+  - '@mintlify/link-rot@3.0.1307'
+  - '@mintlify/prebuild@1.0.1259'
+  - '@mintlify/previewing@4.0.1331'
+  - '@mintlify/scraping@4.0.974'
+  - '@mintlify/validation@0.1.839'
+  - 'mint@4.2.821'

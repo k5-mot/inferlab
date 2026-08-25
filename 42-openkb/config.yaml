@@ -87,6 +87,21 @@ openkb:
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
 
+viewer:
+  workspace_path: /data/mintlify/site
+  poll_seconds: 5
+  startup_timeout_seconds: 120
+  mintlify:
+    internal_port: 3000
+    public_host: 0.0.0.0
+    public_port: 8080
+    name: OpenKB Knowledge
+    theme: maple
+    colors:
+      primary: "#0f766e"
+      light: "#14b8a6"
+      dark: "#172033"
+
 wikijs:
   base_url: http://wikijs:3000
   human_wiki:
