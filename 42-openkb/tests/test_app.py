@@ -26,6 +26,8 @@ def _disabled_config(tmp_path: Path) -> Path:
         "source_store_path": str(tmp_path / "source"),
         "state_database_path": str(tmp_path / "state.db"),
     }
+    for source in loaded["sources"].values():
+        source["enabled"] = False
     config_path = tmp_path / "config.yaml"
     config_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
     return config_path
@@ -45,7 +47,7 @@ def test_management_api_reports_disabled_pipeline(tmp_path: Path) -> None:
 
     assert health.json() == {"status": "ok", "jobs": {}}
     assert connectors.json() == {"enabled": []}
-    assert len(sources.json()) == 5
+    assert len(sources.json()) == 6
     assert compile_response.status_code == 409
     assert publish_response.status_code == 409
     assert reload_response.status_code == 404

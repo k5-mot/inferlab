@@ -8,6 +8,7 @@ services:
     profiles:
       - obsidian
       - llmwiki
+      - openkb
     ports:
       - 34000:5984
     environment:

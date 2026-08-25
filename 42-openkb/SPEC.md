@@ -13,6 +13,7 @@
 - Nextcloudから文書を取り込む
 - Wiki.js Human Wikiから情報を取り込む
 - Kaneoからプロジェクト・タスク情報を取り込む
+- CouchDBからObsidian LiveSyncのMarkdown noteを取り込む
 - 取り込んだ情報をOpenKBへ投入する
 - OpenKBにLLM Wikiを自由に生成・再構成させる
 - 生成されたLLM WikiをMintlify Viewerで閲覧する
@@ -1947,7 +1948,7 @@ MVPでは `llm-wiki-api` processが管理API、scheduler、job実行を所有す
 `openkb-viewer` は表示変換とMintlify previewだけを所有し、ingest、compile、publish jobを実行しない。
 設定変更時は `llm-wiki-api` と `openkb-viewer` containerを再起動する。
 
-GitLab、Zulip、Nextcloud、Kaneoは既存サービスとして外部接続する。
+GitLab、Zulip、Nextcloud、Kaneo、CouchDBは既存サービスとして外部接続する。
 
 ---
 
@@ -2293,7 +2294,7 @@ LLM Wikiは複数資料から導出された知識空間である。
 
 ### Adapters over forks
 
-GitLab、Zulip、Nextcloud、Wiki.js、Kaneo、OpenKB本体をforkしない。
+GitLab、Zulip、Nextcloud、Wiki.js、Kaneo、CouchDB、OpenKB本体をforkしない。
 
 可能な限りAPI Adapterで接続する。
 
@@ -2330,6 +2331,7 @@ Human Wikiへのwrite path自体を初期システムには持たせない。
 │                Source Systems                │
 │                                              │
 │ GitLab  Zulip  Nextcloud  Wiki.js  Kaneo  │
+│ CouchDB / Obsidian LiveSync                 │
 └───┬──────┬────────┬──────────┬────────┬─────┘
     │      │        │          │        │
     ▼      ▼        ▼          ▼        ▼
@@ -2455,7 +2457,7 @@ LLM Wiki
 
 Human Wikiは人間が管理する正式情報とし、LLMからはRead Onlyとする。
 
-GitLab、Zulip、Nextcloud、Human Wiki、KaneoをSourceとしてIngestion Layerが取得し、Canonical KnowledgeDocumentへ統一する。
+GitLab、Zulip、Nextcloud、Human Wiki、Kaneo、CouchDBをSourceとしてIngestion Layerが取得し、Canonical KnowledgeDocumentへ統一する。
 
 OpenKBはこれらすべてを入力として、Human Wikiの構造に縛られない新しい知識構造を生成する。
 
@@ -2503,6 +2505,9 @@ LLM WikiからHuman WikiへのFeedbackは、この基盤が十分に安定した
 - [Mintlify images and embeds](https://www.mintlify.com/docs/create/image-embeds)
 - [Mintlify custom scripts](https://www.mintlify.com/docs/customize/custom-scripts)
 - [Cytoscape.js](https://js.cytoscape.org/)
+- [Apache CouchDB Mango Queries](https://docs.couchdb.org/en/stable/api/database/find.html)
+- [Apache CouchDB `_all_docs`](https://docs.couchdb.org/en/stable/api/database/bulk-api.html#db-all-docs)
+- [Self-hosted LiveSync](https://github.com/vrtmrz/obsidian-livesync)
 - [Wiki.js GraphQL API](https://docs.requarks.io/dev/api)
 - [GitLab REST API resources](https://docs.gitlab.com/api/api_resources/)
 - [Zulip REST API](https://zulip.com/api/rest)

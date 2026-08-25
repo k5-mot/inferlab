@@ -185,11 +185,21 @@ def test_invalid_cron_expression_fails_fast(tmp_path: Path) -> None:
 
 
 def test_repository_config_contains_valid_viewer_settings() -> None:
-    """repositoryの共通configに有効なMintlify Viewer設定があることを検証する。"""
+    """repository設定に有効なViewerとCouchDB ingestがあることを検証する。"""
     config_path = Path(__file__).parents[1] / "config.yaml"
 
-    config = load_config(config_path, {})
+    config = load_config(
+        config_path,
+        {
+            "COUCHDB_USERNAME": "reader",
+            "COUCHDB_PASSWORD": "secret",
+            "OPENKB_TOKEN": "openkb-token",
+        },
+    )
 
     assert config.viewer is not None
     assert config.viewer.mintlify.public_port == 8080
     assert config.viewer.mintlify.colors.primary == "#0f766e"
+    assert config.sources["couchdb"].enabled is True
+    assert config.sources["couchdb"].database == "obsidian"
+    assert config.sources["couchdb"].title_strategy == "hierarchy"

@@ -49,6 +49,8 @@ services:
       NEXTCLOUD_USERNAME: ${NEXTCLOUD_USERNAME:-}
       NEXTCLOUD_PASSWORD: ${NEXTCLOUD_PASSWORD:-}
       KANEO_TOKEN: ${KANEO_TOKEN:-}
+      COUCHDB_USERNAME: ${OBSIDIAN_COUCHDB_USER:-obs_couchdb_user}
+      COUCHDB_PASSWORD: ${OBSIDIAN_COUCHDB_PASSWORD:-obs_couchdb_password}
       WIKIJS_READER_TOKEN: ${WIKIJS_READER_TOKEN:-}
       WIKIJS_PUBLISHER_TOKEN: ${WIKIJS_PUBLISHER_TOKEN:-}
     ports:
@@ -61,6 +63,8 @@ services:
       - internal-nw
     depends_on:
       openkb:
+        condition: service_healthy
+      couchdb:
         condition: service_healthy
     mem_limit: 512m
     healthcheck:

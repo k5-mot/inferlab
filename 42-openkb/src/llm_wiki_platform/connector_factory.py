@@ -8,6 +8,7 @@ import httpx
 
 from llm_wiki_platform.config import AppConfig, resolve_credential
 from llm_wiki_platform.connectors import (
+    CouchDBConnector,
     GitLabConnector,
     KaneoConnector,
     NextcloudConnector,
@@ -78,6 +79,8 @@ def build_connector_registry(
             auth = httpx.BasicAuth(credential["username"], credential["password"])
         elif source_name == "kaneo":
             headers["Authorization"] = f"Bearer {credential['token']}"
+        elif source_name == "couchdb":
+            auth = httpx.BasicAuth(credential["username"], credential["password"])
         client = httpx.AsyncClient(
             base_url=str(source_config.base_url),
             headers=headers,
@@ -96,6 +99,8 @@ def build_connector_registry(
             )
         elif source_name == "kaneo":
             connectors[source_name] = KaneoConnector(source_config, retrying)
+        elif source_name == "couchdb":
+            connectors[source_name] = CouchDBConnector(source_config, retrying)
 
     if config.wikijs.ingest.enabled:
         effective = config.effective_ingest("wikijs")
