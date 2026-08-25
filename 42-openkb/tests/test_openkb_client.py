@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import httpx
@@ -120,6 +121,10 @@ async def test_nextcloud_binary_uploads_original_and_metadata(tmp_path: Path) ->
         """
         if request.url.path == "/api/v1/status":
             return httpx.Response(200, json={"total_indexed": 0})
+        if request.url.path == "/api/v1/kb/config":
+            assert request.method == "PATCH"
+            assert json.loads(request.content)["config"]["model"] == ("openai/openai/gpt-oss:20b")
+            return httpx.Response(200, json={"model": "openai/openai/gpt-oss:20b"})
         if request.url.path == "/api/v1/add":
             body = request.read().decode("latin-1")
             for filename in ("document.pdf", "document.md"):

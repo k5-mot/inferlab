@@ -193,6 +193,7 @@ def test_repository_config_contains_valid_viewer_settings() -> None:
         {
             "COUCHDB_USERNAME": "reader",
             "COUCHDB_PASSWORD": "secret",
+            "LITELLM_MASTER_KEY": "litellm-key",
             "OPENKB_TOKEN": "openkb-token",
         },
     )

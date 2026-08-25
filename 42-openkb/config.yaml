@@ -100,7 +100,7 @@ openkb:
   credential:
     token_env: OPENKB_TOKEN
   llm:
-    model: openai/gpt-oss:20b
+    model: openai/openai/gpt-oss:20b
     api_key_env: LITELLM_MASTER_KEY
     openai_api_base: http://litellm:4000/v1
 
@@ -137,7 +137,7 @@ wikijs:
 
 pipeline:
   compile:
-    enabled: false
+    enabled: true
     schedule: "*/30 * * * *"
     trigger:
       on_ingest_batch_completed: false

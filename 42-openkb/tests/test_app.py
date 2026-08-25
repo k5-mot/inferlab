@@ -28,6 +28,7 @@ def _disabled_config(tmp_path: Path) -> Path:
     }
     for source in loaded["sources"].values():
         source["enabled"] = False
+    loaded["pipeline"]["compile"]["enabled"] = False
     config_path = tmp_path / "config.yaml"
     config_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
     return config_path
