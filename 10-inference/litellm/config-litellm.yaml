@@ -95,22 +95,39 @@ model_list:
       weight: 1
 
   ### TEI; HuggingFace Text Embedding Inference
-  - model_name: cl-nagoya/ruri-v3:310m
+  # - model_name: cl-nagoya/ruri-v3:310m
+  #   litellm_params:
+  #     model: openai/cl-nagoya/ruri-v3-310m
+  #     api_base: http://tei-embedding-jp:8000/v1
+  #     api_key: EMPTY
+  #     encoding_format: float
+  #     max_parallel_requests: 1
+  #     tags: ["text-embedding-inference", "embedding", "japanese"]
+  # - model_name: cl-nagoya/ruri-v3-reranker:310m
+  #   litellm_params:
+  #     model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+  #     api_base: http://tei-reranking-jp:8000
+  #     api_key: EMPTY
+  #     encoding_format: float
+  #     max_parallel_requests: 1
+  #     tags: ["text-embedding-inference", "reranking", "japanese"]
+
+  ### Embedding・reranking用vLLM
+  - model_name: Qwen/Qwen3-Embedding:0.6B
     litellm_params:
-      model: openai/cl-nagoya/ruri-v3-310m
-      api_base: http://tei-embedding:8000/v1
+      model: openai/Qwen/Qwen3-Embedding-0.6B
+      api_base: http://vllm-embedding-multi:8000/v1
       api_key: EMPTY
       encoding_format: float
       max_parallel_requests: 1
-      tags: ["text-embedding-inference", "embedding"]
-  - model_name: cl-nagoya/ruri-v3-reranker:310m
+      tags: ["vllm", "embedding", "multilingual"]
+  - model_name: Qwen/Qwen3-Reranker:0.6B
     litellm_params:
-      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
-      api_base: http://tei-reranking:8000
+      model: cohere/Qwen/Qwen3-Reranker-0.6B
+      api_base: http://vllm-reranking-multi:8000
       api_key: EMPTY
-      encoding_format: float
       max_parallel_requests: 1
-      tags: ["text-embedding-inference", "reranking"]
+      tags: ["vllm", "reranking", "multilingual"]
 
   ### TTS
   - model_name: hexgrad/kokoro:82m
