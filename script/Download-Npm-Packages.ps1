@@ -1,84 +1,39 @@
 <#
 .SYNOPSIS
-Linux x64向けのnpm package archiveを取得します。
+対象project directoryのpackage.jsonからnpm package archiveを取得します。
 
 .DESCRIPTION
-`npm install --package-lock-only`でLinux x64向けの依存解決を行い、lockfileに記録されたpackageを`npm pack`で`.tgz`として保存します。
-既定ではfrontend開発と確認に必要なnpm packageと依存packageを`/srv/12-registry/npm-packages/`へ保存します。
+対象project directoryの`package.json`を読み、Windows x64とLinux x64向けに依存解決します。
+解決されたpackageを`npm pack`で`.tgz`として保存し、Verdaccioへpublishできる資材を作成します。
 
-.PARAMETER DestinationDirectory
+.PARAMETER OutputDir
 取得したnpm package archiveを保存するdirectoryです。
 
-.PARAMETER Packages
-取得するnpm package specの配列です。
-
-.PARAMETER Os
-npmへ渡すtarget OSです。
-
-.PARAMETER Cpu
-npmへ渡すtarget CPUです。
-
-.PARAMETER Libc
-npmへ渡すtarget libcです。
-
-.PARAMETER WorkDirectory
-依存解決用の一時work directoryです。既定では`/srv/12-registry/npm-work/`を使います。
+.PARAMETER ProjectDirectory
+package.jsonがあるproject directoryです。省略時はカレントディレクトリです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Npm-Packages.ps1
+.\Download-Npm-Packages.ps1 -OutputDir C:\assets\12-registry\npm-packages
 
-既定のnpm packageをLinux x64向けに取得します。
+カレントディレクトリのpackage.jsonからregistry投入用`.tgz`を作成します。
 
 .EXAMPLE
-.\script\Download-Npm-Packages.ps1 -DestinationDirectory .\npm -Packages cowsay,figlet
+.\Download-Npm-Packages.ps1 -ProjectDirectory C:\src\private-chat\app -OutputDir C:\assets\12-registry\npm-packages
 
-指定したnpm packageを`npm/`へ取得します。
+指定したproject directoryのpackage.jsonからregistry投入用`.tgz`を作成します。
 
 .NOTES
-副作用として指定directoryとwork directoryへfileを作成または上書きします。
-実行にはPowerShell、Node.js、npmが必要です。
+対象project directoryではfileを作成しません。作業fileは一時directoryへ作成し、成果物だけをOutputDirへ保存します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = "/srv/12-registry/npm-packages",
+    [string]$OutputDir,
 
-    [string[]]$Packages = @(
-        "@pandacss/dev@^1.12.0",
-        "@serendie/design-token@^1.4.6",
-        "@serendie/ui@^3.7.0",
-        "@testing-library/jest-dom@^7.0.0",
-        "@testing-library/react@^16.3.2",
-        "@testing-library/user-event@^14.6.1",
-        "@types/react@^19.0.0",
-        "@types/react-dom@^19.0.0",
-        "@vitejs/plugin-react@^5.0.0",
-        "@vitest/coverage-v8@^4.1.10",
-        "cowsay",
-        "figlet",
-        "jsdom@^30.0.1",
-        "keycloak-js@^26.2.0",
-        "lucide-react@^0.468.0",
-        "msw@^2.15.0",
-        "react@^19.0.0",
-        "react-dom@^19.0.0",
-        "typescript@^5.7.0",
-        "vite@^7.0.0",
-        "vite-plus@^0.2.1",
-        "vitest@^4.1.10"
-    ),
+    [string]$ProjectDirectory = (Get-Location).Path,
 
-    [string]$Os = "linux",
-
-    [string]$Cpu = "x64",
-
-    [string]$Libc = "glibc",
-
-    [string]$WorkDirectory = "/srv/12-registry/npm-work",
-
-    [Alias("h")]
     [switch]$Help
 )
 
@@ -88,69 +43,208 @@ if ($Help) {
 }
 
 $ErrorActionPreference = "Stop"
+$Platforms = @(
+    [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" },
+    [pscustomobject]@{ Name = "windows"; Os = "win32"; Cpu = "x64" }
+)
 
-if ($Packages.Count -eq 0) {
-    throw "取得するnpm packageが指定されていません。"
+<#
+.SYNOPSIS
+外部commandを実行し、終了codeを検証します。
+.PARAMETER FilePath
+実行するcommand名またはpathです。
+.PARAMETER Arguments
+commandへ渡すargument配列です。
+.OUTPUTS
+commandの標準出力を返します。
+#>
+function Invoke-NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    if (-not (Get-Command $FilePath -ErrorAction SilentlyContinue)) {
+        throw "required command was not found: $FilePath"
+    }
+
+    & $FilePath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "command failed with exit code ${LASTEXITCODE}: $FilePath $($Arguments -join ' ')"
+    }
+}
+
+<#
+.SYNOPSIS
+package.jsonからdownload対象のpackage specを取得します。
+.PARAMETER Path
+package.jsonのpathです。
+.OUTPUTS
+npm installへ渡すpackage spec配列を返します。
+#>
+function Get-PackageSpecsFromPackageJson {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $Manifest = Get-Content -Raw -Path $Path | ConvertFrom-Json
+    $Specs = @()
+    foreach ($Section in @("dependencies", "devDependencies", "optionalDependencies")) {
+        $Property = $Manifest.PSObject.Properties[$Section]
+        if (-not $Property) {
+            continue
+        }
+
+        foreach ($Dependency in $Property.Value.PSObject.Properties) {
+            $Range = [string]$Dependency.Value
+            if ($Range -match "^(workspace|file|link):") {
+                continue
+            }
+            $Specs += "$($Dependency.Name)@$Range"
+        }
+    }
+
+    return @($Specs | Sort-Object -Unique)
+}
+
+<#
+.SYNOPSIS
+package-lock.jsonからpackage specを取得します。
+.PARAMETER LockFile
+package-lock.jsonのpathです。
+.OUTPUTS
+`package.json`の`os`または`cpu`条件がtargetに一致するかを返します。
+#>
+function Test-NpmPackageSelector {
+    param(
+        [object]$Values,
+        [Parameter(Mandatory = $true)][string]$Target
+    )
+
+    if (-not $Values) {
+        return $true
+    }
+
+    $Selectors = @($Values)
+    if ($Selectors -contains "!$Target") {
+        return $false
+    }
+
+    $PositiveSelectors = @()
+    foreach ($Selector in $Selectors) {
+        if (-not ([string]$Selector).StartsWith("!")) {
+            $PositiveSelectors += $Selector
+        }
+    }
+
+    return $PositiveSelectors.Count -eq 0 -or $PositiveSelectors -contains $Target
+}
+
+<#
+.SYNOPSIS
+package-lock.jsonからtarget platform向けpackage specを取得します。
+.PARAMETER LockFile
+package-lock.jsonのpathです。
+.PARAMETER Platform
+target platform情報です。
+.OUTPUTS
+`name@version`形式のpackage spec配列を返します。
+#>
+function Get-PackageSpecsFromPackageLock {
+    param(
+        [Parameter(Mandatory = $true)][string]$LockFile,
+        [Parameter(Mandatory = $true)][pscustomobject]$Platform
+    )
+
+    $Lock = Get-Content -Raw -Path $LockFile | ConvertFrom-Json -AsHashtable
+    $Specs = @()
+    foreach ($PackagePath in $Lock.packages.Keys) {
+        $Package = $Lock.packages[$PackagePath]
+        if (-not $PackagePath -or -not $Package.ContainsKey("version")) {
+            continue
+        }
+        if ($Package.ContainsKey("os") -and -not (Test-NpmPackageSelector -Values $Package["os"] -Target $Platform.Os)) {
+            continue
+        }
+        if ($Package.ContainsKey("cpu") -and -not (Test-NpmPackageSelector -Values $Package["cpu"] -Target $Platform.Cpu)) {
+            continue
+        }
+
+        $Name = $PackagePath -replace "^.*node_modules/", ""
+        $Specs += "$Name@$($Package["version"])"
+    }
+
+    return @($Specs | Sort-Object -Unique)
+}
+
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+
+$ProjectDirectory = [System.IO.Path]::GetFullPath($ProjectDirectory)
+if (-not (Test-Path -Path $ProjectDirectory -PathType Container)) {
+    throw "ProjectDirectory was not found: $ProjectDirectory"
+}
+
+$PackageJsonPath = Join-Path $ProjectDirectory "package.json"
+if (-not (Test-Path -Path $PackageJsonPath -PathType Leaf)) {
+    throw "package.json was not found in project directory: $ProjectDirectory"
 }
 
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw "npm が見つかりません。Node.jsとnpmをインストールしてください。"
 }
 
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "node が見つかりません。Node.jsをインストールしてください。"
+$Packages = Get-PackageSpecsFromPackageJson -Path $PackageJsonPath
+if ($Packages.Count -eq 0) {
+    throw "取得するnpm packageが指定されていません。"
 }
 
-$DestinationDirectory = [System.IO.Path]::GetFullPath($DestinationDirectory)
-$WorkDirectory = [System.IO.Path]::GetFullPath($WorkDirectory)
-New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
-New-Item -ItemType Directory -Path $WorkDirectory -Force | Out-Null
+$OutputDir = [System.IO.Path]::GetFullPath($OutputDir)
+New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
-Push-Location $WorkDirectory
+$WorkDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "npm-download-$([guid]::NewGuid().ToString("N"))"
+$AllPackageSpecs = @()
 try {
-    Remove-Item -Force -ErrorAction SilentlyContinue "package.json", "package-lock.json"
+    New-Item -ItemType Directory -Path $WorkDirectory -Force | Out-Null
+    foreach ($Platform in $Platforms) {
+        $PlatformWorkDirectory = Join-Path $WorkDirectory $Platform.Name
+        New-Item -ItemType Directory -Path $PlatformWorkDirectory -Force | Out-Null
 
-    npm init -y | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "npm init に失敗しました。"
-    }
-
-    $InstallArguments = @(
-        "install",
-        "--package-lock-only",
-        "--ignore-scripts",
-        "--os=$Os",
-        "--cpu=$Cpu",
-        "--libc=$Libc"
-    ) + $Packages
-
-    Write-Host "Resolve npm packages: $($Packages -join ', ')"
-    npm @InstallArguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "npm install に失敗しました。"
-    }
-
-    $PackageSpecs = @(
-        node -e "const lock=require('./package-lock.json'); for (const [key, pkg] of Object.entries(lock.packages || {})) { if (key && pkg.resolved && pkg.version) console.log(key.split('node_modules/').pop() + '@' + pkg.version); }"
-    )
-    if ($LASTEXITCODE -ne 0) {
-        throw "package-lock.jsonの解析に失敗しました。"
-    }
-
-    foreach ($PackageSpec in $PackageSpecs) {
-        npm pack $PackageSpec --pack-destination $DestinationDirectory
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm pack に失敗しました: $PackageSpec"
+        Push-Location $PlatformWorkDirectory
+        try {
+            Invoke-NativeCommand -FilePath "npm" -Arguments @("init", "-y") | Out-Null
+            $InstallArguments = @(
+                "install",
+                "--package-lock-only",
+                "--ignore-scripts",
+                "--os=$($Platform.Os)",
+                "--cpu=$($Platform.Cpu)"
+            ) + $Packages
+            Write-Host "Resolve npm packages: platform=$($Platform.Name) packages=$($Packages.Count)"
+            Invoke-NativeCommand -FilePath "npm" -Arguments $InstallArguments
+            $AllPackageSpecs += Get-PackageSpecsFromPackageLock -LockFile (Join-Path $PlatformWorkDirectory "package-lock.json") -Platform $Platform
+        } finally {
+            Pop-Location
         }
     }
+
+    Push-Location $WorkDirectory
+    try {
+        foreach ($PackageSpec in @($AllPackageSpecs | Sort-Object -Unique)) {
+            Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $PackageSpec, "--pack-destination", $OutputDir, "--silent")
+        }
+    } finally {
+        Pop-Location
+    }
 } finally {
-    Pop-Location
+    Remove-Item -Recurse -Force -Path $WorkDirectory -ErrorAction SilentlyContinue
 }
 
 $DownloadedFiles = @(
-    Get-ChildItem -Path $DestinationDirectory -Filter "*.tgz" -File -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $OutputDir -Filter "*.tgz" -File -ErrorAction SilentlyContinue
 )
 
 if ($DownloadedFiles.Count -eq 0) {
-    throw "npm package archiveが作成されませんでした: $DestinationDirectory"
+    throw "npm package archiveが作成されませんでした: $OutputDir"
 }
