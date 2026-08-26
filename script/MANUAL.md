@@ -21,6 +21,7 @@ download scriptはrepository rootから対象project directoryを指定して実
 ## 1. PyPI資材を取得する
 
 uv projectでは、`pyproject.toml`と`uv.lock`があるdirectoryで実行する。scriptは先に`requirements.txt`を生成し、そのrequirementsからPython 3.10から3.14のany、Windows、Linux向けwheelを取得する。
+scriptは`requirements.txt`の各行をmirror対象の完全リストとして扱い、各行の依存を再解決しない。既存`requirements.txt`を使う場合は、airgapで必要なtransitive dependencyまで含める。
 
 ```powershell
 # script実行時だけPowerShell scriptの実行を許可する。
@@ -43,11 +44,14 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `<ASSETS_DIR>\12-registry\pypi`に`.whl` fileが作成される。
 - packageが特定platform向けwheelを提供しない場合、そのplatformはskipされる。
 - 同じrequirementとPython versionについて`any`、またはWindowsとLinux双方のwheelが取得できる。
+- wheelでskip許容条件を満たせない場合、source archiveがfallback取得される。
+- package metadataが対象Python versionをsupportしない場合、そのPython versionはskipされる。
 
 失敗基準:
 
 - `uv export`または`pip download`が非ゼロ終了する。
 - 同じrequirementとPython versionについて`any`が無く、WindowsまたはLinuxのどちらか一方も取得できない。
+- wheelもsource archiveも取得できない。
 - `<ASSETS_DIR>\12-registry\pypi`にpackage archiveが作成されない。
 
 ## 2. npm資材を取得する

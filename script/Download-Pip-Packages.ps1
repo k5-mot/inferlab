@@ -196,6 +196,54 @@ function Test-PytorchRequirement {
 
 <#
 .SYNOPSIS
+pinned requirementからpackage名とversionを取得します。
+.PARAMETER Requirement
+解析するrequirement specです。
+.OUTPUTS
+NameとVersionを持つobjectを返します。pinned requirementでない場合はnullを返します。
+#>
+function Get-PinnedRequirementParts {
+    param(
+        [Parameter(Mandatory = $true)][string]$Requirement
+    )
+
+    if ($Requirement -notmatch "^\s*([A-Za-z0-9_.-]+)(?:\[.*\])?==([^;\s]+)") {
+        return $null
+    }
+
+    return [pscustomobject]@{ Name = $Matches[1]; Version = $Matches[2] }
+}
+
+<#
+.SYNOPSIS
+Requires-Pythonが対象Python versionに一致するか判定します。
+.PARAMETER PythonCommand
+Python command情報です。
+.PARAMETER RequiresPython
+PyPI metadataのRequires-Python specです。
+.PARAMETER PythonVersion
+判定対象Python versionです。
+.OUTPUTS
+対象Python versionをsupportする場合はtrueを返します。
+#>
+function Test-PythonVersionRequirement {
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$PythonCommand,
+        [string]$RequiresPython,
+        [Parameter(Mandatory = $true)][string]$PythonVersion
+    )
+
+    if (-not $RequiresPython) {
+        return $true
+    }
+
+    $Code = "from pip._vendor.packaging.specifiers import SpecifierSet; from pip._vendor.packaging.version import Version; import sys; sys.exit(0 if SpecifierSet(sys.argv[1]).contains(Version(sys.argv[2]), prereleases=True) else 1)"
+    & $PythonCommand.FilePath @(@($PythonCommand.Arguments) + @("-c", $Code, $RequiresPython, $PythonVersion)) *> $null
+    return $LASTEXITCODE -eq 0
+}
+
+<#
+.SYNOPSIS
 pip downloadへ渡すtarget optionを作成します。
 .PARAMETER Target
 取得対象platform情報です。
@@ -267,7 +315,7 @@ function Save-RequirementForTarget {
             "pip",
             "download",
             "--dest", $AttemptDir
-        ) + $IndexArguments + (Get-PipTargetArguments -Target $Target -PythonVersion $PythonVersion) + @($Requirement)
+        ) + $IndexArguments + @("--no-deps") + (Get-PipTargetArguments -Target $Target -PythonVersion $PythonVersion) + @($Requirement)
 
         & $PythonCommand.FilePath @(@($PythonCommand.Arguments) + $Arguments)
         if ($LASTEXITCODE -eq 0) {
@@ -283,6 +331,60 @@ function Save-RequirementForTarget {
 
     Write-Warning "skip PyPI package: requirement=$Requirement python=$PythonVersion platform=$($Target.Platform)"
     return $false
+}
+
+<#
+.SYNOPSIS
+wheelだけでは取得条件を満たせないrequirementのsource archiveを取得します。
+.PARAMETER PythonCommand
+Python command情報です。
+.PARAMETER Requirement
+取得するrequirement specです。
+.PARAMETER PythonVersion
+取得対象Python versionです。
+.PARAMETER OutputDir
+保存先directoryです。
+.OUTPUTS
+source archiveを取得できた場合は`Downloaded`、対象Python version非対応の場合は`UnsupportedPython`、取得できない場合は`Missing`を返します。
+#>
+function Save-RequirementSourceArchive {
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$PythonCommand,
+        [Parameter(Mandatory = $true)][string]$Requirement,
+        [Parameter(Mandatory = $true)][string]$PythonVersion,
+        [Parameter(Mandatory = $true)][string]$OutputDir
+    )
+
+    $Parts = Get-PinnedRequirementParts -Requirement $Requirement
+    if (-not $Parts) {
+        Write-Warning "skip PyPI source archive for non-pinned requirement: requirement=$Requirement python=$PythonVersion"
+        return "Missing"
+    }
+
+    try {
+        $Version = [uri]::EscapeDataString($Parts.Version)
+        $Metadata = Invoke-RestMethod -Uri "https://pypi.org/pypi/$($Parts.Name)/$Version/json"
+        $SourceFile = @($Metadata.urls | Where-Object { $_.packagetype -eq "sdist" } | Select-Object -First 1)
+        if ($SourceFile.Count -eq 0) {
+            Write-Warning "skip PyPI source archive: requirement=$Requirement python=$PythonVersion"
+            return "Missing"
+        }
+
+        $RequiresPython = if ($SourceFile[0].requires_python) {
+            $SourceFile[0].requires_python
+        } else {
+            $Metadata.info.requires_python
+        }
+        if (-not (Test-PythonVersionRequirement -PythonCommand $PythonCommand -RequiresPython $RequiresPython -PythonVersion $PythonVersion)) {
+            return "UnsupportedPython"
+        }
+        $Destination = Join-Path $OutputDir $SourceFile[0].filename
+        Invoke-WebRequest -Uri $SourceFile[0].url -OutFile $Destination
+        return "Downloaded"
+    } catch {
+        Write-Warning "skip PyPI source archive: requirement=$Requirement python=$PythonVersion"
+        return "Missing"
+    }
 }
 
 $ProjectDirectory = [System.IO.Path]::GetFullPath($ProjectDirectory)
@@ -307,6 +409,9 @@ foreach ($PythonVersion in $PythonVersions) {
             Write-Host "Download PyPI package: requirement=$Requirement python=$PythonVersion platform=$($Target.Platform)"
             if (Save-RequirementForTarget -PythonCommand $PythonCommand -Requirement $Requirement -PythonVersion $PythonVersion -Target $Target -OutputDir $OutputDir) {
                 $SucceededGroups[$Target.Group] = $true
+                if ($Target.Group -eq "any") {
+                    break
+                }
             }
         }
 
@@ -316,13 +421,21 @@ foreach ($PythonVersion in $PythonVersions) {
         if ($SucceededGroups.ContainsKey("windows") -and $SucceededGroups.ContainsKey("linux")) {
             continue
         }
+        $SourceArchiveResult = Save-RequirementSourceArchive -PythonCommand $PythonCommand -Requirement $Requirement -PythonVersion $PythonVersion -OutputDir $OutputDir
+        if ($SourceArchiveResult -eq "Downloaded") {
+            continue
+        }
+        if ($SourceArchiveResult -eq "UnsupportedPython") {
+            Write-Warning "skip PyPI package for unsupported Python version: requirement=$Requirement python=$PythonVersion"
+            continue
+        }
 
         throw "PyPI package archiveの取得条件を満たせません: requirement=$Requirement python=$PythonVersion"
     }
 }
 
 $DownloadedFiles = @(
-    Get-ChildItem -Path $OutputDir -File -Filter "*.whl" -Recurse -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $OutputDir -File -Include "*.whl", "*.tar.gz", "*.zip" -Recurse -ErrorAction SilentlyContinue
 )
 
 if ($DownloadedFiles.Count -eq 0) {

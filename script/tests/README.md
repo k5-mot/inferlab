@@ -4,7 +4,7 @@
 
 ## PyPI fixture
 
-`pip/requirements.txt`は、private-chat API側のPython依存を元にした軽量なpinned requirementsである。
+`pip/requirements.txt`は、private-chat API側の`requirements.airgap.txt`を元にし、検証用に`pypandoc`と`pypdf`を加えたpinned requirementsである。`python-dotenv`と`python-docx`は元のrequirementsに含まれる。
 
 ```powershell
 # repository rootから、fixtureを対象project directoryとして指定してwheelhouseを作成する。

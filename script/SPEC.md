@@ -14,6 +14,8 @@
 
 対象project directoryに`pyproject.toml`が存在しない場合、scriptは同じdirectoryの既存`requirements.txt`を使用しなければならない（MUST）。
 
+scriptは`requirements.txt`の各requirementをmirror対象の完全リストとして扱い、各行のdownload時にtransitive dependencyを再解決してはならない（MUST NOT）。uv projectでは`uv export`がtransitive dependencyを含むrequirementsを生成する。
+
 scriptは既定で次のPython versionを対象にしなければならない（MUST）。
 
 - `3.10`
@@ -30,13 +32,15 @@ scriptは既定で次のplatform groupを対象にしなければならない（
 
 Any向けには`any`を指定する。Windows向けには`win32`と`win_amd64`を指定する。Linux x86_64向けには`manylinux_2_17_x86_64`、`manylinux_2_28_x86_64`、`manylinux2014_x86_64`、`manylinux1_x86_64`を指定する。
 
-scriptはbinary wheelだけを取得しなければならない（MUST）。source distributionへfallbackしてはならない（MUST NOT）。
+scriptはbinary wheelを優先して取得しなければならない（MUST）。同じrequirementとPython versionについてwheel取得結果がskip許容条件を満たさない場合、scriptはsource archiveをfallback取得してよい（MAY）。
 
 対象packageが特定platform向けwheelを提供していない場合、scriptはそのplatformをskipしてよい（MAY）。ただし、skipを許容できるのは、同じrequirementとPython versionについて`any` packageを取得できた場合、またはWindows groupとLinux groupでそれぞれ1つ以上のpackageを取得できた場合に限る（MUST）。
 
+対象requirementがPyPI metadata上で対象Python versionをsupportしない場合、scriptはそのrequirementとPython versionの組み合わせをskipしてよい（MAY）。
+
 PyTorch CPU wheel用の追加indexは、script内部で`torch`、`torchvision`、`torchaudio`にだけ適用しなければならない（MUST）。利用者へ追加index引数を公開してはならない（MUST NOT）。
 
-成果物は`.whl`として`-OutputDir`へ保存する。
+成果物は`.whl`、fallback時の`.tar.gz`または`.zip`として`-OutputDir`へ保存する。
 
 ## npm資材
 
