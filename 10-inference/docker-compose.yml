@@ -321,6 +321,11 @@ services:
     # mem_limit: 8g
     # memswap_limit: 8g
     # cpus: 4.0
+    labels:
+      - homepage.icon=/icons/vllm.png
+      - homepage.group=10-inference
+      - homepage.name=vLLM_Embedding
+      - homepage.description=Embedding inference engine
 
   vllm-reranking-multi:
     image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
@@ -382,6 +387,11 @@ services:
     # mem_limit: 8g
     # memswap_limit: 8g
     # cpus: 4.0
+    labels:
+      - homepage.icon=/icons/vllm.png
+      - homepage.group=10-inference
+      - homepage.name=vLLM_Reranking
+      - homepage.description=Reranking inference engine
 
   kokoro:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.0
