@@ -56,6 +56,7 @@ services:
       - pypi-server
     command:
       - run
+      - --disable-fallback
     ports:
       - 31200:8080
     volumes:
