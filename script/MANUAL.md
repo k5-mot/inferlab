@@ -6,6 +6,7 @@
 
 - 資材取得端末でPowerShell、Python 3、pip、Node.js、npmを実行できる。
 - uv projectからrequirements.txtを生成する場合は、資材取得端末でuvを実行できる。
+- repository既定のPyPI資材を取得する場合は、先に`Download-Dify-Plugins.ps1`でDify plugin packageを取得できる。
 - npm、pnpm、yarn projectはいずれもpackage.jsonを持つ。
 - airgap環境では[../12-registry/MANUAL.md](../12-registry/MANUAL.md)に従ってregistry serviceを起動できる。
 
@@ -20,37 +21,44 @@ download scriptはrepository rootから対象project directoryを指定して実
 
 ## 1. PyPI資材を取得する
 
-uv projectでは、`pyproject.toml`と`uv.lock`があるdirectoryで実行する。scriptは先に`requirements.txt`を生成し、そのrequirementsからPython 3.10から3.14のany、Windows、Linux向けwheelを取得する。
+repository既定のscriptは、Dify plugin packageに内包された`requirements.txt`とprivate-chat APIの`pyproject.toml`を使用する。任意のuv projectでは、`pyproject.toml`と`uv.lock`があるdirectoryを指定する。どちらもPython 3.12から3.15と、仕様で定めた8 platformの組み合わせを試行する。
 scriptは`requirements.txt`の各行をmirror対象の完全リストとして扱い、各行の依存を再解決しない。既存`requirements.txt`を使う場合は、airgapで必要なtransitive dependencyまで含める。
 
 ```powershell
 # script実行時だけPowerShell scriptの実行を許可する。
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
+# repositoryで必要なDify plugin packageを取得する。
+.\script\Download-Dify-Plugins.ps1
+
+# Dify pluginとprivate-chat APIに必要なPyPI資材を取得する。
+.\script\Download-Pip-Packages.ps1 -OutputDir <ASSETS_DIR>\12-registry\pypi
+
 # uv projectからrequirements.txtを生成し、pypiserver投入用wheelhouseを作成する。
-.\script\Download-Pip-Packages.ps1 -ProjectDirectory <PROJECT_DIR> -OutputDir <ASSETS_DIR>\12-registry\pypi
+.\script\Download-Pip-from-Projects.ps1 -ProjectDirectory <PROJECT_DIR> -OutputDir <ASSETS_DIR>\12-registry\pypi
 ```
 
 `pyproject.toml`が無いprojectでは、同じdirectoryにある既存の`requirements.txt`を使用する。PyTorch CPU wheel用の追加indexはscript内部で`torch`、`torchvision`、`torchaudio`だけに適用される。
 
 ```powershell
 # 既存requirements.txtだけを正本にしてwheelhouseを作成する。
-.\script\Download-Pip-Packages.ps1 -ProjectDirectory <PROJECT_DIR> -OutputDir <ASSETS_DIR>\12-registry\pypi
+.\script\Download-Pip-from-Projects.ps1 -ProjectDirectory <PROJECT_DIR> -OutputDir <ASSETS_DIR>\12-registry\pypi
 ```
 
 期待結果:
 
 - `<PROJECT_DIR>\requirements.txt`が存在する。
 - `<ASSETS_DIR>\12-registry\pypi`に`.whl` fileが作成される。
+- Python 3.12、3.13、3.14、3.15について8 platformのdownloadが試行される。
 - packageが特定platform向けwheelを提供しない場合、そのplatformはskipされる。
-- 同じrequirementとPython versionについて`any`、またはWindowsとLinux双方のwheelが取得できる。
+- 同じrequirementとPython versionについて`any`、またはenvironment markerが適用されるWindowsとLinuxの各groupでwheelが取得できる。
 - wheelでskip許容条件を満たせない場合、source archiveがfallback取得される。
 - package metadataが対象Python versionをsupportしない場合、そのPython versionはskipされる。
 
 失敗基準:
 
 - `uv export`または`pip download`が非ゼロ終了する。
-- 同じrequirementとPython versionについて`any`が無く、WindowsまたはLinuxのどちらか一方も取得できない。
+- 同じrequirementとPython versionについて`any`が無く、environment markerが適用されるWindowsまたはLinuxのgroupを取得できない。
 - wheelもsource archiveも取得できない。
 - `<ASSETS_DIR>\12-registry\pypi`にpackage archiveが作成されない。
 
@@ -144,3 +152,4 @@ pnpmまたはyarnを使うprojectでは、registry URLを各package managerの�
 
 - [../12-registry/MANUAL.md](../12-registry/MANUAL.md)
 - [SPEC.md](SPEC.md)
+- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)

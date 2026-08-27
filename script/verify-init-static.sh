@@ -185,7 +185,7 @@ verify_dify_airgap_configuration() {
     fi
   done
 
-  python3 -c 'import json, pathlib, sys; data=json.loads(pathlib.Path(sys.argv[1]).read_text()); plugins=data.get("plugins", []); expected={"id":"langgenius/openai_api_compatible","version":"0.0.64","sha256":"807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86","requirementsSha256":"893906c1f3b3e26afbf186fe68fb8ca517a2e4b72458947b10e6ec03c5d4f278"}; sys.exit(0 if data.get("schemaVersion") == 1 and len(plugins) == 1 and all(plugins[0].get(key) == value for key, value in expected.items()) else 1)' "${lock_file}"
+  python3 -c 'import json, pathlib, sys; data=json.loads(pathlib.Path(sys.argv[1]).read_text()); plugins=data.get("plugins", []); expected={"id":"langgenius/openai_api_compatible","version":"0.0.64","sha256":"53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2","requirementsSha256":"893906c1f3b3e26afbf186fe68fb8ca517a2e4b72458947b10e6ec03c5d4f278"}; sys.exit(0 if data.get("schemaVersion") == 1 and len(plugins) == 1 and all(plugins[0].get(key) == value for key, value in expected.items()) else 1)' "${lock_file}"
 }
 
 # root Compose構成と主要profileの解決結果を検証する。

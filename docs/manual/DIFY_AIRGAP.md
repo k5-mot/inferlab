@@ -29,6 +29,9 @@ PowerShell、Python 3、pipを導入した端末でrepository rootから実行�
 # 署名付きDify pluginとLinux x86_64 / CPython 3.12向け依存wheelを取得する。
 .\script\Download-Dify-Plugins.ps1 -PluginDirectory /srv/21-dify/plugins -PackageDirectory /srv/12-registry/pypi
 
+# Dify pluginとprivate-chat APIの依存をPython 3.12から3.15の対象platform向けに取得する。
+.\script\Download-Pip-Packages.ps1 -PluginDirectory /srv/21-dify/plugins -OutputDir /srv/12-registry/pypi
+
 # Dify plugin packageのchecksumを再確認する。
 Get-ChildItem /srv/21-dify/plugins/*.difypkg | Get-FileHash -Algorithm SHA256
 
@@ -38,9 +41,10 @@ Get-ChildItem /srv/12-registry/pypi/*.whl | Measure-Object
 
 期待結果:
 
-- `langgenius-openai_api_compatible-0.0.64.difypkg`のSHA-256が`807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86`になる。
+- `langgenius-openai_api_compatible-0.0.64.difypkg`のSHA-256が`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`になる。
 - `/srv/21-dify/plugins/SHA256SUMS`が作成される。
 - `/srv/12-registry/pypi/DIFY_PLUGIN_SHA256SUMS`と依存wheelが作成される。
+- Python 3.12、3.13、3.14、3.15について8 platformのdownloadが試行される。
 - `pip download`がsource distributionへfallbackせず完了する。
 
 失敗条件:
@@ -206,3 +210,4 @@ rollbackする場合はDify consoleから対象pluginをuninstallする。`/srv/
 - [Dify plugin local file release and installation](https://docs.dify.ai/en/develop-plugin/publishing/marketplace-listing/release-by-file)
 - [Dify Plugin Daemon environment configuration](https://github.com/langgenius/dify-plugin-daemon/blob/main/.env.example)
 - [Dify Marketplace OpenAI-API-compatible plugin](https://marketplace.dify.ai/plugin/langgenius/openai_api_compatible)
+- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)

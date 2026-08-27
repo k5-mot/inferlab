@@ -9,7 +9,7 @@
 - repository rootでこの手順を実行する。
 - scriptは引数なしで実行できる。
 - container imageの取得対象platformはscript既定値の`linux/amd64`。
-- PyPI packageとnpm packageの取得対象platformはscript既定値のLinux x86_64。
+- PyPI packageはPython 3.12から3.15とany、Windows、Linuxの8 platform、npm packageはLinux x86_64を対象にする。
 - 再実行すると既存archiveを上書きする。
 - Docling資材取得scriptを除く各scriptの既定保存先は、`/srv`配下の資材種別directoryである。
 - 取得済みcontainer image archiveは`/srv/oci-archive/`へ保存される。
@@ -50,7 +50,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 # Docling modelとTesseract traineddataを取得する。
 .\script\Download-Docling-Assets.ps1 -OutputDirectory out
 
-# Linux x86_64向けのPyPI package archiveを取得する。
+# Dify pluginとprivate-chat APIに必要なPyPI package archiveを取得する。
 .\script\Download-Pip-Packages.ps1
 
 # Linux x86_64向けのnpm package archiveを取得する。
@@ -90,6 +90,7 @@ Linux/macOS shellでDocling資材を取得する場合:
 - `out/srv/docling/`直下に指定したDocling modelとHugging Face repositoryがDocling公式CLIで取得される。
 - `out/srv/docling/tesseract/`にchecksum検証済みの英語・日本語traineddataが作成される。
 - `/srv/12-registry/pypi/*`にpackage archiveが作成される。
+- Dify pluginとprivate-chat APIの依存について、Python 3.12から3.15と8 platformのdownloadが試行される。
 - `/srv/12-registry/npm-packages/*.tgz`が作成される。
 - `/srv/12-registry/rpm/*.rpm`が作成される。
 - `/srv/12-registry/deb/*.deb`が作成される。
@@ -150,7 +151,7 @@ Get-ChildItem /srv/12-registry/vsix/*.vsix | Measure-Object
 
 - `/srv/oci-archive/`に複数の`.tar` fileがある。
 - OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
-- Dify plugin packageのhashが`807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86`と一致する。
+- Dify plugin packageのhashが`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`と一致する。
 - Hugging Face repository directoryが存在する。
 - Docling model directoryが存在する。
 - Tesseract traineddataが存在し、取得script内のSHA-256検証が成功している。
@@ -352,3 +353,4 @@ sudo docker compose --env-file .env --profile common --profile keycloak --profil
 - [Docling model catalog](https://github.com/docling-project/docling/blob/main/docs/usage/model_catalog.md)
 - [Docling Serve](https://github.com/docling-project/docling-serve)
 - [Tesseract tessdata_best](https://github.com/tesseract-ocr/tessdata_best)
+- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)

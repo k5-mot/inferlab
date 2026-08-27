@@ -8,7 +8,7 @@
 
 ```powershell
 # repository rootから、fixtureを対象project directoryとして指定してwheelhouseを作成する。
-.\script\Download-Pip-Packages.ps1 -ProjectDirectory .\script\tests\pip -OutputDir .\tmp\pypi-wheelhouse
+.\script\Download-Pip-from-Projects.ps1 -ProjectDirectory .\script\tests\pip -OutputDir .\tmp\pypi-wheelhouse
 ```
 
 期待結果:

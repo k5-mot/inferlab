@@ -2,13 +2,19 @@
 
 ## 目的
 
-`script/Download-Pip-Packages.ps1`と`script/Download-Npm-Packages.ps1`は、対象projectの依存定義を正本として、airgap環境のregistryへ投入できるpackage資材を事前取得する。
+`script/Download-Pip-Packages.ps1`、`script/Download-Pip-from-Projects.ps1`、`script/Download-Npm-Packages.ps1`は、依存定義を正本として、airgap環境のregistryへ投入できるpackage資材を事前取得する。
 
 ## PyPI資材
 
-`Download-Pip-Packages.ps1`は`requirements.txt`を正本にしなければならない（MUST）。
+`Download-Pip-Packages.ps1`は、このrepositoryで必要なPyPI資材を取得しなければならない（MUST）。対象は、`21-dify/plugins/plugins.lock.json`で固定したDify plugin packageに内包された`requirements.txt`と、private-chat APIの`pyproject.toml`で定義されたpackage群である。
 
-`Download-Pip-Packages.ps1`が公開する引数は`-OutputDir`、`-ProjectDirectory`、`-Help`だけでなければならない（MUST）。`-ProjectDirectory`を省略した場合、scriptはカレントディレクトリを対象project directoryとして扱わなければならない（MUST）。
+`Download-Pip-Packages.ps1`はDify plugin packageと内包`requirements.txt`のSHA-256をplugin lockと照合しなければならない（MUST）。private-chat APIの`pyproject.toml`は、既定で公開repositoryの`main` branchから取得しなければならない（MUST）。
+
+`Download-Pip-Packages.ps1`が公開する引数は`-OutputDir`、`-PluginDirectory`、`-PluginLockFile`、`-PrivateChatPyprojectUrl`、`-Help`だけでなければならない（MUST）。
+
+`Download-Pip-from-Projects.ps1`は`requirements.txt`を正本にしなければならない（MUST）。
+
+`Download-Pip-from-Projects.ps1`が公開する引数は`-OutputDir`、`-ProjectDirectory`、`-Help`だけでなければならない（MUST）。`-ProjectDirectory`を省略した場合、scriptはカレントディレクトリを対象project directoryとして扱わなければならない（MUST）。
 
 対象project directoryに`pyproject.toml`が存在する場合、scriptはdownload前に`uv export`で`requirements.txt`を生成しなければならない（MUST）。生成するrequirementsはproject package自身を含めず、hashとindex URLを含めない。`uv.lock`が存在する場合はlocked解決を使用しなければならない（MUST）。
 
@@ -18,23 +24,18 @@ scriptは`requirements.txt`の各requirementをmirror対象の完全リストと
 
 scriptは既定で次のPython versionを対象にしなければならない（MUST）。
 
-- `3.10`
-- `3.11`
 - `3.12`
 - `3.13`
 - `3.14`
+- `3.15`
 
-scriptは既定で次のplatform groupを対象にしなければならない（MUST）。
+scriptは各Python versionについて、`any`、`win32`、`win_amd64`、`manylinux_2_34_x86_64`、`manylinux_2_28_x86_64`、`manylinux_2_24_x86_64`、`manylinux_2_17_x86_64`、`manylinux2014_x86_64`をすべて試行しなければならない（MUST）。
 
-- Any
-- Linux x86_64
-- Windows x86/x64
-
-Any向けには`any`を指定する。Windows向けには`win32`と`win_amd64`を指定する。Linux x86_64向けには`manylinux_2_17_x86_64`、`manylinux_2_28_x86_64`、`manylinux2014_x86_64`、`manylinux1_x86_64`を指定する。
+requirementにenvironment markerがある場合、scriptは資材取得端末ではなく対象Python versionとplatformを基準にmarkerを評価しなければならない（MUST）。対象外の組み合わせはdownload対象から除外する。
 
 scriptはbinary wheelを優先して取得しなければならない（MUST）。同じrequirementとPython versionについてwheel取得結果がskip許容条件を満たさない場合、scriptはsource archiveをfallback取得してよい（MAY）。
 
-対象packageが特定platform向けwheelを提供していない場合、scriptはそのplatformをskipしてよい（MAY）。ただし、skipを許容できるのは、同じrequirementとPython versionについて`any` packageを取得できた場合、またはWindows groupとLinux groupでそれぞれ1つ以上のpackageを取得できた場合に限る（MUST）。
+対象packageが特定platform向けwheelを提供していない場合、scriptはそのplatformをskipしてよい（MAY）。ただし、skipを許容できるのは、同じrequirementとPython versionについて`any` packageを取得できた場合、またはenvironment markerが適用されるWindows groupとLinux groupでそれぞれ1つ以上のpackageを取得できた場合に限る（MUST）。
 
 対象requirementがPyPI metadata上で対象Python versionをsupportしない場合、scriptはそのrequirementとPython versionの組み合わせをskipしてよい（MAY）。
 
@@ -74,7 +75,7 @@ npm資材はairgap環境の`/srv/12-registry/npm-packages`へ配置する。npm 
 scriptは次の場合に非ゼロ終了しなければならない（MUST）。
 
 - 必要なcommandが見つからない。
-- requirements.txtまたはpackage.jsonが見つからない。
+- Dify plugin package、requirements.txt、pyproject.toml、またはpackage.jsonが見つからない。
 - uv projectでrequirements.txtを生成できない。
 - target versionまたはtarget platform向けpackageの取得結果がskip許容条件を満たさない。
 - 成果物directoryにpackage archiveが作成されない。
@@ -82,3 +83,4 @@ scriptは次の場合に非ゼロ終了しなければならない（MUST）。
 ## References
 
 - [../12-registry/MANUAL.md](../12-registry/MANUAL.md)
+- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)

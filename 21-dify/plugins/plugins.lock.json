@@ -17,10 +17,10 @@
     {
       "id": "langgenius/openai_api_compatible",
       "version": "0.0.64",
-      "uniqueIdentifier": "langgenius/openai_api_compatible:0.0.64@e5a30fbe1e81f6ba97c27a77102f797a14953f50fddffecd09af11c9eda1ae7e",
+      "uniqueIdentifier": "langgenius/openai_api_compatible:0.0.64@ed082da9060cdaf69127de0f39e7ba5d255d74276feed9c88b2ba5226515728c",
       "fileName": "langgenius-openai_api_compatible-0.0.64.difypkg",
-      "url": "https://marketplace.dify.ai/api/v1/plugins/download?unique_identifier=langgenius/openai_api_compatible:0.0.64@e5a30fbe1e81f6ba97c27a77102f797a14953f50fddffecd09af11c9eda1ae7e",
-      "sha256": "807252fac41666f135fa146001db41adde00eddd8e636154753f548c2daadb86",
+      "url": "https://marketplace.dify.ai/api/v1/plugins/download?unique_identifier=langgenius/openai_api_compatible:0.0.64@ed082da9060cdaf69127de0f39e7ba5d255d74276feed9c88b2ba5226515728c",
+      "sha256": "53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2",
       "requirementsSha256": "893906c1f3b3e26afbf186fe68fb8ca517a2e4b72458947b10e6ec03c5d4f278"
     }
   ]
