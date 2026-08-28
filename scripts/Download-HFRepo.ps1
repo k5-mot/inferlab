@@ -6,24 +6,16 @@ Hugging Face model repositoryを取得します。
 `huggingface-cli download`を使い、指定したHugging Face model repositoryを`owner--repo`形式のdirectoryへ保存します。
 既定ではvLLMとTEIで利用するmodel repositoryを`/srv/huggingface/`配下へ取得します。
 
-.PARAMETER DestinationDirectory
-取得したHugging Face repositoryを保存するbase directoryです。
-
-.PARAMETER Repositories
-取得するHugging Face repository IDの配列です。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-HuggingFace-Repos.ps1
+.\scripts\Download-HFRepo.ps1 -OutputDir C:\airgap
 
-既定のHugging Face repositoryを`/srv/huggingface/`へ取得します。
-
-.EXAMPLE
-.\script\Download-HuggingFace-Repos.ps1 -Repositories Qwen/Qwen3-Embedding-0.6B
-
-指定したHugging Face repositoryを取得します。
+Hugging Face repositoryを`C:\airgap\hfrepo`へ取得します。
 
 .NOTES
 副作用として指定directory配下へfileを作成または上書きします。
@@ -31,17 +23,7 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = "/srv/huggingface",
-
-    [string[]]$Repositories = @(
-        "Qwen/Qwen3.6-27B-FP8",
-        "Qwen/Qwen3-Embedding-0.6B",
-        "Qwen/Qwen3-Reranker-0.6B",
-        "cl-nagoya/ruri-v3-310m",
-        "cl-nagoya/ruri-v3-reranker-310m"
-    ),
-
-    [Alias("h")]
+    [string]$OutputDir,
     [switch]$Help
 )
 
@@ -49,10 +31,22 @@ if ($Help) {
     Get-Help -Name $PSCommandPath -Detailed
     exit 0
 }
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
 
 $ErrorActionPreference = "Stop"
-
-if ($Repositories.Count -eq 0) {
+$Registries = @(
+    "https://huggingface.co"
+)
+$Packages = @(
+        "Qwen/Qwen3.8-27B-FP8",
+        "Qwen/Qwen3-Embedding-0.6B",
+        "Qwen/Qwen3-Reranker-0.6B",
+        "cl-nagoya/ruri-v3-310m",
+        "cl-nagoya/ruri-v3-reranker-310m"
+)
+if ($Packages.Count -eq 0) {
     throw "取得するHugging Face repositoryが指定されていません。"
 }
 
@@ -130,10 +124,11 @@ function Save-HuggingFaceRepository {
     }
 }
 
-$DestinationDirectory = [System.IO.Path]::GetFullPath($DestinationDirectory)
+$DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "hfrepo"
 New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
+$env:HF_ENDPOINT = $Registries[0]
 
-foreach ($Repository in $Repositories) {
+foreach ($Repository in $Packages) {
     $DirectoryName = ConvertTo-HuggingFaceDirectoryName -Repository $Repository
     $OutputDirectory = Join-Path $DestinationDirectory $DirectoryName
     Save-HuggingFaceRepository -Repository $Repository -OutputDirectory $OutputDirectory

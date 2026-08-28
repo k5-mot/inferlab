@@ -13,7 +13,7 @@ model_list:
   ## vLLM
   - model_name: thinking-model
     litellm_params:
-      model: openai/Qwen3.6-27B-FP8:27B
+      model: openai/Qwen3.8-27B-FP8:27B
       api_base: http://vllm-foundation:8000/v1
       api_key: EMPTY
       extra_body:
@@ -26,7 +26,7 @@ model_list:
       supports_parallel_function_calling: false
   - model_name: instruct-model
     litellm_params:
-      model: openai/Qwen3.6-27B-FP8:27B
+      model: openai/Qwen3.8-27B-FP8:27B
       api_base: http://vllm-foundation:8000/v1
       api_key: EMPTY
       extra_body:

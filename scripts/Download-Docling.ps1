@@ -4,23 +4,18 @@ DoclingのmodelとTesseract traineddataを取得します。
 
 .DESCRIPTION
 uvx経由のDocling公式CLIで指定modelとHugging Face repositoryを取得し、checksumで検証したTesseract traineddataを取得します。
-既定では`out/srv/docling/`配下へ、airgap serverへそのまま配置できる構造で保存します。
+指定した出力先の`docling/`配下へ保存します。
 
-.PARAMETER OutputDirectory
-`srv/docling/`を作成する出力先directoryです。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Docling-Assets.ps1 -OutputDirectory out
+.\scripts\Download-Docling.ps1 -OutputDir C:\airgap
 
-Docling資材を`out/srv/docling/`へ取得します。
-
-.EXAMPLE
-.\script\Download-Docling-Assets.ps1 -OutputDirectory D:\airgap
-
-Docling資材を`D:\airgap\srv\docling\`へ取得します。
+Docling資材を`C:\airgap\docling`へ取得します。
 
 .NOTES
 副作用として指定directory配下へfileを作成または上書きします。
@@ -28,9 +23,7 @@ Docling資材を`D:\airgap\srv\docling\`へ取得します。
 #>
 [CmdletBinding()]
 param (
-    [string]$OutputDirectory = "out",
-
-    [Alias("h")]
+    [string]$OutputDir,
     [switch]$Help
 )
 
@@ -38,35 +31,44 @@ if ($Help) {
     Get-Help -Name $PSCommandPath -Detailed
     exit 0
 }
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
 
 $ErrorActionPreference = "Stop"
-$DoclingPackageSpec = "docling==2.118.0"
-# 必要なCLI model IDを固定し、`--all`による対象外modelの混入を防ぎます。
-$DoclingModels = @(
-    "layout",
-    "tableformer",
-    "tableformerv2",
-    "picture_classifier",
-    "granitedocling",
-    "smolvlm",
-    "code_formula"
-)
-$DoclingHuggingFaceRepositories = @(
-    "docling-project/docling-layout-heron",
-    "docling-project/docling-layout-heron-101",
-    "docling-project/DocumentFigureClassifier-v2.5",
-    "docling-project/CodeFormulaV2"
+$Registries = @(
+    "https://pypi.org/simple",
+    "https://huggingface.co",
+    "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best"
 )
 $TessdataRevision = "e12c65a915945e4c28e237a9b52bc4a8f39a0cec"
-$TessdataBaseUrl = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/$TessdataRevision"
-$TessdataAssets = @(
-    @{ Path = "eng.traineddata"; Sha256 = "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba" },
-    @{ Path = "jpn.traineddata"; Sha256 = "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79" },
-    @{ Path = "jpn_vert.traineddata"; Sha256 = "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548" },
-    @{ Path = "osd.traineddata"; Sha256 = "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff" },
-    @{ Path = "script/Japanese.traineddata"; Sha256 = "c716f6a9d413b3c127f2f9defd9b6f4bba84eeb6c5bfd6feba7922d8025ddf2f" },
-    @{ Path = "script/Japanese_vert.traineddata"; Sha256 = "6eca729ad647326a2149e09cf0589d626f4e746863092e22f46841eae4574a49" }
+$Packages = @(
+    [pscustomobject]@{ Type = "cli"; Name = "docling==2.118.0" },
+    [pscustomobject]@{ Type = "model"; Name = "layout" },
+    [pscustomobject]@{ Type = "model"; Name = "tableformer" },
+    [pscustomobject]@{ Type = "model"; Name = "tableformerv2" },
+    [pscustomobject]@{ Type = "model"; Name = "picture_classifier" },
+    [pscustomobject]@{ Type = "model"; Name = "granitedocling" },
+    [pscustomobject]@{ Type = "model"; Name = "smolvlm" },
+    [pscustomobject]@{ Type = "model"; Name = "code_formula" },
+    [pscustomobject]@{ Type = "hfrepo"; Name = "docling-project/docling-layout-heron" },
+    [pscustomobject]@{ Type = "hfrepo"; Name = "docling-project/docling-layout-heron-101" },
+    [pscustomobject]@{ Type = "hfrepo"; Name = "docling-project/DocumentFigureClassifier-v2.5" },
+    [pscustomobject]@{ Type = "hfrepo"; Name = "docling-project/CodeFormulaV2" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "eng.traineddata"; Sha256 = "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "jpn.traineddata"; Sha256 = "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "jpn_vert.traineddata"; Sha256 = "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "osd.traineddata"; Sha256 = "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "script/Japanese.traineddata"; Sha256 = "c716f6a9d413b3c127f2f9defd9b6f4bba84eeb6c5bfd6feba7922d8025ddf2f" },
+    [pscustomobject]@{ Type = "tessdata"; Name = "script/Japanese_vert.traineddata"; Sha256 = "6eca729ad647326a2149e09cf0589d626f4e746863092e22f46841eae4574a49" }
 )
+$DoclingPackageSpec = ($Packages | Where-Object Type -eq "cli").Name
+$DoclingModels = @($Packages | Where-Object Type -eq "model" | Select-Object -ExpandProperty Name)
+$DoclingHuggingFaceRepositories = @($Packages | Where-Object Type -eq "hfrepo" | Select-Object -ExpandProperty Name)
+$TessdataAssets = @($Packages | Where-Object Type -eq "tessdata")
+$TessdataBaseUrl = "$($Registries[2])/$TessdataRevision"
+$env:UV_INDEX_URL = $Registries[0]
+$env:HF_ENDPOINT = $Registries[1]
 
 <#
 .SYNOPSIS
@@ -223,8 +225,7 @@ function Save-VerifiedTessdata {
 
 Assert-CommandAvailable -Name "uvx"
 
-$OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
-$DoclingDirectory = Join-Path $OutputDirectory "srv/docling"
+$DoclingDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "docling"
 $TessdataDirectory = Join-Path $DoclingDirectory "tesseract"
 
 New-Item -ItemType Directory -Path $DoclingDirectory -Force | Out-Null
@@ -243,7 +244,7 @@ Save-DoclingHuggingFaceRepositories `
 foreach ($Asset in $TessdataAssets) {
     Save-VerifiedTessdata `
         -BaseUrl $TessdataBaseUrl `
-        -RelativePath $Asset["Path"] `
+        -RelativePath $Asset.Name `
         -ExpectedSha256 $Asset["Sha256"] `
         -OutputDirectory $TessdataDirectory
 }

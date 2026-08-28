@@ -17,22 +17,15 @@ Doclingはhost上の次の資材をread-onlyで利用する。
 オンライン端末のrepository rootで実行する。
 
 ```powershell
-# 配布用treeをout/srv/doclingへ取得する。
-.\script\Download-Docling-Assets.ps1 -OutputDirectory out
-```
-
-LinuxまたはmacOSではShell版を実行できる。
-
-```bash
-# 配布用treeをout/srv/doclingへ取得する。
-./script/download-docling-assets.sh --output-directory out
+# 配布用treeをout/doclingへ取得する。
+.\scripts\Download-Docling.ps1 -OutputDir out
 ```
 
 期待結果:
 
 - `layout`、`tableformer`、`tableformerv2`、`picture_classifier`、`granitedocling`、`smolvlm`、`code_formula`の取得が成功する。
-- `out/srv/docling/`直下に`docling-project--docling-layout-heron`、`docling-project--docling-layout-heron-101`、`docling-project--DocumentFigureClassifier-v2.5`、`docling-project--CodeFormulaV2`が作成される。
-- `out/srv/docling/tesseract/`に`eng`、`jpn`、`jpn_vert`、`osd`、`script/Japanese`、`script/Japanese_vert`のtraineddataが作成される。
+- `out/docling/`直下に`docling-project--docling-layout-heron`、`docling-project--docling-layout-heron-101`、`docling-project--DocumentFigureClassifier-v2.5`、`docling-project--CodeFormulaV2`が作成される。
+- `out/docling/tesseract/`に`eng`、`jpn`、`jpn_vert`、`osd`、`script/Japanese`、`script/Japanese_vert`のtraineddataが作成される。
 - traineddataのSHA-256検証が成功する。
 
 失敗条件:

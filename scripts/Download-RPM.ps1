@@ -6,30 +6,16 @@ Linux x86_64向けのRPM packageを取得します。
 Rocky Linux 9互換repositoryから、指定したRPM packageと依存packageを取得します。
 既定ではBaseOS、AppStream、CRB、EPELを参照し、`/srv/12-registry/rpm/`へ保存します。
 
-.PARAMETER DestinationDirectory
-取得したRPM packageを保存するdirectoryです。
-
-.PARAMETER Packages
-取得するRPM package名の配列です。
-
-.PARAMETER RepositoryBaseUrls
-参照するRPM repository root URLの配列です。
-
-.PARAMETER Architecture
-取得対象architectureです。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Rpm-Packages.ps1
+.\scripts\Download-RPM.ps1 -OutputDir C:\airgap
 
-tmux、neovim、vim、gitを依存込みで取得します。
-
-.EXAMPLE
-.\script\Download-Rpm-Packages.ps1 -DestinationDirectory .\rpm -Packages tmux,git
-
-指定したRPM packageを`rpm/`へ取得します。
+指定directoryの`rpm`配下へpackageを依存込みで取得します。
 
 .NOTES
 副作用として指定directoryへ`.rpm` fileを作成または上書きします。
@@ -37,9 +23,20 @@ tmux、neovim、vim、gitを依存込みで取得します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = "/srv/12-registry/rpm",
+    [string]$OutputDir,
+    [switch]$Help
+)
 
-    [string[]]$Packages = @(
+if ($Help) {
+    Get-Help -Name $PSCommandPath -Detailed
+    exit 0
+}
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+
+$ErrorActionPreference = "Stop"
+$Packages = @(
         "bash",
         "zsh",
         "curl",
@@ -52,9 +49,8 @@ param (
         "readline-devel",
         "ncurses-devel",
         "clang-libs"
-    ),
-
-    [string[]]$RepositoryBaseUrls = @(
+)
+$Registries = @(
         ### Oracle Linux 9
         "https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64/",
         "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/",
@@ -70,20 +66,8 @@ param (
         # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os/",
         # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os/",
         # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
-    ),
-
-    [string]$Architecture = "x86_64",
-
-    [Alias("h")]
-    [switch]$Help
 )
-
-if ($Help) {
-    Get-Help -Name $PSCommandPath -Detailed
-    exit 0
-}
-
-$ErrorActionPreference = "Stop"
+$Architecture = "x86_64"
 
 if ($Packages.Count -eq 0) {
     throw "取得するRPM packageが指定されていません。"
@@ -92,13 +76,13 @@ if ($Packages.Count -eq 0) {
 $CommonScript = Join-Path $PSScriptRoot "..\12-registry\scripts\download-assets-common.ps1"
 . $CommonScript
 
-$DestinationDirectory = [System.IO.Path]::GetFullPath($DestinationDirectory)
+$DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "rpm"
 New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
 
 Write-Host "Download RPM packages: $($Packages -join ', ')"
 Save-RpmPackagesWithDependencies `
     -PackageNames $Packages `
-    -RepositoryBaseUrls $RepositoryBaseUrls `
+    -RepositoryBaseUrls $Registries `
     -Architecture $Architecture `
     -OutputDirectory $DestinationDirectory
 

@@ -65,7 +65,7 @@ test -x .git/hooks/pre-commit
 pre-commit run --all-files
 
 # pre-commitを介さず静的検証scriptを直接実行する。
-STACK_NAME=static-validation script/verify-init-static.sh
+STACK_NAME=static-validation tests/verify-init-static.sh
 ```
 
 期待結果:
@@ -89,19 +89,19 @@ Compose smokeは初期化対象ごとに必要なserviceだけを起動する。
 
 ```bash
 # Difyのplugin用PostgreSQL database初期化だけを検証する。
-script/verify-compose-smoke.sh dify-postgres-init
+tests/verify-compose-smoke.sh dify-postgres-init
 
 # read-onlyのpackage directoryでPyPIserverの起動を検証する。
-script/verify-compose-smoke.sh pypiserver-readonly
+tests/verify-compose-smoke.sh pypiserver-readonly
 
 # OIKB用RustFS bucket初期化だけを検証する。
-script/verify-compose-smoke.sh oikb-bucket-init
+tests/verify-compose-smoke.sh oikb-bucket-init
 
 # RAGFlow用RustFS bucket初期化だけを検証する。
-script/verify-compose-smoke.sh ragflow-bucket-init
+tests/verify-compose-smoke.sh ragflow-bucket-init
 
 # Langfuse用RustFS bucket初期化だけを検証する。
-script/verify-compose-smoke.sh langfuse-bucket-init
+tests/verify-compose-smoke.sh langfuse-bucket-init
 
 ```
 

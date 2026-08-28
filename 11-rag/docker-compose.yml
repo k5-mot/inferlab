@@ -21,7 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   docling:
     <<: *external-dns-stabilizer
-    image: quay.io/docling-project/docling-serve:v1.30.0
+    image: quay.io/docling-project/docling-serve:v1.31.0
     # image: ghcr.io/k5-mot/docling-serve-jp:v1.30.0
     container_name: ${STACK_NAME}-docling
     restart: unless-stopped

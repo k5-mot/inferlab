@@ -20,7 +20,7 @@ jobs:
       - name: Verify shell, Python, and Compose config
         env:
           STACK_NAME: ci-static-validation
-        run: script/verify-init-static.sh
+        run: tests/verify-init-static.sh
 
   compose-smoke:
     name: Compose smoke (${{ matrix.smoke_case }})
@@ -40,4 +40,4 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run minimal Compose smoke
-        run: script/verify-compose-smoke.sh "${{ matrix.smoke_case }}"
+        run: tests/verify-compose-smoke.sh "${{ matrix.smoke_case }}"

@@ -5,14 +5,14 @@ repos:
     hooks:
       - id: static-validation
         name: Static validation
-        entry: env STACK_NAME=static-validation script/verify-init-static.sh
+        entry: env STACK_NAME=static-validation tests/verify-init-static.sh
         language: system
         pass_filenames: false
         always_run: true
 
       - id: compose-smoke-dify-postgres-init
         name: "Compose smoke: Dify PostgreSQL init"
-        entry: script/verify-compose-smoke.sh dify-postgres-init
+        entry: tests/verify-compose-smoke.sh dify-postgres-init
         language: system
         pass_filenames: false
         always_run: true
@@ -20,7 +20,7 @@ repos:
 
       - id: compose-smoke-pypiserver-readonly
         name: "Compose smoke: PyPIserver read-only packages"
-        entry: script/verify-compose-smoke.sh pypiserver-readonly
+        entry: tests/verify-compose-smoke.sh pypiserver-readonly
         language: system
         pass_filenames: false
         always_run: true
@@ -28,7 +28,7 @@ repos:
 
       - id: compose-smoke-oikb-bucket-init
         name: "Compose smoke: OIKB bucket init"
-        entry: script/verify-compose-smoke.sh oikb-bucket-init
+        entry: tests/verify-compose-smoke.sh oikb-bucket-init
         language: system
         pass_filenames: false
         always_run: true
@@ -36,7 +36,7 @@ repos:
 
       - id: compose-smoke-ragflow-bucket-init
         name: "Compose smoke: RAGFlow bucket init"
-        entry: script/verify-compose-smoke.sh ragflow-bucket-init
+        entry: tests/verify-compose-smoke.sh ragflow-bucket-init
         language: system
         pass_filenames: false
         always_run: true
@@ -44,7 +44,7 @@ repos:
 
       - id: compose-smoke-langfuse-bucket-init
         name: "Compose smoke: Langfuse bucket init"
-        entry: script/verify-compose-smoke.sh langfuse-bucket-init
+        entry: tests/verify-compose-smoke.sh langfuse-bucket-init
         language: system
         pass_filenames: false
         always_run: true

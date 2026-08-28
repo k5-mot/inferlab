@@ -9,19 +9,19 @@
 .PARAMETER OutputDir
 取得したnpm package archiveを保存するdirectoryです。
 
-.PARAMETER ProjectDirectory
-package.jsonがあるproject directoryです。省略時はカレントディレクトリです。
+.PARAMETER ProjectDir
+package.jsonがあるproject directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\Download-Npm-Packages.ps1 -OutputDir C:\assets\12-registry\npm-packages
+.\scripts\Download-NpmPkgs-from-Project.ps1 -ProjectDir C:\src\project -OutputDir C:\assets
 
 カレントディレクトリのpackage.jsonからregistry投入用`.tgz`を作成します。
 
 .EXAMPLE
-.\Download-Npm-Packages.ps1 -ProjectDirectory C:\src\private-chat\app -OutputDir C:\assets\12-registry\npm-packages
+.\scripts\Download-NpmPkgs-from-Project.ps1 -ProjectDir C:\src\private-chat\app -OutputDir C:\assets
 
 指定したproject directoryのpackage.jsonからregistry投入用`.tgz`を作成します。
 
@@ -32,7 +32,7 @@ scriptのhelpを表示して終了します。
 param (
     [string]$OutputDir,
 
-    [string]$ProjectDirectory = (Get-Location).Path,
+    [string]$ProjectDir,
 
     [switch]$Help
 )
@@ -41,8 +41,18 @@ if ($Help) {
     Get-Help -Name $PSCommandPath -Detailed
     exit 0
 }
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+if (-not $ProjectDir) {
+    throw "ProjectDir is required."
+}
 
 $ErrorActionPreference = "Stop"
+$Registries = @(
+    "https://registry.npmjs.org"
+)
+$Packages = @()
 $Platforms = @(
     [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" },
     [pscustomobject]@{ Name = "windows"; Os = "win32"; Cpu = "x64" }
@@ -110,8 +120,10 @@ function Get-PackageSpecsFromPackageJson {
 <#
 .SYNOPSIS
 package-lock.jsonからpackage specを取得します。
-.PARAMETER LockFile
-package-lock.jsonのpathです。
+.PARAMETER Values
+package.jsonの`os`または`cpu` selectorです。
+.PARAMETER Target
+照合するOS名またはCPU architecture名です。
 .OUTPUTS
 `package.json`の`os`または`cpu`条件がtargetに一致するかを返します。
 #>
@@ -177,30 +189,26 @@ function Get-PackageSpecsFromPackageLock {
     return @($Specs | Sort-Object -Unique)
 }
 
-if (-not $OutputDir) {
-    throw "OutputDir is required."
+$ProjectDir = [System.IO.Path]::GetFullPath($ProjectDir)
+if (-not (Test-Path -Path $ProjectDir -PathType Container)) {
+    throw "ProjectDir was not found: $ProjectDir"
 }
 
-$ProjectDirectory = [System.IO.Path]::GetFullPath($ProjectDirectory)
-if (-not (Test-Path -Path $ProjectDirectory -PathType Container)) {
-    throw "ProjectDirectory was not found: $ProjectDirectory"
-}
-
-$PackageJsonPath = Join-Path $ProjectDirectory "package.json"
+$PackageJsonPath = Join-Path $ProjectDir "package.json"
 if (-not (Test-Path -Path $PackageJsonPath -PathType Leaf)) {
-    throw "package.json was not found in project directory: $ProjectDirectory"
+    throw "package.json was not found in project directory: $ProjectDir"
 }
 
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw "npm が見つかりません。Node.jsとnpmをインストールしてください。"
 }
 
-$Packages = Get-PackageSpecsFromPackageJson -Path $PackageJsonPath
+$Packages = @(Get-PackageSpecsFromPackageJson -Path $PackageJsonPath)
 if ($Packages.Count -eq 0) {
     throw "取得するnpm packageが指定されていません。"
 }
 
-$OutputDir = [System.IO.Path]::GetFullPath($OutputDir)
+$OutputDir = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "npm"
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 $WorkDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "npm-download-$([guid]::NewGuid().ToString("N"))"
@@ -218,6 +226,7 @@ try {
                 "install",
                 "--package-lock-only",
                 "--ignore-scripts",
+                "--registry=$($Registries[0])",
                 "--os=$($Platform.Os)",
                 "--cpu=$($Platform.Cpu)"
             ) + $Packages
@@ -232,7 +241,7 @@ try {
     Push-Location $WorkDirectory
     try {
         foreach ($PackageSpec in @($AllPackageSpecs | Sort-Object -Unique)) {
-            Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $PackageSpec, "--pack-destination", $OutputDir, "--silent")
+            Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $PackageSpec, "--pack-destination", $OutputDir, "--registry=$($Registries[0])", "--silent")
         }
     } finally {
         Pop-Location

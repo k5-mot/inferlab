@@ -24,26 +24,26 @@ PowerShell、Python 3、pipを導入した端末でrepository rootから実行�
 
 ```powershell
 # root stackで使用するcontainer imageを固定tagまたはdigestで取得する。
-.\script\Download-Images.ps1 -ImageDirectory /srv/oci-archive
+.\scripts\Download-DockerImages.ps1 -OutputDir /srv/airgap-assets
 
-# 署名付きDify pluginとLinux x86_64 / CPython 3.12向け依存wheelを取得する。
-.\script\Download-Dify-Plugins.ps1 -PluginDirectory /srv/21-dify/plugins -PackageDirectory /srv/12-registry/pypi
+# 署名付きDify pluginを取得する。
+.\scripts\Download-Difypkg.ps1 -OutputDir /srv/airgap-assets
 
 # Dify pluginとprivate-chat APIの依存をPython 3.12から3.15の対象platform向けに取得する。
-.\script\Download-Pip-Packages.ps1 -PluginDirectory /srv/21-dify/plugins -OutputDir /srv/12-registry/pypi
+.\scripts\Download-PipPkgs.ps1 -OutputDir /srv/airgap-assets
 
 # Dify plugin packageのchecksumを再確認する。
-Get-ChildItem /srv/21-dify/plugins/*.difypkg | Get-FileHash -Algorithm SHA256
+Get-ChildItem /srv/airgap-assets/dify/*.difypkg | Get-FileHash -Algorithm SHA256
 
 # plugin依存wheelが取得済みであることを確認する。
-Get-ChildItem /srv/12-registry/pypi/*.whl | Measure-Object
+Get-ChildItem /srv/airgap-assets/pypi/*.whl | Measure-Object
 ```
 
 期待結果:
 
 - `langgenius-openai_api_compatible-0.0.64.difypkg`のSHA-256が`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`になる。
-- `/srv/21-dify/plugins/SHA256SUMS`が作成される。
-- `/srv/12-registry/pypi/DIFY_PLUGIN_SHA256SUMS`と依存wheelが作成される。
+- `/srv/airgap-assets/dify/SHA256SUMS`とplugin packageが作成される。
+- `/srv/airgap-assets/pypi/`に依存wheelが作成される。
 - Python 3.12、3.13、3.14、3.15について8 platformのdownloadが試行される。
 - `pip download`がsource distributionへfallbackせず完了する。
 
@@ -58,14 +58,18 @@ Get-ChildItem /srv/12-registry/pypi/*.whl | Measure-Object
 repository、`.env`、container image、plugin、PyPI wheelを承認済み媒体または閉域転送経路で移送する。
 
 ```bash
+# Difyと内部PyPIのbind mount元を作成する。
+sudo install -d /srv/21-dify/plugins /srv/12-registry/pypi
+
+# 取得したpluginとPython packageをbind mount元へ配置する。
+sudo cp -a /srv/airgap-assets/dify/. /srv/21-dify/plugins/
+sudo cp -a /srv/airgap-assets/pypi/. /srv/12-registry/pypi/
+
 # 転送後のDify plugin checksumを検証する。
 cd /srv/21-dify/plugins && sha256sum --check SHA256SUMS
 
-# 転送後のplugin依存wheel checksumを検証する。
-cd /srv/12-registry/pypi && sha256sum --check DIFY_PLUGIN_SHA256SUMS
-
 # 事前取得した全container imageをlocal container engineへloadする。
-cd <REPOSITORY_ROOT> && sudo ./script/install-images.sh --image-directory /srv/oci-archive
+cd <REPOSITORY_ROOT> && sudo ./12-registry/scripts/install-images.sh --image-directory /srv/airgap-assets/docker
 ```
 
 期待結果:
@@ -108,7 +112,7 @@ openssl rand -hex 32
 
 ```bash
 # Difyの認証分離、外部endpoint除去、plugin lock、全Compose profileを静的検証する。
-STACK_NAME=airgap bash script/verify-init-static.sh
+STACK_NAME=airgap bash tests/verify-init-static.sh
 
 # Dify profileがInternetへ接続せず解決できることを確認する。
 STACK_NAME=airgap docker compose --env-file .env --profile dify config --quiet

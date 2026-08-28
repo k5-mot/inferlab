@@ -13,7 +13,7 @@ IMAGE_DIRECTORY="${IMAGE_DIRECTORY:-/srv/oci-archive}"
 print_usage() {
   cat <<'USAGE'
 Usage:
-  script/install-images.sh [-d|--image-directory DIR] [-h|--help]
+  12-registry/scripts/install-images.sh [-d|--image-directory DIR] [-h|--help]
 
 Description:
   /srv/oci-archive/*.tar をPodmanまたはDockerへ読み込みます。

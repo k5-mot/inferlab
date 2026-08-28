@@ -1,356 +1,179 @@
 # ダウンロード
 
-`script/Download-Images.ps1`、Docling資材取得script、`script/Download-Dify-Plugins.ps1`、`script/Download-Nextcloud-Oidc.ps1`、`script/Download-HuggingFace-Repos.ps1`、package取得script、VSIX取得scriptで、airgap環境へ持ち込む資材を取得する手順。
+air-gap環境へ持ち込む資材は、`scripts/README.md`に定義されたPowerShell scriptでオンライン端末へ事前取得する。
 
 ## 前提
 
-- オンライン端末でPowerShell、`crane`、Docker CLI、Python 3、pip、Node.js、npmを実行できる。
-- Docling資材の取得ではDockerまたはWSLを使用せず、PowerShell版は`uvx`と`Invoke-WebRequest`、Shell版は`uvx`、`curl`、`sha256sum`を使用する。
-- repository rootでこの手順を実行する。
-- scriptは引数なしで実行できる。
-- container imageの取得対象platformはscript既定値の`linux/amd64`。
-- PyPI packageはPython 3.12から3.15とany、Windows、Linuxの8 platform、npm packageはLinux x86_64を対象にする。
-- 再実行すると既存archiveを上書きする。
-- Docling資材取得scriptを除く各scriptの既定保存先は、`/srv`配下の資材種別directoryである。
-- 取得済みcontainer image archiveは`/srv/oci-archive/`へ保存される。
-- Hugging Face repositoryは`/srv/huggingface/<owner>--<repo>/`へ保存される。
-- Docling modelとTesseract traineddataは`out/srv/docling/`へ配布先と同じtreeで保存される。
-- Nextcloud OIDC app archiveは`/srv/30-nextcloud/apps/`へ保存される。
-- Dify pluginは`/srv/21-dify/plugins/`へ保存される。
-- PyPI package archiveは`/srv/12-registry/pypi/`へ保存される。
-- npm package archiveは`/srv/12-registry/npm-packages/`へ保存される。
-- RPM packageは`/srv/12-registry/rpm/`へ保存される。
-- deb packageは`/srv/12-registry/deb/`へ保存される。
-- VSIX fileは`/srv/12-registry/vsix/`へ保存される。
+- repository rootでPowerShell 7を実行できる。
+- `crane`、Docker CLI、Python 3、pip、uv、uvx、Node.js、npm、`huggingface-cli`を実行できる。
+- オンライン端末から各scriptの`$Registries`に定義された取得元へ接続できる。
+- container imageの取得対象platformは`linux/amd64`である。
+- PyPI packageはPython 3.12から3.15と、scriptに定義された8 platformの組み合わせを対象にする。
+
+取得元または対象packageを変更する場合は、各script先頭の`$Registries`配列と`$Packages`配列を編集する。公開引数は`OutputDir`、from-Project系だけで使用する`ProjectDir`、`Help`に限定される。
 
 置換する値:
 
-- `<AIRGAP_HOST>`: airgap serverのhost名またはIP。
-- `<AIRGAP_USER>`: airgap serverへfile転送できるuser。
-- `<AIRGAP_REPO_DIR>`: airgap server上のrepository root path。
+- `<AIRGAP_HOST>`: air-gap serverのhost名またはIP。
+- `<AIRGAP_USER>`: air-gap serverへfile転送できるuser。
+- `<AIRGAP_REPO_DIR>`: air-gap server上のrepository root path。
 
 ## 1. オンライン端末で資材を取得する
 
 ```powershell
-# script実行時だけPowerShell scriptの実行を許可する。
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+# 取得資材をまとめるstaging directoryを指定する。
+$OutputDir = "/srv/airgap-assets"
 
-# root stackのimage archiveを取得する。
-.\script\Download-Images.ps1 -ImageDirectory /srv/oci-archive
+# repositoryに必要な全download scriptを定義する。
+$DownloadScripts = @(
+    "Download-Difypkg.ps1",
+    "Download-Nextcloud.ps1",
+    "Download-Docling.ps1",
+    "Download-HFRepo.ps1",
+    "Download-RPM.ps1",
+    "Download-DEB.ps1",
+    "Download-VSIX.ps1",
+    "Download-DockerImages.ps1",
+    "Download-PipPkgs.ps1",
+    "Download-NpmPkgs.ps1"
+)
 
-# 署名付きDify pluginとLinux x86_64向け依存wheelを取得する。
-.\script\Download-Dify-Plugins.ps1
-
-# Nextcloud OIDC app archiveを取得する。
-.\script\Download-Nextcloud-Oidc.ps1
-
-# Hugging Face model repositoryを取得する。
-.\script\Download-HuggingFace-Repos.ps1
-
-# Docling modelとTesseract traineddataを取得する。
-.\script\Download-Docling-Assets.ps1 -OutputDirectory out
-
-# Dify pluginとprivate-chat APIに必要なPyPI package archiveを取得する。
-.\script\Download-Pip-Packages.ps1
-
-# Linux x86_64向けのnpm package archiveを取得する。
-.\script\Download-Npm-Packages.ps1
-
-# Linux x86_64向けのRPM packageを取得する。
-.\script\Download-Rpm-Packages.ps1
-
-# Linux x86_64向けのdeb packageを取得する。
-.\script\Download-Deb-Packages.ps1
-
-# VS Code拡張機能のVSIX fileを取得する。
-.\script\Download-Vscode-Extensions.ps1
-```
-
-Linux/macOS shellでNextcloud OIDC app archiveだけを取得する場合:
-
-```bash
-# Nextcloud OIDC app archiveを/srvへ取得する。
-sudo ./script/Download-Nextcloud-Oidc.sh
-```
-
-Linux/macOS shellでDocling資材を取得する場合:
-
-```bash
-# Docling modelとTesseract traineddataをout/srv/doclingへ取得する。
-./script/download-docling-assets.sh --output-directory out
+# repository rootから全download scriptを順に実行する。
+foreach ($Script in $DownloadScripts) {
+    pwsh -NoProfile -File (Join-Path "./scripts" $Script) -OutputDir $OutputDir
+}
 ```
 
 期待結果:
 
-- `/srv/oci-archive/*.tar`が作成される。
-- `/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`が作成される。
-- `/srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg`が作成され、SHA-256検証が成功する。
-- `user_oidc-v8.10.1.tar.gz`のSHA256検証が成功する。
-- `/srv/huggingface/`に`owner--repo`形式のmodel repository directoryが作成される。
-- `out/srv/docling/`直下に指定したDocling modelとHugging Face repositoryがDocling公式CLIで取得される。
-- `out/srv/docling/tesseract/`にchecksum検証済みの英語・日本語traineddataが作成される。
-- `/srv/12-registry/pypi/*`にpackage archiveが作成される。
-- Dify pluginとprivate-chat APIの依存について、Python 3.12から3.15と8 platformのdownloadが試行される。
-- `/srv/12-registry/npm-packages/*.tgz`が作成される。
-- `/srv/12-registry/rpm/*.rpm`が作成される。
-- `/srv/12-registry/deb/*.deb`が作成される。
-- `/srv/12-registry/vsix/*.vsix`が作成される。
+- `/srv/airgap-assets/`配下に`dify`、`nextcloud`、`docling`、`hfrepo`、`rpm`、`deb`、`vscode`、`docker`、`pypi`、`npm`が作成される。
+- Dify plugin、Nextcloud app、Tesseract traineddataのchecksum検証が成功する。
+- PyPI packageの対象versionとplatformについて、wheelまたは利用可能なsource archiveが取得される。
+- Composeが参照するremote imageとlocal build imageが`docker/*.tar`として保存される。
 
 失敗条件:
 
-- `crane`またはDocker CLIが見つからない。
-- container imageの取得に失敗する。
-- `user_oidc-v8.10.1.tar.gz`のchecksumが一致しない。
-- Dify plugin、内包requirements、依存wheelの取得またはchecksum検証に失敗する。
-- `huggingface-cli`が見つからない、またはmodel repositoryの取得に失敗する。
-- `uvx`経由の`models download`、`models download-hf-repo`、traineddataのdownload、またはchecksum検証に失敗する。
-- `pip download`が失敗する。
-- `npm install`または`npm pack`が失敗する。
-- RPM repository metadataまたはpackage fileの取得に失敗する。
-- deb repository metadataまたはpackage fileの取得に失敗する。
-- Visual Studio MarketplaceからVSIXを取得できない。
+- 必須commandが見つからない。
+- package、model、extensionまたはimageを取得できない。
+- checksumが一致しない。
+- 対象Python versionで利用できるpackage archiveがない。
 
 ## 2. 取得済み資材を確認する
 
 ```powershell
-# 取得したcontainer image archiveの件数を確認する。
-Get-ChildItem /srv/oci-archive/*.tar | Measure-Object
+# Dify pluginのchecksum一覧を検証する。
+Push-Location /srv/airgap-assets/dify
+Get-Content SHA256SUMS | ForEach-Object {
+    $Hash, $FileName = $_ -split "\s+", 2
+    if ((Get-FileHash -Algorithm SHA256 $FileName).Hash.ToLowerInvariant() -ne $Hash) {
+        throw "checksum mismatch: $FileName"
+    }
+}
+Pop-Location
 
-# Nextcloud OIDC app archiveのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
-
-# Dify plugin packageのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 /srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg
-
-# 取得したHugging Face repositoryの件数を確認する。
-Get-ChildItem /srv/huggingface -Directory | Measure-Object
-
-# 取得したDocling model directoryの件数を確認する。
-Get-ChildItem out/srv/docling -Directory | Where-Object Name -ne tesseract | Measure-Object
-
-# 取得したTesseract traineddataのchecksumを確認する。
-Get-FileHash -Algorithm SHA256 out/srv/docling/tesseract/*.traineddata
-
-# 取得したPyPI package archiveの件数を確認する。
-Get-ChildItem /srv/12-registry/pypi/* | Measure-Object
-
-# 取得したnpm package archiveの件数を確認する。
-Get-ChildItem /srv/12-registry/npm-packages/*.tgz | Measure-Object
-
-# 取得したRPM packageの件数を確認する。
-Get-ChildItem /srv/12-registry/rpm/*.rpm | Measure-Object
-
-# 取得したdeb packageの件数を確認する。
-Get-ChildItem /srv/12-registry/deb/*.deb | Measure-Object
-
-# 取得したVSIX fileの件数を確認する。
-Get-ChildItem /srv/12-registry/vsix/*.vsix | Measure-Object
+# 種別ごとの資材件数を表示する。
+Get-ChildItem /srv/airgap-assets -Directory |
+    ForEach-Object {
+        [pscustomobject]@{
+            Directory = $_.Name
+            Files = (Get-ChildItem $_.FullName -File -Recurse).Count
+        }
+    }
 ```
 
 期待結果:
 
-- `/srv/oci-archive/`に複数の`.tar` fileがある。
-- OIDC app archiveのhashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
-- Dify plugin packageのhashが`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`と一致する。
-- Hugging Face repository directoryが存在する。
-- Docling model directoryが存在する。
-- Tesseract traineddataが存在し、取得script内のSHA-256検証が成功している。
-- PyPI package archiveが存在する。
-- npm package archiveが存在する。
-- RPM packageが存在する。
-- deb packageが存在する。
-- VSIX fileが存在する。
+- checksum検証がerrorなく完了する。
+- 10個の出力directoryが存在し、各directoryのfile件数が1以上になる。
 
 失敗条件:
 
-- `/srv/oci-archive/`が空である。
-- OIDC app archiveが存在しない、またはhashが一致しない。
-- Dify plugin packageが存在しない、またはhashが一致しない。
-- Hugging Face repository directoryが存在しない。
-- Docling model directoryまたはTesseract traineddataが存在しない。
-- PyPI package archiveが存在しない。
-- npm package archiveが存在しない。
-- RPM packageが存在しない。
-- deb packageが存在しない。
-- VSIX fileが存在しない。
+- checksum不一致がある。
+- 出力directoryまたは取得資材が不足する。
 
-## 3. airgap serverへ転送する
+## 3. air-gap serverへ転送する
 
 ```powershell
-# container image archiveをairgap serverのbind mount元へ転送する。
-scp -r /srv/oci-archive <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
-
-# Nextcloud OIDC app archiveをairgap serverのbind mount元へ転送する。
-scp -r /srv/30-nextcloud <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
-
-# Dify plugin packageとchecksum一覧をairgap serverへ転送する。
-scp -r /srv/21-dify <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
-
-# Hugging Face repositoryをairgap serverのbind mount元へ転送する。
-scp -r /srv/huggingface <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
-
-# Docling modelとTesseract traineddataをairgap serverのbind mount元へ転送する。
-scp -r out/srv/docling <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
-
-# PyPI package archiveをairgap serverのbind mount元へ転送する。
-scp -r /srv/12-registry/pypi <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
-
-# npm package archiveをairgap serverのbind mount元へ転送する。
-scp -r /srv/12-registry/npm-packages <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
-
-# RPM packageをairgap serverのbind mount元へ転送する。
-scp -r /srv/12-registry/rpm <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
-
-# deb packageをairgap serverのbind mount元へ転送する。
-scp -r /srv/12-registry/deb <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
-
-# VSIX fileをairgap serverのbind mount元へ転送する。
-scp -r /srv/12-registry/vsix <AIRGAP_USER>@<AIRGAP_HOST>:/srv/12-registry/
+# staging directoryを承認済みの閉域転送経路でair-gap serverへ転送する。
+scp -r /srv/airgap-assets <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 ```
 
 期待結果:
 
-- airgap server上に`/srv/oci-archive/*.tar`がある。
-- airgap server上に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`がある。
-- airgap server上に`/srv/21-dify/plugins/langgenius-openai_api_compatible-0.0.64.difypkg`がある。
-- airgap server上に`/srv/huggingface/*`がある。
-- airgap server上に`/srv/docling/docling-project--docling-layout-heron/`と`/srv/docling/tesseract/*.traineddata`がある。
-- airgap server上に`/srv/12-registry/pypi/*`がある。
-- airgap server上に`/srv/12-registry/npm-packages/*.tgz`がある。
-- airgap server上に`/srv/12-registry/rpm/*.rpm`がある。
-- airgap server上に`/srv/12-registry/deb/*.deb`がある。
-- airgap server上に`/srv/12-registry/vsix/*.vsix`がある。
+- air-gap server上の`/srv/airgap-assets/`に取得済み資材がある。
 
 失敗条件:
 
-- `scp`が失敗する。
-- 転送先でarchive fileが欠ける。
+- `scp`が非0で終了する。
+- 転送元と転送先のfile件数またはchecksumが一致しない。
 
-## 4. airgap serverでcontainer imageをloadする
+## 4. 配信先へ資材を配置する
 
 ```bash
-# repository rootへ移動する。
-cd <AIRGAP_REPO_DIR>
+# serviceがread-only mountするdirectoryを作成する。
+sudo install -d /srv/21-dify/plugins /srv/30-nextcloud/apps /srv/docling /srv/huggingface
+sudo install -d /srv/12-registry/pypi /srv/12-registry/npm-packages /srv/12-registry/rpm /srv/12-registry/deb /srv/12-registry/vsix
 
-# 取得済みcontainer image archiveをPodmanまたはDockerへ読み込む。
-sudo ./script/install-images.sh --image-directory /srv/oci-archive
+# Dify、Nextcloud、Docling、Hugging Faceの資材を配置する。
+sudo cp -a /srv/airgap-assets/dify/. /srv/21-dify/plugins/
+sudo cp -a /srv/airgap-assets/nextcloud/. /srv/30-nextcloud/apps/
+sudo cp -a /srv/airgap-assets/docling/. /srv/docling/
+sudo cp -a /srv/airgap-assets/hfrepo/. /srv/huggingface/
+
+# package registryとVS Code Marketplaceの投入元へ資材を配置する。
+sudo cp -a /srv/airgap-assets/pypi/. /srv/12-registry/pypi/
+sudo cp -a /srv/airgap-assets/npm/. /srv/12-registry/npm-packages/
+sudo cp -a /srv/airgap-assets/rpm/. /srv/12-registry/rpm/
+sudo cp -a /srv/airgap-assets/deb/. /srv/12-registry/deb/
+sudo cp -a /srv/airgap-assets/vscode/. /srv/12-registry/vsix/
+
+# container image archiveをlocal container engineへ読み込む。
+sudo ./12-registry/scripts/install-images.sh --image-directory /srv/airgap-assets/docker
 ```
 
 期待結果:
 
-- `sudo docker image ls`または`sudo podman image ls`でstackが参照するimageが表示される。
-- OIKB、Hermes-Agent、OpenClawのlocal build imageも表示される。
+- 各serviceのbind mount元に必要な資材が配置される。
+- `docker image ls`または`podman image ls`でComposeが参照するimageを確認できる。
 
 失敗条件:
 
-- `sudo ./script/install-images.sh`が失敗する。
-- `docker compose config`で参照されるimageが不足する。
+- copyまたはimage loadが非0で終了する。
+- 配置先に不足fileがある。
 
-## 5. airgap serverでDocling資材を確認する
+## 5. OS packageとVSIXをinstallする
 
 ```bash
-# Docling modelとTesseract traineddataが存在し、containerから読めるpermissionであることを確認する。
-find /srv/docling -maxdepth 2 -type f -readable | head
+# RPM系またはdeb系のOS packageをlocal fileだけからinstallする。
+sudo ./12-registry/scripts/install-system-packages.sh --rpm-directory /srv/12-registry/rpm --deb-directory /srv/12-registry/deb
+
+# VS Code互換editorへ取得済みVSIXをinstallする。
+./12-registry/scripts/install-vscode-extensions.sh --vsix-directory /srv/12-registry/vsix --editor-command code
 ```
 
 期待結果:
 
-- `/srv/docling/`直下のmodelと`/srv/docling/tesseract/`のfile pathが表示される。
-- Compose起動userのUID `1001`から資材を読み取れる。
+- 対象OSで指定packageを実行できる。
+- VS Code互換editorに対象extensionが表示される。
 
 失敗条件:
 
-- bind mount元のdirectoryまたはfileが存在しない。
-- fileに読み取りpermissionがない。
+- local packageだけでは依存関係を解決できない。
+- editor CLIまたはVSIX installが失敗する。
 
-## 6. airgap serverでNextcloud OIDC app archiveを確認する
+## 6. rollback
+
+取得済みstaging資材は監査と再配置に利用できるため、service停止時に削除しない。配置した資材を戻す必要がある場合は、事前backupから対象directory単位で復元する。
 
 ```bash
-# OIDC app archiveのchecksumを確認する。
-sha256sum /srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz
+# 起動済みstackを停止し、named volumeと取得済み資材を保持する。
+cd <AIRGAP_REPO_DIR> && sudo docker compose --env-file .env down
 ```
 
 期待結果:
 
-- hashが`49ced1fe192302f4540b869438b6ccb9ca0d69b717b76ed7075a70aa5cf666fd`と一致する。
-- Nextcloud本体起動時に`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`としてread-only mountされる。
+- 対象containerが停止し、取得済み資材は残る。
 
 失敗条件:
 
-- OIDC app archiveが存在しない。
-- checksumが一致しない。
-- Nextcloudの`06-install-user-oidc.sh` hookから`/srv/30-nextcloud/apps/user_oidc-v8.10.1.tar.gz`を参照できない。
-
-## 7. airgap serverでOS packageとVSIXをinstallする
-
-```bash
-# RPM系またはdeb系のOS packageをinstallする。
-./script/install-system-packages.sh --rpm-directory /srv/12-registry/rpm --deb-directory /srv/12-registry/deb
-
-# VS Code拡張機能をinstallする。
-./script/install-vscode-extensions.sh --vsix-directory /srv/12-registry/vsix --editor-command code
-```
-
-期待結果:
-
-- rpm系OSでは`tmux`、`nvim`、`vim`、`git`が実行できる。
-- deb系OSでは`tmux`、`nvim`、`vim`、`git`が実行できる。
-- VS Code互換CLIにVSIX fileがinstallされる。
-
-失敗条件:
-
-- `dnf`、`yum`、`apt-get`のいずれも見つからない。
-- local packageの依存関係を解決できない。
-- VS Code互換CLIが見つからない、またはVSIX installが失敗する。
-
-## 8. stackを起動する
-
-```bash
-# keycloak、nextcloud、owui、rag profileを含めてstackを起動する。
-sudo docker compose --env-file .env --profile common --profile keycloak --profile nextcloud --profile owui --profile rag up -d
-
-# NextcloudとOIKBの状態を確認する。
-sudo docker compose --env-file .env --profile nextcloud --profile owui ps nextcloud oikb
-
-# bind mount済みmodelを読み込んだDoclingの状態を確認する。
-sudo docker compose --env-file .env --profile rag ps docling
-```
-
-期待結果:
-
-- `nextcloud`がhealthyになる。
-- `docling`が起動時にlocal modelを読み込み、healthyになる。
-- Nextcloud logで`06-install-user-oidc.sh`が失敗していない。
-- `user_oidc` appが有効化される。
-
-失敗条件:
-
-- Nextcloudがunhealthyになる。
-- Docling資材の不足またはpermission違反で`docling`がunhealthyになる。
-- OIDC app archiveが見つからず、hookが外部URLへ接続しようとして失敗する。
-
-## 9. rollback
-
-```bash
-# 起動済みstackを停止する。
-sudo docker compose --env-file .env --profile common --profile keycloak --profile nextcloud --profile owui --profile rag down
-```
-
-期待結果:
-
-- 対象containerが停止する。
-- volumeは削除されない。
-
-失敗条件:
-
-- `docker compose down`が非ゼロ終了する。
-
-## References
-
-- [uv: Using tools](https://docs.astral.sh/uv/guides/tools/)
-- [Docling model prefetching and offline usage](https://docling-project.github.io/docling/usage/advanced_options/#model-prefetching-and-offline-usage)
-- [Docling CLI reference](https://github.com/docling-project/docling/blob/main/docs/reference/cli.md#docling-tools-models)
-- [Docling model catalog](https://github.com/docling-project/docling/blob/main/docs/usage/model_catalog.md)
-- [Docling Serve](https://github.com/docling-project/docling-serve)
-- [Tesseract tessdata_best](https://github.com/tesseract-ocr/tessdata_best)
-- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)
+- `docker compose down`が非0で終了する。

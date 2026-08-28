@@ -6,24 +6,16 @@ VS Code拡張機能のVSIX fileを取得します。
 Visual Studio Marketplaceから指定した拡張機能のlatest VSIXを取得します。
 既定では使用する拡張機能を`/srv/12-registry/vsix/`へ保存します。
 
-.PARAMETER DestinationDirectory
-取得したVSIX fileを保存するdirectoryです。
-
-.PARAMETER ExtensionIds
-publisher.extension形式のVS Code拡張機能IDの配列です。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Vscode-Extensions.ps1
+.\scripts\Download-VSIX.ps1 -OutputDir C:\airgap
 
-既定のVS Code拡張機能を取得します。
-
-.EXAMPLE
-.\script\Download-Vscode-Extensions.ps1 -DestinationDirectory .\vsix -ExtensionIds openai.chatgpt,terrastruct.d2
-
-指定したVS Code拡張機能を`vsix/`へ取得します。
+指定directoryの`vscode`配下へVSIXを取得します。
 
 .NOTES
 副作用として指定directoryへ`.vsix` fileを作成または上書きします。
@@ -31,9 +23,23 @@ scriptのhelpを表示して終了します。
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = "/srv/12-registry/vsix",
+    [string]$OutputDir,
+    [switch]$Help
+)
 
-    [string[]]$ExtensionIds = @(
+if ($Help) {
+    Get-Help -Name $PSCommandPath -Detailed
+    exit 0
+}
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+
+$ErrorActionPreference = "Stop"
+$Registries = @(
+    "https://marketplace.visualstudio.com"
+)
+$Packages = @(
         "openai.chatgpt",
         "ms-azuretools.vscode-containers",
         "terrastruct.d2",
@@ -53,20 +59,8 @@ param (
         "ms-vscode.remote-explorer",
         "ms-vscode-remote.remote-wsl",
         "zoocodeorganization.zoo-code"
-    ),
-
-    [Alias("h")]
-    [switch]$Help
 )
-
-if ($Help) {
-    Get-Help -Name $PSCommandPath -Detailed
-    exit 0
-}
-
-$ErrorActionPreference = "Stop"
-
-if ($ExtensionIds.Count -eq 0) {
+if ($Packages.Count -eq 0) {
     throw "取得するVS Code拡張機能IDが指定されていません。"
 }
 
@@ -79,6 +73,8 @@ publisher.extension形式をpublisherとextension名へ分解し、Visual Studio
 
 .PARAMETER ExtensionId
 publisher.extension形式のVS Code拡張機能IDです。
+.PARAMETER Registry
+Visual Studio Marketplaceのbase URLです。
 
 .OUTPUTS
 VSIX取得URLを文字列として返します。
@@ -88,6 +84,9 @@ VSIX取得URLを文字列として返します。
 #>
 function Get-VsixDownloadUrl {
     param (
+        [Parameter(Mandatory = $true)]
+        [string]$Registry,
+
         [Parameter(Mandatory = $true)]
         [string]$ExtensionId
     )
@@ -99,7 +98,7 @@ function Get-VsixDownloadUrl {
 
     $Publisher = [System.Uri]::EscapeDataString($Parts[0])
     $ExtensionName = [System.Uri]::EscapeDataString($Parts[1])
-    return "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/$Publisher/vsextensions/$ExtensionName/latest/vspackage"
+    return "$Registry/_apis/public/gallery/publishers/$Publisher/vsextensions/$ExtensionName/latest/vspackage"
 }
 
 <#
@@ -111,6 +110,8 @@ VS Code拡張機能のVSIX fileを保存します。
 
 .PARAMETER ExtensionId
 publisher.extension形式のVS Code拡張機能IDです。
+.PARAMETER Registry
+Visual Studio Marketplaceのbase URLです。
 
 .PARAMETER OutputDirectory
 VSIX fileの保存先directoryです。
@@ -124,24 +125,27 @@ VSIX fileの保存先directoryです。
 function Save-VscodeExtension {
     param (
         [Parameter(Mandatory = $true)]
+        [string]$Registry,
+
+        [Parameter(Mandatory = $true)]
         [string]$ExtensionId,
 
         [Parameter(Mandatory = $true)]
         [string]$OutputDirectory
     )
 
-    $Url = Get-VsixDownloadUrl -ExtensionId $ExtensionId
+    $Url = Get-VsixDownloadUrl -Registry $Registry -ExtensionId $ExtensionId
     $OutputPath = Join-Path $OutputDirectory "$ExtensionId.vsix"
     Write-Host "Download VSIX: $ExtensionId"
     Invoke-WebRequest -Uri $Url -OutFile $OutputPath -UseBasicParsing
     return $OutputPath
 }
 
-$DestinationDirectory = [System.IO.Path]::GetFullPath($DestinationDirectory)
+$DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "vscode"
 New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
 
-foreach ($ExtensionId in $ExtensionIds) {
-    Save-VscodeExtension -ExtensionId $ExtensionId -OutputDirectory $DestinationDirectory | Out-Null
+foreach ($ExtensionId in $Packages) {
+    Save-VscodeExtension -Registry $Registries[0] -ExtensionId $ExtensionId -OutputDirectory $DestinationDirectory | Out-Null
 }
 
 $DownloadedFiles = @(

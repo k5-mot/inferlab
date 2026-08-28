@@ -8,43 +8,16 @@ repositoryから、指定したdeb packageと依存packageを取得します。
 
 既定では`/srv/12-registry/deb/`へ保存します。
 
-.PARAMETER DestinationDirectory
-取得したdeb packageを保存するdirectoryです。
-
-.PARAMETER Packages
-取得するdeb package名の配列です。
-
-.PARAMETER RepositoryBaseUrl
-参照するUbuntu repository root URLです。
-
-.PARAMETER PackagesPaths
-repository rootからPackages.gzまでの相対pathの配列です。
-
-既定ではUbuntu 24.04 LTS（noble）のmainおよびuniverseを参照します。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Deb-Packages.ps1
+.\scripts\Download-DEB.ps1 -OutputDir C:\airgap
 
-bash、zsh、curl、git、jq、tmux、neovim、vim、
-build-essential、clang、ncduなどを依存込みで取得します。
-
-.EXAMPLE
-.\script\Download-Deb-Packages.ps1 `
-    -DestinationDirectory .\deb `
-    -Packages tmux,git
-
-指定したdeb packageを`deb/`へ取得します。
-
-.EXAMPLE
-.\script\Download-Deb-Packages.ps1 `
-    -PackagesPaths @(
-        "dists/noble/main/binary-amd64/Packages.gz"
-    )
-
-main componentだけを参照します。
+指定directoryの`deb`配下へpackageを依存込みで取得します。
 
 .NOTES
 副作用として指定directoryへ`.deb` fileを作成または上書きします。
@@ -56,11 +29,20 @@ Save-DebPackagesWithDependenciesのPackagesUrl parameterは、
 #>
 [CmdletBinding()]
 param (
-    [string]$DestinationDirectory = (
-        "/srv/12-registry/deb"
-    ),
+    [string]$OutputDir,
+    [switch]$Help
+)
 
-    [string[]]$Packages = @(
+if ($Help) {
+    Get-Help -Name $PSCommandPath -Detailed
+    exit 0
+}
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+
+$ErrorActionPreference = "Stop"
+$Packages = @(
         "bash",
         "zsh",
         "curl",
@@ -75,29 +57,16 @@ param (
         "libncurses-dev",
         "clang",
         "ncdu"
-    ),
-
-    [string]$RepositoryBaseUrl = "https://archive.ubuntu.com/ubuntu/",
-    # [string]$RepositoryBaseUrl = "https://deb.debian.org/debian/",
-
-    [string[]]$PackagesPaths = @(
-        "dists/noble/main/binary-amd64/Packages.gz",
-        "dists/noble/universe/binary-amd64/Packages.gz"
-    ),
-    # [string]$PackagesPaths = @(
-    #    "dists/trixie/main/binary-amd64/Packages.gz"
-    # ),
-
-    [Alias("h")]
-    [switch]$Help
 )
-
-if ($Help) {
-    Get-Help -Name $PSCommandPath -Detailed
-    exit 0
-}
-
-$ErrorActionPreference = "Stop"
+$Registries = @(
+    [pscustomobject]@{
+        BaseUrl = "https://archive.ubuntu.com/ubuntu/"
+        PackagePaths = @(
+            "dists/noble/main/binary-amd64/Packages.gz",
+            "dists/noble/universe/binary-amd64/Packages.gz"
+        )
+    }
+)
 
 $Packages = @(
     $Packages |
@@ -109,18 +78,6 @@ $Packages = @(
 
 if ($Packages.Count -eq 0) {
     throw "取得するdeb packageが指定されていません。"
-}
-
-$PackagesPaths = @(
-    $PackagesPaths |
-        Where-Object {
-            -not [string]::IsNullOrWhiteSpace($_)
-        } |
-        Select-Object -Unique
-)
-
-if ($PackagesPaths.Count -eq 0) {
-    throw "参照するPackages.gzが指定されていません。"
 }
 
 $CommonScript = [System.IO.Path]::GetFullPath(
@@ -135,15 +92,15 @@ if (-not (Test-Path -LiteralPath $CommonScript -PathType Leaf)) {
 
 . $CommonScript
 
-$DestinationDirectory = [System.IO.Path]::GetFullPath(
-    $DestinationDirectory
-)
+$DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "deb"
 
 $PackagesUrls = @(
-    foreach ($PackagesPath in $PackagesPaths) {
-        Join-RepositoryUrl `
-            -BaseUrl $RepositoryBaseUrl `
-            -RelativePath $PackagesPath
+    foreach ($Registry in $Registries) {
+        foreach ($PackagesPath in $Registry.PackagePaths) {
+            Join-RepositoryUrl `
+                -BaseUrl $Registry.BaseUrl `
+                -RelativePath $PackagesPath
+        }
     }
 )
 
@@ -165,7 +122,7 @@ foreach ($PackagesUrl in $PackagesUrls) {
 Save-DebPackagesWithDependencies `
     -PackageNames $Packages `
     -PackagesUrl $PackagesUrls `
-    -RepositoryBaseUrl $RepositoryBaseUrl `
+    -RepositoryBaseUrl ($Registries[0].BaseUrl) `
     -OutputDirectory $DestinationDirectory
 
 Assert-AssetFilesExist `

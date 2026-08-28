@@ -27,7 +27,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\12-registry\scripts\download-assets.ps1
 
 # LIST.mdのHugging Face資材を取得する。
-.\script\Download-HuggingFace-Repos.ps1
+.\scripts\Download-HFRepo.ps1 -OutputDir /srv
 ```
 
 期待結果: `/srv` 配下に投入対象 file が作成される。
@@ -37,8 +37,11 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ## 2. 資材取得端末: 資材を Registry サーバへ転送する
 
 ```powershell
-# 取得済み資材をRegistryサーバへ転送する。
-scp -r /srv/12-registry /srv/oci-archive /srv/huggingface <REGISTRY_USER>@<REGISTRY_HOST>:/srv/
+# registry資材とcontainer imageをRegistryサーバへ転送する。
+scp -r /srv/12-registry /srv/oci-archive <REGISTRY_USER>@<REGISTRY_HOST>:/srv/
+
+# hfrepo出力をHugging Face modelのbind mount元へ転送する。
+scp -r /srv/hfrepo <REGISTRY_USER>@<REGISTRY_HOST>:/srv/huggingface
 ```
 
 期待結果: Registry サーバ上の `/srv` に `12-registry`、`oci-archive`、`huggingface` がある。

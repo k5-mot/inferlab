@@ -3,7 +3,7 @@
 # - LiteLLM
 #   - https://docs.litellm.ai/docs/simple_proxy
 # - vLLM
-#   - https://huggingface.co/Qwen/Qwen3.6-27B-FP8
+#   - https://huggingface.co/Qwen/Qwen3.8-27B-FP8
 #   - https://www.keycloak.org/server/supported-configurations
 #
 
@@ -62,7 +62,7 @@ services:
     profiles:
       - inference
     command:
-      - "/models/Qwen--Qwen3.6-27B-FP8"
+      - "/models/Qwen--Qwen3.8-27B-FP8"
       - --host
       - "0.0.0.0"
       - --port
@@ -90,7 +90,7 @@ services:
       - --reasoning-parser
       - "qwen3"
       - --served-model-name
-      - "Qwen3.6-27B-FP8:27B"
+      - "Qwen3.8-27B-FP8:27B"
     environment:
       VLLM_NO_USAGE_STATS: "1"
     volumes:

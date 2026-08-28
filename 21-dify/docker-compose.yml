@@ -551,7 +551,7 @@ services:
       - homepage.description=Vector search database
 
   dify-nginx:
-    image: docker.io/library/nginx:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.4-trixie-perl
     container_name: ${STACK_NAME}-dify-nginx
     restart: unless-stopped
     profiles:

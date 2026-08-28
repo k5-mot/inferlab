@@ -9,30 +9,30 @@ Python 3.12から3.15のany、Windows、Linux向けwheelを取得し、pypiserve
 .PARAMETER OutputDir
 取得したwheelを保存するdirectoryです。
 
-.PARAMETER ProjectDirectory
-依存定義fileがあるproject directoryです。省略時はカレントディレクトリです。
+.PARAMETER ProjectDir
+依存定義fileがあるproject directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\Download-Pip-from-Projects.ps1 -OutputDir C:\assets\12-registry\pypi
+.\scripts\Download-PipPkgs-from-Project.ps1 -ProjectDir C:\src\project -OutputDir C:\assets
 
-カレントディレクトリのPython依存からregistry投入用wheelhouseを作成します。
+指定したproject directoryのPython依存からregistry投入用wheelhouseを作成します。
 
 .EXAMPLE
-.\Download-Pip-from-Projects.ps1 -ProjectDirectory C:\src\private-chat\api -OutputDir C:\assets\12-registry\pypi
+.\scripts\Download-PipPkgs-from-Project.ps1 -ProjectDir C:\src\private-chat\api -OutputDir C:\assets
 
 指定したproject directoryのPython依存からregistry投入用wheelhouseを作成します。
 
 .NOTES
-副作用として`pyproject.toml`がある場合に`requirements.txt`を生成し、指定directoryへwheelを作成または上書きします。
+対象project directoryは変更しません。作業fileを一時directoryへ生成し、指定directoryへpackage archiveを作成または上書きします。
 #>
 [CmdletBinding()]
 param (
     [string]$OutputDir,
 
-    [string]$ProjectDirectory = (Get-Location).Path,
+    [string]$ProjectDir,
 
     [switch]$Help
 )
@@ -41,10 +41,23 @@ if ($Help) {
     Get-Help -Name $PSCommandPath -Detailed
     exit 0
 }
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
+if (-not $ProjectDir) {
+    throw "ProjectDir is required."
+}
 
 $ErrorActionPreference = "Stop"
 $PythonVersions = @("3.12", "3.13", "3.14", "3.15")
-$PytorchCpuIndexUrl = "https://download.pytorch.org/whl/cpu"
+$Registries = @(
+    "https://pypi.org/simple",
+    "https://download.pytorch.org/whl/cpu",
+    "https://pypi.org/pypi"
+)
+$Packages = @()
+$PytorchCpuIndexUrl = $Registries[1]
+$PypiMetadataUrl = $Registries[2]
 $PlatformTargets = @(
     [pscustomobject]@{ Group = "any"; Platform = "any"; Implementation = "py"; Abis = @("none") },
     [pscustomobject]@{ Group = "windows"; Platform = "win32"; Implementation = "cp"; Abis = @() },
@@ -55,10 +68,6 @@ $PlatformTargets = @(
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux_2_17_x86_64"; Implementation = "cp"; Abis = @() },
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux2014_x86_64"; Implementation = "cp"; Abis = @() }
 )
-
-if (-not $OutputDir) {
-    throw "OutputDir is required."
-}
 
 <#
 .SYNOPSIS
@@ -131,6 +140,7 @@ function Resolve-RequirementsPath {
     $RequirementsPath = Join-Path $ProjectDirectory "requirements.txt"
     $PyprojectPath = Join-Path $ProjectDirectory "pyproject.toml"
     if (Test-Path -Path $PyprojectPath -PathType Leaf) {
+        $RequirementsPath = Join-Path ([System.IO.Path]::GetTempPath()) "requirements-$([guid]::NewGuid().ToString("N")).txt"
         $Arguments = @(
             "export",
             "--project", $ProjectDirectory,
@@ -406,7 +416,7 @@ function Save-RequirementSourceArchive {
 
     try {
         $Version = [uri]::EscapeDataString($Parts.Version)
-        $Metadata = Invoke-RestMethod -Uri "https://pypi.org/pypi/$($Parts.Name)/$Version/json"
+        $Metadata = Invoke-RestMethod -Uri "$PypiMetadataUrl/$($Parts.Name)/$Version/json"
         $SourceFile = @($Metadata.urls | Where-Object { $_.packagetype -eq "sdist" } | Select-Object -First 1)
         if ($SourceFile.Count -eq 0) {
             Write-Warning "skip PyPI source archive: requirement=$Requirement python=$PythonVersion"
@@ -430,23 +440,31 @@ function Save-RequirementSourceArchive {
     }
 }
 
-$ProjectDirectory = [System.IO.Path]::GetFullPath($ProjectDirectory)
-if (-not (Test-Path -Path $ProjectDirectory -PathType Container)) {
-    throw "ProjectDirectory was not found: $ProjectDirectory"
+$ProjectDir = [System.IO.Path]::GetFullPath($ProjectDir)
+if (-not (Test-Path -Path $ProjectDir -PathType Container)) {
+    throw "ProjectDir was not found: $ProjectDir"
 }
 
-$RequirementsPath = Resolve-RequirementsPath -ProjectDirectory $ProjectDirectory
-$Requirements = Get-RequirementSpecs -Path $RequirementsPath
-if ($Requirements.Count -eq 0) {
+$ProjectRequirementsPath = Join-Path $ProjectDir "requirements.txt"
+$RequirementsPath = Resolve-RequirementsPath -ProjectDirectory $ProjectDir
+try {
+    $Packages = Get-RequirementSpecs -Path $RequirementsPath
+}
+finally {
+    if ($RequirementsPath -ne $ProjectRequirementsPath) {
+        Remove-Item -LiteralPath $RequirementsPath -Force -ErrorAction SilentlyContinue
+    }
+}
+if ($Packages.Count -eq 0) {
     throw "requirements.txtにdownload対象packageがありません: $RequirementsPath"
 }
 
-$OutputDir = [System.IO.Path]::GetFullPath($OutputDir)
+$OutputDir = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "pypi"
 New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 $PythonCommand = Get-PythonCommand
 foreach ($PythonVersion in $PythonVersions) {
-    foreach ($Requirement in $Requirements) {
+    foreach ($Requirement in $Packages) {
         $SucceededGroups = @{}
         $ApplicableGroups = @{}
         $ApplicableTargetCount = 0

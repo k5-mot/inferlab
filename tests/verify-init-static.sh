@@ -103,6 +103,33 @@ verify_javascript_syntax() {
   done
 }
 
+# PowerShell download scriptの構文と共通規約を検証する。
+# 引数:
+#   なし。
+# 戻り値:
+#   PowerShellが未導入の場合は検証をskipして0、検証に失敗した場合は非0を返す。
+# 副作用:
+#   test scriptのfile pathを標準出力へ表示する。download処理は実行しない。
+verify_powershell_syntax() {
+  local test_scripts=(scripts/tests/Test-*.ps1)
+  if [[ ! -e "${test_scripts[0]}" ]]; then
+    echo "powershell syntax: no download script tests"
+    return 0
+  fi
+
+  if ! command -v pwsh >/dev/null 2>&1; then
+    echo "powershell syntax: skipped because pwsh is not installed"
+    return 0
+  fi
+
+  echo "powershell download tests: ${#test_scripts[@]} files"
+  local test_script
+  for test_script in "${test_scripts[@]}"; do
+    echo "powershell download test: ${test_script}"
+    pwsh -NoLogo -NoProfile -File "${test_script}"
+  done
+}
+
 # Difyの認証設定がKeycloakへ再接続されていないことを検証する。
 # 引数:
 #   なし。
@@ -119,7 +146,7 @@ verify_dify_local_authentication() {
   local pattern
 
   for pattern in "${forbidden_patterns[@]}"; do
-    if git grep -n -E "${pattern}" -- . ':!script/verify-init-static.sh' >&2; then
+    if git grep -n -E "${pattern}" -- . ':!tests/verify-init-static.sh' >&2; then
       echo "Dify向けKeycloak/OIDC設定が残っています: ${pattern}" >&2
       return 1
     fi
@@ -230,6 +257,7 @@ verify_compose_config() {
 verify_shell_syntax
 verify_python_syntax
 verify_javascript_syntax
+verify_powershell_syntax
 verify_dify_local_authentication
 verify_dify_airgap_configuration
 tests/e2e/test-run-playwright-smoke.sh

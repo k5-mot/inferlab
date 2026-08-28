@@ -23,12 +23,25 @@ foreach ($Script in $DownloadScripts) {
 
 ### pyproject.toml/requirements.txt を元に、
 ### <output-dir>/pypi/*.whl へダウンロード.
-powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-PipPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./py_pj/requirements.txt"
+powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-PipPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./py_pj"
 
 ### package.json を元に、
 ### <output-dir>/npm/*.tgz へダウンロード.
-powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-NpmPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./ts_pj/package.json"
+powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-NpmPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./ts_pj"
 ```
+
+## ⛓️ Arguments
+
+以下の引数以外の引数は実装しない。
+
+- `-OutputDir`： 出力ディレクトリ
+- `-ProjectDir`： プロジェクトディレクトリ (from-Projectのみ)
+- `-Help`： ヘルプ
+
+## 🛠️ Download Targets
+
+ダウンロード元は各scriptの`$Registries`、ダウンロード対象は`$Packages`配列で定義する。
+対象を変更する場合は、該当scriptの2つの配列を編集する。
 
 ## 📁 Script Directory Structure
 
@@ -49,6 +62,19 @@ scripts/
 ├── Download-NpmPkgs-from-Project.ps1
 │
 └── tests/
+   ├── Assert-DownloadScript.ps1
+   ├── Test-Difypkg.ps1
+   ├── Test-Nextcloud.ps1
+   ├── Test-Docling.ps1
+   ├── Test-HFRepo.ps1
+   ├── Test-RPM.ps1
+   ├── Test-DEB.ps1
+   ├── Test-VSIX.ps1
+   ├── Test-DockerImages.ps1
+   ├── Test-PipPkgs.ps1
+   ├── Test-NpmPkgs.ps1
+   ├── Test-PipPkgs-from-Project.ps1
+   └── Test-NpmPkgs-from-Project.ps1
 ```
 
 ## 📁 Output Directory Structure
@@ -152,3 +178,45 @@ scripts/
    ├── *.tgz
    └── ...
 ```
+
+## 📜 Specification
+
+### Download-Difypkg.ps1
+### Download-Nextcloud.ps1
+### Download-Docling.ps1
+### Download-HFRepo.ps1
+### Download-RPM.ps1
+### Download-DEB.ps1
+### Download-VSIX.ps1
+### Download-DockerImages.ps1
+### Download-PipPkgs.ps1
+
+- 以下の組み合わせのパッケージをダウンロードする.
+  - PythonVersion；
+    - 3.12
+    - 3.13
+    - 3.14
+    - 3.15
+  - Platform；
+    - any
+    - windows：
+      - win32
+      - win_amd64
+    - linux：
+      - manylinux_2_34_x86_64
+      - manylinux_2_28_x86_64
+      - manylinux_2_24_x86_64
+      - manylinux_2_17_x86_64
+      - manylinux2014_x86_64
+
+### Download-NpmPkgs.ps1
+
+- 以下の組み合わせのパッケージをダウンロードする.
+  - Platform；
+    - win32
+      - x64
+    - linux
+      - x64
+
+### Download-PipPkgs-from-Project.ps1
+### Download-NpmPkgs-from-Project.ps1

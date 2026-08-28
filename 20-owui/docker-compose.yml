@@ -21,8 +21,8 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
-    # image: ghcr.io/open-webui/open-webui:0.11.0-slim
-    image: ghcr.io/open-webui/open-webui:0.11.0
+    # image: ghcr.io/open-webui/open-webui:0.11.1-slim
+    image: ghcr.io/open-webui/open-webui:0.11.1
     # image: ghcr.io/open-webui/open-webui:0.10.2
     container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped

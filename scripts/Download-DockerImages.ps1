@@ -6,26 +6,16 @@ airgap環境へ持ち込むcontainer image archiveを取得します。
 root stackの全profileで参照されるcontainer imageを指定directoryへ`.tar`として保存します。
 registry imageは`crane pull`で取得し、local build imageはDocker CLIでbuildしてから`docker save`で保存します。
 
-.PARAMETER ImageDirectory
-container image archiveを保存するdirectoryです。
+.PARAMETER OutputDir
+READMEで定義した出力treeのbase directoryです。
 
 .PARAMETER Help
 scriptのhelpを表示して終了します。
 
 .EXAMPLE
-.\script\Download-Images.ps1
+.\scripts\Download-DockerImages.ps1 -OutputDir C:\airgap
 
-root stackに必要なcontainer image archiveを`/srv/oci-archive/`へ取得します。
-
-.EXAMPLE
-.\script\Download-Images.ps1 -ImageDirectory .\airgap-images
-
-root stackに必要なcontainer image archiveを`airgap-images/`へ取得します。
-
-.EXAMPLE
-.\script\Download-Images.ps1 -Help
-
-scriptの詳細helpを表示します。
+root stackに必要なcontainer image archiveを`C:\airgap\docker`へ取得します。
 
 .NOTES
 副作用として指定directoryへfileを作成または上書きします。
@@ -33,9 +23,7 @@ scriptの詳細helpを表示します。
 #>
 [CmdletBinding()]
 param (
-    [string]$ImageDirectory = "/srv/oci",
-
-    [Alias("h")]
+    [string]$OutputDir,
     [switch]$Help
 )
 
@@ -43,12 +31,24 @@ if ($Help) {
     Get-Help -Name $PSCommandPath -Detailed
     exit 0
 }
+if (-not $OutputDir) {
+    throw "OutputDir is required."
+}
 
-$OutputDirectory = $ImageDirectory
+$OutputDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "docker"
 $Platform = "linux/amd64"
 $Overwrite = $true
 
-$Images = @(
+$Registries = @(
+    "docker.elastic.co",
+    "docker.io",
+    "ghcr.io",
+    "gitlab",
+    "nginxinc",
+    "public.ecr.aws",
+    "quay.io"
+)
+$Packages = @(
     "docker.elastic.co/elasticsearch/elasticsearch:8.11.3",
     "docker.io/adorsys/keycloak-config-cli:6.5.1-26",
     "docker.io/agentscope/qwenpaw:v2.1.0",
@@ -70,7 +70,7 @@ $Images = @(
     "docker.io/library/memcached:1.6.45-alpine",
     "docker.io/library/mysql:8.0.39",
     "docker.io/library/nextcloud:34.0.3-apache",
-    "docker.io/library/nginx:1.31.4-alpine",
+    "docker.io/library/nginx:1.31.4-trixie-perl",
     "docker.io/library/postgres:15.19-alpine",
     "docker.io/library/postgres:16.15-alpine",
     "docker.io/library/postgres:17.11-alpine",
@@ -90,6 +90,9 @@ $Images = @(
     "docker.io/traefik/whoami:v1.12.0",
     "docker.io/valkey/valkey:8.1.9-alpine3.24",
     "docker.io/valkey/valkey:9.1.1-alpine3.24",
+    "docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64",
+    "docker.io/vllm/vllm-openai-cpu:v0.27.1",
+    "docker.io/vllm/vllm-openai:v0.27.1",
     "ghcr.io/coder/code-marketplace:v2.4.2",
     "ghcr.io/gethomepage/homepage:v2.0.0",
     "ghcr.io/google/cadvisor:v0.60.5",
@@ -97,7 +100,7 @@ $Images = @(
     "ghcr.io/openclaw/openclaw:2026.7.1-2-browser",
     "ghcr.io/open-webui/mcpo:main@sha256:1e82c9555c19e50b80745705f32b47a2647589f35279527b5118ecd3a71bd467",
     "ghcr.io/open-webui/open-terminal:0.11.35",
-    "ghcr.io/open-webui/open-webui:0.11.0",
+    "ghcr.io/open-webui/open-webui:0.11.1",
     "ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.0",
     "ghcr.io/requarks/wiki:2.5.314",
     "ghcr.io/usekaneo/kaneo:2.20.0",
@@ -108,7 +111,7 @@ $Images = @(
     "node:22.22.3-alpine",
     "node:24.16.0-bookworm-slim",
     "pypiserver/pypiserver:v2.4.1",
-    "quay.io/docling-project/docling-serve:v1.30.0",
+    "quay.io/docling-project/docling-serve:v1.31.0",
     "quay.io/keycloak/keycloak:26.7.2",
     "quay.io/prometheus/blackbox-exporter:v0.28.0",
     "quay.io/prometheus/node-exporter:v1.12.1",
@@ -136,6 +139,11 @@ $LocalImages = @(
         Image = "local/openkb:0.5.0rc1"
         Context = Join-Path $PSScriptRoot "..\42-openkb"
         Dockerfile = "Dockerfile.openkb"
+    },
+    @{
+        Image = "local/openkb-mintlify-viewer:0.1.0"
+        Context = Join-Path $PSScriptRoot "..\42-openkb\viewer"
+        Dockerfile = "Dockerfile"
     }
 )
 
@@ -174,7 +182,7 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
-foreach ($Image in $Images) {
+foreach ($Image in $Packages) {
     $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)
 
     if ((Test-Path $ArchivePath) -and -not $Overwrite) {
