@@ -74,7 +74,24 @@ scripts/
    ├── Test-PipPkgs.ps1
    ├── Test-NpmPkgs.ps1
    ├── Test-PipPkgs-from-Project.ps1
-   └── Test-NpmPkgs-from-Project.ps1
+   ├── Test-NpmPkgs-from-Project.ps1
+   ├── package.json
+   ├── requirements.txt
+   └── .tmp/
+      ├── dify/
+      ├── nextcloud/
+      ├── docling/
+      ├── hfrepo/
+      ├── rpm/
+      ├── deb/
+      ├── vscode/
+      ├── docker/
+      ├── pypi/
+      ├── npm/
+      ├── pypi-from-projects/
+      │  └── pypi/
+      └── npm-from-projects/
+         └── npm/
 ```
 
 ## 📁 Output Directory Structure

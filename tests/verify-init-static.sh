@@ -126,7 +126,11 @@ verify_powershell_syntax() {
   local test_script
   for test_script in "${test_scripts[@]}"; do
     echo "powershell download test: ${test_script}"
-    pwsh -NoLogo -NoProfile -File "${test_script}"
+    if [[ "${test_script}" == *-from-Project.ps1 ]]; then
+      pwsh -NoLogo -NoProfile -File "${test_script}" -Static
+    else
+      pwsh -NoLogo -NoProfile -File "${test_script}"
+    fi
   done
 }
 

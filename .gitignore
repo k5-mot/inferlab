@@ -42,5 +42,6 @@ backups/
 graphify-out/
 docs.local/
 tests/e2e/artifacts/
+scripts/tests/.tmp/
 
 node_modules/
