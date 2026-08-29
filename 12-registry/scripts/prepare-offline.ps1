@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$OutputDir = (Join-Path $PSScriptRoot "offline-bundle"),
     [ValidatePattern('^\d+\.\d+$')]

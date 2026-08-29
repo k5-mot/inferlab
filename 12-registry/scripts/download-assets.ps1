@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 # 実行するregistry別download scriptを定義する。
 $DownloadScripts = @(

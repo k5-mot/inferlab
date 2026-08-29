@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 # tarとして取得するcontainer imageを定義する。
 $ContainerImages = @(

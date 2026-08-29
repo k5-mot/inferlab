@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 # PyPIから依存込みで取得するpackageを定義する。
 $PypiPackages = @(

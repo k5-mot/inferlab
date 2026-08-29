@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 # deb repositoryから依存込みで取得するpackageを定義する。
 $DebPackages = @(
