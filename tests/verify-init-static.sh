@@ -109,11 +109,11 @@ verify_javascript_syntax() {
 # 戻り値:
 #   PowerShellが未導入の場合は検証をskipして0、検証に失敗した場合は非0を返す。
 # 副作用:
-#   test scriptのfile pathを標準出力へ表示する。download処理は実行しない。
+#   verification scriptのfile pathを標準出力へ表示する。download処理は実行しない。
 verify_powershell_syntax() {
-  local test_scripts=(scripts/tests/Test-*.ps1)
-  if [[ ! -e "${test_scripts[0]}" ]]; then
-    echo "powershell syntax: no download script tests"
+  local verify_scripts=(scripts/tests/Verify-*.ps1)
+  if [[ ! -e "${verify_scripts[0]}" ]]; then
+    echo "powershell syntax: no download script verifications"
     return 0
   fi
 
@@ -122,15 +122,11 @@ verify_powershell_syntax() {
     return 0
   fi
 
-  echo "powershell download tests: ${#test_scripts[@]} files"
-  local test_script
-  for test_script in "${test_scripts[@]}"; do
-    echo "powershell download test: ${test_script}"
-    if [[ "${test_script}" == *-from-Project.ps1 ]]; then
-      pwsh -NoLogo -NoProfile -File "${test_script}" -Static
-    else
-      pwsh -NoLogo -NoProfile -File "${test_script}"
-    fi
+  echo "powershell download verifications: ${#verify_scripts[@]} files"
+  local verify_script
+  for verify_script in "${verify_scripts[@]}"; do
+    echo "powershell download verification: ${verify_script}"
+    pwsh -NoLogo -NoProfile -File "${verify_script}"
   done
 }
 

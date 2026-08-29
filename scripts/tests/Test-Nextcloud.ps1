@@ -1,8 +1,10 @@
-. (Join-Path $PSScriptRoot "Assert-DownloadScript.ps1")
+﻿. (Join-Path $PSScriptRoot "Invoke-DownloadTest.ps1")
 
-$TestParameters = @{
-    ScriptPath = Join-Path $PSScriptRoot "../Download-Nextcloud.ps1"
-    ExpectedParameters = @("OutputDir", "Help")
-    ExpectedOutputDirectory = "nextcloud"
+$OutputDir = New-DownloadTestDirectory -Name "nextcloud"
+try {
+    Invoke-DownloadTestScript -ScriptName "Download-Nextcloud.ps1" -OutputDir $OutputDir
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "nextcloud") -Pattern "*.tar.gz"
 }
-Assert-DownloadScript @TestParameters
+finally {
+    Remove-DownloadTestDirectory -Path $OutputDir
+}

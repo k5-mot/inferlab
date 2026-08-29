@@ -1,7 +1,14 @@
-. (Join-Path $PSScriptRoot "Assert-DownloadScript.ps1")
+﻿. (Join-Path $PSScriptRoot "Invoke-DownloadTest.ps1")
 
-$TestParameters = @{
-    ScriptPath = Join-Path $PSScriptRoot "../Download-NpmPkgs.ps1"
-    ExpectedParameters = @("OutputDir", "Help")
+if (Skip-DownloadTestIfCommandMissing -Command "npm") {
+    exit 0
 }
-Assert-DownloadScript @TestParameters
+
+$OutputDir = New-DownloadTestDirectory -Name "npm"
+try {
+    Invoke-DownloadTestScript -ScriptName "Download-NpmPkgs.ps1" -OutputDir $OutputDir
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "npm") -Pattern "*.tgz"
+}
+finally {
+    Remove-DownloadTestDirectory -Path $OutputDir
+}

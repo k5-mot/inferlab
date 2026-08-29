@@ -1,8 +1,10 @@
-. (Join-Path $PSScriptRoot "Assert-DownloadScript.ps1")
+﻿. (Join-Path $PSScriptRoot "Invoke-DownloadTest.ps1")
 
-$TestParameters = @{
-    ScriptPath = Join-Path $PSScriptRoot "../Download-VSIX.ps1"
-    ExpectedParameters = @("OutputDir", "Help")
-    ExpectedOutputDirectory = "vscode"
+$OutputDir = New-DownloadTestDirectory -Name "vsix"
+try {
+    Invoke-DownloadTestScript -ScriptName "Download-VSIX.ps1" -OutputDir $OutputDir
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "vscode") -Pattern "*.vsix"
 }
-Assert-DownloadScript @TestParameters
+finally {
+    Remove-DownloadTestDirectory -Path $OutputDir
+}

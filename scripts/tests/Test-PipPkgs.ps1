@@ -1,7 +1,15 @@
-. (Join-Path $PSScriptRoot "Assert-DownloadScript.ps1")
+﻿. (Join-Path $PSScriptRoot "Invoke-DownloadTest.ps1")
 
-$TestParameters = @{
-    ScriptPath = Join-Path $PSScriptRoot "../Download-PipPkgs.ps1"
-    ExpectedParameters = @("OutputDir", "Help")
+if (-not (Test-Python3Command)) {
+    Write-Host "Skip download test because runnable Python 3 was not found."
+    exit 0
 }
-Assert-DownloadScript @TestParameters
+
+$OutputDir = New-DownloadTestDirectory -Name "pip"
+try {
+    Invoke-DownloadTestScript -ScriptName "Download-PipPkgs.ps1" -OutputDir $OutputDir
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "pypi") -Pattern @("*.whl", "*.tar.gz", "*.zip")
+}
+finally {
+    Remove-DownloadTestDirectory -Path $OutputDir
+}

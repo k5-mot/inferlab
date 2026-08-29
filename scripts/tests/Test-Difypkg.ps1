@@ -1,8 +1,11 @@
-. (Join-Path $PSScriptRoot "Assert-DownloadScript.ps1")
+﻿. (Join-Path $PSScriptRoot "Invoke-DownloadTest.ps1")
 
-$TestParameters = @{
-    ScriptPath = Join-Path $PSScriptRoot "../Download-Difypkg.ps1"
-    ExpectedParameters = @("OutputDir", "Help")
-    ExpectedOutputDirectory = "dify"
+$OutputDir = New-DownloadTestDirectory -Name "difypkg"
+try {
+    Invoke-DownloadTestScript -ScriptName "Download-Difypkg.ps1" -OutputDir $OutputDir
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "dify") -Pattern "*.difypkg"
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "dify") -Pattern "SHA256SUMS"
 }
-Assert-DownloadScript @TestParameters
+finally {
+    Remove-DownloadTestDirectory -Path $OutputDir
+}

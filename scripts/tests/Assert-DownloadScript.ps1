@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 download scriptが共通interfaceとcomment規約を満たすことを検証します。
 .PARAMETER ScriptPath
