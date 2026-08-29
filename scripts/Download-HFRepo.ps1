@@ -41,6 +41,9 @@ $Registries = @(
 )
 $Packages = @(
         "Qwen/Qwen3.8-27B-FP8",
+        # "orcarouter/Qwen3.8-27B-Uncensored-FP8",
+        # "RedHatAI/Muse-Glimmer-30B-FP8-block",
+        # "RedHatAI/gemma-4-31B-it-FP8-block",
         "Qwen/Qwen3-Embedding-0.6B",
         "Qwen/Qwen3-Reranker-0.6B",
         "cl-nagoya/ruri-v3-310m",
