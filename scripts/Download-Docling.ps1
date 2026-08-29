@@ -197,7 +197,13 @@ function Save-VerifiedTessdata {
 
     New-Item -ItemType Directory -Path $ParentDirectory -Force | Out-Null
     Write-Host "Download Tesseract traineddata: $RelativePath"
-    Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutputPath -UseBasicParsing
+    $WebClient = [System.Net.WebClient]::new()
+    try {
+        $WebClient.DownloadFile($DownloadUrl, $OutputPath)
+    }
+    finally {
+        $WebClient.Dispose()
+    }
 
     $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $OutputPath).Hash.ToLowerInvariant()
     if ($ActualSha256 -ne $ExpectedSha256) {
