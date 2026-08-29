@@ -24,7 +24,7 @@
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 # LIST.mdのPyPI、npm、RPM、deb、container image資材を取得する。
-.\12-registry\scripts\download-assets.ps1
+.\scripts\Download-All.ps1 -OutputDir /srv
 
 # LIST.mdのHugging Face資材を取得する。
 .\scripts\Download-HFRepo.ps1 -OutputDir /srv

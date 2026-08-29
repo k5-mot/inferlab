@@ -90,17 +90,256 @@ if ($Packages.Count -eq 0) {
     throw "取得するdeb packageが指定されていません。"
 }
 
-$CommonScript = [System.IO.Path]::GetFullPath(
-    (Join-Path `
-        $PSScriptRoot `
-        "../12-registry/scripts/download-assets-common.ps1")
-)
+<#
+.SYNOPSIS
+repository URLと相対pathを結合します。
+.PARAMETER BaseUrl
+repository rootのURLです。
+.PARAMETER RelativePath
+repository rootからの相対pathです。
+.OUTPUTS
+結合済みURL文字列を返します。
+#>
+function Join-RepositoryUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseUrl,
+        [Parameter(Mandatory = $true)][string]$RelativePath
+    )
 
-if (-not (Test-Path -LiteralPath $CommonScript -PathType Leaf)) {
-    throw "共通scriptが見つかりません: $CommonScript"
+    return $BaseUrl.TrimEnd("/") + "/" + $RelativePath.TrimStart("/")
 }
 
-. $CommonScript
+<#
+.SYNOPSIS
+HTTPでfileを取得し、既存fileを置き換えます。
+.PARAMETER Url
+取得元URLです。
+.PARAMETER OutputPath
+保存先file pathです。
+.OUTPUTS
+値は返しません。
+.NOTES
+Windows PowerShell 5.1のInvoke-WebRequest進捗表示を避けるためWebClientを使用します。
+#>
+function Save-FileFromUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][string]$OutputPath
+    )
+
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
+    $WebClient = [System.Net.WebClient]::new()
+    try {
+        $WebClient.DownloadFile($Url, $OutputPath)
+    } finally {
+        $WebClient.Dispose()
+    }
+}
+
+<#
+.SYNOPSIS
+gzip圧縮されたtext fileをHTTPで取得して展開します。
+.PARAMETER Url
+gzip fileの取得元URLです。
+.OUTPUTS
+展開済みtextを返します。
+.NOTES
+一時fileを作成し、読み取り後に削除します。
+#>
+function Read-GzipTextFromUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url
+    )
+
+    $TempFile = New-TemporaryFile
+    try {
+        Save-FileFromUrl -Url $Url -OutputPath $TempFile.FullName
+        $InputStream = [System.IO.File]::OpenRead($TempFile.FullName)
+        try {
+            $GzipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+                $Reader = [System.IO.StreamReader]::new($GzipStream, [System.Text.Encoding]::UTF8)
+                try {
+                    return $Reader.ReadToEnd()
+                } finally {
+                    $Reader.Dispose()
+                }
+            } finally {
+                $GzipStream.Dispose()
+            }
+        } finally {
+            $InputStream.Dispose()
+        }
+    } finally {
+        Remove-Item -Force $TempFile.FullName
+    }
+}
+
+<#
+.SYNOPSIS
+Debian Packages metadataをpackage名で引けるindexへ変換します。
+.PARAMETER PackagesUrl
+Packages.gzのURLです。
+.OUTPUTS
+package名をkey、metadata hashtableをvalueにしたhashtableを返します。
+#>
+function Get-DebPackageIndex {
+    param(
+        [Parameter(Mandatory = $true)][string]$PackagesUrl
+    )
+
+    $Index = @{}
+    $Text = Read-GzipTextFromUrl -Url $PackagesUrl
+    foreach ($Entry in ($Text -split "(?:`r?`n){2,}")) {
+        if ([string]::IsNullOrWhiteSpace($Entry)) {
+            continue
+        }
+
+        $Fields = @{}
+        $CurrentField = $null
+        foreach ($Line in ($Entry -split "`r?`n")) {
+            if ($Line -match "^([^:]+):\s*(.*)$") {
+                $CurrentField = $Matches[1]
+                $Fields[$CurrentField] = $Matches[2]
+            } elseif ($Line -match "^\s+(.*)$" -and $CurrentField) {
+                $Fields[$CurrentField] = $Fields[$CurrentField] + " " + $Matches[1]
+            }
+        }
+
+        if ($Fields.ContainsKey("Package") -and -not $Index.ContainsKey($Fields["Package"])) {
+            $Index[$Fields["Package"]] = $Fields
+        }
+    }
+
+    return $Index
+}
+
+<#
+.SYNOPSIS
+deb package metadataから依存package名を取り出します。
+.PARAMETER Package
+Packages metadataの1 package分のhashtableです。
+.OUTPUTS
+依存package名の配列を返します。
+#>
+function Get-DebDependencyNames {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Package
+    )
+
+    $Dependencies = [System.Collections.Generic.List[string]]::new()
+    foreach ($FieldName in @("Pre-Depends", "Depends")) {
+        if (-not $Package.ContainsKey($FieldName)) {
+            continue
+        }
+
+        foreach ($Part in ($Package[$FieldName] -split ",")) {
+            $Candidate = (($Part -split "\|")[0]).Trim()
+            $Name = ($Candidate -replace "\s*\(.*?\)", "" -replace ":[A-Za-z0-9][A-Za-z0-9-]*", "").Trim()
+            if ($Name -and -not $Dependencies.Contains($Name)) {
+                $Dependencies.Add($Name)
+            }
+        }
+    }
+
+    return $Dependencies.ToArray()
+}
+
+<#
+.SYNOPSIS
+deb packageと依存packageをHTTP repositoryから取得します。
+.PARAMETER PackageNames
+取得するroot package名です。
+.PARAMETER RepositoryBaseUrl
+Debian repository rootのURLです。
+.PARAMETER PackagesUrl
+Packages.gzのURLです。
+.PARAMETER OutputDirectory
+deb fileの保存先directoryです。
+.OUTPUTS
+値は返しません。
+#>
+function Save-DebPackagesWithDependencies {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$PackageNames,
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
+        [Parameter(Mandatory = $true)][string[]]$PackagesUrl,
+        [Parameter(Mandatory = $true)][string]$OutputDirectory
+    )
+
+    if ($PackageNames.Count -eq 0) {
+        return
+    }
+
+    $Index = @{}
+    foreach ($Url in $PackagesUrl) {
+        $PartialIndex = Get-DebPackageIndex -PackagesUrl $Url
+        foreach ($Name in $PartialIndex.Keys) {
+            if (-not $Index.ContainsKey($Name)) {
+                $Index[$Name] = $PartialIndex[$Name]
+            }
+        }
+    }
+
+    $Queue = [System.Collections.Queue]::new()
+    $Seen = @{}
+    foreach ($Name in $PackageNames) {
+        $Queue.Enqueue($Name)
+    }
+
+    while ($Queue.Count -gt 0) {
+        $Name = [string]$Queue.Dequeue()
+        if ($Seen.ContainsKey($Name)) {
+            continue
+        }
+
+        $Seen[$Name] = $true
+        if (-not $Index.ContainsKey($Name)) {
+            Write-Warning "deb package not found: $Name"
+            continue
+        }
+
+        $Package = $Index[$Name]
+        $FileName = Split-Path -Leaf $Package["Filename"]
+        $OutputPath = Join-Path $OutputDirectory $FileName
+        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Package["Filename"]) -OutputPath $OutputPath
+
+        foreach ($Dependency in (Get-DebDependencyNames -Package $Package)) {
+            if (-not $Seen.ContainsKey($Dependency)) {
+                $Queue.Enqueue($Dependency)
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+directoryにfileが存在することを検証します。
+.PARAMETER Directory
+検証するdirectoryです。
+.PARAMETER Pattern
+対象file pattern配列です。
+.PARAMETER Description
+エラー表示用の資材種別です。
+.OUTPUTS
+値は返しません。
+#>
+function Assert-AssetFilesExist {
+    param(
+        [Parameter(Mandatory = $true)][string]$Directory,
+        [Parameter(Mandatory = $true)][string[]]$Pattern,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    $Files = @()
+    foreach ($ItemPattern in $Pattern) {
+        $Files += @(Get-ChildItem -Path $Directory -Filter $ItemPattern -File -ErrorAction SilentlyContinue)
+    }
+
+    if ($Files.Count -eq 0) {
+        throw "$Description assets were not created: $Directory"
+    }
+}
 
 $DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "deb"
 

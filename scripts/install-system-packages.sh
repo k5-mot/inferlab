@@ -14,7 +14,7 @@ DEB_DIRECTORY="${DEB_DIRECTORY:-/srv/12-registry/deb}"
 print_usage() {
   cat <<'USAGE'
 Usage:
-  12-registry/scripts/install-system-packages.sh [options]
+  scripts/install-system-packages.sh [options]
 
 Description:
   local directoryに保存済みのRPMまたはdeb packageをinstallします。

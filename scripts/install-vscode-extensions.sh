@@ -14,7 +14,7 @@ EDITOR_COMMAND="${EDITOR_COMMAND:-}"
 print_usage() {
   cat <<'USAGE'
 Usage:
-  12-registry/scripts/install-vscode-extensions.sh [options]
+  scripts/install-vscode-extensions.sh [options]
 
 Description:
   local directoryに保存済みのVSIX fileをVS Code互換CLIへinstallします。

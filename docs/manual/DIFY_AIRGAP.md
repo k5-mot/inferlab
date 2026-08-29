@@ -69,7 +69,7 @@ sudo cp -a /srv/airgap-assets/pypi/. /srv/12-registry/pypi/
 cd /srv/21-dify/plugins && sha256sum --check SHA256SUMS
 
 # 事前取得した全container imageをlocal container engineへloadする。
-cd <REPOSITORY_ROOT> && sudo ./12-registry/scripts/install-images.sh --image-directory /srv/airgap-assets/docker
+cd <REPOSITORY_ROOT> && sudo ./scripts/install-images.sh --image-directory /srv/airgap-assets/docker
 ```
 
 期待結果:

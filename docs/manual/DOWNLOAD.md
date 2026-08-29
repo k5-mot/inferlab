@@ -128,7 +128,7 @@ sudo cp -a /srv/airgap-assets/deb/. /srv/12-registry/deb/
 sudo cp -a /srv/airgap-assets/vscode/. /srv/12-registry/vsix/
 
 # container image archiveをlocal container engineへ読み込む。
-sudo ./12-registry/scripts/install-images.sh --image-directory /srv/airgap-assets/docker
+sudo ./scripts/install-images.sh --image-directory /srv/airgap-assets/docker
 ```
 
 期待結果:
@@ -145,10 +145,10 @@ sudo ./12-registry/scripts/install-images.sh --image-directory /srv/airgap-asset
 
 ```bash
 # RPM系またはdeb系のOS packageをlocal fileだけからinstallする。
-sudo ./12-registry/scripts/install-system-packages.sh --rpm-directory /srv/12-registry/rpm --deb-directory /srv/12-registry/deb
+sudo ./scripts/install-system-packages.sh --rpm-directory /srv/12-registry/rpm --deb-directory /srv/12-registry/deb
 
 # VS Code互換editorへ取得済みVSIXをinstallする。
-./12-registry/scripts/install-vscode-extensions.sh --vsix-directory /srv/12-registry/vsix --editor-command code
+./scripts/install-vscode-extensions.sh --vsix-directory /srv/12-registry/vsix --editor-command code
 ```
 
 期待結果:

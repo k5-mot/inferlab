@@ -9,7 +9,7 @@
 - deb: reprepro + nginx
 
 取得済み資材は `/srv/12-registry/{rpm,deb,pypi,npm-packages,vsix}` に配置する。`docker compose --env-file .env --profile registry up -d` を実行すると、rpm、deb、PyPI package、npm package、VSIX file は各 registry へ自動的に反映される。
-Windows Clientで資材を取得する場合は、DockerやWSLを使わず `12-registry/scripts/download-assets.ps1` を実行する。registry別に取得したい場合は、同じdirectoryにある `download-pypi-assets.ps1` などを個別に実行する。
+Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scripts/Download-All.ps1` を実行する。registry別に取得したい場合は、`scripts/Download-PipPkgs.ps1` などを個別に実行する。
 
 | Directory | 対象 | 反映先 |
 | --- | --- | --- |

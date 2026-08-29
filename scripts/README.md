@@ -7,11 +7,16 @@ cd "./scripts"
 
 ### 本プロジェクトに必要なパッケージをダウンロード.
 $OutputDir = "<output-dir>"
+
+### Hugging Face model以外の主要資材をまとめてダウンロード.
+powershell -NoProfile -NonInteractive -ExecutionPolicy "Bypass" -File "./Download-All.ps1" -OutputDir $OutputDir
+
+### 個別に実行する場合は、以下の配列を使う.
 $DownloadScripts = @(
     "Download-Difypkg.ps1",
     "Download-Nextcloud.ps1",
     "Download-Docling.ps1",
-    "Download-HFRepo.ps1",
+    # "Download-HFRepo.ps1",
     "Download-RPM.ps1",
     "Download-DEB.ps1",
     "Download-VSIX.ps1",
@@ -23,12 +28,11 @@ foreach ($Script in $DownloadScripts) {
     Write-Host "Running ==> $Script"
 
     # Windows PowerShell 5.1でdownload scriptを実行する。
-    powershell -NoProfile -ExecutionPolicy "Bypass" -File "./$Script" -OutputDir $OutputDir
+    powershell -NoProfile -NonInteractive -ExecutionPolicy "Bypass" -File "./$Script" -OutputDir $OutputDir
 
     if ($LASTEXITCODE -ne 0) {
         throw "Download failed: $Script"
     }
-    powershell -ExecutionPolicy "Bypass" -File $Script -OutputDir $OutputDir
 }
 
 ### 任意projectのpyproject.toml/requirements.txtを元に、
@@ -57,6 +61,7 @@ powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-NpmPkgs-
 
 ```bash
 scripts/
+├── Download-All.ps1
 ├── Download-Difypkg.ps1
 ├── Download-Nextcloud.ps1
 ├── Download-Docling.ps1
@@ -70,6 +75,11 @@ scripts/
 │
 ├── Download-PipPkgs-from-Project.ps1
 ├── Download-NpmPkgs-from-Project.ps1
+├── Prepare-Offline.ps1
+├── install-images.sh
+├── install-offline.sh
+├── install-system-packages.sh
+├── install-vscode-extensions.sh
 │
 └── tests/
    ├── Assert-DownloadScript.ps1
