@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.openkb
-    image: local/openkb:0.5.0rc1
+    # image: local/openkb:0.5.0rc1
     container_name: ${STACK_NAME}-openkb
     restart: unless-stopped
     profiles:
@@ -35,7 +35,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: local/llm-wiki-platform:0.1.0
+    # image: local/llm-wiki-platform:0.1.0
     container_name: ${STACK_NAME}-llm-wiki-api
     restart: unless-stopped
     profiles:

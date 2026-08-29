@@ -1,4 +1,4 @@
-FROM node:24.16.0-bookworm-slim AS builder
+FROM docker.io/library/node:24.20.0-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY src ./src
 RUN pnpm build \
     && pnpm prune --prod
 
-FROM node:24.16.0-bookworm-slim
+FROM docker.io/library/node:24.20.0-bookworm-slim
 
 ENV NODE_ENV=production \
     CONFIG_PATH=/app/config.yaml \

@@ -5,7 +5,7 @@
 #
 services:
   langfuse-worker:
-    image: ghcr.io/langfuse/langfuse-worker:4.15.0
+    image: ghcr.io/langfuse/langfuse-worker:4.24.0
     container_name: ${STACK_NAME}-langfuse-worker
     restart: unless-stopped
     profiles:
@@ -81,7 +81,7 @@ services:
       - homepage.description=Langfuse platform
 
   langfuse-web:
-    image: ghcr.io/langfuse/langfuse:4.15.0
+    image: ghcr.io/langfuse/langfuse:4.24.0
     container_name: ${STACK_NAME}-langfuse-web
     restart: unless-stopped
     profiles:
@@ -122,7 +122,7 @@ services:
       - homepage.description=Langfuse platform
 
   langfuse-clickhouse:
-    image: docker.io/clickhouse/clickhouse-server:26.7.4
+    image: docker.io/clickhouse/clickhouse-server:26.7.5.10
     container_name: ${STACK_NAME}-langfuse-clickhouse
     restart: unless-stopped
     user: "101:101"

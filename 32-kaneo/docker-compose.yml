@@ -1,6 +1,6 @@
 services:
   kaneo:
-    image: ghcr.io/usekaneo/kaneo:2.20.0
+    image: ghcr.io/usekaneo/kaneo:2.22.0
     container_name: ${STACK_NAME}-kaneo
     restart: unless-stopped
     profiles:

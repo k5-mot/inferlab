@@ -12,7 +12,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   ragflow:
     <<: *external-dns-stabilizer
-    image: docker.io/infiniflow/ragflow:v0.26.4
+    image: docker.io/infiniflow/ragflow:v0.27.1
     container_name: ${STACK_NAME}-ragflow
     restart: unless-stopped
     profiles:
@@ -83,6 +83,8 @@ services:
 
   ragflow-elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    # image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    # image: docker.io/opensearchproject/opensearch:2.19.1
     container_name: ${STACK_NAME}-ragflow-elasticsearch
     restart: unless-stopped
     profiles:

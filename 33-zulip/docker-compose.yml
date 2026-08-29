@@ -131,7 +131,7 @@ services:
       start_period: 120s
 
   zulip-postgres:
-    image: zulip/zulip-postgresql:14
+    image: docker.io/zulip/zulip-postgresql:14
     container_name: ${STACK_NAME}-zulip-postgres
     restart: unless-stopped
     profiles:
@@ -191,8 +191,9 @@ services:
       - homepage.name=Zulip-Memcached
       - homepage.description=In-memory cache
       - homepage.icon=/icons/memcached.png
+
   zulip-rabbitmq:
-    image: docker.io/library/rabbitmq:4.2.9
+    image: docker.io/library/rabbitmq:4.3.5
     container_name: ${STACK_NAME}-zulip-rabbitmq
     restart: unless-stopped
     profiles:

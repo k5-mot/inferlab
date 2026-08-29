@@ -21,9 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
-    # image: ghcr.io/open-webui/open-webui:0.11.1-slim
     image: ghcr.io/open-webui/open-webui:0.11.1
-    # image: ghcr.io/open-webui/open-webui:0.10.2
     container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped
     profiles:
@@ -247,7 +245,7 @@ services:
 
   open-terminal:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-terminal:0.11.35
+    image: ghcr.io/open-webui/open-terminal:0.12.3
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
@@ -284,8 +282,7 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    # 公式releaseに対応するGHCR tagがないため、公式READMEのmainを検証済みdigestへ固定する。
-    image: ghcr.io/open-webui/mcpo:main@sha256:1e82c9555c19e50b80745705f32b47a2647589f35279527b5118ecd3a71bd467
+    image: ghcr.io/open-webui/mcpo:main
     container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:
@@ -324,13 +321,12 @@ services:
 
   searxng:
     <<: *external-dns-stabilizer
-    image: docker.io/searxng/searxng:2026.8.20-8d3dd0cd4
+    image: ghcr.io/searxng/searxng:2026.8.29-d226b78bc
     container_name: ${STACK_NAME}-searxng
     restart: unless-stopped
     profiles:
       - owui
     environment:
-      # これはAPI認証keyではなく、SearXNG内部のsession署名値としてだけ使用する。
       SEARXNG_SECRET: ${SEARXNG_SECRET:-sk-searxng-internal-secret}
     ports:
       - 32002:8080
@@ -383,7 +379,8 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
+    image: docker.io/aws-cli/aws-cli:2.36.34
+    # image: public.ecr.aws/aws-cli/aws-cli:2.36.34
     container_name: ${STACK_NAME}-oikb-rustfs-init
     restart: "no"
     profiles:
