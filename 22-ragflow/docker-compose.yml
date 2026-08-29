@@ -24,10 +24,10 @@ services:
       RAGFLOW_HOST: 0.0.0.0
       RAGFLOW_SECRET_KEY: ${RAGFLOW_SECRET_KEY:-sk-ragflow-session-secret-key-change-me}
       API_PROXY_SCHEME: python
-      DOC_ENGINE: elasticsearch
-      ES_HOST: ragflow-elasticsearch
-      ES_USER: elastic
-      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-ragflow_elastic_password}
+      DOC_ENGINE: opensearch
+      ES_HOST: ragflow-opensearch
+      ES_USER: admin
+      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-Ragflow_OpenSearch_password_123!}
       MYSQL_HOST: ragflow-mysql
       MYSQL_PORT: 3306
       MYSQL_DBNAME: rag_flow
@@ -52,7 +52,7 @@ services:
     networks:
       - internal-nw
     depends_on:
-      ragflow-elasticsearch:
+      ragflow-opensearch:
         condition: service_healthy
       ragflow-mysql:
         condition: service_healthy
@@ -81,36 +81,33 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:32200
       - homepage.description=Retrieval-augmented generation platform
 
-  ragflow-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
-    # image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
-    # image: docker.io/opensearchproject/opensearch:2.19.1
-    container_name: ${STACK_NAME}-ragflow-elasticsearch
+  ragflow-opensearch:
+    image: docker.io/opensearchproject/opensearch:2.19.1
+    container_name: ${STACK_NAME}-ragflow-opensearch
     restart: unless-stopped
     profiles:
       - ragflow
     environment:
-      node.name: ragflow-elasticsearch
+      node.name: ragflow-opensearch
       discovery.type: single-node
-      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-ragflow_elastic_password}
-      ES_JAVA_OPTS: -Xms2g -Xmx2g
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-Ragflow_OpenSearch_password_123!}
+      OPENSEARCH_JAVA_OPTS: -Xms2g -Xmx2g
       bootstrap.memory_lock: "false"
-      xpack.security.enabled: "true"
-      xpack.security.http.ssl.enabled: "false"
-      xpack.security.transport.ssl.enabled: "false"
+      plugins.security.ssl.http.enabled: "false"
+      plugins.security.ssl.transport.enforce_hostname_verification: "false"
       cluster.routing.allocation.disk.watermark.low: 5gb
       cluster.routing.allocation.disk.watermark.high: 3gb
       cluster.routing.allocation.disk.watermark.flood_stage: 2gb
     tmpfs:
       - /tmp:mode=1777,size=512m
     volumes:
-      - ragflow-elasticsearch-data:/usr/share/elasticsearch/data
+      - ragflow-opensearch-data:/usr/share/opensearch/data
     networks:
       - internal-nw
     healthcheck:
       test:
         - CMD-SHELL
-        - curl -fsS -u "elastic:$${ELASTIC_PASSWORD}" "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null
+        - curl -fsS -u "admin:$${OPENSEARCH_INITIAL_ADMIN_PASSWORD}" "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null
       interval: 10s
       timeout: 10s
       retries: 60
@@ -127,7 +124,7 @@ services:
     pids_limit: 2048
     labels:
       - homepage.group=22-ragflow
-      - homepage.name=RAGFlow-Elasticsearch
+      - homepage.name=RAGFlow-OpenSearch
       - homepage.description=Document search engine
 
   ragflow-mysql:
@@ -231,7 +228,7 @@ services:
         condition: service_healthy
 
   ragflow-valkey:
-    image: docker.io/valkey/valkey:8.1.9-alpine3.24
+    image: docker.io/valkey/valkey:9.1.1-alpine3.24
     container_name: ${STACK_NAME}-ragflow-valkey
     restart: unless-stopped
     profiles:
@@ -266,7 +263,7 @@ services:
 
 volumes:
   ragflow-logs:
-  ragflow-elasticsearch-data:
+  ragflow-opensearch-data:
   ragflow-mysql-data:
   ragflow-rustfs-data:
   ragflow-valkey-data:

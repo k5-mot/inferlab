@@ -15,7 +15,6 @@ include:
   - ./32-kaneo/docker-compose.yml
   - ./33-zulip/docker-compose.yml
   - ./34-gitlab/docker-compose.yml
-  - ./37-wikijs/docker-compose.yml
   - ./40-obsidian/docker-compose.yml
   - ./41-llmwiki/docker-compose.yml
   - ./42-openkb/docker-compose.yml
