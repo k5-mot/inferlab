@@ -1,9 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
 Hugging Face model repositoryを取得します。
 
 .DESCRIPTION
-`huggingface-cli download`を使い、指定したHugging Face model repositoryを`owner--repo`形式のdirectoryへ保存します。
+`hf download`を使い、指定したHugging Face model repositoryを`owner--repo`形式のdirectoryへ保存します。
 既定ではvLLMとTEIで利用するmodel repositoryを`/srv/huggingface/`配下へ取得します。
 
 .PARAMETER OutputDir
@@ -19,7 +19,7 @@ Hugging Face repositoryを`C:\airgap\hfrepo`へ取得します。
 
 .NOTES
 副作用として指定directory配下へfileを作成または上書きします。
-実行にはPowerShellとhuggingface-cliが必要です。
+実行にはPowerShellとhfが必要です。
 #>
 [CmdletBinding()]
 param (
@@ -46,12 +46,15 @@ $Packages = @(
         "cl-nagoya/ruri-v3-310m",
         "cl-nagoya/ruri-v3-reranker-310m"
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("hf-internal-testing/tiny-random-bert")
+}
 if ($Packages.Count -eq 0) {
     throw "取得するHugging Face repositoryが指定されていません。"
 }
 
-if (-not (Get-Command huggingface-cli -ErrorAction SilentlyContinue)) {
-    throw "huggingface-cli が見つかりません。huggingface_hubをインストールしてください。"
+if (-not (Get-Command hf -ErrorAction SilentlyContinue)) {
+    throw "hf が見つかりません。huggingface_hubをインストールしてください。"
 }
 
 <#
@@ -88,7 +91,7 @@ function ConvertTo-HuggingFaceDirectoryName {
 Hugging Face repositoryをlocal directoryへ保存します。
 
 .DESCRIPTION
-`huggingface-cli download`を実行し、指定repositoryのsnapshotをlocal directoryへ同期します。
+`hf download`を実行し、指定repositoryのsnapshotをlocal directoryへ同期します。
 
 .PARAMETER Repository
 取得するHugging Face repository IDです。
@@ -114,7 +117,7 @@ function Save-HuggingFaceRepository {
     New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
     Write-Host "Download Hugging Face repository: $Repository"
-    huggingface-cli download `
+    hf download `
         $Repository `
         --repo-type model `
         --local-dir $OutputDirectory

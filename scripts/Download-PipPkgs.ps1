@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 このrepositoryのair-gap運用に必要なPython package資材を取得します。
 
@@ -14,7 +14,7 @@ scriptのhelpを表示して終了します。
 Dify plugin、private-chat、OpenKBのPython依存を`C:\airgap\pypi`へ取得します。
 
 .NOTES
-先にDownload-Difypkg.ps1を実行してDify plugin packageを用意する必要があります。
+download対象はこのscriptの`$Packages`で固定します。
 #>
 [CmdletBinding()]
 param (
@@ -31,120 +31,71 @@ if (-not $OutputDir) {
 }
 
 $ErrorActionPreference = "Stop"
-Add-Type -AssemblyName System.IO.Compression.FileSystem
 $Registries = @(
     "https://pypi.org/simple",
-    "https://download.pytorch.org/whl/cpu",
-    "https://raw.githubusercontent.com/k5-mot/private-chat/main/api/pyproject.toml"
+    "https://download.pytorch.org/whl/cpu"
 )
 $Packages = @(
-    [pscustomobject]@{ Type = "difypkg"; Path = "dify/*.difypkg" },
-    [pscustomobject]@{ Type = "project"; Path = "../42-openkb" },
-    [pscustomobject]@{ Type = "pyproject"; Registry = $Registries[2] }
+    "annotated-doc==0.0.5",
+    "annotated-types==0.8.0",
+    "anyio==4.14.2",
+    "apscheduler==3.11.3",
+    "certifi==2026.7.22",
+    "click==8.4.2",
+    "colorama==0.4.6",
+    "fastapi==0.141.1",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httptools==0.8.0",
+    "httpx==0.28.1",
+    "idna==3.19",
+    "pydantic-core==2.46.4",
+    "pydantic==2.13.4",
+    "python-dotenv==1.2.3",
+    "pyyaml==6.0.3",
+    "starlette==1.6.0",
+    "typing-extensions==4.16.0",
+    "typing-inspection==0.4.4",
+    "tzdata==2026.3",
+    "tzlocal==5.4.4",
+    "uvicorn==0.52.3",
+    "uvloop==0.22.1; sys_platform != 'win32'",
+    "watchfiles==1.2.0",
+    "websockets==17.0.1"
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("six==1.16.0")
+}
 
 <#
 .SYNOPSIS
-projectの依存定義を共通download処理へ渡します。
-.PARAMETER ProjectDir
-pyproject.tomlまたはrequirements.txtがあるproject directoryです。
+script内のpackage listを共通download処理へ渡します。
+.PARAMETER Packages
+requirements.txtへ書き出すrequirement spec配列です。
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。
 .OUTPUTS
 値を返しません。
 .NOTES
-保存先へpackage archiveを作成または上書きし、downloadに失敗した場合は例外を送出します。
+一時directoryへrequirements.txtを作成し、downloadに失敗した場合は例外を送出します。
 #>
-function Invoke-ProjectPackageDownload {
+function Invoke-PackageListDownload {
     param (
-        [Parameter(Mandatory = $true)][string]$ProjectDir,
+        [Parameter(Mandatory = $true)][string[]]$Packages,
         [Parameter(Mandatory = $true)][string]$OutputDir
     )
 
     $DownloaderPath = Join-Path $PSScriptRoot "Download-PipPkgs-from-Project.ps1"
-    & $DownloaderPath -ProjectDir $ProjectDir -OutputDir $OutputDir
-}
-
-<#
-.SYNOPSIS
-Dify plugin packageからrequirements.txtを展開します。
-.PARAMETER PackagePath
-展開対象の`.difypkg` file pathです。
-.PARAMETER ProjectDir
-requirements.txtの展開先project directoryです。
-.OUTPUTS
-展開したrequirements.txtの絶対pathを返します。fileが含まれない場合はnullを返します。
-.NOTES
-一時project directoryへrequirements.txtを作成します。
-#>
-function Expand-DifyRequirements {
-    param (
-        [Parameter(Mandatory = $true)][string]$PackagePath,
-        [Parameter(Mandatory = $true)][string]$ProjectDir
-    )
-
-    New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
-    $RequirementsPath = Join-Path $ProjectDir "requirements.txt"
-    $Archive = [System.IO.Compression.ZipFile]::OpenRead($PackagePath)
+    $ProjectDir = Join-Path ([System.IO.Path]::GetTempPath()) ("repository-pip-" + [guid]::NewGuid().ToString("N"))
     try {
-        $Entry = $Archive.GetEntry("requirements.txt")
-        if ($null -eq $Entry) {
-            return $null
-        }
-        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, $RequirementsPath, $true)
+        New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
+        $Packages | Set-Content -LiteralPath (Join-Path $ProjectDir "requirements.txt") -Encoding ascii
+        & $DownloaderPath -ProjectDir $ProjectDir -OutputDir $OutputDir
     }
     finally {
-        $Archive.Dispose()
+        Remove-Item -LiteralPath $ProjectDir -Recurse -Force -ErrorAction SilentlyContinue
     }
-    return $RequirementsPath
 }
 
 $OutputDir = [System.IO.Path]::GetFullPath($OutputDir)
-$TemporaryDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("repository-pip-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $TemporaryDirectory -Force | Out-Null
-
-try {
-    foreach ($Package in $Packages) {
-        if ($Package.Type -eq "difypkg") {
-            $PatternPath = Join-Path $OutputDir $Package.Path
-            $PluginPackages = @(Get-ChildItem -Path $PatternPath -File -ErrorAction SilentlyContinue)
-            if ($PluginPackages.Count -eq 0) {
-                throw "Dify plugin packageが見つかりません。先にDownload-Difypkg.ps1を実行してください: $PatternPath"
-            }
-            $PluginNumber = 0
-            foreach ($PluginPackage in $PluginPackages) {
-                $PluginNumber += 1
-                $ProjectDir = Join-Path $TemporaryDirectory "dify-$PluginNumber"
-                $RequirementsPath = Expand-DifyRequirements -PackagePath $PluginPackage.FullName -ProjectDir $ProjectDir
-                if (-not $RequirementsPath) {
-                    Write-Host "Skip Dify plugin without requirements.txt: $($PluginPackage.Name)"
-                    continue
-                }
-                $RequirementLines = @(
-                    Get-Content -LiteralPath $RequirementsPath |
-                        Where-Object { $_.Trim() -and -not $_.Trim().StartsWith("#") }
-                )
-                if ($RequirementLines.Count -eq 0) {
-                    Write-Host "Skip Dify plugin without Python dependency: $($PluginPackage.Name)"
-                    continue
-                }
-                Invoke-ProjectPackageDownload -ProjectDir $ProjectDir -OutputDir $OutputDir
-            }
-            continue
-        }
-
-        if ($Package.Type -eq "project") {
-            $ProjectDir = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot $Package.Path))
-            Invoke-ProjectPackageDownload -ProjectDir $ProjectDir -OutputDir $OutputDir
-            continue
-        }
-
-        $ProjectDir = Join-Path $TemporaryDirectory "remote-pyproject"
-        New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
-        Invoke-WebRequest -Uri $Package.Registry -OutFile (Join-Path $ProjectDir "pyproject.toml")
-        Invoke-ProjectPackageDownload -ProjectDir $ProjectDir -OutputDir $OutputDir
-    }
-}
-finally {
-    Remove-Item -LiteralPath $TemporaryDirectory -Recurse -Force -ErrorAction SilentlyContinue
-}
+Invoke-PackageListDownload -Packages $Packages -OutputDir $OutputDir

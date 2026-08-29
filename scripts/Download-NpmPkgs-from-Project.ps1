@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 対象project directoryのpackage.jsonからnpm package archiveを取得します。
 
@@ -57,6 +57,11 @@ $Platforms = @(
     [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" },
     [pscustomobject]@{ Name = "windows"; Os = "win32"; Cpu = "x64" }
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Platforms = @(
+        [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" }
+    )
+}
 
 <#
 .SYNOPSIS
@@ -119,41 +124,6 @@ function Get-PackageSpecsFromPackageJson {
 
 <#
 .SYNOPSIS
-package-lock.jsonからpackage specを取得します。
-.PARAMETER Values
-package.jsonの`os`または`cpu` selectorです。
-.PARAMETER Target
-照合するOS名またはCPU architecture名です。
-.OUTPUTS
-`package.json`の`os`または`cpu`条件がtargetに一致するかを返します。
-#>
-function Test-NpmPackageSelector {
-    param(
-        [object]$Values,
-        [Parameter(Mandatory = $true)][string]$Target
-    )
-
-    if (-not $Values) {
-        return $true
-    }
-
-    $Selectors = @($Values)
-    if ($Selectors -contains "!$Target") {
-        return $false
-    }
-
-    $PositiveSelectors = @()
-    foreach ($Selector in $Selectors) {
-        if (-not ([string]$Selector).StartsWith("!")) {
-            $PositiveSelectors += $Selector
-        }
-    }
-
-    return $PositiveSelectors.Count -eq 0 -or $PositiveSelectors -contains $Target
-}
-
-<#
-.SYNOPSIS
 package-lock.jsonからtarget platform向けpackage specを取得します。
 .PARAMETER LockFile
 package-lock.jsonのpathです。
@@ -168,22 +138,37 @@ function Get-PackageSpecsFromPackageLock {
         [Parameter(Mandatory = $true)][pscustomobject]$Platform
     )
 
-    $Lock = Get-Content -Raw -Path $LockFile | ConvertFrom-Json -AsHashtable
-    $Specs = @()
-    foreach ($PackagePath in $Lock.packages.Keys) {
-        $Package = $Lock.packages[$PackagePath]
-        if (-not $PackagePath -or -not $Package.ContainsKey("version")) {
-            continue
-        }
-        if ($Package.ContainsKey("os") -and -not (Test-NpmPackageSelector -Values $Package["os"] -Target $Platform.Os)) {
-            continue
-        }
-        if ($Package.ContainsKey("cpu") -and -not (Test-NpmPackageSelector -Values $Package["cpu"] -Target $Platform.Cpu)) {
-            continue
-        }
-
-        $Name = $PackagePath -replace "^.*node_modules/", ""
-        $Specs += "$Name@$($Package["version"])"
+    $Code = @'
+const fs = require("fs");
+const lock = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const os = process.argv[3];
+const cpu = process.argv[4];
+function selectorMatches(values, target) {
+  if (!values) return true;
+  const selectors = Array.isArray(values) ? values : [values];
+  if (selectors.includes(`!${target}`)) return false;
+  const positives = selectors.filter((value) => !String(value).startsWith("!"));
+  return positives.length === 0 || positives.includes(target);
+}
+for (const [packagePath, packageInfo] of Object.entries(lock.packages || {})) {
+  if (!packagePath || !packageInfo.version) continue;
+  if (!selectorMatches(packageInfo.os, os)) continue;
+  if (!selectorMatches(packageInfo.cpu, cpu)) continue;
+  if (packageInfo.resolved && /^https?:/.test(packageInfo.resolved)) {
+    console.log(packageInfo.resolved);
+  } else {
+    const name = packagePath.replace(/^.*node_modules\//, "");
+    console.log(`${name}@${packageInfo.version}`);
+  }
+}
+'@
+    $ParserScript = Join-Path ([System.IO.Path]::GetTempPath()) "npm-lock-parser-$([guid]::NewGuid().ToString("N")).js"
+    try {
+        $Code | Set-Content -LiteralPath $ParserScript -Encoding ascii
+        $Specs = Invoke-NativeCommand -FilePath "node" -Arguments @($ParserScript, $LockFile, $Platform.Os, $Platform.Cpu)
+    }
+    finally {
+        Remove-Item -LiteralPath $ParserScript -Force -ErrorAction SilentlyContinue
     }
 
     return @($Specs | Sort-Object -Unique)

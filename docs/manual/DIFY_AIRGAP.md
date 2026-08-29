@@ -29,7 +29,7 @@ PowerShell、Python 3、pipを導入した端末でrepository rootから実行�
 # 署名付きDify pluginを取得する。
 .\scripts\Download-Difypkg.ps1 -OutputDir /srv/airgap-assets
 
-# Dify pluginとprivate-chat APIの依存をPython 3.12から3.15の対象platform向けに取得する。
+# script内に固定したPython依存をPython 3.12から3.15の対象platform向けに取得する。
 .\scripts\Download-PipPkgs.ps1 -OutputDir /srv/airgap-assets
 
 # Dify plugin packageのchecksumを再確認する。
@@ -214,4 +214,3 @@ rollbackする場合はDify consoleから対象pluginをuninstallする。`/srv/
 - [Dify plugin local file release and installation](https://docs.dify.ai/en/develop-plugin/publishing/marketplace-listing/release-by-file)
 - [Dify Plugin Daemon environment configuration](https://github.com/langgenius/dify-plugin-daemon/blob/main/.env.example)
 - [Dify Marketplace OpenAI-API-compatible plugin](https://marketplace.dify.ai/plugin/langgenius/openai_api_compatible)
-- [private-chat API pyproject.toml](https://github.com/k5-mot/private-chat/blob/main/api/pyproject.toml)

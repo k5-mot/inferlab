@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 このrepositoryのair-gap運用に必要なnpm package資材を取得します。
 
@@ -11,7 +11,7 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\scripts\Download-NpmPkgs.ps1 -OutputDir C:\airgap
 
-repository内の対象projectからnpm packageを`C:\airgap\npm`へ取得します。
+script内のpackage listからnpm packageを`C:\airgap\npm`へ取得します。
 #>
 [CmdletBinding()]
 param (
@@ -32,36 +32,65 @@ $Registries = @(
     "https://registry.npmjs.org"
 )
 $Packages = @(
-    ".",
-    "41-llmwiki/ingester",
-    "41-llmwiki/runtime",
-    "42-openkb/viewer"
+    "@fission-ai/openspec@1.7.0",
+    "@types/cytoscape@3.21.9",
+    "@types/js-yaml@4.0.9",
+    "@types/node@24.10.1",
+    "croner@10.0.1",
+    "cytoscape@3.33.1",
+    "esbuild@0.25.9",
+    "gray-matter@4.0.3",
+    "js-yaml@4.1.0",
+    "llm-wiki-compiler@1.1.0",
+    "lucide@0.544.0",
+    "mint@4.2.821",
+    "skills@1.5.21",
+    "typescript@5.9.2",
+    "zod@4.4.3"
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("is-number@7.0.0")
+}
 
 <#
 .SYNOPSIS
-projectの依存定義を共通download処理へ渡します。
-.PARAMETER ProjectDir
-package.jsonがあるproject directoryです。
+script内のpackage listを共通download処理へ渡します。
+.PARAMETER Packages
+npm installへ渡すpackage spec配列です。
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。
 .OUTPUTS
 値を返しません。
 .NOTES
-保存先へpackage archiveを作成または上書きし、downloadに失敗した場合は例外を送出します。
+一時directoryへpackage.jsonを作成し、downloadに失敗した場合は例外を送出します。
 #>
-function Invoke-ProjectPackageDownload {
+function Invoke-PackageListDownload {
     param (
-        [Parameter(Mandatory = $true)][string]$ProjectDir,
+        [Parameter(Mandatory = $true)][string[]]$Packages,
         [Parameter(Mandatory = $true)][string]$OutputDir
     )
 
     $DownloaderPath = Join-Path $PSScriptRoot "Download-NpmPkgs-from-Project.ps1"
-    & $DownloaderPath -ProjectDir $ProjectDir -OutputDir $OutputDir
+    $ProjectDir = Join-Path ([System.IO.Path]::GetTempPath()) ("repository-npm-" + [guid]::NewGuid().ToString("N"))
+    try {
+        New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
+        $Dependencies = [ordered]@{}
+        foreach ($Package in $Packages) {
+            if ($Package -notmatch "^(@[^/]+/[^@]+|[^@]+)@(.+)$") {
+                throw "npm package specが不正です: $Package"
+            }
+            $Dependencies[$Matches[1]] = $Matches[2]
+        }
+        [ordered]@{
+            private = $true
+            dependencies = $Dependencies
+        } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $ProjectDir "package.json") -Encoding ascii
+        & $DownloaderPath -ProjectDir $ProjectDir -OutputDir $OutputDir
+    }
+    finally {
+        Remove-Item -LiteralPath $ProjectDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
-$RepositoryRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-foreach ($Package in $Packages) {
-    $ProjectDir = [System.IO.Path]::GetFullPath((Join-Path $RepositoryRoot $Package))
-    Invoke-ProjectPackageDownload -ProjectDir $ProjectDir -OutputDir $OutputDir
-}
+$OutputDir = [System.IO.Path]::GetFullPath($OutputDir)
+Invoke-PackageListDownload -Packages $Packages -OutputDir $OutputDir

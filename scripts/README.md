@@ -3,6 +3,8 @@
 ## ⚡️ Quick Start
 
 ```powershell
+cd "./scripts"
+
 ### 本プロジェクトに必要なパッケージをダウンロード.
 $OutputDir = "<output-dir>"
 $DownloadScripts = @(
@@ -18,14 +20,22 @@ $DownloadScripts = @(
     "Download-NpmPkgs.ps1"
 )
 foreach ($Script in $DownloadScripts) {
-    powershell -ExecutionPolicy "Bypass" -Scope "Process" -File $Script -OutputDir $OutputDir
+    Write-Host "Running ==> $Script"
+
+    # Windows PowerShell 5.1でdownload scriptを実行する。
+    powershell -NoProfile -ExecutionPolicy "Bypass" -File "./$Script" -OutputDir $OutputDir
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Download failed: $Script"
+    }
+    powershell -ExecutionPolicy "Bypass" -File $Script -OutputDir $OutputDir
 }
 
-### pyproject.toml/requirements.txt を元に、
+### 任意projectのpyproject.toml/requirements.txtを元に、
 ### <output-dir>/pypi/*.whl へダウンロード.
 powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-PipPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./py_pj"
 
-### package.json を元に、
+### 任意projectのpackage.jsonを元に、
 ### <output-dir>/npm/*.tgz へダウンロード.
 powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-NpmPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./ts_pj"
 ```
@@ -63,6 +73,19 @@ scripts/
 │
 └── tests/
    ├── Assert-DownloadScript.ps1
+   ├── Invoke-DownloadTest.ps1
+   ├── Verify-Difypkg.ps1
+   ├── Verify-Nextcloud.ps1
+   ├── Verify-Docling.ps1
+   ├── Verify-HFRepo.ps1
+   ├── Verify-RPM.ps1
+   ├── Verify-DEB.ps1
+   ├── Verify-VSIX.ps1
+   ├── Verify-DockerImages.ps1
+   ├── Verify-PipPkgs.ps1
+   ├── Verify-NpmPkgs.ps1
+   ├── Verify-PipPkgs-from-Project.ps1
+   ├── Verify-NpmPkgs-from-Project.ps1
    ├── Test-Difypkg.ps1
    ├── Test-Nextcloud.ps1
    ├── Test-Docling.ps1
@@ -146,6 +169,7 @@ scripts/
 ├── docling/        # Download-Docling.ps1
 │  ├── docling-project--docling-models
 │  ├── docling-project--docling-layout-heron/
+│  ├── docling-project--docling-layout-heron-onnx/
 │  ├── docling-project--docling-layout-heron-101/
 │  ├── docling-project--TableFormerV2/
 │  ├── docling-project--DocumentFigureClassifier-v2.5/
@@ -208,6 +232,7 @@ scripts/
 ### Download-DockerImages.ps1
 ### Download-PipPkgs.ps1
 
+- script内の`$Packages`に定義されたPython packageをダウンロードする.
 - 以下の組み合わせのパッケージをダウンロードする.
   - PythonVersion；
     - 3.12
@@ -228,6 +253,7 @@ scripts/
 
 ### Download-NpmPkgs.ps1
 
+- script内の`$Packages`に定義されたnpm packageをダウンロードする.
 - 以下の組み合わせのパッケージをダウンロードする.
   - Platform；
     - win32
@@ -236,4 +262,9 @@ scripts/
       - x64
 
 ### Download-PipPkgs-from-Project.ps1
+
+- 任意projectの`pyproject.toml`または`requirements.txt`からPython packageをダウンロードする補助script.
+
 ### Download-NpmPkgs-from-Project.ps1
+
+- 任意projectの`package.json`からnpm packageをダウンロードする補助script.

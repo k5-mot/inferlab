@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Linux x86_64向けのRPM packageを取得します。
 
@@ -68,6 +68,12 @@ $Registries = @(
         # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
 )
 $Architecture = "x86_64"
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Registries = @(
+        "https://download.docker.com/linux/centos/8/x86_64/stable/"
+    )
+    $Packages = @("docker-scan-plugin")
+}
 
 if ($Packages.Count -eq 0) {
     throw "取得するRPM packageが指定されていません。"

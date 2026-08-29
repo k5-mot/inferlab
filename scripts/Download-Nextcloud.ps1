@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 airgap環境へ持ち込むNextcloud OIDC app archiveを取得します。
 
@@ -63,7 +63,7 @@ foreach ($Package in $Packages) {
     }
 
     Write-Host "Download $FileName"
-    Invoke-WebRequest -Uri $Url -OutFile $ArtifactPath
+    Invoke-WebRequest -Uri $Url -OutFile $ArtifactPath -UseBasicParsing
 
     $ActualSha256 = (Get-FileHash -Algorithm SHA256 -Path $ArtifactPath).Hash.ToLowerInvariant()
     if ($ActualSha256 -ne $ExpectedSha256) {

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 VS Code拡張機能のVSIX fileを取得します。
 
@@ -60,6 +60,9 @@ $Packages = @(
         "ms-vscode-remote.remote-wsl",
         "zoocodeorganization.zoo-code"
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("p1c2u.docker-compose")
+}
 if ($Packages.Count -eq 0) {
     throw "取得するVS Code拡張機能IDが指定されていません。"
 }

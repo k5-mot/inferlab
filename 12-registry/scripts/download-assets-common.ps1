@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 <#
 .SYNOPSIS
@@ -325,7 +325,7 @@ function Read-GzipTextFromUrl {
 .SYNOPSIS
 Debian Packages metadataをpackage名で引けるindexへ変換する。
 .PARAMETER PackagesUrl
-Packages.gzのURL。
+Packages.gzのURL配列。
 .OUTPUTS
 package名をkey、metadata hashtableをvalueにしたhashtableを返す。
 #>
@@ -409,7 +409,7 @@ function Save-DebPackagesWithDependencies {
     param(
         [Parameter(Mandatory = $true)][string[]]$PackageNames,
         [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
-        [Parameter(Mandatory = $true)][string]$PackagesUrl,
+        [Parameter(Mandatory = $true)][string[]]$PackagesUrl,
         [Parameter(Mandatory = $true)][string]$OutputDirectory
     )
 
@@ -417,7 +417,15 @@ function Save-DebPackagesWithDependencies {
         return
     }
 
-    $Index = Get-DebPackageIndex -PackagesUrl $PackagesUrl
+    $Index = @{}
+    foreach ($Url in $PackagesUrl) {
+        $PartialIndex = Get-DebPackageIndex -PackagesUrl $Url
+        foreach ($Name in $PartialIndex.Keys) {
+            if (-not $Index.ContainsKey($Name)) {
+                $Index[$Name] = $PartialIndex[$Name]
+            }
+        }
+    }
     $Queue = [System.Collections.Queue]::new()
     $Seen = @{}
     foreach ($Name in $PackageNames) {

@@ -1,10 +1,10 @@
-<#
+﻿<#
 .SYNOPSIS
 airgap環境へ持ち込むcontainer image archiveを取得します。
 
 .DESCRIPTION
 root stackの全profileで参照されるcontainer imageを指定directoryへ`.tar`として保存します。
-registry imageは`crane pull`で取得し、local build imageはDocker CLIでbuildしてから`docker save`で保存します。
+registry imageを`crane pull`で取得します。
 
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。
@@ -19,7 +19,7 @@ root stackに必要なcontainer image archiveを`C:\airgap\docker`へ取得し�
 
 .NOTES
 副作用として指定directoryへfileを作成または上書きします。
-実行にはPowerShell、crane、Docker CLIが必要です。
+実行にはPowerShellとcraneが必要です。
 #>
 [CmdletBinding()]
 param (
@@ -119,33 +119,9 @@ $Packages = @(
     "zulip/zulip-postgresql:14"
 )
 
-$LocalImages = @(
-    @{
-        Image = "local/llmwiki-runtime:1.1.0"
-        Context = Join-Path $PSScriptRoot "..\41-llmwiki\runtime"
-        Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "local/llmwiki-ingester:1.1.0"
-        Context = Join-Path $PSScriptRoot "..\41-llmwiki\ingester"
-        Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "local/llm-wiki-platform:0.1.0"
-        Context = Join-Path $PSScriptRoot "..\42-openkb"
-        Dockerfile = "Dockerfile"
-    },
-    @{
-        Image = "local/openkb:0.5.0rc1"
-        Context = Join-Path $PSScriptRoot "..\42-openkb"
-        Dockerfile = "Dockerfile.openkb"
-    },
-    @{
-        Image = "local/openkb-mintlify-viewer:0.1.0"
-        Context = Join-Path $PSScriptRoot "..\42-openkb\viewer"
-        Dockerfile = "Dockerfile"
-    }
-)
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("docker.io/library/busybox:1.36.1")
+}
 
 <#
 .SYNOPSIS
@@ -176,10 +152,6 @@ if (-not (Get-Command crane -ErrorAction SilentlyContinue)) {
     throw "crane が見つかりません。https://github.com/google/go-containerregistry を参照して crane をインストールしてください。"
 }
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    throw "docker が見つかりません。local build imageを保存するため、Docker CLIをインストールしてください。"
-}
-
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
 foreach ($Image in $Packages) {
@@ -195,32 +167,5 @@ foreach ($Image in $Packages) {
 
     if ($LASTEXITCODE -ne 0) {
         throw "ダウンロードに失敗しました: $Image"
-    }
-}
-
-foreach ($LocalImage in $LocalImages) {
-    $Image = $LocalImage["Image"]
-    $Context = $LocalImage["Context"]
-    $DockerfileName = $LocalImage["Dockerfile"]
-    $Dockerfile = Join-Path $Context $DockerfileName
-    $ArchivePath = Join-Path $OutputDirectory (Get-ImageArchiveName -Image $Image)
-
-    if ((Test-Path $ArchivePath) -and -not $Overwrite) {
-        Write-Host "Skip $Image"
-        continue
-    }
-
-    Write-Host "Build $Image"
-    docker build --platform $Platform -t $Image -f $Dockerfile $Context
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "ビルドに失敗しました: $Image"
-    }
-
-    Write-Host "Save $Image"
-    docker save -o $ArchivePath $Image
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "保存に失敗しました: $Image"
     }
 }

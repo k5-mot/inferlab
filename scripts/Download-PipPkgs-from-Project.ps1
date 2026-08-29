@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 対象project directoryのPython依存からPyPI wheelhouseを作成します。
 
@@ -68,6 +68,12 @@ $PlatformTargets = @(
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux_2_17_x86_64"; Implementation = "cp"; Abis = @() },
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux2014_x86_64"; Implementation = "cp"; Abis = @() }
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $PythonVersions = @("3.12")
+    $PlatformTargets = @(
+        [pscustomobject]@{ Group = "any"; Platform = "any"; Implementation = "py"; Abis = @("none") }
+    )
+}
 
 <#
 .SYNOPSIS
@@ -358,6 +364,7 @@ function Save-RequirementForTarget {
     $AttemptDir = Join-Path ([System.IO.Path]::GetTempPath()) "pip-download-$([guid]::NewGuid().ToString("N"))"
     New-Item -ItemType Directory -Path $AttemptDir -Force | Out-Null
     try {
+        $DownloadRequirement = ($Requirement -split ";", 2)[0].Trim()
         $IndexArguments = if (Test-PytorchRequirement -Requirement $Requirement) {
             @("--extra-index-url", $PytorchCpuIndexUrl)
         } else {
@@ -368,7 +375,7 @@ function Save-RequirementForTarget {
             "pip",
             "download",
             "--dest", $AttemptDir
-        ) + $IndexArguments + @("--no-deps") + (Get-PipTargetArguments -Target $Target -PythonVersion $PythonVersion) + @($Requirement)
+        ) + $IndexArguments + @("--no-deps") + (Get-PipTargetArguments -Target $Target -PythonVersion $PythonVersion) + @($DownloadRequirement)
 
         & $PythonCommand.FilePath @(@($PythonCommand.Arguments) + $Arguments)
         if ($LASTEXITCODE -eq 0) {
@@ -432,7 +439,7 @@ function Save-RequirementSourceArchive {
             return "UnsupportedPython"
         }
         $Destination = Join-Path $OutputDir $SourceFile[0].filename
-        Invoke-WebRequest -Uri $SourceFile[0].url -OutFile $Destination
+        Invoke-WebRequest -Uri $SourceFile[0].url -OutFile $Destination -UseBasicParsing
         return "Downloaded"
     } catch {
         Write-Warning "skip PyPI source archive: requirement=$Requirement python=$PythonVersion"

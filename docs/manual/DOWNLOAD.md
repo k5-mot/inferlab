@@ -5,7 +5,7 @@ air-gap環境へ持ち込む資材は、`scripts/README.md`に定義されたPow
 ## 前提
 
 - repository rootでPowerShell 7を実行できる。
-- `crane`、Docker CLI、Python 3、pip、uv、uvx、Node.js、npm、`huggingface-cli`を実行できる。
+- `crane`、Python 3、pip、Node.js、npm、`hf`を実行できる。
 - オンライン端末から各scriptの`$Registries`に定義された取得元へ接続できる。
 - container imageの取得対象platformは`linux/amd64`である。
 - PyPI packageはPython 3.12から3.15と、scriptに定義された8 platformの組み合わせを対象にする。
@@ -49,7 +49,7 @@ foreach ($Script in $DownloadScripts) {
 - `/srv/airgap-assets/`配下に`dify`、`nextcloud`、`docling`、`hfrepo`、`rpm`、`deb`、`vscode`、`docker`、`pypi`、`npm`が作成される。
 - Dify plugin、Nextcloud app、Tesseract traineddataのchecksum検証が成功する。
 - PyPI packageの対象versionとplatformについて、wheelまたは利用可能なsource archiveが取得される。
-- Composeが参照するremote imageとlocal build imageが`docker/*.tar`として保存される。
+- Composeが参照するregistry imageが`docker/*.tar`として保存される。
 
 失敗条件:
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Difyのair-gap運用に必要なplugin packageを取得します。
 
@@ -67,6 +67,11 @@ $Packages = @(
     [pscustomobject]@{ Id = "langgenius/oaicompat_dify_app"; Version = "0.0.15" },
     [pscustomobject]@{ Id = "langgenius/oaicompat_dify_model"; Version = "0.0.10" }
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @(
+        [pscustomobject]@{ Id = "langgenius/openai_api_compatible"; Version = "0.0.64" }
+    )
+}
 
 <#
 .SYNOPSIS
@@ -86,7 +91,7 @@ function Get-DifyPackageIdentifier {
         [Parameter(Mandatory = $true)][pscustomobject]$Package
     )
 
-    $Page = Invoke-WebRequest -Uri "$Registry/plugin/$($Package.Id)"
+    $Page = Invoke-WebRequest -Uri "$Registry/plugin/$($Package.Id)" -UseBasicParsing
     $Prefix = "{0}:{1}@" -f $Package.Id, $Package.Version
     $Match = [regex]::Match($Page.Content, [regex]::Escape($Prefix) + "[0-9a-f]{64}")
     if (-not $Match.Success) {
@@ -120,7 +125,7 @@ function Save-DifyPackage {
     $FileName = "$($Package.Id.Replace('/', '-'))_$($Package.Version).difypkg"
     $Destination = Join-Path $DestinationDirectory $FileName
     Write-Host "Download Dify plugin: $Identifier"
-    Invoke-WebRequest -Uri "$Registry/api/v1/plugins/download?unique_identifier=$Identifier" -OutFile $Destination
+    Invoke-WebRequest -Uri "$Registry/api/v1/plugins/download?unique_identifier=$Identifier" -OutFile $Destination -UseBasicParsing
     return $Destination
 }
 

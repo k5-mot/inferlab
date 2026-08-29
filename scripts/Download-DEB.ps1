@@ -1,10 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
-Ubuntu 24.04 LTS x86_64向けのdeb packageを取得します。
+Debian 13およびUbuntu 24.04 LTS x86_64向けのdeb packageを取得します。
 
 .DESCRIPTION
-Ubuntu 24.04 LTS（noble）のmain/amd64およびuniverse/amd64
-repositoryから、指定したdeb packageと依存packageを取得します。
+Debian 13（trixie）とUbuntu 24.04 LTS（noble）のrepositoryから、指定したdeb packageと依存packageを取得します。
 
 既定では`/srv/12-registry/deb/`へ保存します。
 
@@ -60,6 +59,14 @@ $Packages = @(
 )
 $Registries = @(
     [pscustomobject]@{
+        Name = "Debian 13 (trixie)"
+        BaseUrl = "https://deb.debian.org/debian/"
+        PackagePaths = @(
+            "dists/trixie/main/binary-amd64/Packages.gz"
+        )
+    },
+    [pscustomobject]@{
+        Name = "Ubuntu 24.04 LTS (noble)"
         BaseUrl = "https://archive.ubuntu.com/ubuntu/"
         PackagePaths = @(
             "dists/noble/main/binary-amd64/Packages.gz",
@@ -67,6 +74,9 @@ $Registries = @(
         )
     }
 )
+if ($env:INFERLAB_DOWNLOAD_TEST) {
+    $Packages = @("hello")
+}
 
 $Packages = @(
     $Packages |
@@ -94,38 +104,38 @@ if (-not (Test-Path -LiteralPath $CommonScript -PathType Leaf)) {
 
 $DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "deb"
 
-$PackagesUrls = @(
-    foreach ($Registry in $Registries) {
-        foreach ($PackagesPath in $Registry.PackagePaths) {
-            Join-RepositoryUrl `
-                -BaseUrl $Registry.BaseUrl `
-                -RelativePath $PackagesPath
-        }
-    }
-)
-
 New-Item `
     -ItemType Directory `
     -Path $DestinationDirectory `
     -Force |
     Out-Null
 
-Write-Host "Ubuntu 24.04 LTS (noble) deb packages:"
+Write-Host "Debian and Ubuntu deb packages:"
 Write-Host "  Packages: $($Packages -join ', ')"
 Write-Host "  Destination: $DestinationDirectory"
-Write-Host "  Package indexes:"
 
-foreach ($PackagesUrl in $PackagesUrls) {
-    Write-Host "    $PackagesUrl"
+foreach ($Registry in $Registries) {
+    $PackagesUrls = @(
+        foreach ($PackagesPath in $Registry.PackagePaths) {
+            Join-RepositoryUrl `
+                -BaseUrl $Registry.BaseUrl `
+                -RelativePath $PackagesPath
+        }
+    )
+
+    Write-Host "  Repository: $($Registry.Name)"
+    foreach ($PackagesUrl in $PackagesUrls) {
+        Write-Host "    $PackagesUrl"
+    }
+
+    Save-DebPackagesWithDependencies `
+        -PackageNames $Packages `
+        -PackagesUrl $PackagesUrls `
+        -RepositoryBaseUrl $Registry.BaseUrl `
+        -OutputDirectory $DestinationDirectory
 }
-
-Save-DebPackagesWithDependencies `
-    -PackageNames $Packages `
-    -PackagesUrl $PackagesUrls `
-    -RepositoryBaseUrl ($Registries[0].BaseUrl) `
-    -OutputDirectory $DestinationDirectory
 
 Assert-AssetFilesExist `
     -Directory $DestinationDirectory `
     -Pattern "*.deb" `
-    -Description "Ubuntu 24.04 deb"
+    -Description "Debian/Ubuntu deb"
