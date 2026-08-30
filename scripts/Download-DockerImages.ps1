@@ -51,7 +51,6 @@ $Registries = @(
 $Packages = @(
     "docker.io/library/postgres:18.6-alpine3.24",
     "docker.io/rustfs/rustfs:1.0.0-beta.12",
-    "docker.io/aws-cli/aws-cli:2.36.34",
     "public.ecr.aws/aws-cli/aws-cli:2.36.34",
     "docker.io/valkey/valkey:9.1.1-alpine3.24",
     "docker.io/library/nginx:1.31.4-alpine",
@@ -151,7 +150,7 @@ $Packages = @(
     # postgres18-trixie→18-alpine
     "ghcr.io/langfuse/langfuse-worker:4.24.0",
     "ghcr.io/langfuse/langfuse:4.24.0",
-    "docker.io/clickhouse/clickhouse-server:26.7.5.10",
+    "docker.io/clickhouse/clickhouse-server:26.7.5.10"
     # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     # "docker.io/rustfs/rustfs:1.0.0-beta.12",
     # "docker.io/library/postgres:18.6-alpine3.24",
