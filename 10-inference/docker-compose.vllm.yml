@@ -9,7 +9,7 @@
 
 services:
   litellm:
-    image: docker.io/litellm/litellm:v1.97.0
+    image: docker.io/litellm/litellm:v1.98.0
     container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
@@ -56,7 +56,7 @@ services:
         hard: 65535
 
   vllm-foundation:
-    image: docker.io/vllm/vllm-openai:v0.27.1
+    image: docker.io/vllm/vllm-openai:v0.28.0-x86_64
     container_name: ${STACK_NAME}-vllm-foundation
     restart: unless-stopped
     profiles:
@@ -115,7 +115,7 @@ services:
               capabilities: [ gpu ]
 
   vllm-embedding:
-    image: docker.io/vllm/vllm-openai-cpu:v0.27.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
     container_name: ${STACK_NAME}-vllm-embedding
     restart: unless-stopped
     profiles:
@@ -152,7 +152,7 @@ services:
       start_period: 60s
 
   vllm-reranking:
-    image: docker.io/vllm/vllm-openai-cpu:v0.27.1
+    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
     container_name: ${STACK_NAME}-vllm-reranking
     restart: unless-stopped
     profiles:

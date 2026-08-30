@@ -205,7 +205,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   langfuse-rustfs-bucket-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
     container_name: ${STACK_NAME}-langfuse-rustfs-bucket-init
     restart: "no"
     profiles:

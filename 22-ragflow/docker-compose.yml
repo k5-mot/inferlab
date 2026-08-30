@@ -25,9 +25,9 @@ services:
       RAGFLOW_SECRET_KEY: ${RAGFLOW_SECRET_KEY:-sk-ragflow-session-secret-key-change-me}
       API_PROXY_SCHEME: python
       DOC_ENGINE: opensearch
-      ES_HOST: ragflow-opensearch
-      ES_USER: admin
-      ELASTIC_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-Ragflow_OpenSearch_password_123!}
+      OS_HOST: ragflow-opensearch
+      OS_USER: admin
+      OPENSEARCH_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-Ragflow_OpenSearch_password_123!}
       MYSQL_HOST: ragflow-mysql
       MYSQL_PORT: 3306
       MYSQL_DBNAME: rag_flow
@@ -90,6 +90,7 @@ services:
     environment:
       node.name: ragflow-opensearch
       discovery.type: single-node
+      http.port: 9201
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${RAGFLOW_ELASTIC_PASSWORD:-Ragflow_OpenSearch_password_123!}
       OPENSEARCH_JAVA_OPTS: -Xms2g -Xmx2g
       bootstrap.memory_lock: "false"
@@ -107,7 +108,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - curl -fsS -u "admin:$${OPENSEARCH_INITIAL_ADMIN_PASSWORD}" "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null
+        - curl -fsS -u "admin:$${OPENSEARCH_INITIAL_ADMIN_PASSWORD}" "http://127.0.0.1:9201/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null
       interval: 10s
       timeout: 10s
       retries: 60
@@ -196,7 +197,7 @@ services:
       - homepage.description=S3-compatible object storage
 
   ragflow-rustfs-bucket-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
     container_name: ${STACK_NAME}-ragflow-rustfs-bucket-init
     restart: "no"
     profiles:

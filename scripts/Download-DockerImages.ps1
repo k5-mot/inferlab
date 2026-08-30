@@ -51,7 +51,7 @@ $Registries = @(
 $Packages = @(
     "docker.io/library/postgres:18.6-alpine3.24",
     "docker.io/rustfs/rustfs:1.0.0-beta.12",
-    "docker.io/aws-cli/aws-cli:2.36.34",
+    "public.ecr.aws/aws-cli/aws-cli:2.36.34",
     "docker.io/valkey/valkey:9.1.1-alpine3.24",
     "docker.io/library/nginx:1.31.4-alpine",
     ### 00-common
@@ -101,7 +101,7 @@ $Packages = @(
     "docker.io/langgenius/dify-agent-backend:1.17.0",
     # "docker.io/library/postgres:18.6-alpine3.24",
     # "docker.io/rustfs/rustfs:1.0.0-beta.12",
-    # "docker.io/aws-cli/aws-cli:2.36.34",
+    # "public.ecr.aws/aws-cli/aws-cli:2.36.34",
     # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     # "docker.io/qdrant/qdrant:v1.19.0",
     # "docker.io/library/nginx:1.31.4-alpine",
@@ -115,12 +115,12 @@ $Packages = @(
     ### 30-nextcloud
     # postgres18-trixie→18-alpine,valkey8→valkey9
     "docker.io/library/nextcloud:34.0.3-apache",
-    # "docker.io/library/postgres:18.6-trixie",
+    # "docker.io/library/postgres:18.6-alpine3.24",
     # "docker.io/valkey/valkey:8.1.9-alpine3.24",
     ### 31-xwiki
     # postgres18-trixie→18-alpine
     "docker.io/library/xwiki:18.6.0-postgres-tomcat",
-    # "docker.io/library/postgres:18.6-trixie",
+    # "docker.io/library/postgres:18.6-alpine3.24",
     ### 32-kaneo
     # postgres16-alpine→18-alpine
     "ghcr.io/usekaneo/kaneo:2.22.0",
@@ -150,10 +150,10 @@ $Packages = @(
     # postgres18-trixie→18-alpine
     "ghcr.io/langfuse/langfuse-worker:4.24.0",
     "ghcr.io/langfuse/langfuse:4.24.0",
-    "docker.io/clickhouse/clickhouse-server:26.7.5.10",
+    "docker.io/clickhouse/clickhouse-server:26.7.5.10"
     # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     # "docker.io/rustfs/rustfs:1.0.0-beta.12",
-    # "docker.io/library/postgres:18.6-trixie",
+    # "docker.io/library/postgres:18.6-alpine3.24",
 )
 
 if ($env:INFERLAB_DOWNLOAD_TEST) {

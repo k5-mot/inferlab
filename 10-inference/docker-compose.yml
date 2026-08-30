@@ -83,7 +83,7 @@ services:
 
   ollama:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.15
+    image: docker.io/ollama/ollama:0.33.2
     container_name: ${STACK_NAME}-ollama
     restart: unless-stopped
     profiles:
@@ -114,7 +114,7 @@ services:
 
   ollama-init:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.15
+    image: docker.io/ollama/ollama:0.33.2
     container_name: ${STACK_NAME}-ollama-init
     restart: no
     profiles:
@@ -394,7 +394,7 @@ services:
       - homepage.description=Reranking inference engine
 
   kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.0
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1
     container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
