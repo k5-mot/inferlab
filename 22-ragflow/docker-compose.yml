@@ -196,7 +196,7 @@ services:
       - homepage.description=S3-compatible object storage
 
   ragflow-rustfs-bucket-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.27
+    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
     container_name: ${STACK_NAME}-ragflow-rustfs-bucket-init
     restart: "no"
     profiles:

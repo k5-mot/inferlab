@@ -1,6 +1,6 @@
 services:
   xwiki:
-    image: docker.io/library/xwiki:18.4.4-postgres-tomcat
+    image: docker.io/library/xwiki:18.6.0-postgres-tomcat
     container_name: ${STACK_NAME}-xwiki
     restart: unless-stopped
     init: true
