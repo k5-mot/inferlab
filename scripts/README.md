@@ -6,7 +6,7 @@
 cd "./scripts"
 
 ### 本プロジェクトに必要なパッケージをダウンロード.
-$OutputDir = "<output-dir>"
+$OutputDir = "./tests/.tmp"
 
 ### Hugging Face model以外の主要資材をまとめてダウンロード.
 powershell -NoProfile -NonInteractive -ExecutionPolicy "Bypass" -File "./Download-All.ps1" -OutputDir $OutputDir

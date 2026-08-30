@@ -405,7 +405,7 @@ function Test-RpmRequirementName {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
-    if ($Name.StartsWith("rpmlib(") -or $Name.StartsWith("config(") -or $Name.StartsWith("/") -or $Name.StartsWith("rtld(")) {
+    if ($Name.StartsWith("rpmlib(") -or $Name.StartsWith("config(") -or $Name.StartsWith("/") -or $Name.StartsWith("rtld(") -or $Name -eq "system-release") {
         return $false
     }
 
@@ -503,6 +503,13 @@ function Save-RpmPackagesWithDependencies {
             foreach ($Package in $Matches.Values) {
                 if (-not $PackagesToDownload.ContainsKey($Package.Name)) {
                     $PackagesToDownload[$Package.Name] = $Package
+                }
+            }
+
+            foreach ($Package in $PackagesToDownload.Values) {
+                $ResolvedCapabilities[$Package.Name] = $true
+                foreach ($Provide in $Package.Provides) {
+                    $ResolvedCapabilities[$Provide] = $true
                 }
             }
 

@@ -2,6 +2,7 @@
 .codex/
 .agents/
 .roo/
+.tmp/
 *.log
 __pycache__
 devcontainer-lock.json
