@@ -106,31 +106,26 @@ $Packages = @(
     # "docker.io/qdrant/qdrant:v1.19.0",
     # "docker.io/library/nginx:1.31.4-alpine",
     ### 22-ragflow
-    # opensearch,mysql,cpu,rustfs,valkey8→valkey9
     "docker.io/infiniflow/ragflow:v0.27.1",
     "docker.io/opensearchproject/opensearch:2.19.1",
     "docker.io/library/mysql:8.0.39",
     # "docker.io/rustfs/rustfs:1.0.0-beta.12",
-    # "docker.io/valkey/valkey:8.1.9-alpine3.24",
+    # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     ### 30-nextcloud
-    # postgres18-trixie→18-alpine,valkey8→valkey9
     "docker.io/library/nextcloud:34.0.3-apache",
     # "docker.io/library/postgres:18.6-alpine3.24",
-    # "docker.io/valkey/valkey:8.1.9-alpine3.24",
+    # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     ### 31-xwiki
-    # postgres18-trixie→18-alpine
     "docker.io/library/xwiki:18.6.0-postgres-tomcat",
     # "docker.io/library/postgres:18.6-alpine3.24",
     ### 32-kaneo
-    # postgres16-alpine→18-alpine
     "ghcr.io/usekaneo/kaneo:2.22.0",
     ### 33-zulip
-    # valkey8→valkey9
     "ghcr.io/zulip/zulip-server:12.2-0",
     "docker.io/zulip/zulip-postgresql:14",
     "docker.io/library/memcached:1.6.45-alpine",
     "docker.io/library/rabbitmq:4.3.5",
-    # "docker.io/library/redis:8.10.0-alpine",
+    # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     ### 34-gitlab
     "docker.io/gitlab/gitlab-ce:19.3.1-ce.0",
     "docker.io/gitlab/gitlab-runner:alpine-v19.3.1",
@@ -138,16 +133,14 @@ $Packages = @(
     "docker.io/library/couchdb:3.5.2.1",
     ### 41-llmwiki
     "docker.io/library/node:24.20.0-bookworm-slim",
-    ### 42-openkb
-    "docker.io/library/python:3.12.14-slim-bookworm",
     ### 50-o11y
     "docker.io/grafana/grafana:13.2.0",
     "docker.io/prom/prometheus:v3.14.0",
     "quay.io/prometheus/node-exporter:v1.12.1",
     "ghcr.io/google/cadvisor:0.60.5",
     "quay.io/prometheus/blackbox-exporter:v0.28.0",
+    "nvcr.io/nvidia/k8s/dcgm-exporter:4.6.0-4.8.3-distroless",
     ### 51-langfuse
-    # postgres18-trixie→18-alpine
     "ghcr.io/langfuse/langfuse-worker:4.24.0",
     "ghcr.io/langfuse/langfuse:4.24.0",
     "docker.io/clickhouse/clickhouse-server:26.7.5.10"
