@@ -34,6 +34,7 @@ services:
       - homepage.name=LLM Wiki
       - homepage.href=http://${PUBLIC_HOST}:34100
       - homepage.description=Compiled knowledge viewer
+      - homepage.icon=/icons/llm-wiki.png
 
   llmwiki-ingester:
     build:
@@ -58,6 +59,12 @@ services:
         condition: service_healthy
     mem_limit: 2g
     pids_limit: 512
+    labels:
+      - homepage.group=41-llmwiki
+      - homepage.name=LLM Wiki
+      - homepage.href=http://${PUBLIC_HOST}:34100
+      - homepage.description=Compiled knowledge viewer
+      - homepage.icon=/icons/llm-wiki.png
 
 volumes:
   llmwiki-project:
