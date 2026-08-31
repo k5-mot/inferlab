@@ -60,9 +60,9 @@ services:
       #   condition: service_healthy
       # tei-reranking-jp:
       #   condition: service_healthy
-      vllm-embedding-multi:
+      vllm-embedding:
         condition: service_healthy
-      vllm-reranking-multi:
+      vllm-reranking:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]

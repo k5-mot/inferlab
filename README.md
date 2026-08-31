@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`xwiki`、`wikijs`、`kaneo`、`zulip`、`gitlab`、`llmwiki`、`openkb` などのその他の profile は必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`owui`、`nextcloud`、`obsidian`、`o11y`、`langfuse` です。`registry`、`dify`、`ragflow`、`xwiki`、`wikijs`、`kaneo`、`zulip`、`gitlab`、`llmwiki` などのその他の profile は必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -25,7 +25,6 @@
 | `wikijs` | `37-wikijs/docker-compose.yml` | Wiki |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `llmwiki` | `41-llmwiki/docker-compose.yml` | LLM Wiki compilerとviewer |
-| `openkb` | `42-openkb/docker-compose.yml` | OpenKBを使ったLLM Wiki試行環境 |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
 
@@ -109,9 +108,6 @@
 | `wikijs` | `wikijs-postgres` | - | `37-wikijs/docker-compose.yml` |
 | `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
-| `openkb` | `openkb` | - | `42-openkb/docker-compose.yml` |
-| `openkb` | `llm-wiki-api` | `34200` | `42-openkb/docker-compose.yml` |
-| `openkb` | `openkb-viewer` | `34201` | `42-openkb/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
@@ -160,7 +156,6 @@
 - [GitLab](34-gitlab/README.md)
 - [Wiki.js](37-wikijs/README.md)
 - [LLM Wiki](41-llmwiki/README.md)
-- [OpenKB試行環境](42-openkb/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 
