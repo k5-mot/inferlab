@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "operatingSystem": "linux",
+    "architecture": "x86_64",
+    "pythonVersion": "3.12",
+    "implementation": "cp",
+    "abi": "cp312",
+    "platforms": [
+      "manylinux_2_28_x86_64",
+      "manylinux_2_24_x86_64",
+      "manylinux2014_x86_64",
+      "manylinux_2_17_x86_64"
+    ]
+  },
+  "plugins": [
+    {
+      "id": "langgenius/openai_api_compatible",
+      "version": "0.0.64",
+      "uniqueIdentifier": "langgenius/openai_api_compatible:0.0.64@ed082da9060cdaf69127de0f39e7ba5d255d74276feed9c88b2ba5226515728c",
+      "fileName": "langgenius-openai_api_compatible-0.0.64.difypkg",
+      "url": "https://marketplace.dify.ai/api/v1/plugins/download?unique_identifier=langgenius/openai_api_compatible:0.0.64@ed082da9060cdaf69127de0f39e7ba5d255d74276feed9c88b2ba5226515728c",
+      "sha256": "53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2",
+      "requirementsSha256": "893906c1f3b3e26afbf186fe68fb8ca517a2e4b72458947b10e6ec03c5d4f278"
+    }
+  ]
+}

@@ -7,11 +7,13 @@ services:
     restart: unless-stopped
     profiles:
       - obsidian
+      - llmwiki
+      - openkb
     ports:
       - 34000:5984
     environment:
-      - COUCHDB_USER=obs_couchdb_user
-      - COUCHDB_PASSWORD=obs_couchdb_password
+      - COUCHDB_USER=${OBSIDIAN_COUCHDB_USER:-obs_couchdb_user}
+      - COUCHDB_PASSWORD=${OBSIDIAN_COUCHDB_PASSWORD:-obs_couchdb_password}
     volumes:
       - couchdb_data:/opt/couchdb/data
       - ./couchdb/local.ini:/opt/couchdb/etc/local.ini

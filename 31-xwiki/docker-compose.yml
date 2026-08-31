@@ -1,0 +1,93 @@
+services:
+  xwiki:
+    image: docker.io/library/xwiki:18.6.0-postgres-tomcat
+    container_name: ${STACK_NAME}-xwiki
+    restart: unless-stopped
+    init: true
+    profiles:
+      - xwiki
+    environment:
+      DB_USER: xwiki_db_user
+      DB_PASSWORD: ${XWIKI_DB_PASSWORD:-xwiki_db_password}
+      DB_DATABASE: xwiki
+      DB_HOST: xwiki-postgres
+      # 初期provisioningとOIDC障害時の復旧に使用するroot管理credential。
+      XCONF_xwikicfg_xwiki_superadminpassword: ${XWIKI_SUPERADMIN_PASSWORD:-xwiki-superadmin-password}
+      # root namespaceへOIDC Authenticatorを導入した後に標準認証を切り替える。
+      XCONF_xwikicfg_xwiki_authentication_authclass: ${XWIKI_AUTHCLASS:-com.xpn.xwiki.user.impl.xwiki.XWikiAuthServiceImpl}
+      # Keycloak tokenのissuerと完全一致する公開URLからmetadataを取得する。
+      XCONF_xwikiproperties_oidc_provider: http://${PUBLIC_HOST}:30001/realms/prod
+      XCONF_xwikiproperties_oidc_clientid: xwiki
+      XCONF_xwikiproperties_oidc_secret: ${XWIKI_OIDC_CLIENT_SECRET:-sk-xwiki-oidc-client-secret-key}
+      XCONF_xwikiproperties_oidc_scope: openid,profile,email
+      XCONF_xwikiproperties_oidc_endpoint_token_auth_method: client_secret_basic
+      # XWikiのusernameへ利用可能な文字だけを残し、小文字へ正規化する。
+      XCONF_xwikiproperties_oidc_user_nameFormater: $${oidc.user.preferredUsername._clean._lowerCase}
+      # Keycloakのgroups claimから管理者groupだけを明示的に同期する。
+      XCONF_xwikiproperties_oidc_groups_claim: groups
+      XCONF_xwikiproperties_oidc_userinfoclaims: xwiki_user_accessibility,xwiki_user_company,xwiki_user_displayHiddenDocuments,xwiki_user_editor,xwiki_user_usertype,groups
+      XCONF_xwikiproperties_oidc_groups_mapping: XWikiAdminGroup=admins
+      # OIDC障害時もlocal userとsuperadminで復旧できる状態を維持する。
+      XCONF_xwikiproperties_oidc_tryLocal: "true"
+      XCONF_xwikiproperties_oidc_afterLogoutURL: /
+    ports:
+      - "33100:8080"
+    volumes:
+      - xwiki-data:/usr/local/xwiki
+    networks:
+      - internal-nw
+    depends_on:
+      xwiki-postgres:
+        condition: service_healthy
+    mem_limit: 2g
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl --fail --silent --show-error http://127.0.0.1:8080/ >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 180s
+    labels:
+      - homepage.group=31-xwiki
+      - homepage.name=XWiki
+      - homepage.href=http://${PUBLIC_HOST}:33100
+      - homepage.description=Wiki platform
+      - homepage.icon=/icons/xwiki.png
+
+  xwiki-postgres:
+    image: docker.io/library/postgres:18.6-alpine3.24
+    container_name: ${STACK_NAME}-xwiki-postgres
+    restart: unless-stopped
+    profiles:
+      - xwiki
+    environment:
+      POSTGRES_DB: xwiki
+      POSTGRES_USER: xwiki_db_user
+      POSTGRES_PASSWORD: ${XWIKI_DB_PASSWORD:-xwiki_db_password}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=builtin --locale=C.UTF-8
+    volumes:
+      - xwiki-postgres-data:/var/lib/postgresql
+    networks:
+      - internal-nw
+    mem_limit: 512m
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U xwiki_db_user -d xwiki
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    labels:
+      - homepage.group=31-xwiki
+      - homepage.name=XWiki-PostgreSQL
+      - homepage.description=Relational database
+      - homepage.icon=/icons/postgresql.png
+
+volumes:
+  xwiki-data:
+  xwiki-postgres-data:
+
+networks:
+  internal-nw:

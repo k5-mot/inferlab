@@ -2,6 +2,7 @@
 .codex/
 .agents/
 .roo/
+.tmp/
 *.log
 __pycache__
 devcontainer-lock.json
@@ -42,5 +43,17 @@ backups/
 graphify-out/
 docs.local/
 tests/e2e/artifacts/
+scripts/tests/.tmp/
 
 node_modules/
+
+# Hermes Agent runtime state
+10-inference/hermes-agent/hermes-home/
+10-inference/hermes-agent/.hermes/
+10-inference/hermes-agent/data/
+10-inference/hermes-agent/audio_cache/
+10-inference/hermes-agent/voice-memos/
+
+# Keep shareable examples trackable
+!10-inference/hermes-agent/hermes-config.example.yaml
+!10-inference/hermes-agent/SOUL.example.md

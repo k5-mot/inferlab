@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<object xmlns="http://www.xwiki.org">
+  <className>XWiki.XWikiGroups</className>
+  <property name="member">
+    <value>XWiki.Admin</value>
+  </property>
+</object>

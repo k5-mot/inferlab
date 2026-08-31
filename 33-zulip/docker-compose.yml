@@ -131,7 +131,7 @@ services:
       start_period: 120s
 
   zulip-postgres:
-    image: zulip/zulip-postgresql:14
+    image: docker.io/zulip/zulip-postgresql:14
     container_name: ${STACK_NAME}-zulip-postgres
     restart: unless-stopped
     profiles:
@@ -191,8 +191,9 @@ services:
       - homepage.name=Zulip-Memcached
       - homepage.description=In-memory cache
       - homepage.icon=/icons/memcached.png
+
   zulip-rabbitmq:
-    image: docker.io/library/rabbitmq:4.2.9
+    image: docker.io/library/rabbitmq:4.3.5
     container_name: ${STACK_NAME}-zulip-rabbitmq
     restart: unless-stopped
     profiles:
@@ -227,7 +228,7 @@ services:
       - homepage.description=Reliable message broker
 
   zulip-redis:
-    image: docker.io/library/redis:8.10.0-alpine
+    image: docker.io/valkey/valkey:9.1.1-alpine3.24
     container_name: ${STACK_NAME}-zulip-redis
     restart: unless-stopped
     profiles:
@@ -236,8 +237,8 @@ services:
       - sh
       - -euc
       - |
-        echo "requirepass '$$REDIS_PASSWORD'" > /etc/redis.conf
-        exec redis-server /etc/redis.conf
+        echo "requirepass '$$REDIS_PASSWORD'" > /etc/valkey.conf
+        exec valkey-server /etc/valkey.conf
     environment:
       REDIS_PASSWORD: zulip_redis_password
     volumes:
@@ -247,15 +248,15 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
+        - valkey-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 5s
     labels:
-      - homepage.icon=/icons/redis.png
+      - homepage.icon=/icons/valkey.png
       - homepage.group=33-zulip
-      - homepage.name=Zulip-Redis
+      - homepage.name=Zulip-Valkey
       - homepage.description=In-memory data store
 
 volumes:

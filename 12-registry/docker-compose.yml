@@ -45,13 +45,18 @@ services:
       start_period: 10s
 
   pypiserver:
-    image: pypiserver/pypiserver:v2.4.1
+    image: docker.io/pypiserver/pypiserver:v2.4.1
     container_name: ${STACK_NAME}-pypiserver
     restart: unless-stopped
+    user: "9898:9898"
     profiles:
       - registry
+      - dify
+    entrypoint:
+      - pypi-server
     command:
       - run
+      - --disable-fallback
     ports:
       - 31200:8080
     volumes:
@@ -76,7 +81,7 @@ services:
       - homepage.icon=/icons/pypi.png
 
   verdaccio:
-    image: verdaccio/verdaccio:6.10.0
+    image: docker.io/verdaccio/verdaccio:6.10.1
     container_name: ${STACK_NAME}-verdaccio
     restart: unless-stopped
     profiles:
@@ -169,7 +174,7 @@ services:
       start_period: 10s
 
   npm-importer:
-    image: node:22.22.3-alpine
+    image: docker.io/library/node:24.20.0-alpine3.24
     container_name: ${STACK_NAME}-npm-importer
     profiles:
       - registry
@@ -228,7 +233,7 @@ services:
       start_period: 10s
 
   rpm-dist:
-    image: nginxinc/nginx-unprivileged:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.4-alpine
     container_name: ${STACK_NAME}-rpm-dist
     restart: unless-stopped
     profiles:
@@ -261,7 +266,7 @@ services:
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: docker.io/eilandert/reprepro@sha256:96dbd4cdbbb5c26893a7270c8949393211aaa0ec3ff05bf1ebd22da35347e64c
+    image: docker.io/eilandert/reprepro@latest
     container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
@@ -295,7 +300,7 @@ services:
       - internal-nw
 
   deb-dist:
-    image: nginxinc/nginx-unprivileged:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.4-alpine
     container_name: ${STACK_NAME}-deb-dist
     restart: unless-stopped
     profiles:

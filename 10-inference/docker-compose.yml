@@ -24,7 +24,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   litellm:
     <<: *external-dns-stabilizer
-    image: docker.io/litellm/litellm:v1.97.0
+    image: docker.io/litellm/litellm:v1.98.0
     container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
@@ -56,9 +56,13 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
-      tei-embedding:
+      # tei-embedding-jp:
+      #   condition: service_healthy
+      # tei-reranking-jp:
+      #   condition: service_healthy
+      vllm-embedding-multi:
         condition: service_healthy
-      tei-reranking:
+      vllm-reranking-multi:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]
@@ -79,7 +83,7 @@ services:
 
   ollama:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.15
+    image: docker.io/ollama/ollama:0.33.2
     container_name: ${STACK_NAME}-ollama
     restart: unless-stopped
     profiles:
@@ -110,7 +114,7 @@ services:
 
   ollama-init:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.32.15
+    image: docker.io/ollama/ollama:0.33.2
     container_name: ${STACK_NAME}-ollama-init
     restart: no
     profiles:
@@ -149,114 +153,248 @@ services:
         kill "$${OLLAMA_PID}"
         wait "$${OLLAMA_PID}" 2>/dev/null || true
 
-  tei-embedding:
-    <<: *external-dns-stabilizer
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: ${STACK_NAME}-tei-embedding
-    restart: on-failure:3
-    profiles:
-      - inference
-    command:
-      - --model-id
-      - "cl-nagoya/ruri-v3-310m"
-      # - /models/cl-nagoya--ruri-v3-310m
-      - --hostname
-      - "0.0.0.0"
-      - --port
-      - "8000"
-      - --pooling
-      - mean
-      - --max-batch-tokens
-      - "1024"
-      # - "8192"
-      - --auto-truncate
-      - "true"
-      - --max-client-batch-size
-      - "2"
-      - --max-concurrent-requests
-      - "2"
-      - --tokenization-workers
-      - "1"
-    environment:
-      HF_HUB_DISABLE_TELEMETRY: "1"
-      # HF_HUB_OFFLINE: "1"
-    volumes:
-      - tei-cache:/data
-      # - /srv/huggingface:/models:ro
-    networks:
-      - internal-nw
-    healthcheck:
-      test:
-        - "CMD-SHELL"
-        - "curl -s http://127.0.0.1:8000/health"
-      interval: 30s
-      timeout: 10s
-      retries: 60
-      start_period: 60s
-    labels:
-      - homepage.icon=/icons/hugging-face.png
-      - homepage.group=10-inference
-      - homepage.name=TEI_Embedding
-      - homepage.description=Embedding inference engine
-    mem_limit: 6g
-    memswap_limit: 7g
-    cpus: 4.0
+  # tei-embedding-jp:
+  #   <<: *external-dns-stabilizer
+  #   image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+  #   container_name: ${STACK_NAME}-tei-embedding-jp
+  #   restart: on-failure:3
+  #   profiles:
+  #     - inference
+  #   command:
+  #     - --model-id
+  #     - "cl-nagoya/ruri-v3-310m"
+  #     # - /models/cl-nagoya--ruri-v3-310m
+  #     - --hostname
+  #     - "0.0.0.0"
+  #     - --port
+  #     - "8000"
+  #     - --pooling
+  #     - "mean"
+  #     - --max-batch-tokens
+  #     - "1024"
+  #     # - "8192"
+  #     - --auto-truncate
+  #     - "true"
+  #     - --max-client-batch-size
+  #     - "2"
+  #     - --max-concurrent-requests
+  #     - "2"
+  #     - --tokenization-workers
+  #     - "1"
+  #   environment:
+  #     HF_HUB_DISABLE_TELEMETRY: "1"
+  #     # HF_HUB_OFFLINE: "1"
+  #     OMP_NUM_THREADS: "1"
+  #     MKL_NUM_THREADS: "1"
+  #     OPENBLAS_NUM_THREADS: "1"
+  #     RAYON_NUM_THREADS: "1"
+  #   volumes:
+  #     - tei-cache:/data
+  #     # - /srv/huggingface:/models:ro
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test:
+  #       - "CMD-SHELL"
+  #       - "curl -s http://127.0.0.1:8000/health"
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 60
+  #     start_period: 120s
+  #   labels:
+  #     - homepage.icon=/icons/hugging-face.png
+  #     - homepage.group=10-inference
+  #     - homepage.name=TEI_Embedding
+  #     - homepage.description=Embedding inference engine
+  #   mem_limit: 6g
+  #   memswap_limit: 6g
+  #   cpus: 4.0
 
-  tei-reranking:
-    <<: *external-dns-stabilizer
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
-    container_name: ${STACK_NAME}-tei-reranking
+  # tei-reranking-jp:
+  #   <<: *external-dns-stabilizer
+  #   image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3
+  #   container_name: ${STACK_NAME}-tei-reranking-jp
+  #   restart: on-failure:3
+  #   profiles:
+  #     - inference
+  #   command:
+  #     - --model-id
+  #     - "cl-nagoya/ruri-v3-reranker-310m"
+  #     # - /models/cl-nagoya--ruri-v3-reranker-310m
+  #     - --hostname
+  #     - "0.0.0.0"
+  #     - --port
+  #     - "8000"
+  #     - --pooling
+  #     - mean
+  #     - --max-batch-tokens
+  #     - "1024"
+  #     # - "8192"
+  #     - --auto-truncate
+  #     - "true"
+  #     - --max-client-batch-size
+  #     - "2"
+  #     - --max-concurrent-requests
+  #     - "2"
+  #     - --tokenization-workers
+  #     - "1"
+  #   environment:
+  #     HF_HUB_DISABLE_TELEMETRY: "1"
+  #     # HF_HUB_OFFLINE: "1"
+  #     OMP_NUM_THREADS: "1"
+  #     MKL_NUM_THREADS: "1"
+  #     OPENBLAS_NUM_THREADS: "1"
+  #     RAYON_NUM_THREADS: "1"
+  #   volumes:
+  #     - tei-cache:/data
+  #     # - /srv/huggingface:/models:ro
+  #   networks:
+  #     - internal-nw
+  #   healthcheck:
+  #     test:
+  #       - "CMD-SHELL"
+  #       - "curl -s http://127.0.0.1:8000/health"
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 60
+  #     start_period: 120s
+  #   labels:
+  #     - homepage.icon=/icons/hugging-face.png
+  #     - homepage.group=10-inference
+  #     - homepage.name=TEI_Reranking
+  #     - homepage.description=Embedding inference engine
+  #   mem_limit: 6g
+  #   memswap_limit: 6g
+  #   cpus: 4.0
+
+  vllm-embedding-multi:
+    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    container_name: ${STACK_NAME}-vllm-embedding-multi
     restart: on-failure:3
+    ipc: host
     profiles:
       - inference
     command:
-      - --model-id
-      - "cl-nagoya/ruri-v3-reranker-310m"
-      # - /models/cl-nagoya--ruri-v3-reranker-310m
-      - --hostname
-      - "0.0.0.0"
+      - "Qwen/Qwen3-Embedding-0.6B"
+      # - "/models/Qwen3-Embedding-0.6B"
+      - --runner
+      - pooling
+      - --convert
+      - embed
+      - --host
+      - 0.0.0.0
       - --port
       - "8000"
-      - --pooling
-      - mean
-      - --max-batch-tokens
+      - --served-model-name
+      - "Qwen/Qwen3-Embedding-0.6B"
+      - --dtype
+      - auto
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --kv-cache-memory-bytes
+      - "1G"
+      - --max-model-len
       - "1024"
-      # - "8192"
-      - --auto-truncate
-      - "true"
-      - --max-client-batch-size
-      - "2"
-      - --max-concurrent-requests
-      - "2"
-      - --tokenization-workers
-      - "1"
+      - --max-num-seqs
+      - "8"
+      - --max-num-batched-tokens
+      - "2048"
     environment:
       HF_HUB_DISABLE_TELEMETRY: "1"
-      # HF_HUB_OFFLINE: "1"
+      VLLM_NO_USAGE_STATS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
     volumes:
-      - tei-cache:/data
+      - vllm-cache:/root/.cache/huggingface
       # - /srv/huggingface:/models:ro
     networks:
       - internal-nw
     healthcheck:
       test:
-        - "CMD-SHELL"
-        - "curl -s http://127.0.0.1:8000/health"
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
       interval: 30s
       timeout: 10s
       retries: 60
-      start_period: 60s
+      start_period: 120s
+    # mem_limit: 8g
+    # memswap_limit: 8g
+    # cpus: 4.0
     labels:
-      - homepage.icon=/icons/hugging-face.png
+      - homepage.icon=/icons/vllm.png
       - homepage.group=10-inference
-      - homepage.name=TEI_Reranking
+      - homepage.name=vLLM_Embedding
       - homepage.description=Embedding inference engine
-    mem_limit: 6g
-    memswap_limit: 7g
-    cpus: 4.0
+
+  vllm-reranking-multi:
+    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    container_name: ${STACK_NAME}-vllm-reranking-multi
+    restart: on-failure:3
+    ipc: host
+    profiles:
+      - inference
+    command:
+      - "Qwen/Qwen3-Reranker-0.6B"
+      # - "/models/Qwen3-Reranker-0.6B"
+      - --runner
+      - pooling
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --served-model-name
+      - "Qwen/Qwen3-Reranker-0.6B"
+      - --dtype
+      - auto
+      # - --gpu-memory-utilization
+      # - "0.05"
+      - --kv-cache-memory-bytes
+      - "1G"
+      - --max-model-len
+      - "1024"
+      - --max-num-seqs
+      - "8"
+      - --max-num-batched-tokens
+      - "2048"
+      - --hf-overrides
+      - '{"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
+      - --chat-template
+      - /config/qwen3_reranker.jinja
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      VLLM_NO_USAGE_STATS: "1"
+      # VLLM_CPU_KVCACHE_SPACE: "1"
+      VLLM_CPU_OMP_THREADS_BIND: "nobind"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+    volumes:
+      - vllm-cache:/root/.cache/huggingface
+      # - /srv/huggingface:/models:ro
+      - ./vllm/qwen3_reranker.jinja:/config/qwen3_reranker.jinja:ro
+    networks:
+      - internal-nw
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()" > /dev/null 2>&1
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 120s
+    # mem_limit: 8g
+    # memswap_limit: 8g
+    # cpus: 4.0
+    labels:
+      - homepage.icon=/icons/vllm.png
+      - homepage.group=10-inference
+      - homepage.name=vLLM_Reranking
+      - homepage.description=Reranking inference engine
 
   kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.0
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1
     container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
@@ -283,7 +421,7 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: docker.io/nousresearch/hermes-agent:v2026.8.18
+    image: docker.io/nousresearch/hermes-agent:v2026.8.27
     container_name: ${STACK_NAME}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -297,6 +435,8 @@ services:
         set -eu
         exec /init /opt/hermes/docker/main-wrapper.sh gateway run
     environment:
+      HOME: /opt/data
+      HERMES_HOME: /opt/data
       # https://hermes-agent.nousresearch.com/docs/reference/environment-variables
       ### OpenAI-Compatible API
       API_SERVER_ENABLED: "true"
@@ -337,7 +477,11 @@ services:
       DOCLING_MCP_SERVICE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      # HERMES_HOME: /opt/data
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CODEX_HOME: /opt/data/.codex
       UV_LINK_MODE: copy
       UV_NO_CACHE: "true"
       HERMES_UID: 1000
@@ -517,6 +661,7 @@ volumes:
   ollama-cache:
   openclaw-data:
   tei-cache:
+  vllm-cache:
   hermes-data:
   qwenpaw-data:
   qwenpaw-secrets:

@@ -1,0 +1,152 @@
+version: 1
+
+scheduler:
+  timezone: Asia/Tokyo
+
+storage:
+  source_store_path: /data/knowledge-source
+  state_database_path: /data/knowledge-source/state/platform.db
+
+defaults:
+  ingest:
+    retry:
+      max_attempts: 3
+      backoff: exponential
+      initial_delay: 30s
+      max_delay: 10m
+    rate_limit:
+      requests_per_minute: 60
+
+sources:
+  gitlab:
+    enabled: false
+    base_url: http://gitlab
+    credential:
+      token_env: GITLAB_TOKEN
+    ingest:
+      schedule: "*/5 * * * *"
+      rate_limit:
+        requests_per_minute: 120
+    include:
+      projects: []
+    exclude:
+      paths:
+        - "**/node_modules/**"
+
+  zulip:
+    enabled: false
+    base_url: https://zulip
+    credential:
+      email_env: ZULIP_BOT_EMAIL
+      api_key_env: ZULIP_API_KEY
+    ingest:
+      schedule: "*/10 * * * *"
+    include:
+      channels: []
+
+  nextcloud:
+    enabled: false
+    base_url: http://nextcloud
+    credential:
+      username_env: NEXTCLOUD_USERNAME
+      password_env: NEXTCLOUD_PASSWORD
+    ingest:
+      schedule: "*/30 * * * *"
+      retry:
+        max_attempts: 5
+    include:
+      paths:
+        - /Engineering
+        - /Product
+        - /Projects
+        - /Shared/Architecture
+    exclude:
+      paths:
+        - /Personal
+        - /Temp
+
+  kaneo:
+    enabled: false
+    base_url: http://kaneo:5173
+    credential:
+      token_env: KANEO_TOKEN
+    ingest:
+      schedule: "*/5 * * * *"
+    include:
+      projects: []
+
+  couchdb:
+    enabled: true
+    base_url: http://couchdb:5984
+    database: obsidian
+    credential:
+      username_env: COUCHDB_USERNAME
+      password_env: COUCHDB_PASSWORD
+    ingest:
+      schedule: "0 */6 * * *"
+      rate_limit:
+        requests_per_minute: 240
+    title_strategy: hierarchy
+    max_documents: 1000
+    exclude:
+      paths:
+        - "ix:"
+
+openkb:
+  base_url: http://openkb:7566
+  knowledge_base: internal-wiki
+  # OpenKB REST APIに生成page本文のread endpointがないためread-only mountを使用する。
+  generated_wiki_path: /openkb-kbs/internal-wiki/wiki
+  credential:
+    token_env: OPENKB_TOKEN
+  llm:
+    model: openai/openai/gpt-oss:20b
+    api_key_env: LITELLM_MASTER_KEY
+    openai_api_base: http://litellm:4000/v1
+
+viewer:
+  workspace_path: /data/mintlify/site
+  poll_seconds: 5
+  startup_timeout_seconds: 120
+  mintlify:
+    internal_port: 3000
+    public_host: 0.0.0.0
+    public_port: 8080
+    name: OpenKB Knowledge
+    theme: maple
+    colors:
+      primary: "#0f766e"
+      light: "#14b8a6"
+      dark: "#172033"
+
+wikijs:
+  base_url: http://wikijs:3000
+  human_wiki:
+    path: human
+    locale: en
+  llm_wiki:
+    path: llm
+    locale: en
+  ingest:
+    enabled: false
+    schedule: "*/10 * * * *"
+  reader_credential:
+    token_env: WIKIJS_READER_TOKEN
+  publisher_credential:
+    token_env: WIKIJS_PUBLISHER_TOKEN
+
+pipeline:
+  compile:
+    enabled: true
+    schedule: "*/30 * * * *"
+    trigger:
+      on_ingest_batch_completed: false
+      min_changed_documents: 10
+      max_delay: 2h
+  publish:
+    enabled: false
+    targets: []
+    mode: after_successful_compile
+    require_validation: false
+    dry_run: false
+    deletion_policy: mark_unavailable

@@ -61,7 +61,7 @@
 
 ## Hugging Face
 
-- Qwen/Qwen3.6-27B-FP8
+- Qwen/Qwen3.8-27B-FP8
 - Qwen/Qwen3-Embedding-0.6B
 - Qwen/Qwen3-Reranker-0.6B
 - cl-nagoya/ruri-v3-310m

@@ -2,12 +2,13 @@
 # 参考資料:
 # - Homepage
 #   - https://gethomepage.dev/installation/docker/
+#   - https://github.com/gethomepage/homepage
 # - whoami
 #   - https://hub.docker.com/r/traefik/whoami
 #
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:v2.0.0
+    image: ghcr.io/gethomepage/homepage:v2.1.2
     container_name: ${STACK_NAME}-homepage
     restart: unless-stopped
     ports:

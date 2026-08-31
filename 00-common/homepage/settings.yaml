@@ -46,7 +46,7 @@ layout:
       icon: /icons/nextcloud.png
       style: row
       columns: 4
-  - 31-wikijs:
+  - 31-xwiki:
       icon: /icons/llm-wiki.png
       style: row
       columns: 4
@@ -58,12 +58,24 @@ layout:
       icon: /icons/zulip.png
       style: row
       columns: 4
-  - 35-gitlab:
+  - 34-gitlab:
       icon: /icons/gitlab.png
+      style: row
+      columns: 4
+  - 37-wikijs:
+      icon: /icons/wikijs.png
       style: row
       columns: 4
   - 40-obsidian:
       icon: /icons/obsidian.png
+      style: row
+      columns: 4
+  - 41-llmwiki:
+      icon: /icons/llm-wiki.png
+      style: row
+      columns: 4
+  - 42-openkb:
+      icon: /icons/llm-wiki.png
       style: row
       columns: 4
   - 50-o11y:

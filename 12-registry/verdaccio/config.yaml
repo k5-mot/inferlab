@@ -2,12 +2,16 @@ storage: /verdaccio/storage
 
 web:
   title: Local npm Registry
+  gravatar: false
 
 auth:
   htpasswd:
     file: /verdaccio/storage/htpasswd
 
 uplinks: {}
+
+publish:
+  allow_offline: true
 
 packages:
   "@*/*":

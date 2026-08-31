@@ -96,50 +96,6 @@ clients:
           userinfo.token.claim: "true"
 
   #
-  # Dify
-  #
-  - clientId: dify
-    name: Dify
-    enabled: true
-    protocol: openid-connect
-
-    publicClient: false
-    clientAuthenticatorType: client-secret
-    secret: "$(env:DIFY_OIDC_CLIENT_SECRET)"
-
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-
-    rootUrl: "http://$(env:PUBLIC_HOST):32100/"
-
-    redirectUris:
-      - "http://localhost:32100/console/api/oauth/authorize/keycloak"
-      - "http://127.0.0.1:32100/console/api/oauth/authorize/keycloak"
-      - "http://$(env:PUBLIC_HOST):32100/console/api/oauth/authorize/keycloak"
-
-    webOrigins:
-      - "http://localhost:32100"
-      - "http://127.0.0.1:32100"
-      - "http://$(env:PUBLIC_HOST):32100"
-
-    protocolMappers:
-      - name: groups
-        protocol: openid-connect
-        protocolMapper: oidc-group-membership-mapper
-        consentRequired: false
-
-        config:
-          claim.name: groups
-          full.path: "false"
-          introspection.token.claim: "true"
-          multivalued: "true"
-          id.token.claim: "true"
-          access.token.claim: "true"
-          userinfo.token.claim: "true"
-
-  #
   # Langfuse
   #
   - clientId: langfuse
@@ -170,6 +126,53 @@ clients:
       - "http://localhost:35100"
       - "http://127.0.0.1:35100"
       - "http://$(env:PUBLIC_HOST):35100"
+
+    protocolMappers:
+      - name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+        consentRequired: false
+
+        config:
+          claim.name: groups
+          full.path: "false"
+          introspection.token.claim: "true"
+          multivalued: "true"
+          id.token.claim: "true"
+          access.token.claim: "true"
+          userinfo.token.claim: "true"
+
+  #
+  # XWiki
+  #
+  - clientId: xwiki
+    name: XWiki
+    enabled: true
+    protocol: openid-connect
+
+    publicClient: false
+    clientAuthenticatorType: client-secret
+    secret: "$(env:XWIKI_OIDC_CLIENT_SECRET)"
+
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: false
+    serviceAccountsEnabled: false
+
+    rootUrl: "http://$(env:PUBLIC_HOST):33100/"
+
+    attributes:
+      post.logout.redirect.uris: "http://$(env:PUBLIC_HOST):33100/"
+
+    redirectUris:
+      - "http://localhost:33100/oidc/authenticator/callback"
+      - "http://127.0.0.1:33100/oidc/authenticator/callback"
+      - "http://$(env:PUBLIC_HOST):33100/oidc/authenticator/callback"
+
+    webOrigins:
+      - "http://localhost:33100"
+      - "http://127.0.0.1:33100"
+      - "http://$(env:PUBLIC_HOST):33100"
 
     protocolMappers:
       - name: groups
@@ -341,17 +344,17 @@ clients:
     directAccessGrantsEnabled: false
     serviceAccountsEnabled: false
 
-    rootUrl: "http://$(env:PUBLIC_HOST):33500/"
+    rootUrl: "http://$(env:PUBLIC_HOST):33400/"
 
     redirectUris:
-      - "http://localhost:33500/users/auth/openid_connect/callback"
-      - "http://127.0.0.1:33500/users/auth/openid_connect/callback"
-      - "http://$(env:PUBLIC_HOST):33500/users/auth/openid_connect/callback"
+      - "http://localhost:33400/users/auth/openid_connect/callback"
+      - "http://127.0.0.1:33400/users/auth/openid_connect/callback"
+      - "http://$(env:PUBLIC_HOST):33400/users/auth/openid_connect/callback"
 
     webOrigins:
-      - "http://localhost:33500"
-      - "http://127.0.0.1:33500"
-      - "http://$(env:PUBLIC_HOST):33500"
+      - "http://localhost:33400"
+      - "http://127.0.0.1:33400"
+      - "http://$(env:PUBLIC_HOST):33400"
 
     protocolMappers:
       - name: groups
