@@ -83,6 +83,21 @@ services:
               "name": "Open-WebUI",
               "description": "MCP server description."
             }
+          },
+          {
+            "type": "openapi",
+            "url": "http://mcpo:8000/llmwiki",
+            "spec_type": "url",
+            "spec": "",
+            "path": "openapi.json",
+            "auth_type": "bearer",
+            "key": "${MCPO_API_KEY:-sk-mcpo-api-secret-key}",
+            "config": { "enable": true },
+            "info": {
+              "id": "llmwiki",
+              "name": "llmwiki",
+              "description": "Repository knowledge tools provided by llmwiki through mcpo."
+            }
           }
         ]
       ### For Keycloak
@@ -282,11 +297,15 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/mcpo:main
+    build:
+      context: ./mcpo
+    image: ${STACK_NAME}-mcpo
     container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:
       - owui
+    environment:
+      LLMWIKI_CONTAINER_NAME: ${STACK_NAME}-llmwiki
     entrypoint:
       - /app/.venv/bin/mcpo
     command:
@@ -301,7 +320,9 @@ services:
     ports:
       - 32004:8000
     volumes:
-      - ./mcpo/config.json:/config/config.json
+      - ./mcpo/config.json:/config/config.json:ro
+      - ./mcpo/llmwiki-mcp.sh:/config/llmwiki-mcp.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - internal-nw
     healthcheck:

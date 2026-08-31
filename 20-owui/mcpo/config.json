@@ -18,6 +18,9 @@
             "disabledTools": [
                 "convert_time"
             ]
+        },
+        "llmwiki": {
+            "command": "/config/llmwiki-mcp.sh"
         }
     }
 }
