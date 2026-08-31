@@ -25,6 +25,7 @@ readonly PROFILES=(
 #   "gitlab"
 #   "wikijs"
   "obsidian"
+  "llmwiki"
   "o11y"
   "langfuse"
 )
