@@ -10,18 +10,17 @@ litellm_settings:
 
 router_settings:
   routing_strategy: simple-shuffle
-  # 同じ model_name 内で、失敗した deployment を除外して、別 provider を選び直す
   enable_weighted_failover: true
-  # リトライ回数
   num_retries: 3
-  # 1リクエスト内で試す failover の最大数
   max_fallbacks: 5
-  # 壊れている provider を一時的に routing 対象外にする
   allowed_fails: 2
   cooldown_time: 30
 
 model_list:
   ### Ollama
+  ### - https://openrouter.ai/google/gemma-4-31b-it
+  ### - https://openrouter.ai/openai/gpt-oss-20b
+  ### - https://openrouter.ai/nvidia/nemotron-3-nano-30b-a3b
   - model_name: google/gemma4:31b
     litellm_params:
       model: ollama_chat/gemma4:31b-cloud
@@ -31,6 +30,8 @@ model_list:
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000009 # $0.09 / M tokens
+      output_cost_per_token: 0.00000034 # $0.34 / M tokens
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: ollama_chat/gpt-oss:20b-cloud
@@ -40,6 +41,8 @@ model_list:
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000002 # $0.02 / M tokens
+      output_cost_per_token: 0.00000010 # $0.10 / M tokens
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
       model: ollama_chat/nemotron-3-nano:30b-cloud
@@ -49,6 +52,8 @@ model_list:
     model_info:
       supports_function_calling: true
       supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000005 # $0.05 / M tokens
+      output_cost_per_token: 0.00000020 # $0.20 / M tokens
 
   ### OpenRouter
   - model_name: google/gemma4:31b
@@ -57,18 +62,33 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000009 # $0.09 / M tokens
+      output_cost_per_token: 0.00000034 # $0.34 / M tokens
   - model_name: openai/gpt-oss:20b
     litellm_params:
       model: openrouter/openai/gpt-oss-20b:free
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000002 # $0.02 / M tokens
+      output_cost_per_token: 0.00000010 # $0.10 / M tokens
   - model_name: nvidia/nemotron-3-nano:30b
     litellm_params:
       model: openrouter/nvidia/nemotron-3-nano-30b-a3b:free
       api_key: os.environ/OPENROUTER_API_KEY
       tags: ["openrouter", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000005 # $0.05 / M tokens
+      output_cost_per_token: 0.00000020 # $0.20 / M tokens
 
   ### Google AI Studio
   - model_name: google/gemma4:31b
@@ -77,6 +97,11 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY
       tags: ["gemini", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000009 # $0.09 / M tokens
+      output_cost_per_token: 0.00000034 # $0.34 / M tokens
 
   ### Groq Cloud
   - model_name: openai/gpt-oss:20b
@@ -85,6 +110,11 @@ model_list:
       api_key: os.environ/GROQ_API_KEY
       tags: ["groq", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000002 # $0.02 / M tokens
+      output_cost_per_token: 0.00000010 # $0.10 / M tokens
 
   ### Cloudflare Workers AI
   - model_name: openai/gpt-oss:20b
@@ -93,43 +123,61 @@ model_list:
       api_key: os.environ/CLOUDFLARE_API_KEY
       tags: ["cloudflare", "foundation"]
       weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000002 # $0.02 / M tokens
+      output_cost_per_token: 0.00000010 # $0.10 / M tokens
 
   ### TEI; HuggingFace Text Embedding Inference
-  # - model_name: cl-nagoya/ruri-v3:310m
-  #   litellm_params:
-  #     model: openai/cl-nagoya/ruri-v3-310m
-  #     api_base: http://tei-embedding-jp:8000/v1
-  #     api_key: EMPTY
-  #     encoding_format: float
-  #     max_parallel_requests: 1
-  #     tags: ["text-embedding-inference", "embedding", "japanese"]
-  # - model_name: cl-nagoya/ruri-v3-reranker:310m
-  #   litellm_params:
-  #     model: huggingface/cl-nagoya/ruri-v3-reranker-310m
-  #     api_base: http://tei-reranking-jp:8000
-  #     api_key: EMPTY
-  #     encoding_format: float
-  #     max_parallel_requests: 1
-  #     tags: ["text-embedding-inference", "reranking", "japanese"]
+  - model_name: cl-nagoya/ruri-v3:310m
+    litellm_params:
+      model: openai/cl-nagoya/ruri-v3-310m
+      api_base: http://tei-embedding:8000/v1
+      api_key: EMPTY
+      encoding_format: float
+      max_parallel_requests: 1
+      tags: ["text-embedding-inference", "embedding", "japanese"]
+    model_info:
+      input_cost_per_token:  0.00000007 # $0.07 / M tokens
+      output_cost_per_token: 0.00000000 # $0.00 / M tokens
+  - model_name: cl-nagoya/ruri-v3-reranker:310m
+    litellm_params:
+      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+      api_base: http://tei-reranking:8000
+      api_key: EMPTY
+      encoding_format: float
+      max_parallel_requests: 1
+      tags: ["text-embedding-inference", "reranking", "japanese"]
+    model_info:
+      input_cost_per_token:  0.00000010 # $0.10 / M tokens
+      output_cost_per_token: 0.00000000 # $0.00 / M tokens
 
-  ### Embedding・reranking用vLLM
+  ### vLLM; Embedding & Reranking
+  ### - https://www.qwencloud.com/pricing/api
   - model_name: Qwen/Qwen3-Embedding:0.6B
     litellm_params:
       model: openai/Qwen/Qwen3-Embedding-0.6B
-      api_base: http://vllm-embedding-multi:8000/v1
+      api_base: http://vllm-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
       max_parallel_requests: 1
       tags: ["vllm", "embedding", "multilingual"]
+    model_info:
+      input_cost_per_token:  0.00000007 # $0.07 / M tokens
+      output_cost_per_token: 0.00000000 # $0.00 / M tokens
   - model_name: Qwen/Qwen3-Reranker:0.6B
     litellm_params:
       model: cohere/Qwen/Qwen3-Reranker-0.6B
-      api_base: http://vllm-reranking-multi:8000
+      api_base: http://vllm-reranking:8000
       api_key: EMPTY
       max_parallel_requests: 1
       tags: ["vllm", "reranking", "multilingual"]
+    model_info:
+      input_cost_per_token:  0.00000010 # $0.10 / M tokens
+      output_cost_per_token: 0.00000000 # $0.00 / M tokens
 
-  ### TTS
+  ### Kokoro-TTS
   - model_name: hexgrad/kokoro:82m
     litellm_params:
       model: openai/kokoro
@@ -138,3 +186,5 @@ model_list:
       tags: ["openai-compatible", "tts"]
     model_info:
       mode: audio_speech
+      input_cost_per_second:  0.00001 # $0.0006 / minutes
+      output_cost_per_second: 0.00001 # $0.0006 / minutes
