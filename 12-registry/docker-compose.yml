@@ -192,7 +192,7 @@ services:
       - sh
       - /usr/local/bin/import-npm-packages
     volumes:
-      - /srv/12-registry/npm-packages:/imports:ro
+      - /srv/npm:/imports:ro
       - ./npm-importer/import-npm-packages.sh:/usr/local/bin/import-npm-packages:ro
     networks:
       - internal-nw

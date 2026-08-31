@@ -71,7 +71,7 @@ sudo docker compose --env-file .env --profile registry ps docker-registry pypise
 
 ## 4. Registry サーバ: package / extension 資材を配置する
 
-`/srv/12-registry` 配下へ資材を配置すると、起動済み service が配信または投入を行う。
+npm packageは`/srv/npm`へ、その他のpackageとextensionは`/srv/12-registry`配下へ配置すると、起動済みserviceが配信または投入を行う。
 
 ```bash
 # repository rootへ移動する。
@@ -80,8 +80,8 @@ cd /path/to/repository
 # PyPI packageをpypiserverの配信directoryへ配置する。
 cp -a <REGISTRY_ASSETS>/12-registry/pypi/. /srv/12-registry/pypi/
 
-# npm packageをVerdaccio importerの入力directoryへ配置する。
-cp -a <REGISTRY_ASSETS>/12-registry/npm-packages/. /srv/12-registry/npm-packages/
+# npm packageをllmwikiとVerdaccio importerが共用する入力directoryへ配置する。
+cp -a <REGISTRY_ASSETS>/npm/. /srv/npm/
 
 # RPM packageをcreaterepo_cの入力directoryへ配置する。
 cp -a <REGISTRY_ASSETS>/12-registry/rpm/. /srv/12-registry/rpm/

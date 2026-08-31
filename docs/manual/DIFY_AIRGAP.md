@@ -24,26 +24,26 @@ PowerShell、Python 3、pipを導入した端末でrepository rootから実行�
 
 ```powershell
 # root stackで使用するcontainer imageを固定tagまたはdigestで取得する。
-.\scripts\Download-DockerImages.ps1 -OutputDir /srv/airgap-assets
+.\scripts\Download-DockerImages.ps1 -OutputDir /srv
 
 # 署名付きDify pluginを取得する。
-.\scripts\Download-Difypkg.ps1 -OutputDir /srv/airgap-assets
+.\scripts\Download-Difypkg.ps1 -OutputDir /srv
 
 # script内に固定したPython依存をPython 3.12から3.15の対象platform向けに取得する。
-.\scripts\Download-PipPkgs.ps1 -OutputDir /srv/airgap-assets
+.\scripts\Download-PipPkgs.ps1 -OutputDir /srv
 
 # Dify plugin packageのchecksumを再確認する。
-Get-ChildItem /srv/airgap-assets/dify/*.difypkg | Get-FileHash -Algorithm SHA256
+Get-ChildItem /srv/dify/*.difypkg | Get-FileHash -Algorithm SHA256
 
 # plugin依存wheelが取得済みであることを確認する。
-Get-ChildItem /srv/airgap-assets/pypi/*.whl | Measure-Object
+Get-ChildItem /srv/pypi/*.whl | Measure-Object
 ```
 
 期待結果:
 
 - `langgenius-openai_api_compatible-0.0.64.difypkg`のSHA-256が`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`になる。
-- `/srv/airgap-assets/dify/SHA256SUMS`とplugin packageが作成される。
-- `/srv/airgap-assets/pypi/`に依存wheelが作成される。
+- `/srv/dify/SHA256SUMS`とplugin packageが作成される。
+- `/srv/pypi/`に依存wheelが作成される。
 - Python 3.12、3.13、3.14、3.15について8 platformのdownloadが試行される。
 - `pip download`がsource distributionへfallbackせず完了する。
 
@@ -62,14 +62,14 @@ repository、`.env`、container image、plugin、PyPI wheelを承認済み媒体
 sudo install -d /srv/21-dify/plugins /srv/12-registry/pypi
 
 # 取得したpluginとPython packageをbind mount元へ配置する。
-sudo cp -a /srv/airgap-assets/dify/. /srv/21-dify/plugins/
-sudo cp -a /srv/airgap-assets/pypi/. /srv/12-registry/pypi/
+sudo cp -a /srv/dify/. /srv/21-dify/plugins/
+sudo cp -a /srv/pypi/. /srv/12-registry/pypi/
 
 # 転送後のDify plugin checksumを検証する。
 cd /srv/21-dify/plugins && sha256sum --check SHA256SUMS
 
 # 事前取得した全container imageをlocal container engineへloadする。
-cd <REPOSITORY_ROOT> && sudo ./scripts/install-images.sh --image-directory /srv/airgap-assets/docker
+cd <REPOSITORY_ROOT> && sudo ./scripts/install-images.sh --image-directory /srv/docker
 ```
 
 期待結果:

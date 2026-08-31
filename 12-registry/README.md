@@ -8,7 +8,7 @@
 - rpm: createrepo_c + nginx
 - deb: reprepro + nginx
 
-取得済み資材は `/srv/12-registry/{rpm,deb,pypi,npm-packages,vsix}` に配置する。`docker compose --env-file .env --profile registry up -d` を実行すると、rpm、deb、PyPI package、npm package、VSIX file は各 registry へ自動的に反映される。
+取得済みのnpm資材は`/srv/npm`に、その他の資材は`/srv/12-registry/{rpm,deb,pypi,vsix}`に配置する。`docker compose --env-file .env --profile registry up -d` を実行すると、rpm、deb、PyPI package、npm package、VSIX fileは各registryへ自動的に反映される。
 Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scripts/Download-All.ps1` を実行する。registry別に取得したい場合は、`scripts/Download-PipPkgs.ps1` などを個別に実行する。
 
 | Directory | 対象 | 反映先 |
@@ -16,7 +16,7 @@ Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scri
 | `/srv/12-registry/rpm` | `.rpm` | createrepo_c が metadata を生成し、nginx が配信する。 |
 | `/srv/12-registry/deb` | `.deb` | reprepro が `/srv/12-registry/deb/public` へ APT repository を生成し、nginx が配信する。 |
 | `/srv/12-registry/pypi` | `.whl`、`.tar.gz`、`.zip` | pypiserver が配信する。 |
-| `/srv/12-registry/npm-packages` | `.tgz` | Verdaccio へ publish する。 |
+| `/srv/npm` | `.tgz` | Verdaccioへpublishし、llmwikiのDocker build入力と共用する。 |
 | `/srv/12-registry/vsix` | `.vsix` | Code Marketplace importer が配信storageへ反映する。 |
 | `/srv/oci-archive` | `docker save` 形式の `.tar` | Container engineへ手動loadするための入力資材。 |
 
@@ -42,7 +42,7 @@ PyPIserverはpackage資材を変更しない配信専用serviceとして、UID/G
 | Service | 初期化・同期内容 |
 | --- | --- |
 | `code-marketplace-importer` | `/srv/12-registry/vsix`の`.vsix`をfingerprint化し、変更がある場合だけCode Marketplace storageへ追加する。 |
-| `npm-importer` | `/srv/12-registry/npm-packages`の`.tgz`をVerdaccioへ冪等にpublishする。 |
+| `npm-importer` | `/srv/npm`の`.tgz`をVerdaccioへ冪等にpublishする。 |
 | `createrepo_c` | `/srv/12-registry/rpm`を定期的にRPM repository metadataへ反映する。 |
 | `reprepro` | `/srv/12-registry/deb`を定期的にAPT repository metadataへ反映し、`/srv/12-registry/deb/public`へ公開用treeを生成する。 |
 
@@ -60,7 +60,7 @@ sudo docker compose --env-file .env --profile registry up -d
 - PyPIserver、Verdaccio、Code Marketplace、Docker Registryが応答する。
 - `/srv/12-registry/rpm`のRPMが`rpm-dist`から配信される。
 - `/srv/12-registry/deb/public`にAPT repository metadataが生成される。
-- `/srv/12-registry/npm-packages`のnpm packageがVerdaccioへpublishされる。
+- `/srv/npm`のnpm packageがVerdaccioへpublishされる。
 
 失敗条件:
 

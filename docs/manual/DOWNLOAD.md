@@ -21,8 +21,8 @@ air-gap環境へ持ち込む資材は、`scripts/README.md`に定義されたPow
 ## 1. オンライン端末で資材を取得する
 
 ```powershell
-# 取得資材をまとめるstaging directoryを指定する。
-$OutputDir = "/srv/airgap-assets"
+# scriptごとの出力directoryを作成する共通の親directoryを指定する。
+$OutputDir = "/srv"
 
 # repositoryに必要な全download scriptを定義する。
 $DownloadScripts = @(
@@ -46,7 +46,7 @@ foreach ($Script in $DownloadScripts) {
 
 期待結果:
 
-- `/srv/airgap-assets/`配下に`dify`、`nextcloud`、`docling`、`hfrepo`、`rpm`、`deb`、`vscode`、`docker`、`pypi`、`npm`が作成される。
+- `/srv/`配下に`dify`、`nextcloud`、`docling`、`hfrepo`、`rpm`、`deb`、`vscode`、`docker`、`pypi`、`npm`が作成される。
 - Dify plugin、Nextcloud app、Tesseract traineddataのchecksum検証が成功する。
 - PyPI packageの対象versionとplatformについて、wheelまたは利用可能なsource archiveが取得される。
 - Composeが参照するregistry imageが`docker/*.tar`として保存される。
@@ -62,7 +62,7 @@ foreach ($Script in $DownloadScripts) {
 
 ```powershell
 # Dify pluginのchecksum一覧を検証する。
-Push-Location /srv/airgap-assets/dify
+Push-Location /srv/dify
 Get-Content SHA256SUMS | ForEach-Object {
     $Hash, $FileName = $_ -split "\s+", 2
     if ((Get-FileHash -Algorithm SHA256 $FileName).Hash.ToLowerInvariant() -ne $Hash) {
@@ -72,11 +72,13 @@ Get-Content SHA256SUMS | ForEach-Object {
 Pop-Location
 
 # 種別ごとの資材件数を表示する。
-Get-ChildItem /srv/airgap-assets -Directory |
+$AssetDirectories = @("dify", "nextcloud", "docling", "hfrepo", "rpm", "deb", "vscode", "docker", "pypi", "npm")
+$AssetDirectories |
     ForEach-Object {
+        $Directory = Get-Item (Join-Path "/srv" $_)
         [pscustomobject]@{
-            Directory = $_.Name
-            Files = (Get-ChildItem $_.FullName -File -Recurse).Count
+            Directory = $Directory.Name
+            Files = (Get-ChildItem $Directory.FullName -File -Recurse).Count
         }
     }
 ```
@@ -94,13 +96,13 @@ Get-ChildItem /srv/airgap-assets -Directory |
 ## 3. air-gap serverへ転送する
 
 ```powershell
-# staging directoryを承認済みの閉域転送経路でair-gap serverへ転送する。
-scp -r /srv/airgap-assets <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
+# OutputDir直下の取得資材を承認済みの閉域転送経路でair-gap serverへ転送する。
+scp -r /srv/dify /srv/nextcloud /srv/docling /srv/hfrepo /srv/rpm /srv/deb /srv/vscode /srv/docker /srv/pypi /srv/npm <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 ```
 
 期待結果:
 
-- air-gap server上の`/srv/airgap-assets/`に取得済み資材がある。
+- air-gap server上の`/srv/`直下に種別ごとの取得済み資材がある。
 
 失敗条件:
 
@@ -110,30 +112,31 @@ scp -r /srv/airgap-assets <AIRGAP_USER>@<AIRGAP_HOST>:/srv/
 ## 4. 配信先へ資材を配置する
 
 ```bash
-# serviceがread-only mountするdirectoryを作成する。
-sudo install -d /srv/21-dify/plugins /srv/30-nextcloud/apps /srv/docling /srv/huggingface
-sudo install -d /srv/12-registry/pypi /srv/12-registry/npm-packages /srv/12-registry/rpm /srv/12-registry/deb /srv/12-registry/vsix
+# 取得資材を配置するservice別directoryを作成する。
+sudo install -d /srv/21-dify/plugins /srv/30-nextcloud/apps /srv/huggingface
+sudo install -d /srv/12-registry/pypi /srv/12-registry/rpm /srv/12-registry/deb /srv/12-registry/vsix
 
-# Dify、Nextcloud、Docling、Hugging Faceの資材を配置する。
-sudo cp -a /srv/airgap-assets/dify/. /srv/21-dify/plugins/
-sudo cp -a /srv/airgap-assets/nextcloud/. /srv/30-nextcloud/apps/
-sudo cp -a /srv/airgap-assets/docling/. /srv/docling/
-sudo cp -a /srv/airgap-assets/hfrepo/. /srv/huggingface/
+# Dify、Nextcloud、Hugging Faceの資材をservice別directoryへ配置する。
+sudo cp -a /srv/dify/. /srv/21-dify/plugins/
+sudo cp -a /srv/nextcloud/. /srv/30-nextcloud/apps/
+sudo cp -a /srv/hfrepo/. /srv/huggingface/
 
 # package registryとVS Code Marketplaceの投入元へ資材を配置する。
-sudo cp -a /srv/airgap-assets/pypi/. /srv/12-registry/pypi/
-sudo cp -a /srv/airgap-assets/npm/. /srv/12-registry/npm-packages/
-sudo cp -a /srv/airgap-assets/rpm/. /srv/12-registry/rpm/
-sudo cp -a /srv/airgap-assets/deb/. /srv/12-registry/deb/
-sudo cp -a /srv/airgap-assets/vscode/. /srv/12-registry/vsix/
+sudo cp -a /srv/pypi/. /srv/12-registry/pypi/
+sudo cp -a /srv/rpm/. /srv/12-registry/rpm/
+sudo cp -a /srv/deb/. /srv/12-registry/deb/
+sudo cp -a /srv/vscode/. /srv/12-registry/vsix/
 
 # container image archiveをlocal container engineへ読み込む。
-sudo ./scripts/install-images.sh --image-directory /srv/airgap-assets/docker
+sudo ./scripts/install-images.sh --image-directory /srv/docker
 ```
+
+`/srv/docling`はDoclingがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwikiのBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのDocker buildはVerdaccioを経由しない。
 
 期待結果:
 
 - 各serviceのbind mount元に必要な資材が配置される。
+- `/srv/npm`がnpm packageの共通bind mount元とllmwiki build入力として保持される。
 - `docker image ls`または`podman image ls`でComposeが参照するimageを確認できる。
 
 失敗条件:
