@@ -2,24 +2,27 @@
 
 `llm-wiki-compiler` 1.1.0 をKnowledge Compiler、MCP server、read-only Viewerに使用する。実行環境は、upstreamのViewerとMCPだけを提供する`llmwiki` containerと、adapterおよび`ingest -> compile -> lint -> eval` pipelineだけを実行する`llmwiki-ingester` containerに分離する。両containerは`llmwiki-project` named volumeだけを共有する。
 
-コードとbuildも分離する。`runtime/`と`ingester/`は独立したNode packageであり、それぞれ専用の`package.json`、`pnpm-lock.yaml`、Dockerfile、TypeScript設定、source、testを持つ。一方のimage build contextから他方のsource codeは参照できない。
+コードとbuildも分離する。`runtime/`と`ingester/`は独立したNode packageであり、それぞれ専用の`package.json`、`pnpm-lock.yaml`、Online/Offline用Dockerfile、TypeScript設定、source、testを持つ。一方のimage build contextから他方のsource codeは参照できない。
 
 ```text
 41-llmwiki/
   runtime/                # Viewer、MCP、世代監視
     src/
     tests/
-    Dockerfile
+    Dockerfile              # Online build
+    Dockerfile.offline      # Offline build
     package.json
     pnpm-lock.yaml
   ingester/               # adapter、scheduler、compile/lint/eval
     src/
     tests/
-    Dockerfile
+    Dockerfile              # Online build
+    Dockerfile.offline      # Offline build
     package.json
     pnpm-lock.yaml
   config.yaml             # 両processの運用設定
-  docker-compose.yml
+  docker-compose.yml          # Online buildを含む標準構成
+  docker-compose.offline.yml  # Offline buildへ切り替えるoverride
 ```
 
 OpenKB、Wiki.js publish、OKF importは使用しない。OKF importは完成済みpageを`wiki/`へ直接書き、adapterとcompilerの`sources/`境界を迂回するためである。OKF exportはupstream CLIまたはMCPの`export_okf`をそのまま使用できる。
@@ -108,10 +111,40 @@ pnpm --dir 41-llmwiki/ingester test
 
 - lockfile 差分、型 error、test failure のいずれかがある場合は変更を完了扱いにしてはならない。
 
+## Image build
+
+Online版は`docker-compose.yml`と各`Dockerfile`を使用し、npm registryからpnpmと依存packageを取得する。
+
+```bash
+# Online版のRuntimeとIngester imageをbuildする。
+docker compose --env-file .env --profile llmwiki build llmwiki llmwiki-ingester
+```
+
+Offline版はrootの`docker-compose.yml`に`docker-compose.offline.yml`を重ね、各`Dockerfile.offline`と`/srv/npm/*.tgz`を使用する。`build.network` は`none`に固定され、Verdaccioは経由しない。base imageは事前にlocal container engineへloadしておく。
+
+```bash
+# Offline overrideと/srv/npmのnamed contextを含むCompose設定を検証する。
+LLMWIKI_NPM_PACKAGES_DIR=/srv/npm docker compose --env-file .env -f docker-compose.yml -f 41-llmwiki/docker-compose.offline.yml --profile llmwiki config --quiet
+
+# Internetへ接続せずにOffline版のRuntimeとIngester imageをbuildする。
+LLMWIKI_NPM_PACKAGES_DIR=/srv/npm docker compose --env-file .env -f docker-compose.yml -f 41-llmwiki/docker-compose.offline.yml --profile llmwiki build llmwiki llmwiki-ingester
+```
+
+期待結果:
+
+- Online版はregistryから依存packageを取得してbuildできる。
+- Offline版は`/srv/npm`とlocal base imageだけでbuildできる。
+
+失敗基準:
+
+- Online版でnpm registryへ接続できない。
+- Offline版が外部networkへ接続を試みる。
+- Offline版のbase imageまたは`/srv/npm/*.tgz`が不足する。
+
 ## 起動
 
 ```bash
-# RuntimeとIngester imageをbuildして2 containerを起動する。
+# Online版のRuntimeとIngester imageをbuildして2 containerを起動する。
 docker compose --profile llmwiki up -d --build llmwiki llmwiki-ingester
 
 # RuntimeとIngesterの状態を確認する。

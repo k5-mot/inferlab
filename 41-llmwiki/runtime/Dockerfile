@@ -2,13 +2,10 @@ FROM docker.io/library/node:24.20.0-bookworm-slim AS builder
 
 WORKDIR /app
 
-COPY --from=npm-packages . /tmp/npm-packages
-
-RUN npm install -g /tmp/npm-packages/pnpm-11.18.0.tgz --ignore-scripts --no-audit --no-fund \
-    && pnpm store add /tmp/npm-packages/*.tgz
+RUN npm install -g pnpm@11.18.0 --ignore-scripts --no-audit --no-fund
 
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --offline --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src

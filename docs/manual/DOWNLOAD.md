@@ -131,12 +131,12 @@ sudo cp -a /srv/vscode/. /srv/12-registry/vsix/
 sudo ./scripts/install-images.sh --image-directory /srv/docker
 ```
 
-`/srv/docling`はDoclingがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwikiのBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのDocker buildはVerdaccioを経由しない。
+`/srv/docling`はDoclingがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwiki Offline版のBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのOffline Docker buildはVerdaccioを経由しない。
 
 期待結果:
 
 - 各serviceのbind mount元に必要な資材が配置される。
-- `/srv/npm`がnpm packageの共通bind mount元とllmwiki build入力として保持される。
+- `/srv/npm`がnpm packageの共通bind mount元とllmwiki Offline build入力として保持される。
 - `docker image ls`または`podman image ls`でComposeが参照するimageを確認できる。
 
 失敗条件:

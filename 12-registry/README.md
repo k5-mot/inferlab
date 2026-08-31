@@ -16,7 +16,7 @@ Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scri
 | `/srv/12-registry/rpm` | `.rpm` | createrepo_c が metadata を生成し、nginx が配信する。 |
 | `/srv/12-registry/deb` | `.deb` | reprepro が `/srv/12-registry/deb/public` へ APT repository を生成し、nginx が配信する。 |
 | `/srv/12-registry/pypi` | `.whl`、`.tar.gz`、`.zip` | pypiserver が配信する。 |
-| `/srv/npm` | `.tgz` | Verdaccioへpublishし、llmwikiのDocker build入力と共用する。 |
+| `/srv/npm` | `.tgz` | Verdaccioへpublishし、llmwikiのOffline Docker build入力と共用する。 |
 | `/srv/12-registry/vsix` | `.vsix` | Code Marketplace importer が配信storageへ反映する。 |
 | `/srv/oci-archive` | `docker save` 形式の `.tar` | Container engineへ手動loadするための入力資材。 |
 

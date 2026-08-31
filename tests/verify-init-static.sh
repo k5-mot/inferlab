@@ -240,6 +240,7 @@ verify_compose_config() {
     gitlab
     wikijs
     obsidian
+    llmwiki
     o11y
     langfuse
   )
@@ -252,6 +253,13 @@ verify_compose_config() {
     echo "compose config: profile=${profile}"
     docker compose --profile "${profile}" config --services >/dev/null
   done
+
+  echo "compose config: profile=llmwiki offline"
+  LLMWIKI_NPM_PACKAGES_DIR=/srv/npm docker compose \
+    -f docker-compose.yml \
+    -f 41-llmwiki/docker-compose.offline.yml \
+    --profile llmwiki \
+    config --services >/dev/null
 }
 
 verify_shell_syntax

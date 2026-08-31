@@ -1,0 +1,14 @@
+services:
+  llmwiki:
+    build:
+      dockerfile: Dockerfile.offline
+      network: none
+      additional_contexts:
+        npm-packages: ${LLMWIKI_NPM_PACKAGES_DIR:-/srv/npm}
+
+  llmwiki-ingester:
+    build:
+      dockerfile: Dockerfile.offline
+      network: none
+      additional_contexts:
+        npm-packages: ${LLMWIKI_NPM_PACKAGES_DIR:-/srv/npm}
