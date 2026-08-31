@@ -58,6 +58,7 @@ $Packages = @(
     "lucide@0.544.0",
     "mint@4.2.821",
     "msw@^2.15.0",
+    "pnpm@11.18.0",
     "react-dom@^19.0.0",
     "react@^19.0.0",
     "skills@1.5.21",

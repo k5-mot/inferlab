@@ -3,6 +3,8 @@ services:
     build:
       context: ./runtime
       dockerfile: Dockerfile
+      additional_contexts:
+        npm-packages: ${LLMWIKI_NPM_PACKAGES_DIR:-/srv/npm}
     container_name: ${STACK_NAME}-llmwiki
     restart: unless-stopped
     profiles:
@@ -39,6 +41,8 @@ services:
     build:
       context: ./ingester
       dockerfile: Dockerfile
+      additional_contexts:
+        npm-packages: ${LLMWIKI_NPM_PACKAGES_DIR:-/srv/npm}
     container_name: ${STACK_NAME}-llmwiki-ingester
     restart: unless-stopped
     profiles:
