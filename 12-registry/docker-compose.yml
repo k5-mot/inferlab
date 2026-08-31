@@ -13,8 +13,6 @@
 # - registry
 #   - https://hub.docker.com/_/registry
 #
-name: ${STACK_NAME:?STACK_NAME is required}
-
 services:
   docker-registry:
     image: docker.io/library/registry:3.1.1
@@ -57,6 +55,8 @@ services:
     command:
       - run
       - --disable-fallback
+      - --health-endpoint
+      - /healthz
     ports:
       - 31200:8080
     volumes:
@@ -66,9 +66,12 @@ services:
     healthcheck:
       test:
         - CMD
-        - python
-        - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/simple/', timeout=3).read()"
+        - wget
+        - "--spider"
+        - "-q"
+        - "-T"
+        - "3"
+        - "http://127.0.0.1:8080/healthz"
       interval: 30s
       timeout: 5s
       retries: 5
@@ -96,9 +99,10 @@ services:
     healthcheck:
       test:
         - CMD
-        - node
-        - -e
-        - "const http=require('http'); const req=http.get('http://127.0.0.1:4873/', res => process.exit(res.statusCode < 500 ? 0 : 1)); req.on('error', () => process.exit(1)); req.setTimeout(3000, () => req.destroy());"
+        - wget
+        - -q
+        - --spider
+        - http://127.0.0.1:4873/-/ping
       interval: 30s
       timeout: 5s
       retries: 5
@@ -266,7 +270,7 @@ services:
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: docker.io/eilandert/reprepro@latest
+    image: docker.io/eilandert/reprepro:latest
     container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
