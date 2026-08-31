@@ -67,15 +67,14 @@ sudo cp -a /srv/pypi/. /srv/12-registry/pypi/
 
 # 転送後のDify plugin checksumを検証する。
 cd /srv/21-dify/plugins && sha256sum --check SHA256SUMS
-
-# 事前取得した全container imageをlocal container engineへloadする。
-cd <REPOSITORY_ROOT> && sudo ./scripts/install-images.sh --image-directory /srv/docker
 ```
+
+`/srv/docker/*.tar`のcontainer engineへのloadは環境運用者が実施する。
 
 期待結果:
 
 - すべてのchecksumが`OK`になる。
-- `install-images.sh`が全archiveをloadし、失敗件数`0`で終了する。
+- `/srv/docker/*.tar`が環境運用者によるimage load用の入力資材として保持される。
 
 失敗条件:
 

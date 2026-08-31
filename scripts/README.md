@@ -76,7 +76,6 @@ scripts/
 ├── Download-PipPkgs-from-Project.ps1
 ├── Download-NpmPkgs-from-Project.ps1
 ├── Prepare-Offline.ps1
-├── install-images.sh
 ├── install-offline.sh
 ├── install-system-packages.sh
 ├── install-vscode-extensions.sh

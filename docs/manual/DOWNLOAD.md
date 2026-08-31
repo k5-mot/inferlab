@@ -126,22 +126,19 @@ sudo cp -a /srv/pypi/. /srv/12-registry/pypi/
 sudo cp -a /srv/rpm/. /srv/12-registry/rpm/
 sudo cp -a /srv/deb/. /srv/12-registry/deb/
 sudo cp -a /srv/vscode/. /srv/12-registry/vsix/
-
-# container image archiveをlocal container engineへ読み込む。
-sudo ./scripts/install-images.sh --image-directory /srv/docker
 ```
 
-`/srv/docling`はDoclingがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwiki Offline版のBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのOffline Docker buildはVerdaccioを経由しない。
+`/srv/docling`はDoclingがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwiki Offline版のBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのOffline Docker buildはVerdaccioを経由しない。`/srv/docker/*.tar`のcontainer engineへのloadは環境運用者が実施する。
 
 期待結果:
 
 - 各serviceのbind mount元に必要な資材が配置される。
 - `/srv/npm`がnpm packageの共通bind mount元とllmwiki Offline build入力として保持される。
-- `docker image ls`または`podman image ls`でComposeが参照するimageを確認できる。
+- `/srv/docker/*.tar`が環境運用者によるimage load用の入力資材として保持される。
 
 失敗条件:
 
-- copyまたはimage loadが非0で終了する。
+- copyが非0で終了する。
 - 配置先に不足fileがある。
 
 ## 5. OS packageとVSIXをinstallする
