@@ -2,3 +2,6 @@ FROM ghcr.io/open-webui/oikb:0.4.0
 
 COPY --chown=appuser:appuser patch-openwebui-timeout.py /tmp/patch-openwebui-timeout.py
 RUN python /tmp/patch-openwebui-timeout.py && rm /tmp/patch-openwebui-timeout.py
+
+COPY --chown=appuser:appuser patch-daemon-external-scheduler.py /tmp/patch-daemon-external-scheduler.py
+RUN python /tmp/patch-daemon-external-scheduler.py && rm /tmp/patch-daemon-external-scheduler.py
