@@ -512,7 +512,7 @@ services:
   # Discord pluginは公式imageとは別に永続volumeへ導入する。
   openclaw-init:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
     container_name: ${STACK_NAME}-openclaw-init
     restart: "no"
     profiles:
@@ -549,7 +549,7 @@ services:
   # https://docs.openclaw.ai/install/docker
   openclaw:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.7.1-2-browser
+    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
