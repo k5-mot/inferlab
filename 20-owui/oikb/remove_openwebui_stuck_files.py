@@ -21,6 +21,36 @@ from dotenv import load_dotenv
 LOGGER = logging.getLogger(__name__)
 STUCK_STATUSES = frozenset({"pending", "processing"})
 DEFAULT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+LOG_LEVEL_STYLES = (
+    (logging.DEBUG, "DEBUG", "36"),
+    (logging.INFO, "INFO", "32"),
+    (logging.WARNING, "WARNING", "33"),
+    (logging.ERROR, "ERROR", "31"),
+    (logging.CRITICAL, "CRITICAL", "1;31"),
+)
+
+
+def configure_logging() -> None:
+    """terminalでlog level名を色付きにしてroot loggerを設定する。
+
+    Args:
+        なし。
+
+    Returns:
+        なし。
+
+    Side Effects:
+        root loggerのhandlerとlevel名を更新する。`NO_COLOR`設定時は色を付けない。
+    """
+    use_color = sys.stderr.isatty() and "NO_COLOR" not in os.environ
+    for level, name, color in LOG_LEVEL_STYLES:
+        display_name = f"\033[{color}m{name}\033[0m" if use_color else name
+        logging.addLevelName(level, display_name)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        force=True,
+    )
 
 
 def load_environment(env_file: Path) -> bool:
@@ -219,14 +249,14 @@ def cleanup_stuck_files(
             file_id = file_item["id"]
             status = file_item["data"]["status"]
             LOGGER.warning(
-                "停止ファイルを検出しました: knowledge_id=%s file_id=%s status=%s",
+                "Detected a stuck file: knowledge_id=%s file_id=%s status=%s",
                 knowledge_id,
                 file_id,
                 status,
             )
             if delete:
                 delete_file(open_webui_url, open_webui_api_key, file_id)
-                LOGGER.info("停止ファイルを削除しました: file_id=%s", file_id)
+                LOGGER.info("Deleted a stuck file: file_id=%s", file_id)
             total += 1
     return total
 
@@ -241,7 +271,7 @@ def build_parser() -> argparse.ArgumentParser:
         cleanup script用ArgumentParser。
     """
     parser = argparse.ArgumentParser(
-        description="Open WebUIで処理が停止したKnowledge fileを検出します。",
+        description="Detect stuck Open WebUI Knowledge files.",
     )
     parser.add_argument(
         "--open-webui-url",
@@ -265,7 +295,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--delete",
         action="store_true",
-        help="検出だけでなく削除を実行します。削除したfileは復元できません。",
+        help="Delete detected files. Deleted files cannot be restored.",
     )
     return parser
 
@@ -287,13 +317,13 @@ def main(argv: Sequence[str]) -> int:
     parser = build_parser()
     args = parser.parse_args(argv[1:])
     if not args.open_webui_api_key:
-        parser.error("--open-webui-api-keyまたはOPEN_WEBUI_API_KEYが必要です")
+        parser.error("--open-webui-api-key or OPEN_WEBUI_API_KEY is required")
     if not args.knowledge_id and not args.oikb_api_key:
         parser.error(
-            "Knowledge IDの自動検出には--oikb-api-keyまたはOIKB_API_KEYが必要です"
+            "--oikb-api-key or OIKB_API_KEY is required to discover Knowledge IDs"
         )
     if args.min_age_seconds <= 0:
-        parser.error("--min-age-secondsは1以上で指定してください")
+        parser.error("--min-age-seconds must be at least 1")
 
     try:
         knowledge_ids = args.knowledge_id or discover_knowledge_ids(
@@ -301,7 +331,7 @@ def main(argv: Sequence[str]) -> int:
             args.oikb_api_key,
         )
         if not knowledge_ids:
-            LOGGER.warning("対象Knowledge IDがありません")
+            LOGGER.warning("No Knowledge IDs found")
             return 0
         count = cleanup_stuck_files(
             args.open_webui_url,
@@ -310,18 +340,16 @@ def main(argv: Sequence[str]) -> int:
             args.min_age_seconds,
             args.delete,
         )
-        mode = "削除" if args.delete else "dry-run"
-        LOGGER.info("cleanup完了: mode=%s files=%d", mode, count)
+        mode = "delete" if args.delete else "dry-run"
+        LOGGER.info("Cleanup completed: mode=%s files=%d", mode, count)
         return 0
     except (HTTPError, URLError, TypeError, ValueError, json.JSONDecodeError) as error:
-        LOGGER.error("cleanupに失敗しました: %s", error)
+        LOGGER.error("Cleanup failed: %s", error)
         return 1
     finally:
-        LOGGER.info("処理時間: %.3f秒", time.perf_counter() - started_at)
+        LOGGER.info("Elapsed time: %.3f seconds", time.perf_counter() - started_at)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
+    configure_logging()
     raise SystemExit(main(sys.argv))

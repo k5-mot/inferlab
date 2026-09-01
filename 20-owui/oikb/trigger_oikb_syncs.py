@@ -22,6 +22,13 @@ from dotenv import load_dotenv
 LOGGER = logging.getLogger(__name__)
 DEFAULT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 TERMINAL_SYNC_STATUSES = frozenset({"success", "partial", "error", "cancelled"})
+LOG_LEVEL_STYLES = (
+    (logging.DEBUG, "DEBUG", "36"),
+    (logging.INFO, "INFO", "32"),
+    (logging.WARNING, "WARNING", "33"),
+    (logging.ERROR, "ERROR", "31"),
+    (logging.CRITICAL, "CRITICAL", "1;31"),
+)
 
 
 @dataclass(frozen=True)
@@ -31,6 +38,29 @@ class SourceConfig:
     key: str
     name: str
     knowledge_id: str
+
+
+def configure_logging() -> None:
+    """terminalでlog level名を色付きにしてroot loggerを設定する。
+
+    Args:
+        なし。
+
+    Returns:
+        なし。
+
+    Side Effects:
+        root loggerのhandlerとlevel名を更新する。`NO_COLOR`設定時は色を付けない。
+    """
+    use_color = sys.stderr.isatty() and "NO_COLOR" not in os.environ
+    for level, name, color in LOG_LEVEL_STYLES:
+        display_name = f"\033[{color}m{name}\033[0m" if use_color else name
+        logging.addLevelName(level, display_name)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        force=True,
+    )
 
 
 def load_environment(env_file: Path) -> bool:
@@ -123,7 +153,7 @@ def discover_sources(oikb_url: str, source_order: Sequence[str]) -> list[SourceC
             continue
         if not isinstance(knowledge_id, str) or not knowledge_id:
             raise ValueError(
-                f"OIKB sourceにkb_idがありません: source={name}; imageを再buildしてください"
+                f"OIKB source has no kb_id: source={name}; rebuild the OIKB image"
             )
         by_name[name] = SourceConfig(key, name, knowledge_id)
         discovered_order.append(name)
@@ -131,9 +161,9 @@ def discover_sources(oikb_url: str, source_order: Sequence[str]) -> list[SourceC
     names = list(source_order) or discovered_order
     unknown = [name for name in names if name not in by_name]
     if unknown:
-        raise ValueError(f"未知のOIKB sourceです: {', '.join(unknown)}")
+        raise ValueError(f"Unknown OIKB source: {', '.join(unknown)}")
     if not names:
-        raise ValueError("OIKBにsourceが登録されていません")
+        raise ValueError("No sources are registered in OIKB")
     return [by_name[name] for name in names]
 
 
@@ -202,7 +232,7 @@ def wait_for_oikb_sync(
     while time.monotonic() < deadline:
         state = get_source_states(oikb_url).get(source.key)
         if state is None:
-            raise ValueError(f"OIKB healthからsourceが消失しました: {source.name}")
+            raise ValueError(f"Source disappeared from OIKB health: {source.name}")
         status = state.get("status")
         last_sync = state.get("last_sync")
         is_new_run = (
@@ -212,10 +242,12 @@ def wait_for_oikb_sync(
         )
         if is_new_run and status in TERMINAL_SYNC_STATUSES:
             if status != "success":
-                raise ValueError(f"OIKB同期が{status}で終了しました: {source.name}")
+                raise ValueError(
+                    f"OIKB sync finished with status={status}: {source.name}"
+                )
             return state
         time.sleep(poll_interval_seconds)
-    raise TimeoutError(f"OIKB同期がtimeoutしました: {source.name}")
+    raise TimeoutError(f"OIKB sync timed out: {source.name}")
 
 
 def wait_for_sync_history(
@@ -263,11 +295,11 @@ def wait_for_sync_history(
             ):
                 if entry.get("status") != "success":
                     raise ValueError(
-                        f"OIKB同期履歴が{entry.get('status')}です: {source.name}"
+                        f"OIKB sync history has status={entry.get('status')}: {source.name}"
                     )
                 return entry
         time.sleep(poll_interval_seconds)
-    raise TimeoutError(f"OIKB同期履歴がtimeoutしました: {source.name}")
+    raise TimeoutError(f"OIKB sync history timed out: {source.name}")
 
 
 def list_linked_file_ids(
@@ -422,7 +454,7 @@ def wait_for_open_webui_registration(
             (linked_ids | pending_ids) - previous_linked_ids,
         )
         if len(observed_new_ids) > expected_new_count:
-            raise ValueError(f"同期中に別のuploadを検出しました: {source.name}")
+            raise ValueError(f"Detected another upload during sync: {source.name}")
 
         statuses = {
             file_id: get_file_status(
@@ -437,7 +469,8 @@ def wait_for_open_webui_registration(
         ]
         if failed_ids:
             raise ValueError(
-                f"Open WebUI file処理が失敗しました: source={source.name} files={len(failed_ids)}"
+                f"Open WebUI file processing failed: source={source.name} "
+                f"files={len(failed_ids)}"
             )
 
         completed_ids = {
@@ -451,14 +484,15 @@ def wait_for_open_webui_registration(
             and len(linked_ids) == expected_linked_count
         ):
             LOGGER.info(
-                "Open WebUI登録完了: source=%s files=%d",
+                "Open WebUI registration completed: source=%s files=%d",
                 source.name,
                 expected_new_count,
             )
             return
 
         LOGGER.info(
-            "Open WebUI登録待機中: source=%s discovered=%d/%d completed=%d linked=%d pending=%d",
+            "Waiting for Open WebUI registration: source=%s discovered=%d/%d "
+            "completed=%d linked=%d pending=%d",
             source.name,
             len(observed_new_ids),
             expected_new_count,
@@ -468,7 +502,7 @@ def wait_for_open_webui_registration(
         )
         time.sleep(poll_interval_seconds)
 
-    raise TimeoutError(f"Open WebUI登録がtimeoutしました: {source.name}")
+    raise TimeoutError(f"Open WebUI registration timed out: {source.name}")
 
 
 def sync_source(
@@ -505,7 +539,7 @@ def sync_source(
     """
     state = get_source_states(oikb_url).get(source.key, {})
     if state.get("status") == "running":
-        raise ValueError(f"OIKB sourceは既に同期中です: {source.name}")
+        raise ValueError(f"OIKB source is already syncing: {source.name}")
     pending_ids = get_pending_file_ids(
         open_webui_url,
         open_webui_api_key,
@@ -513,7 +547,11 @@ def sync_source(
     )
     if pending_ids:
         raise ValueError(
-            f"同期前からOpen WebUIに処理中fileがあります: source={source.name} files={len(pending_ids)}"
+            f"Open WebUI has {len(pending_ids)} pending files before sync: "
+            f"source={source.name}. Run "
+            "python3 20-owui/oikb/remove_openwebui_stuck_files.py "
+            f"--knowledge-id {source.knowledge_id} first; review the dry-run before "
+            "using --delete"
         )
 
     previous_linked_ids = list_linked_file_ids(
@@ -527,7 +565,7 @@ def sync_source(
 
     triggered_at = time.time()
     trigger_sync(oikb_url, oikb_api_key, source)
-    LOGGER.info("OIKB同期をtriggerしました: source=%s", source.name)
+    LOGGER.info("Triggered OIKB sync: source=%s", source.name)
     terminal_state = wait_for_oikb_sync(
         oikb_url,
         source,
@@ -537,7 +575,7 @@ def sync_source(
         oikb_timeout_seconds,
     )
     for warning in terminal_state.get("warnings", []):
-        LOGGER.warning("OIKB同期warning: source=%s detail=%s", source.name, warning)
+        LOGGER.warning("OIKB sync warning: source=%s detail=%s", source.name, warning)
     history = wait_for_sync_history(
         oikb_url,
         oikb_api_key,
@@ -647,7 +685,7 @@ def run_scheduler(
                 oikb_timeout_seconds,
                 open_webui_timeout_seconds,
             )
-            LOGGER.info("逐次同期完了: sources=%d", count)
+            LOGGER.info("Sequential sync completed: sources=%d", count)
         except (
             HTTPError,
             URLError,
@@ -656,8 +694,10 @@ def run_scheduler(
             TimeoutError,
             json.JSONDecodeError,
         ) as error:
-            LOGGER.error("逐次同期に失敗しました: %s", error)
-        LOGGER.info("周期処理時間: %.3f秒", time.perf_counter() - cycle_started_at)
+            LOGGER.error("Sequential sync failed: %s", error)
+        LOGGER.info(
+            "Cycle duration: %.3f seconds", time.perf_counter() - cycle_started_at
+        )
         time.sleep(interval_seconds)
 
 
@@ -671,7 +711,9 @@ def build_parser() -> argparse.ArgumentParser:
         OIKB逐次同期script用ArgumentParser。
     """
     parser = argparse.ArgumentParser(
-        description="OIKB sourceをOpen WebUIの登録完了まで逐次同期します。",
+        description=(
+            "Synchronize OIKB sources sequentially through Open WebUI registration."
+        ),
     )
     parser.add_argument(
         "--oikb-url",
@@ -690,7 +732,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--source",
         action="append",
         default=None,
-        help="同期するsource nameを順番に指定します。複数回指定できます。",
+        help="Source name to sync; repeat this option to define the order.",
     )
     parser.add_argument(
         "--interval-seconds",
@@ -715,7 +757,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--once",
         action="store_true",
-        help="1周期だけ同期して終了します。",
+        help="Run one sync cycle and exit.",
     )
     return parser
 
@@ -737,9 +779,9 @@ def main(argv: Sequence[str]) -> int:
     parser = build_parser()
     args = parser.parse_args(argv[1:])
     if not args.oikb_api_key:
-        parser.error("--oikb-api-keyまたはOIKB_API_KEYが必要です")
+        parser.error("--oikb-api-key or OIKB_API_KEY is required")
     if not args.open_webui_api_key:
-        parser.error("--open-webui-api-keyまたはOPEN_WEBUI_API_KEYが必要です")
+        parser.error("--open-webui-api-key or OPEN_WEBUI_API_KEY is required")
     for option_name in (
         "interval_seconds",
         "poll_interval_seconds",
@@ -747,7 +789,7 @@ def main(argv: Sequence[str]) -> int:
         "open_webui_timeout_seconds",
     ):
         if getattr(args, option_name) <= 0:
-            parser.error(f"--{option_name.replace('_', '-')}は1以上で指定してください")
+            parser.error(f"--{option_name.replace('_', '-')} must be at least 1")
 
     env_source_order = [
         name.strip()
@@ -771,7 +813,7 @@ def main(argv: Sequence[str]) -> int:
                 args.oikb_timeout_seconds,
                 args.open_webui_timeout_seconds,
             )
-            LOGGER.info("逐次同期完了: sources=%d", count)
+            LOGGER.info("Sequential sync completed: sources=%d", count)
         else:
             run_scheduler(
                 *common_args,
@@ -782,7 +824,7 @@ def main(argv: Sequence[str]) -> int:
             )
         return 0
     except KeyboardInterrupt:
-        LOGGER.info("停止要求を受け付けました")
+        LOGGER.info("Stop requested")
         return 0
     except (
         HTTPError,
@@ -792,14 +834,12 @@ def main(argv: Sequence[str]) -> int:
         TimeoutError,
         json.JSONDecodeError,
     ) as error:
-        LOGGER.error("逐次同期に失敗しました: %s", error)
+        LOGGER.error("Sequential sync failed: %s", error)
         return 1
     finally:
-        LOGGER.info("処理時間: %.3f秒", time.perf_counter() - started_at)
+        LOGGER.info("Elapsed time: %.3f seconds", time.perf_counter() - started_at)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
+    configure_logging()
     raise SystemExit(main(sys.argv))

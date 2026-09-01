@@ -117,6 +117,8 @@ sudo docker compose --env-file .env --profile owui up -d
 
 ## Knowledge Baseの定期保守
 
+保守scriptのlog messageは英語で出力し、terminal実行時は`DEBUG`、`INFO`、`WARNING`、`ERROR`、`CRITICAL`のlevel名を色付きで表示する。ANSI colorを無効にする場合は`NO_COLOR`環境変数を設定する。
+
 ### 処理停止ファイルの削除
 
 `oikb/remove_openwebui_stuck_files.py`は、OIKBのhealthと同期履歴から現在登録されているKnowledge Baseを調査し、Open WebUIで`pending`または`processing`のまま1時間以上更新されていないfileを検出する。Knowledge IDは`--knowledge-id`で明示してもよい。

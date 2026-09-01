@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import logging
 import os
 import sys
 import tempfile
@@ -214,6 +215,64 @@ class TriggerScriptTest(unittest.TestCase):
             "secret",
         )
 
+    def test_logging_uses_colored_english_level_names(self) -> None:
+        """terminalでは英語のlog level名にANSI colorを付ける。"""
+        try:
+            for module in (CLEANUP, TRIGGER):
+                with (
+                    self.subTest(module=module.__name__),
+                    patch.dict(os.environ, {}, clear=True),
+                    patch.object(module.sys.stderr, "isatty", return_value=True),
+                ):
+                    module.configure_logging()
+                    self.assertEqual(
+                        logging.getLevelName(logging.INFO),
+                        "\x1b[32mINFO\x1b[0m",
+                    )
+                    self.assertEqual(
+                        logging.getLevelName(logging.ERROR),
+                        "\x1b[31mERROR\x1b[0m",
+                    )
+        finally:
+            for level, name in (
+                (logging.DEBUG, "DEBUG"),
+                (logging.INFO, "INFO"),
+                (logging.WARNING, "WARNING"),
+                (logging.ERROR, "ERROR"),
+                (logging.CRITICAL, "CRITICAL"),
+            ):
+                logging.addLevelName(level, name)
+
+    def test_sync_source_reports_pending_cleanup_action(self) -> None:
+        """sync前のpending fileでは英語のcleanup手順を報告する。"""
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        with (
+            patch.object(
+                TRIGGER,
+                "get_source_states",
+                return_value={"source-key": {"status": "idle"}},
+            ),
+            patch.object(
+                TRIGGER,
+                "get_pending_file_ids",
+                return_value={"pending-a", "pending-b"},
+            ),
+            self.assertRaisesRegex(
+                ValueError,
+                r"Open WebUI has 2 pending files before sync.*remove_openwebui_stuck_files\.py",
+            ),
+        ):
+            TRIGGER.sync_source(
+                "http://oikb",
+                "oikb-secret",
+                "http://open-webui",
+                "webui-secret",
+                source,
+                3,
+                600,
+                900,
+            )
+
     def test_wait_for_oikb_sync_ignores_previous_completion(self) -> None:
         """trigger前のsuccessを無視して今回の完了まで待つ。"""
         source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
@@ -278,7 +337,7 @@ class TriggerScriptTest(unittest.TestCase):
             patch.object(TRIGGER, "get_pending_file_ids", return_value={"new"}),
             patch.object(TRIGGER, "get_file_status", return_value="failed"),
             patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1]),
-            self.assertRaisesRegex(ValueError, "file処理が失敗"),
+            self.assertRaisesRegex(ValueError, "Open WebUI file processing failed"),
         ):
             TRIGGER.wait_for_open_webui_registration(
                 "http://open-webui",
