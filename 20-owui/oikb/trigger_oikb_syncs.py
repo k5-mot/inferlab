@@ -404,6 +404,64 @@ def get_file_status(
     return payload["status"]
 
 
+def wait_for_existing_pending_files(
+    open_webui_url: str,
+    open_webui_api_key: str,
+    source: SourceConfig,
+    poll_interval_seconds: int,
+    timeout_seconds: int,
+) -> None:
+    """同期開始前からあるpending fileの処理完了を待つ。
+
+    Args:
+        open_webui_url: Open WebUIのbase URL。
+        open_webui_api_key: Open WebUI API key。
+        source: 監視対象のsource設定。
+        poll_interval_seconds: 状態確認間隔の秒数。
+        timeout_seconds: 最大待機秒数。
+
+    Returns:
+        なし。
+
+    Raises:
+        TimeoutError: 指定時間内のpending fileが解消しない場合。
+        ValueError: pending fileの処理が失敗した場合。
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        pending_ids = get_pending_file_ids(
+            open_webui_url,
+            open_webui_api_key,
+            source.knowledge_id,
+        )
+        if not pending_ids:
+            return
+
+        failed_ids = [
+            file_id
+            for file_id in pending_ids
+            if get_file_status(open_webui_url, open_webui_api_key, file_id) == "failed"
+        ]
+        if failed_ids:
+            raise ValueError(
+                f"Existing Open WebUI file processing failed: source={source.name} "
+                f"files={len(failed_ids)}"
+            )
+        LOGGER.info(
+            "Waiting for existing Open WebUI files: source=%s pending=%d",
+            source.name,
+            len(pending_ids),
+        )
+        time.sleep(poll_interval_seconds)
+
+    raise TimeoutError(
+        f"Existing Open WebUI files timed out: source={source.name}. Run "
+        "python3 20-owui/oikb/remove_openwebui_stuck_files.py "
+        f"--knowledge-id {source.knowledge_id} first; review the dry-run before "
+        "using --delete"
+    )
+
+
 def wait_for_open_webui_registration(
     open_webui_url: str,
     open_webui_api_key: str,
@@ -540,19 +598,13 @@ def sync_source(
     state = get_source_states(oikb_url).get(source.key, {})
     if state.get("status") == "running":
         raise ValueError(f"OIKB source is already syncing: {source.name}")
-    pending_ids = get_pending_file_ids(
+    wait_for_existing_pending_files(
         open_webui_url,
         open_webui_api_key,
-        source.knowledge_id,
+        source,
+        poll_interval_seconds,
+        open_webui_timeout_seconds,
     )
-    if pending_ids:
-        raise ValueError(
-            f"Open WebUI has {len(pending_ids)} pending files before sync: "
-            f"source={source.name}. Run "
-            "python3 20-owui/oikb/remove_openwebui_stuck_files.py "
-            f"--knowledge-id {source.knowledge_id} first; review the dry-run before "
-            "using --delete"
-        )
 
     previous_linked_ids = list_linked_file_ids(
         open_webui_url,

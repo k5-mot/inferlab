@@ -261,35 +261,46 @@ class TriggerScriptTest(unittest.TestCase):
             ):
                 logging.addLevelName(level, name)
 
-    def test_sync_source_reports_pending_cleanup_action(self) -> None:
-        """sync前のpending fileでは英語のcleanup手順を報告する。"""
+    def test_existing_pending_timeout_reports_cleanup_action(self) -> None:
+        """sync前のpending timeoutでは英語のcleanup手順を報告する。"""
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        with (
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 10]),
+            self.assertRaisesRegex(
+                TimeoutError,
+                r"Existing Open WebUI files timed out.*remove_openwebui_stuck_files\.py",
+            ),
+        ):
+            TRIGGER.wait_for_existing_pending_files(
+                "http://open-webui",
+                "webui-secret",
+                source,
+                poll_interval_seconds=1,
+                timeout_seconds=10,
+            )
+
+    def test_existing_pending_files_are_waited_until_cleared(self) -> None:
+        """同期開始前のpending fileが正常に完了するまで待つ。"""
         source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
         with (
             patch.object(
                 TRIGGER,
-                "get_source_states",
-                return_value={"source-key": {"status": "idle"}},
-            ),
-            patch.object(
-                TRIGGER,
                 "get_pending_file_ids",
-                return_value={"pending-a", "pending-b"},
+                side_effect=[{"pending-a"}, set()],
             ),
-            self.assertRaisesRegex(
-                ValueError,
-                r"Open WebUI has 2 pending files before sync.*remove_openwebui_stuck_files\.py",
-            ),
+            patch.object(TRIGGER, "get_file_status", return_value="processing"),
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1, 2]),
+            patch.object(TRIGGER.time, "sleep") as sleep,
         ):
-            TRIGGER.sync_source(
-                "http://oikb",
-                "oikb-secret",
+            TRIGGER.wait_for_existing_pending_files(
                 "http://open-webui",
                 "webui-secret",
                 source,
-                3,
-                600,
-                900,
+                poll_interval_seconds=1,
+                timeout_seconds=10,
             )
+
+        sleep.assert_called_once_with(1)
 
     def test_wait_for_oikb_sync_ignores_previous_completion(self) -> None:
         """trigger前のsuccessを無視して今回の完了まで待つ。"""
