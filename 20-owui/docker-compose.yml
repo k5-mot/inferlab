@@ -168,7 +168,7 @@ services:
         ]
       ### For Embedding model on LiteLLM
       RAG_EMBEDDING_ENGINE: openai
-      RAG_EMBEDDING_MODEL: "cl-nagoya/ruri-v3:310m"
+      RAG_EMBEDDING_MODEL: "Qwen/Qwen3-Embedding:0.6B"
       RAG_OPENAI_API_BASE_URL: http://litellm:4000/v1
       RAG_OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
       RAG_EMBEDDING_BATCH_SIZE: "2"
@@ -181,7 +181,7 @@ services:
       RAG_RERANKING_ENGINE: "external"
       RAG_EXTERNAL_RERANKER_URL: "http://litellm:4000"
       RAG_EXTERNAL_RERANKER_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      RAG_RERANKING_MODEL: "cl-nagoya/ruri-v3-reranker:310m"
+      RAG_RERANKING_MODEL: "Qwen/Qwen3-Reranker:0.6B"
       RAG_TOP_K: 12
       RAG_TOP_K_RERANKER: 6
       ### For Docling (Content Extraction)

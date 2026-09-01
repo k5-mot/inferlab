@@ -130,28 +130,28 @@ model_list:
       output_cost_per_token: 0.00000010 # $0.10 / M tokens
 
   ### TEI; HuggingFace Text Embedding Inference
-  - model_name: cl-nagoya/ruri-v3:310m
-    litellm_params:
-      model: openai/cl-nagoya/ruri-v3-310m
-      api_base: http://tei-embedding:8000/v1
-      api_key: EMPTY
-      encoding_format: float
-      max_parallel_requests: 1
-      tags: ["text-embedding-inference", "embedding", "japanese"]
-    model_info:
-      input_cost_per_token:  0.00000007 # $0.07 / M tokens
-      output_cost_per_token: 0.00000000 # $0.00 / M tokens
-  - model_name: cl-nagoya/ruri-v3-reranker:310m
-    litellm_params:
-      model: huggingface/cl-nagoya/ruri-v3-reranker-310m
-      api_base: http://tei-reranking:8000
-      api_key: EMPTY
-      encoding_format: float
-      max_parallel_requests: 1
-      tags: ["text-embedding-inference", "reranking", "japanese"]
-    model_info:
-      input_cost_per_token:  0.00000010 # $0.10 / M tokens
-      output_cost_per_token: 0.00000000 # $0.00 / M tokens
+  # - model_name: cl-nagoya/ruri-v3:310m
+  #   litellm_params:
+  #     model: openai/cl-nagoya/ruri-v3-310m
+  #     api_base: http://tei-embedding:8000/v1
+  #     api_key: EMPTY
+  #     encoding_format: float
+  #     max_parallel_requests: 1
+  #     tags: ["text-embedding-inference", "embedding", "japanese"]
+  #   model_info:
+  #     input_cost_per_token:  0.00000007 # $0.07 / M tokens
+  #     output_cost_per_token: 0.00000000 # $0.00 / M tokens
+  # - model_name: cl-nagoya/ruri-v3-reranker:310m
+  #   litellm_params:
+  #     model: huggingface/cl-nagoya/ruri-v3-reranker-310m
+  #     api_base: http://tei-reranking:8000
+  #     api_key: EMPTY
+  #     encoding_format: float
+  #     max_parallel_requests: 1
+  #     tags: ["text-embedding-inference", "reranking", "japanese"]
+  #   model_info:
+  #     input_cost_per_token:  0.00000010 # $0.10 / M tokens
+  #     output_cost_per_token: 0.00000000 # $0.00 / M tokens
 
   ### vLLM; Embedding & Reranking
   ### - https://www.qwencloud.com/pricing/api

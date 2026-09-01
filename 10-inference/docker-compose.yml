@@ -294,7 +294,7 @@ services:
       - --kv-cache-memory-bytes
       - "1G"
       - --max-model-len
-      - "1024"
+      - "4096"
       - --max-num-seqs
       - "8"
       - --max-num-batched-tokens
@@ -352,7 +352,7 @@ services:
       - --kv-cache-memory-bytes
       - "1G"
       - --max-model-len
-      - "1024"
+      - "4096"
       - --max-num-seqs
       - "8"
       - --max-num-batched-tokens
