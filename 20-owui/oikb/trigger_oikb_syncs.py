@@ -10,12 +10,31 @@ import os
 import sys
 import time
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from dotenv import load_dotenv
+
 LOGGER = logging.getLogger(__name__)
+DEFAULT_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+def load_environment(env_file: Path) -> bool:
+    """dotenv fileから未設定の環境変数を読み込む。
+
+    Args:
+        env_file: 読み込むdotenv fileのpath。
+
+    Returns:
+        dotenv fileから値を読み込めた場合はTrue、fileがない場合はFalse。
+
+    Side Effects:
+        processに未設定の環境変数を追加する。既存値は上書きしない。
+    """
+    return load_dotenv(dotenv_path=env_file, override=False)
 
 
 def request_json(method: str, url: str, token: str) -> Any:
@@ -202,6 +221,7 @@ def main(argv: Sequence[str]) -> int:
         OIKBの同期をtriggerし、実行時間をlogへ記録する。
     """
     started_at = time.perf_counter()
+    load_environment(DEFAULT_ENV_FILE)
     parser = build_parser()
     args = parser.parse_args(argv[1:])
     if not args.oikb_api_key:

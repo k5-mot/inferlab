@@ -5,7 +5,9 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import ModuleType
@@ -140,6 +142,45 @@ class CleanupScriptTest(unittest.TestCase):
         self.assertEqual(count, 1)
         delete_file.assert_called_once_with("http://open-webui", "secret", "stuck")
 
+    def test_main_loads_env_file_before_parsing_defaults(self) -> None:
+        """mainはrepository rootの.envをCLI既定値へ反映する。"""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text(
+                "OPEN_WEBUI_API_KEY=webui-secret\nOIKB_API_KEY=oikb-secret\n",
+                encoding="utf-8",
+            )
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(CLEANUP, "DEFAULT_ENV_FILE", env_file),
+                patch.object(
+                    CLEANUP, "discover_knowledge_ids", return_value=[]
+                ) as discover,
+            ):
+                result = CLEANUP.main(["remove_openwebui_stuck_files.py"])
+
+        self.assertEqual(result, 0)
+        discover.assert_called_once_with("http://localhost:32001", "oikb-secret")
+
+    def test_env_file_does_not_override_process_environment(self) -> None:
+        """dotenvの値よりprocessへ設定済みの環境変数を優先する。"""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text(
+                "OPEN_WEBUI_API_KEY=dotenv-secret\n",
+                encoding="utf-8",
+            )
+            with patch.dict(
+                os.environ,
+                {"OPEN_WEBUI_API_KEY": "process-secret"},
+                clear=True,
+            ):
+                loaded = CLEANUP.load_environment(env_file)
+                value = os.environ["OPEN_WEBUI_API_KEY"]
+
+        self.assertTrue(loaded)
+        self.assertEqual(value, "process-secret")
+
 
 class TriggerScriptTest(unittest.TestCase):
     """OIKB同期triggerの対象検出とrequestを検証する。"""
@@ -194,6 +235,21 @@ class TriggerScriptTest(unittest.TestCase):
             TRIGGER.run_scheduler("http://oikb", "secret", 3600)
 
         sleep.assert_called_once_with(3600)
+
+    def test_main_loads_env_file_before_parsing_defaults(self) -> None:
+        """mainはrepository rootの.envを同期triggerへ反映する。"""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text("OIKB_API_KEY=oikb-secret\n", encoding="utf-8")
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(TRIGGER, "DEFAULT_ENV_FILE", env_file),
+                patch.object(TRIGGER, "trigger_all_syncs", return_value=2) as trigger,
+            ):
+                result = TRIGGER.main(["trigger_oikb_syncs.py", "--once"])
+
+        self.assertEqual(result, 0)
+        trigger.assert_called_once_with("http://localhost:32001", "oikb-secret")
 
 
 if __name__ == "__main__":

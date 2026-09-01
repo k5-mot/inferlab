@@ -121,12 +121,13 @@ sudo docker compose --env-file .env --profile owui up -d
 
 `oikb/remove_openwebui_stuck_files.py`は、OIKBのhealthと同期履歴から現在登録されているKnowledge Baseを調査し、Open WebUIで`pending`または`processing`のまま1時間以上更新されていないfileを検出する。Knowledge IDは`--knowledge-id`で明示してもよい。
 
+scriptはrepository rootの`.env`を起動時に読み込む。processへ設定済みの環境変数とcommand line optionは`.env`より優先される。
+
 既定ではdry-runになり、fileを削除しない。
 
 ```bash
 # 1時間以上更新されていない処理停止fileを表示する。
-OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" OIKB_API_KEY="${OIKB_API_KEY}" \
-  python3 20-owui/oikb/remove_openwebui_stuck_files.py
+python3 20-owui/oikb/remove_openwebui_stuck_files.py
 ```
 
 期待結果:
@@ -143,8 +144,7 @@ dry-run結果を確認した後、`--delete`を指定すると対象fileを削�
 
 ```bash
 # dry-runで確認した処理停止fileと関連vectorを削除する。
-OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" OIKB_API_KEY="${OIKB_API_KEY}" \
-  python3 20-owui/oikb/remove_openwebui_stuck_files.py --delete
+python3 20-owui/oikb/remove_openwebui_stuck_files.py --delete
 ```
 
 期待結果:
@@ -161,12 +161,11 @@ OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" OIKB_API_KEY="${OIKB_API_KEY}" \
 
 ### OIKB同期の定期trigger
 
-`oikb/trigger_oikb_syncs.py`は、OIKBのhealth responseから登録source名を取得し、全sourceの同期を1時間ごとにtriggerする。実行間隔は`OIKB_TRIGGER_INTERVAL_SECONDS`または`--interval-seconds`で変更できる。
+`oikb/trigger_oikb_syncs.py`は、OIKBのhealth responseから登録source名を取得し、全sourceの同期を1時間ごとにtriggerする。実行間隔は`OIKB_TRIGGER_INTERVAL_SECONDS`または`--interval-seconds`で変更できる。repository rootの`.env`は起動時に自動で読み込まれる。
 
 ```bash
 # OIKBに登録された全sourceの同期を1時間ごとにtriggerする。
-OIKB_API_KEY="${OIKB_API_KEY}" \
-  python3 20-owui/oikb/trigger_oikb_syncs.py
+python3 20-owui/oikb/trigger_oikb_syncs.py
 ```
 
 期待結果:
@@ -183,6 +182,5 @@ OIKB_API_KEY="${OIKB_API_KEY}" \
 
 ```bash
 # OIKBに登録された全sourceを1回だけtriggerする。
-OIKB_API_KEY="${OIKB_API_KEY}" \
-  python3 20-owui/oikb/trigger_oikb_syncs.py --once
+python3 20-owui/oikb/trigger_oikb_syncs.py --once
 ```
