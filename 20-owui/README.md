@@ -114,3 +114,75 @@ sudo docker compose --env-file .env --profile owui up -d
 
 - volumeが使用中で削除できない。
 - OIKBが既存Knowledge IDの対象sourceと不整合になる。
+
+## Knowledge Baseの定期保守
+
+### 処理停止ファイルの削除
+
+`oikb/remove_openwebui_stuck_files.py`は、OIKBのhealthと同期履歴から現在登録されているKnowledge Baseを調査し、Open WebUIで`pending`または`processing`のまま1時間以上更新されていないfileを検出する。Knowledge IDは`--knowledge-id`で明示してもよい。
+
+既定ではdry-runになり、fileを削除しない。
+
+```bash
+# 1時間以上更新されていない処理停止fileを表示する。
+OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" OIKB_API_KEY="${OIKB_API_KEY}" \
+  python3 20-owui/oikb/remove_openwebui_stuck_files.py
+```
+
+期待結果:
+
+- 処理停止fileのKnowledge ID、file ID、statusがwarning logへ出力される。
+- Open WebUIのfile、Knowledge関連、vectorは変更されない。
+
+失敗条件:
+
+- API keyが未設定でscriptが終了code 2を返す。
+- Open WebUIまたはOIKBへ接続できず、scriptが終了code 1を返す。
+
+dry-run結果を確認した後、`--delete`を指定すると対象fileを削除する。
+
+```bash
+# dry-runで確認した処理停止fileと関連vectorを削除する。
+OPEN_WEBUI_API_KEY="${OPEN_WEBUI_API_KEY}" OIKB_API_KEY="${OIKB_API_KEY}" \
+  python3 20-owui/oikb/remove_openwebui_stuck_files.py --delete
+```
+
+期待結果:
+
+- 対象fileごとに削除完了logが出力される。
+- Open WebUI APIがfile本体、Knowledge関連、関連vectorを削除する。
+
+失敗条件:
+
+- 削除権限がなくOpen WebUI APIがerrorを返す。
+- 削除対象のstorageまたはvector cleanupに失敗する。
+
+削除したfileは復元できない。rollbackが必要な場合は、元sourceを保持した状態でOIKB同期を再実行する。
+
+### OIKB同期の定期trigger
+
+`oikb/trigger_oikb_syncs.py`は、OIKBのhealth responseから登録source名を取得し、全sourceの同期を1時間ごとにtriggerする。実行間隔は`OIKB_TRIGGER_INTERVAL_SECONDS`または`--interval-seconds`で変更できる。
+
+```bash
+# OIKBに登録された全sourceの同期を1時間ごとにtriggerする。
+OIKB_API_KEY="${OIKB_API_KEY}" \
+  python3 20-owui/oikb/trigger_oikb_syncs.py
+```
+
+期待結果:
+
+- 起動直後と以後3600秒ごとに全sourceのtrigger完了logが出力される。
+- 既に同期中のKnowledge BaseはOIKB側のlockにより重複実行されない。
+
+失敗条件:
+
+- OIKB API keyが未設定でscriptが終了code 2を返す。
+- OIKBへ接続できない周期ではerror logが出力され、次の周期に再試行する。
+
+動作確認では`--once`を指定し、1周期だけ実行できる。
+
+```bash
+# OIKBに登録された全sourceを1回だけtriggerする。
+OIKB_API_KEY="${OIKB_API_KEY}" \
+  python3 20-owui/oikb/trigger_oikb_syncs.py --once
+```
