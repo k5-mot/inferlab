@@ -161,7 +161,7 @@ model_list:
       api_base: http://vllm-embedding:8000/v1
       api_key: EMPTY
       encoding_format: float
-      max_parallel_requests: 1
+      max_parallel_requests: 2
       tags: ["vllm", "embedding", "multilingual"]
     model_info:
       input_cost_per_token:  0.00000007 # $0.07 / M tokens
@@ -171,7 +171,7 @@ model_list:
       model: cohere/Qwen/Qwen3-Reranker-0.6B
       api_base: http://vllm-reranking:8000
       api_key: EMPTY
-      max_parallel_requests: 1
+      max_parallel_requests: 2
       tags: ["vllm", "reranking", "multilingual"]
     model_info:
       input_cost_per_token:  0.00000010 # $0.10 / M tokens

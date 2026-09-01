@@ -298,11 +298,11 @@ services:
       - --max-num-seqs
       - "8"
       - --max-num-batched-tokens
-      - "2048"
+      - "8192"
     environment:
       HF_HUB_DISABLE_TELEMETRY: "1"
       VLLM_NO_USAGE_STATS: "1"
-      OMP_NUM_THREADS: "1"
+      VLLM_CPU_OMP_THREADS_BIND: "0-3"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
     volumes:
@@ -356,7 +356,7 @@ services:
       - --max-num-seqs
       - "8"
       - --max-num-batched-tokens
-      - "2048"
+      - "8192"
       - --hf-overrides
       - '{"architectures":["Qwen3ForSequenceClassification"],"classifier_from_token":["no","yes"],"is_original_qwen3_reranker":true}'
       - --chat-template
@@ -365,8 +365,7 @@ services:
       HF_HUB_DISABLE_TELEMETRY: "1"
       VLLM_NO_USAGE_STATS: "1"
       # VLLM_CPU_KVCACHE_SPACE: "1"
-      VLLM_CPU_OMP_THREADS_BIND: "nobind"
-      OMP_NUM_THREADS: "1"
+      VLLM_CPU_OMP_THREADS_BIND: "4-5"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       TOKENIZERS_PARALLELISM: "false"
