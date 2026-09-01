@@ -117,15 +117,23 @@ def discover_knowledge_ids(oikb_url: str, oikb_api_key: str) -> list[str]:
     if not isinstance(history, dict) or not isinstance(history.get("entries"), list):
         raise TypeError("OIKB history response must contain an entries list")
 
-    current_sources = set(health["sources"])
-    knowledge_ids = {
+    knowledge_ids: set[str] = set()
+    sources_without_kb_id: set[str] = set()
+    for source, state in health["sources"].items():
+        knowledge_id = state.get("kb_id") if isinstance(state, dict) else None
+        if isinstance(knowledge_id, str) and knowledge_id:
+            knowledge_ids.add(knowledge_id)
+        else:
+            sources_without_kb_id.add(source)
+
+    knowledge_ids.update(
         entry["kb_id"]
         for entry in history["entries"]
         if isinstance(entry, dict)
-        and entry.get("source") in current_sources
+        and entry.get("source") in sources_without_kb_id
         and isinstance(entry.get("kb_id"), str)
         and entry["kb_id"]
-    }
+    )
     return sorted(knowledge_ids)
 
 

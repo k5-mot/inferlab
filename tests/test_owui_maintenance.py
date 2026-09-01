@@ -51,6 +51,24 @@ TRIGGER = load_script(
 class CleanupScriptTest(unittest.TestCase):
     """停止ファイルcleanupの選択と削除を検証する。"""
 
+    def test_discover_knowledge_ids_includes_source_without_history(self) -> None:
+        """historyがないsourceもhealthのkb_idから検出する。"""
+        health = {
+            "sources": {
+                "source-a": {"kb_id": "kb-a"},
+                "source-b": {"kb_id": "kb-b"},
+            }
+        }
+        history = {
+            "entries": [
+                {"source": "source-a", "kb_id": "kb-a"},
+            ]
+        }
+        with patch.object(CLEANUP, "request_json", side_effect=[health, history]):
+            result = CLEANUP.discover_knowledge_ids("http://oikb", "secret")
+
+        self.assertEqual(result, ["kb-a", "kb-b"])
+
     def test_discover_knowledge_ids_deduplicates_history(self) -> None:
         """現行sourceのKnowledge IDだけを履歴から重複なく取得する。"""
         health = {"sources": {"source-a": {}, "source-b": {}}}
