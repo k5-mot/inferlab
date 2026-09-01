@@ -148,6 +148,8 @@ sudo docker compose --env-file .env --profile dify ps dify-api dify-web dify-ngi
 
 ```dotenv
 OPEN_WEBUI_API_KEY=<Open-WebUIで作成したAPI key>
+OIKB_API_KEY=<OIKBに設定するAPI key>
+OIKB_SOURCE_ORDER=nextcloud-documents,rustfs-documents
 NEXTCLOUD_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 ```
@@ -160,6 +162,8 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 失敗条件:
 
 - `OPEN_WEBUI_API_KEY`が空のままになっている。
+- `OIKB_API_KEY`が空のままになっている。
+- `OIKB_SOURCE_ORDER`のsource名または順序が誤っている。
 - `NEXTCLOUD_OPENWEBUI_KB_ID`が空のままになっている。
 - `RUSTFS_OPENWEBUI_KB_ID`が空のままになっている。
 
@@ -200,23 +204,27 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `documents/`以外のprefixへfileを配置している。
 - `.env`のRustFS認証情報とRustFS containerの認証情報が一致しない。
 
-## 8. OIKBを再起動して同期する
+## 8. OIKBを再buildして逐次同期する
 
 ```bash
-# .envに設定したOpen-WebUI API keyとKnowledge IDをOIKBへ反映する。
-sudo docker compose --env-file .env --profile owui up -d --force-recreate oikb
+# 内蔵schedulerを無効化したOIKB imageをbuildして設定を反映する。
+sudo docker compose --env-file .env --profile owui up -d --build --no-deps oikb
+
+# sourceを.envのOIKB_SOURCE_ORDERに従って1回だけ逐次同期する。
+python3 20-owui/oikb/trigger_oikb_syncs.py --once
 ```
 
 期待結果:
 
 - OIKBがhealthyになる。
-- OIKB logにNextcloud sourceまたはRustFS sourceのscanとOpen-WebUI Knowledgeへの同期が出る。
+- scriptのlogにsourceごとのtriggerとOpen-WebUI登録完了が設定順で出る。
 - Open-WebUIのKnowledgeに配置したfileが登録される。
 
 失敗条件:
 
-- OIKB logにOpen-WebUI API認証エラーが出る。
-- OIKB logにKnowledge ID未設定のエラーが出る。
+- scriptにOpen-WebUI APIまたはOIKB APIの認証errorが出る。
+- scriptがKnowledge IDを解決できない。
+- Open-WebUIのpending fileが解消せずtimeoutする。
 - Open-WebUIのKnowledgeにfileが増えない。
 
 ```bash
@@ -229,8 +237,11 @@ sudo docker logs --tail 200 "${STACK_NAME}-oikb"
 再実行:
 
 ```bash
-# OIKBだけを再作成して同期設定を再読み込みする。
-sudo docker compose --env-file .env --profile owui up -d --force-recreate oikb
+# OIKBを再作成した後、sourceを1回だけ逐次同期する。
+sudo docker compose --env-file .env --profile owui up -d --no-deps --force-recreate oikb
+
+# 再作成したOIKBでsourceを1回だけ逐次同期する。
+python3 20-owui/oikb/trigger_oikb_syncs.py --once
 ```
 
 rollback:
@@ -242,7 +253,7 @@ sudo docker compose --env-file .env --profile owui stop oikb
 
 期待結果:
 
-- 再実行時はOIKBが同じKnowledge IDへ同期する。
+- 再実行時はscriptがOIKBの同じKnowledge IDへ逐次同期する。
 - rollback時はOIKBによる追加同期が停止する。
 
 失敗条件:

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import io
-import json
 import os
 import sys
 import tempfile
@@ -37,18 +35,6 @@ def load_script(module_name: str, relative_path: str) -> ModuleType:
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
-
-
-def json_response(payload: object) -> io.BytesIO:
-    """urlopenのmock用JSON byte streamを作成する。
-
-    Args:
-        payload: JSONへ変換する値。
-
-    Returns:
-        context managerとして利用できるbyte stream。
-    """
-    return io.BytesIO(json.dumps(payload).encode())
 
 
 CLEANUP = load_script(
@@ -183,27 +169,44 @@ class CleanupScriptTest(unittest.TestCase):
 
 
 class TriggerScriptTest(unittest.TestCase):
-    """OIKB同期triggerの対象検出とrequestを検証する。"""
+    """OIKBとOpen WebUIの逐次同期を検証する。"""
 
-    def test_discover_source_names_uses_health_response(self) -> None:
-        """OIKB healthからsource設定名を重複なく取得する。"""
-        health = {
-            "sources": {
-                "nextcloud:/oikb": {"name": "nextcloud-documents"},
-                "s3://bucket": {"name": "rustfs-documents"},
-            }
+    def test_discover_sources_uses_requested_order(self) -> None:
+        """指定順でsourceとKnowledge IDの対応を解決する。"""
+        states = {
+            "nextcloud:/oikb": {
+                "name": "nextcloud-documents",
+                "kb_id": "kb-nextcloud",
+            },
+            "s3://bucket": {"name": "rustfs-documents", "kb_id": "kb-rustfs"},
         }
-        with patch.object(TRIGGER, "urlopen", return_value=json_response(health)):
-            result = TRIGGER.discover_source_names("http://oikb")
+        with patch.object(TRIGGER, "get_source_states", return_value=states):
+            result = TRIGGER.discover_sources(
+                "http://oikb",
+                ["rustfs-documents", "nextcloud-documents"],
+            )
 
-        self.assertEqual(result, ["nextcloud-documents", "rustfs-documents"])
+        self.assertEqual(
+            result,
+            [
+                TRIGGER.SourceConfig("s3://bucket", "rustfs-documents", "kb-rustfs"),
+                TRIGGER.SourceConfig(
+                    "nextcloud:/oikb",
+                    "nextcloud-documents",
+                    "kb-nextcloud",
+                ),
+            ],
+        )
 
     def test_trigger_sync_posts_encoded_source_name(self) -> None:
-        """source名をURL encodeして認証付きPOSTを送る。"""
+        """source名をURL encodeしKnowledge IDが一致するtriggerを受理する。"""
+        source = TRIGGER.SourceConfig("source-key", "source name", "kb-a")
         with patch.object(
-            TRIGGER, "request_json", return_value={"triggered": True}
+            TRIGGER,
+            "request_json",
+            return_value={"triggered": True, "kb_id": "kb-a"},
         ) as request_json:
-            TRIGGER.trigger_sync("http://oikb/", "secret", "source name")
+            TRIGGER.trigger_sync("http://oikb/", "secret", source)
 
         request_json.assert_called_once_with(
             "POST",
@@ -211,28 +214,148 @@ class TriggerScriptTest(unittest.TestCase):
             "secret",
         )
 
-    def test_trigger_all_syncs_triggers_every_registered_source(self) -> None:
-        """healthへ登録された全sourceを1回ずつtriggerする。"""
+    def test_wait_for_oikb_sync_ignores_previous_completion(self) -> None:
+        """trigger前のsuccessを無視して今回の完了まで待つ。"""
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        states = [
+            {"source-key": {"status": "success", "last_sync": 90.0}},
+            {"source-key": {"status": "running", "last_sync": 90.0}},
+            {"source-key": {"status": "success", "last_sync": 101.0}},
+        ]
         with (
-            patch.object(TRIGGER, "discover_source_names", return_value=["a", "b"]),
-            patch.object(TRIGGER, "trigger_sync") as trigger_sync,
+            patch.object(TRIGGER, "get_source_states", side_effect=states),
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1, 2, 3]),
+            patch.object(TRIGGER.time, "sleep"),
         ):
-            count = TRIGGER.trigger_all_syncs("http://oikb", "secret")
+            result = TRIGGER.wait_for_oikb_sync(
+                "http://oikb",
+                source,
+                previous_last_sync=90.0,
+                triggered_at=100.0,
+                poll_interval_seconds=1,
+                timeout_seconds=10,
+            )
+
+        self.assertEqual(result["last_sync"], 101.0)
+
+    def test_registration_waits_for_completed_link_and_empty_pending(self) -> None:
+        """new fileの処理完了、link、pending解消が揃うまで待つ。"""
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        with (
+            patch.object(
+                TRIGGER,
+                "get_file_status",
+                side_effect=["processing", "completed"],
+            ),
+            patch.object(
+                TRIGGER,
+                "list_linked_file_ids",
+                side_effect=[{"old"}, {"old", "new"}],
+            ),
+            patch.object(
+                TRIGGER,
+                "get_pending_file_ids",
+                side_effect=[{"new"}, set()],
+            ),
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1, 2]),
+            patch.object(TRIGGER.time, "sleep"),
+        ):
+            TRIGGER.wait_for_open_webui_registration(
+                "http://open-webui",
+                "webui-secret",
+                source,
+                {"old"},
+                {"files_added": 1, "files_modified": 0, "files_deleted": 0},
+                poll_interval_seconds=1,
+                timeout_seconds=10,
+            )
+
+    def test_registration_rejects_failed_file(self) -> None:
+        """new fileの処理がfailedなら後続sourceへ進まず失敗する。"""
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        with (
+            patch.object(TRIGGER, "list_linked_file_ids", return_value=set()),
+            patch.object(TRIGGER, "get_pending_file_ids", return_value={"new"}),
+            patch.object(TRIGGER, "get_file_status", return_value="failed"),
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1]),
+            self.assertRaisesRegex(ValueError, "file処理が失敗"),
+        ):
+            TRIGGER.wait_for_open_webui_registration(
+                "http://open-webui",
+                "webui-secret",
+                source,
+                set(),
+                {"files_added": 1, "files_modified": 0, "files_deleted": 0},
+                poll_interval_seconds=1,
+                timeout_seconds=10,
+            )
+
+    def test_trigger_all_syncs_runs_sources_sequentially(self) -> None:
+        """sourceごとの完了待ち処理を指定順に呼び出す。"""
+        sources = [
+            TRIGGER.SourceConfig("key-a", "a", "kb-a"),
+            TRIGGER.SourceConfig("key-b", "b", "kb-b"),
+        ]
+        with (
+            patch.object(TRIGGER, "discover_sources", return_value=sources),
+            patch.object(TRIGGER, "sync_source") as sync_source,
+        ):
+            count = TRIGGER.trigger_all_syncs(
+                "http://oikb",
+                "oikb-secret",
+                "http://open-webui",
+                "webui-secret",
+                ["a", "b"],
+                3,
+                600,
+                900,
+            )
 
         self.assertEqual(count, 2)
         self.assertEqual(
-            trigger_sync.call_args_list,
-            [call("http://oikb", "secret", "a"), call("http://oikb", "secret", "b")],
+            sync_source.call_args_list,
+            [
+                call(
+                    "http://oikb",
+                    "oikb-secret",
+                    "http://open-webui",
+                    "webui-secret",
+                    sources[0],
+                    3,
+                    600,
+                    900,
+                ),
+                call(
+                    "http://oikb",
+                    "oikb-secret",
+                    "http://open-webui",
+                    "webui-secret",
+                    sources[1],
+                    3,
+                    600,
+                    900,
+                ),
+            ],
         )
 
     def test_scheduler_waits_configured_interval(self) -> None:
-        """各trigger周期の後に指定された秒数だけ待機する。"""
+        """全sourceの逐次処理後に指定された秒数だけ待機する。"""
         with (
             patch.object(TRIGGER, "trigger_all_syncs", return_value=2),
             patch.object(TRIGGER.time, "sleep", side_effect=KeyboardInterrupt) as sleep,
             self.assertRaises(KeyboardInterrupt),
         ):
-            TRIGGER.run_scheduler("http://oikb", "secret", 3600)
+            TRIGGER.run_scheduler(
+                "http://oikb",
+                "oikb-secret",
+                "http://open-webui",
+                "webui-secret",
+                ["a", "b"],
+                3600,
+                3,
+                600,
+                900,
+            )
 
         sleep.assert_called_once_with(3600)
 
@@ -240,7 +363,12 @@ class TriggerScriptTest(unittest.TestCase):
         """mainはrepository rootの.envを同期triggerへ反映する。"""
         with tempfile.TemporaryDirectory() as temporary_directory:
             env_file = Path(temporary_directory) / ".env"
-            env_file.write_text("OIKB_API_KEY=oikb-secret\n", encoding="utf-8")
+            env_file.write_text(
+                "OIKB_API_KEY=oikb-secret\n"
+                "OPEN_WEBUI_API_KEY=webui-secret\n"
+                "OIKB_SOURCE_ORDER=rustfs-documents,nextcloud-documents\n",
+                encoding="utf-8",
+            )
             with (
                 patch.dict(os.environ, {}, clear=True),
                 patch.object(TRIGGER, "DEFAULT_ENV_FILE", env_file),
@@ -249,7 +377,16 @@ class TriggerScriptTest(unittest.TestCase):
                 result = TRIGGER.main(["trigger_oikb_syncs.py", "--once"])
 
         self.assertEqual(result, 0)
-        trigger.assert_called_once_with("http://localhost:32001", "oikb-secret")
+        trigger.assert_called_once_with(
+            "http://localhost:32001",
+            "oikb-secret",
+            "http://localhost:32000",
+            "webui-secret",
+            ["rustfs-documents", "nextcloud-documents"],
+            3,
+            21600,
+            21600,
+        )
 
 
 if __name__ == "__main__":

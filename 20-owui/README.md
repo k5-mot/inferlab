@@ -11,7 +11,7 @@ Open WebUI、Open Terminal、mcpo、SearXNG、OIKB、OIKB用RustFSをまとめ�
 | `open-webui` | `open-webui/entrypoint_patch.sh`でDocling向けJSON設定をmultipart form用の文字列へ変換してからOpen WebUIを起動する。 |
 | `mcpo` | Docker socket経由でllmwiki containerのstdio MCPを起動し、OpenAPIとしてOpen WebUIへ公開する。 |
 | `oikb-rustfs-init` | Compose内のinit commandでRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
-| `oikb` | Nextcloud volumeとRustFS bucketをsourceとしてOpen WebUI Knowledgeへ同期する。 |
+| `oikb` | APIとsource状態を公開する。内蔵schedulerは無効で、同期は外部scriptが逐次実行する。 |
 
 Open WebUIのKeycloak連携は、`OAUTH_CLIENT_SECRET`とKeycloak側`open-webui` client secretの一致が前提になる。
 
@@ -37,7 +37,7 @@ sudo docker compose --env-file .env --profile owui up -d
 
 - `open-webui/entrypoint_patch.sh`がDocling設定を生成できない。
 - RustFS bucket作成が認証エラーになる。
-- `OPEN_WEBUI_API_KEY`またはKnowledge IDが未設定のためOIKB同期が失敗する。
+- OIKB imageのbuildまたはAPI起動に失敗する。
 
 ### llmwiki連携を含めて起動
 
@@ -161,26 +161,50 @@ python3 20-owui/oikb/remove_openwebui_stuck_files.py --delete
 
 ### OIKB同期の定期trigger
 
-`oikb/trigger_oikb_syncs.py`は、OIKBのhealth responseから登録source名を取得し、全sourceの同期を1時間ごとにtriggerする。実行間隔は`OIKB_TRIGGER_INTERVAL_SECONDS`または`--interval-seconds`で変更できる。repository rootの`.env`は起動時に自動で読み込まれる。
+`oikb/trigger_oikb_syncs.py`は、`.env`の`OIKB_SOURCE_ORDER`に指定した順でsourceを1つずつ同期する。各sourceで次をすべて確認してから、次のsourceをtriggerする。
+
+1. OIKBの今回の同期が`success`で終了する。
+2. OIKBのhistoryに今回の同期結果が保存される。
+3. 今回のOpen WebUI fileがすべて`completed`になる。
+4. fileがKnowledge Baseへlinkされ、pending fileが0件になる。
+
+OIKB内蔵schedulerが各sourceを並列起動しないよう、custom imageで内蔵schedulerを無効化している。変更後はOIKB imageを再buildする。
 
 ```bash
-# OIKBに登録された全sourceの同期を1時間ごとにtriggerする。
+# 外部scheduler専用のOIKB imageをbuildし、OIKBだけ再作成する。
+sudo docker compose --env-file .env --profile owui up -d --build --no-deps oikb
+```
+
+期待結果:
+
+- OIKBの`GET /health`が各sourceに`kb_id`と`idle`状態を返す。
+- OIKBを再起動しても、scriptがtriggerするまでsource同期は始まらない。
+
+失敗条件:
+
+- OIKBのhealth responseに`kb_id`がなく、scriptがimageの再buildを求めて終了する。
+
+repository rootの`.env`はscript起動時に自動で読み込まれる。processへ設定済みの環境変数とcommand line optionは`.env`より優先される。実行間隔は`OIKB_TRIGGER_INTERVAL_SECONDS`または`--interval-seconds`で変更できる。
+
+```bash
+# OIKB_SOURCE_ORDERの順に同期し、全source完了後に1時間待つ。
 python3 20-owui/oikb/trigger_oikb_syncs.py
 ```
 
 期待結果:
 
-- 起動直後と以後3600秒ごとに全sourceのtrigger完了logが出力される。
-- 既に同期中のKnowledge BaseはOIKB側のlockにより重複実行されない。
+- sourceごとにOIKB trigger、Open WebUI登録完了のlogが指定順で出力される。
+- 全sourceの完了後から3600秒後に次の周期が始まる。
 
 失敗条件:
 
-- OIKB API keyが未設定でscriptが終了code 2を返す。
-- OIKBへ接続できない周期ではerror logが出力され、次の周期に再試行する。
+- OIKB API keyまたはOpen WebUI API keyが未設定でscriptが終了code 2を返す。
+- OIKB同期、Open WebUI file処理、link、またはpending解消が失敗すると、後続sourceをtriggerせず次周期まで待つ。
+- 同期前から対象Knowledge Baseにpending fileがある場合は、前回処理と混同しないよう失敗する。
 
 動作確認では`--once`を指定し、1周期だけ実行できる。
 
 ```bash
-# OIKBに登録された全sourceを1回だけtriggerする。
+# OIKB_SOURCE_ORDERの全sourceを1回だけ逐次同期する。
 python3 20-owui/oikb/trigger_oikb_syncs.py --once
 ```
