@@ -26,21 +26,23 @@ OpenClawの公式containerは、同じstate/configをmountした新imageの起�
 
 公式pluginはcore versionとの互換性を持つrelease cohortへ収束する。correction releaseのimage tagにsuffixがある場合も、pluginはbase release cohortを使用する。[OpenClaw Updating](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/updating.md#recommended-openclaw-update)
 
-## 現在判明している`2026.8.2`との非互換
+## `2026.8.2`へのconfig移行
 
-`ghcr.io/openclaw/openclaw:2026.8.2-browser`で現行managed configを検証すると、次のkeyが候補schemaに存在せず失敗する。
+`2026.7.1-2`のmanaged configはそのままでは`2026.8.2`のschema validationに失敗する。次の変換をrepository側で行い、候補imageの`config validate --json`を成功させてからstate migrationへ進む。
 
-| Path | 拒否されるkey |
+| 旧設定 | `2026.8.2`での扱い |
 | --- | --- |
-| `agents.defaults` | `imageGenerationModel`、`videoGenerationModel`、`musicGenerationModel`、`mediaGenerationAutoProviderFallback` |
-| `messages` | `tts` |
-| `gateway.controlUi` | `allowInsecureAuth` |
-| `mcp.servers.searxng` | `timeout`、`connect_timeout` |
-| `plugins` | `bundledDiscovery` |
+| `agents.defaults.imageGenerationModel`等の空object | 機能を持たないため削除する。必要な場合は`agents.defaults.mediaModels`へ移す。 |
+| `agents.defaults.models` | 既存mapを保持し、同じmodel refを`agents.defaults.modelPolicy.allow`に設定する。 |
+| `messages.tts` | top-levelの`tts`へ移し、`voice`を`speakerVoice`へ変更する。`auto`がある場合は旧`enabled`を削除する。 |
+| `gateway.controlUi.allowInsecureAuth`、`dangerouslyDisableDeviceAuth` | retired keyのため削除する。 |
+| MCPの`timeout`、`connect_timeout` | millisecond単位の`requestTimeoutMs`、`connectionTimeoutMs`へ変更する。 |
+| `plugins.bundledDiscovery` | configから削除し、clone volumeの`doctor --fix`でSQLite stateへ移す。 |
+| `plugins.allow`の`phone-control` | stale pluginのため削除し、TTSに必要な`openai` pluginを有効にする。 |
 
-OpenClawはunknown keyを含む設定をstrictに拒否するため、上記を残したまま`2026.8.2`へ更新してはならない。候補imageの`config schema`とrelease noteを確認し、必要な機能は候補versionが受け付ける設定へ移し、不要なkeyだけを削除する。[OpenClaw Config CLI](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/config.md#config-schema) [OpenClaw Configuration](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/gateway/configuration.md#strict-validation)
+2026-09-03に上記変換後のconfigで、`config validate`、59件のDoctor lint、post-upgrade probe、session SQLite validationが成功した。OpenClawはunknown keyをstrictに拒否するため、別versionでも候補schemaに合わせて移行内容を再検討する。[OpenClaw Config CLI](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/config.md#config-schema) [OpenClaw Configuration](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/gateway/configuration.md#strict-validation)
 
-`doctor --fix`はunknown keyを削除する場合がある。機能の移行先を判断せずmanaged configを自動修正させてはならない。[OpenClaw Doctor](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md#notes)
+`doctor --fix`はmanaged configも書き換える。read-only bind mountではなくclone volume上の書き込み可能なcopyに対して実行し、必要なconfig差分だけをrepository側へ反映する。[OpenClaw Doctor](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md#notes)
 
 ## 事前準備
 
@@ -70,7 +72,7 @@ sudo docker pull "$OPENCLAW_CANDIDATE_IMAGE"
 sudo docker image inspect "$OPENCLAW_CANDIDATE_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.version"}} {{index .Config.Labels "org.opencontainers.image.revision"}} {{.Id}}' | tee "$OPENCLAW_BACKUP_DIR/candidate-image.txt"
 
 # 候補imageに必要なDoctor optionが存在することを確認する。
-sudo docker run --rm --entrypoint node "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --help
+sudo docker run --rm --entrypoint node -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --help
 ```
 
 期待結果:
@@ -87,18 +89,20 @@ sudo docker run --rm --entrypoint node "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js
 
 OpenClawのarchive backupはSQLite online backup APIを使ってcommitted stateを取得し、`--verify`でmanifestとSQLite整合性を検証する。raw SQLite fileを稼働中に直接copyしてはならない。[OpenClaw Backups](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/backups.md#full-archives)
 
+Composeは必ずrepository rootの`docker-compose.yml`経由で実行する。`10-inference/docker-compose.yml`を単独指定するとproject名が`10-inference`となり、本番と異なるnamed volumeを新規作成する。
+
 ```bash
 # 現行imageでbackup対象を表示し、想定外のskipがないことを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -v "$OPENCLAW_BACKUP_DIR:/backup" openclaw dist/index.js backup create --output /backup --dry-run --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -v "$OPENCLAW_BACKUP_DIR:/backup" openclaw dist/index.js backup create --output /backup --dry-run --json
 
 # 現行imageでfull archiveを作成し、その場で検証する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -v "$OPENCLAW_BACKUP_DIR:/backup" openclaw dist/index.js backup create --output /backup --verify --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -v "$OPENCLAW_BACKUP_DIR:/backup" openclaw dist/index.js backup create --output /backup --verify --json
 
 # Gatewayを停止し、volumeのbyte-for-byte snapshotに一貫性を持たせる。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw stop openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw stop openclaw
 
 # 停止済みOpenClaw containerが使用するvolume名を取得する。
-export OPENCLAW_CONTAINER_ID="$(sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw ps -a -q openclaw)"
+export OPENCLAW_CONTAINER_ID="$(sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw ps -a -q openclaw)"
 
 # 対象containerが一意に取得できたことを検証する。
 test -n "$OPENCLAW_CONTAINER_ID"
@@ -116,23 +120,50 @@ sudo docker run --rm --user 0 --entrypoint tar --mount "type=volume,src=$OPENCLA
 sudo tar -tf "$OPENCLAW_BACKUP_DIR/openclaw-data.tar" >/dev/null
 
 # backup artifactのchecksumを保存する。
-sudo sha256sum "$OPENCLAW_BACKUP_DIR"/* | sudo tee "$OPENCLAW_BACKUP_DIR/SHA256SUMS"
+find "$OPENCLAW_BACKUP_DIR" -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$OPENCLAW_BACKUP_DIR/SHA256SUMS"
+
+# 保存したchecksumとbackup artifactを照合する。
+sha256sum -c "$OPENCLAW_BACKUP_DIR/SHA256SUMS"
 
 # 候補検証中も現行serviceを利用する場合は現行versionで再起動する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw up -d openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw up -d openclaw
 ```
 
 期待結果:
 
-- `backup create --verify`がexit code `0`で完了する。
+- full archiveと`backup create --verify`のJSON結果が得られる。
 - `openclaw-data.tar`を`tar -tf`で読み出せる。
 - `SHA256SUMS`へすべてのbackup artifactが記録される。
 - backupにはcredential、auth profile、channel stateが含まれ得るため、owner専用permissionと暗号化された保存先で保護する。[OpenClaw Backup CLI](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/backup.md#notes)
 
 失敗条件:
 
-- backupにskipped assetがある、archive検証に失敗する、対象volume名が空、またはsnapshotを読み出せない。
+- full archiveが作成されず`.tmp`だけが残る、backupに想定外のskipped assetがある、archive検証に失敗する、対象volume名が空、またはsnapshotを読み出せない。
 - いずれかに失敗した場合、更新を開始しない。
+
+### full archiveが未完了になる場合
+
+OpenClawには、full backupがexit code `0`のまま未完了の`.tmp`を残す既知事象がある。final archiveの存在と`backup verify`成功をexit codeだけではなく確認する。[OpenClaw issue #41258](https://github.com/openclaw/openclaw/issues/41258)
+
+full archiveが得られない場合は、未完了fileをbackupとして使わず、停止中volumeの`openclaw-data.tar`と検証付きconfig-only archiveを組み合わせる。
+
+```bash
+# managed configだけを検証付きarchiveへ保存する。
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -v "$OPENCLAW_BACKUP_DIR:/backup" openclaw dist/index.js backup create --output /backup/openclaw-config-only.tar.gz --only-config --verify --json
+
+# config-only archiveを独立して再検証する。
+sudo docker run --rm --entrypoint node --mount "type=bind,src=$OPENCLAW_BACKUP_DIR/openclaw-config-only.tar.gz,dst=/backup/openclaw-config-only.tar.gz,readonly" "$OPENCLAW_CURRENT_IMAGE" dist/index.js backup verify /backup/openclaw-config-only.tar.gz --json
+```
+
+期待結果:
+
+- config-only archiveのcreateとverifyがexit code `0`になる。
+- `openclaw-data.tar`とconfig-only archiveのchecksumが成功する。
+
+失敗条件:
+
+- config-only archiveも完成しない、またはraw snapshotの読み出しかchecksumに失敗する。
+- 代替backupを検証できない場合は更新しない。
 
 ## cloneしたvolumeでの候補image preflight
 
@@ -152,19 +183,31 @@ sudo docker volume create "$OPENCLAW_PREFLIGHT_VOLUME"
 sudo docker run --rm --user 0 --entrypoint tar --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/restore" --mount "type=bind,src=$OPENCLAW_BACKUP_DIR/openclaw-data.tar,dst=/backup/openclaw-data.tar,readonly" "$OPENCLAW_CURRENT_IMAGE" -C /restore -xpf /backup/openclaw-data.tar
 
 # 候補schemaでmanaged configを検証する。
-sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js config validate --json
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js config validate --json
+
+# managed configをclone volume上の書き込み可能なcopyへ保存する。
+sudo docker run --rm --entrypoint sh --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/input/openclaw.json,readonly" "$OPENCLAW_CANDIDATE_IMAGE" -c 'cp /input/openclaw.json /home/node/.openclaw/openclaw.preflight.json'
+
+# cloneだけにstate migrationとconfig migrationを適用する。
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.preflight.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --fix --non-interactive
+
+# Doctorが書き換えたconfigをreview用にbackup directoryへ取り出す。
+sudo docker run --rm --entrypoint sh --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw,readonly" --mount "type=bind,src=$OPENCLAW_BACKUP_DIR,dst=/review" "$OPENCLAW_CANDIDATE_IMAGE" -c 'cp /home/node/.openclaw/openclaw.preflight.json /review/openclaw.preflight.json'
+
+# Doctorの変換差分を表示し、必要な設定だけをrepository側へ反映する。
+diff -u "$OPENCLAW_MANAGED_CONFIG" "$OPENCLAW_BACKUP_DIR/openclaw.preflight.json" || true
 
 # 候補versionのread-only Doctor checkをerror thresholdで実行する。
-sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --lint --all --severity-min error --json
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --lint --all --severity-min error --json
 
 # 候補versionでplugin互換性をread-only検証する。
-sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --post-upgrade --json
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --post-upgrade --json
 
 # 候補versionでsession SQLite migrationの対象と問題をread-only確認する。
-sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --session-sqlite dry-run --session-sqlite-all-agents --json
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --session-sqlite dry-run --session-sqlite-all-agents --json
 
 # Discord plugin更新の変更予定をclone上で確認する。
-sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js plugins update "@openclaw/discord@${OPENCLAW_CANDIDATE_PLUGIN_VERSION}" --dry-run
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLIGHT_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/home/node/.openclaw/openclaw.managed.json,readonly" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.managed.json -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js plugins update "@openclaw/discord@${OPENCLAW_CANDIDATE_PLUGIN_VERSION}" --dry-run
 ```
 
 `doctor --lint`はread-onlyでconfig/stateを書き換えない。`doctor --post-upgrade`はplugin互換性のerrorがある場合にexit code `1`を返す。[OpenClaw Doctor](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md#lint-mode) [OpenClaw Doctor post-upgrade](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md#post-upgrade-mode)
@@ -172,6 +215,7 @@ sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLI
 期待結果:
 
 - `config validate`が`valid: true`を返す。
+- clone上の`doctor --fix`が完了し、state/SQLite migrationにerrorがない。
 - Doctor lintにerrorがない。
 - post-upgrade probeにerror-level findingがない。
 - SQLite dry-runが対象agentと移行予定を表示し、parseまたはintegrity errorを報告しない。
@@ -179,7 +223,7 @@ sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_PREFLI
 
 失敗条件:
 
-- 1つでもnon-zero exitとなる、configにunknown keyがある、plugin indexが不正、またはSQLite migrationにerrorがある。
+- `diff`以外が1つでもnon-zero exitとなる、configにunknown keyがある、plugin indexが不正、またはSQLite migrationにerrorがある。
 - managed configを修正した場合は`config validate`からすべてのpreflightを再実行する。
 
 ## 本番への適用
@@ -190,43 +234,58 @@ preflightがすべて成功した後、[`docker-compose.yml`](docker-compose.yml
 - `openclaw.image`
 - `openclaw-init`の`@openclaw/discord@<version>`
 
-`openclaw-init`はDiscord pluginの存在だけを確認し、既存pluginを更新しない。そのため、volumeへ導入済みのpluginはGateway起動前に明示的に更新する。plugin updateはtracked install specを使い、`--dry-run`で事前確認できる。[OpenClaw plugin management](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/plugins/manage-plugins.md#update-plugins)
+`openclaw-init`はDiscord pluginの導入済みversionを確認し、coreと同じrelease cohortへinstallまたはupdateする。ただし、state migrationとcapability consentはinitより前に明示的に完了させる。plugin updateはtracked install specを使い、`--dry-run`で事前確認できる。[OpenClaw plugin management](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/plugins/manage-plugins.md#update-plugins)
 
 候補pluginが権限を追加する場合、非対話実行は同意なしに失敗する。差分を確認した上で、必要な場合だけ`plugins update`へ`--accept-capabilities`を追加する。[OpenClaw plugin capability consent](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/plugins/manage-plugins.md#capability-consent)
 
 ```bash
 # 更新後のCompose定義を検証する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw config --quiet
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw config --quiet
 
 # Gatewayを停止し、stateを書き込むprocessを排除する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw stop openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw stop openclaw
 
-# 候補imageを使って本番volumeのDiscord pluginを更新する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node openclaw dist/index.js plugins update "@openclaw/discord@${OPENCLAW_CANDIDATE_PLUGIN_VERSION}"
+# managed configを本番volume上の書き込み可能なupgrade用copyへ保存する。
+sudo docker run --rm --entrypoint sh --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/home/node/.openclaw" --mount "type=bind,src=$OPENCLAW_MANAGED_CONFIG,dst=/input/openclaw.json,readonly" "$OPENCLAW_CANDIDATE_IMAGE" -c 'cp /input/openclaw.json /home/node/.openclaw/openclaw.upgrade.json'
+
+# cloneで検証済みのstate migrationを本番volumeへ適用する。
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/home/node/.openclaw" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.upgrade.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --fix --non-interactive
+
+# 候補imageで本番volumeのDiscord pluginを更新する。
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/home/node/.openclaw" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.upgrade.json -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js plugins update "@openclaw/discord@${OPENCLAW_CANDIDATE_PLUGIN_VERSION}" --accept-capabilities
+
+# Discord pluginのcapability consentをstateへ記録する。
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/home/node/.openclaw" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.upgrade.json -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js plugins enable discord --accept-capabilities
+
+# read-only managed configでstateとconfigの整合性を検証する。
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node openclaw dist/index.js doctor --lint --all --severity-min error --json
 
 # plugin更新後の互換性をGateway停止中に確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --post-upgrade --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --post-upgrade --json
+
+# session SQLite migration後の整合性を確認する。
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --session-sqlite validate --session-sqlite-all-agents --json
 
 # init serviceを含め、候補versionのGatewayを起動する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw up -d openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw up -d openclaw
 
 # initの終了状態とGatewayのhealthを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw ps -a openclaw-init openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw ps -a openclaw-init openclaw
 
 # 起動時migrationとplugin convergenceのlogを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw logs --tail 300 openclaw-init openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw logs --tail 300 openclaw-init openclaw
 
 # 稼働中Gatewayのversionを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw exec openclaw node dist/index.js --version
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw exec openclaw node dist/index.js --version
 
 # 稼働中Gatewayのhealthを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw exec openclaw node dist/index.js health
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw exec openclaw node dist/index.js health
 
 # 稼働中GatewayのDiscord pluginを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw exec openclaw node dist/index.js plugins list --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw exec openclaw node dist/index.js plugins list --json
 
 # Discord channelを実接続で確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw exec openclaw node dist/index.js channels status --channel discord --probe
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw exec openclaw node dist/index.js channels status --channel discord --probe
 ```
 
 期待結果:
@@ -246,23 +305,23 @@ sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile
 
 routine image upgradeはGateway startupのsafe repairへ任せる。startupが同じimageで`doctor --fix`を要求した場合だけ、Gatewayを停止し、backupが存在することを再確認して実行する。[OpenClaw Docker](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/docker.md#upgrading-container-images)
 
-managed configはread-onlyであるため、先にrepository側を候補schemaへ適合させて`config validate`を成功させる。`doctor --fix`はstate/SQLite migrationに限定し、service lifecycleはComposeへ任せる。
+managed configはread-onlyであるため、先にrepository側を候補schemaへ適合させて`config validate`を成功させる。`doctor --fix`はvolume上の書き込み可能なupgrade用config copyで実行し、service lifecycleはComposeへ任せる。
 
 ```bash
 # repair前にGatewayを停止する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw stop openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw stop openclaw
 
-# 同じ候補image、state volume、managed configでsafe repairを実行する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --fix --non-interactive
+# 同じ候補image、state volume、upgrade用config copyでsafe repairを実行する。
+sudo docker run --rm --entrypoint node --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/home/node/.openclaw" -e HOME=/home/node -e OPENCLAW_HOME=/home/node -e OPENCLAW_STATE_DIR=/home/node/.openclaw -e OPENCLAW_CONFIG_PATH=/home/node/.openclaw/openclaw.upgrade.json -e OPENCLAW_SERVICE_REPAIR_POLICY=external -e XDG_CACHE_HOME=/tmp/cache -e TMPDIR=/tmp "$OPENCLAW_CANDIDATE_IMAGE" dist/index.js doctor --fix --non-interactive
 
 # repair後にsession SQLite migrationを検証する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --session-sqlite validate --session-sqlite-all-agents --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --session-sqlite validate --session-sqlite-all-agents --json
 
 # repair後のplugin互換性を再検証する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --post-upgrade --json
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --post-upgrade --json
 
 # repairが成功した場合だけGatewayを再起動する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw up -d openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw up -d openclaw
 ```
 
 `doctor --fix`はpersistent fileからSQLiteへのmigration ownerであり、migrationはGateway停止中に実行する。session migrationでは旧JSON/JSONL、temporary SQLite、destination database/WALが同時に存在できる空き容量を確保する。[OpenClaw Doctor SQLite migration](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md#session-sqlite-migration)
@@ -294,25 +353,25 @@ SQLite migrationをまたいでfile-backed versionへ戻す場合は、候補ver
 
 ```bash
 # rollback作業を始める前にGatewayを停止する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw stop openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw stop openclaw
 
 # SQLite migrationをまたぐ場合だけ、候補CLIでlegacy session artifactを復元する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --session-sqlite restore --session-sqlite-all-agents
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node -e OPENCLAW_SERVICE_REPAIR_POLICY=external openclaw dist/index.js doctor --session-sqlite restore --session-sqlite-all-agents
 
 # 正常versionへ戻したCompose定義を検証する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw config --quiet
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw config --quiet
 
 # 正常versionのDiscord pluginへ戻す。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node openclaw dist/index.js plugins update @openclaw/discord@2026.7.1
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw run --rm --no-deps --entrypoint node openclaw dist/index.js plugins update @openclaw/discord@2026.7.1
 
 # 正常versionのinitとGatewayを起動する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw up -d openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw up -d openclaw
 
 # rollback後のservice状態を確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw ps -a openclaw-init openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw ps -a openclaw-init openclaw
 
 # rollback後のhealthを確認する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw exec openclaw node dist/index.js health
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw exec openclaw node dist/index.js health
 ```
 
 期待結果:
@@ -331,7 +390,7 @@ sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile
 
 ```bash
 # Gatewayを停止し、named volumeを使用するOpenClaw processを排除する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw stop openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw stop openclaw
 
 # restore対象volumeの名前とmountpointを表示し、想定したvolumeだけであることを確認する。
 sudo docker volume inspect "$OPENCLAW_VOLUME"
@@ -346,7 +405,7 @@ sudo docker run --rm --user 0 --entrypoint tar --mount "type=volume,src=$OPENCLA
 sudo docker run --rm --user 0 --entrypoint sh --mount "type=volume,src=$OPENCLAW_VOLUME,dst=/restore" --mount "type=bind,src=$OPENCLAW_BACKUP_DIR/openclaw-data.tar,dst=/backup/openclaw-data.tar,readonly" "$OPENCLAW_CURRENT_IMAGE" -c 'find /restore -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + && tar -C /restore -xpf /backup/openclaw-data.tar'
 
 # 正常versionのCompose定義でserviceを起動する。
-sudo docker compose --env-file .env -f 10-inference/docker-compose.yml --profile openclaw up -d openclaw
+sudo docker compose --env-file .env -f docker-compose.yml --profile openclaw up -d openclaw
 ```
 
 期待結果:
@@ -389,6 +448,7 @@ sudo docker volume rm "$OPENCLAW_PREFLIGHT_VOLUME"
 - [OpenClaw Updating](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/updating.md)
 - [OpenClaw Backups](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/backups.md)
 - [OpenClaw Backup CLI](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/backup.md)
+- [OpenClaw issue #41258: full backupが未完了になる事象](https://github.com/openclaw/openclaw/issues/41258)
 - [OpenClaw Config CLI](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/config.md)
 - [OpenClaw Configuration](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/gateway/configuration.md)
 - [OpenClaw Doctor](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/cli/doctor.md)
