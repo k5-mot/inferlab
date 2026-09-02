@@ -70,7 +70,7 @@ $Packages = @(
     "docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64",
     "ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1",
     # "ghcr.io/remsky/kokoro-fastapi-gpu:v0.8.1",
-    "docker.io/nousresearch/hermes-agent:v2026.8.27"
+    "docker.io/nousresearch/hermes-agent:v2026.8.31"
     "ghcr.io/openclaw/openclaw:2026.7.1-2-browser",
     "docker.io/agentscope/qwenpaw:v2.1.0",
     ### 11-rag
