@@ -23,7 +23,7 @@ OpenClawは`ghcr.io/openclaw/openclaw`の公式imageを直接使用する。設�
 
 LiteLLM API keyとDiscord bot tokenはOpenClawのSecretRefでprocess environmentから解決する。Discord guild IDとchannel IDはsecretではなくrouting識別子であり、`openclaw/openclaw.json`へ記録する。接続先を変更する場合は、同fileの`channels.discord.guilds`を更新する。
 
-`openclaw-init`はDiscord pluginが既に`openclaw-data` volumeへ導入済みの場合、再インストールせず正常終了する。Docling MCPは専用コンテナを増やさない方針とし、OpenClawとの連携対象に含めない。
+`openclaw-init`は`openclaw-data` volumeのDiscord plugin versionを確認し、OpenClaw coreと同じrelease cohortへinstallまたはupdateする。Docling MCPは専用コンテナを増やさない方針とし、OpenClawとの連携対象に含めない。
 
 ```bash
 # read-only設定をOpenClawのschemaで検証する。

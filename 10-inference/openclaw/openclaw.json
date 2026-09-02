@@ -2,8 +2,6 @@
     "gateway": {
         "mode": "local",
         "controlUi": {
-            "allowInsecureAuth": true,
-            "dangerouslyDisableDeviceAuth": true,
             "dangerouslyAllowHostHeaderOriginFallback": true,
             "allowedOrigins": [
                 "http://localhost:18789",
@@ -70,6 +68,13 @@
                 "litellm/openai/gpt-oss:20b": {},
                 "litellm/nvidia/nemotron-3-nano:30b": {}
             },
+            "modelPolicy": {
+                "allow": [
+                    "litellm/google/gemma4:31b",
+                    "litellm/openai/gpt-oss:20b",
+                    "litellm/nvidia/nemotron-3-nano:30b"
+                ]
+            },
             "utilityModel": "litellm/google/gemma4:31b",
             "imageModel": {
                 "primary": "litellm/google/gemma4:31b",
@@ -79,9 +84,6 @@
                     "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
-            "imageGenerationModel": {},
-            "videoGenerationModel": {},
-            "musicGenerationModel": {},
             "voiceModel": {
                 "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
@@ -98,7 +100,6 @@
                     "litellm/nvidia/nemotron-3-nano:30b"
                 ]
             },
-            "mediaGenerationAutoProviderFallback": false,
             "subagents": {
                 "model": {
                     "primary": "litellm/google/gemma4:31b",
@@ -109,6 +110,9 @@
                     ]
                 }
             }
+        },
+        "entries": {
+            "main": {}
         }
     },
     "tools": {
@@ -176,32 +180,28 @@
                     "URL_READ_MAX_CHARS": "4000",
                     "NPM_CONFIG_CACHE": "/home/node/.openclaw/cache/npm"
                 },
-                "timeout": 30,
-                "connect_timeout": 10,
+                "requestTimeoutMs": 30000,
+                "connectionTimeoutMs": 10000,
                 "keepalive_interval": 120
             }
         }
     },
-    "messages": {
-        "tts": {
-            "enabled": true,
-            "auto": "off",
-            "mode": "final",
-            "provider": "openai",
-            "summaryModel": "litellm/google/gemma4:31b",
-            "providers": {
-                "openai": {
-                    "baseUrl": "http://kokoro:8880/v1",
-                    "model": "kokoro",
-                    "voice": "jf_alpha",
-                    "speed": 1.0,
-                    "apiKey": "not-needed"
-                }
+    "tts": {
+        "auto": "off",
+        "mode": "final",
+        "provider": "openai",
+        "summaryModel": "litellm/google/gemma4:31b",
+        "providers": {
+            "openai": {
+                "baseUrl": "http://kokoro:8880/v1",
+                "model": "kokoro",
+                "speakerVoice": "jf_alpha",
+                "speed": 1.0,
+                "apiKey": "not-needed"
             }
         }
     },
     "plugins": {
-        "bundledDiscovery": "compat",
         "allow": [
             "browser",
             "canvas",
@@ -210,12 +210,27 @@
             "file-transfer",
             "litellm",
             "memory-core",
-            "phone-control"
+            "openai"
         ],
         "entries": {
             "discord": {
                 "enabled": true
+            },
+            "browser": {
+                "enabled": true
+            },
+            "litellm": {
+                "enabled": true
+            },
+            "openai": {
+                "enabled": true
             }
+        }
+    },
+    "meta": {
+        "lastTouchedVersion": "2026.8.2",
+        "migrations": {
+            "modelPolicyAllowlist": true
         }
     },
     "channels": {
