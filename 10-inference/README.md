@@ -13,7 +13,8 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、QwenPaw、Kokoroをまとめ�
 | `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
 | `openclaw-init` | OpenClaw公式imageに含まれないDiscord pluginを、初回だけ`openclaw-data` volumeへ導入する。 |
 | `openclaw` | 公式imageでread-onlyの`openclaw/openclaw.json`を読み込む。Langfuseへの送信はLiteLLMに集約する。 |
-| `qwenpaw` | 公式imageでConsoleとDiscord channelを起動する。model providerはLiteLLMへ向け、Langfuseへの送信はLiteLLMに集約する。 |
+| `qwenpaw-init` | 公式初期化後、`.env`のsecretをDiscordとLiteLLM provider設定へ反映する。 |
+| `qwenpaw` | 公式imageでConsoleとDiscord channelを起動する。3つの基盤modelをLiteLLMへ向け、Langfuseへの送信はLiteLLMに集約する。 |
 
 `ollama`は`ollama-init`の完了後に本体serviceを起動する。初回はmodel取得に時間がかかる。Ollama Cloud modelの実行前は、起動後の`ollama` serviceでOllama Cloudへsign inする。
 
@@ -110,40 +111,63 @@ sudo docker compose --env-file .env --profile inference up -d
 
 ## QwenPawの初期設定
 
-QwenPaw Consoleは`http://${PUBLIC_HOST}:31003`で公開する。`QWENPAW_AUTH_ENABLED=true`を固定し、`.env`の`QWENPAW_AUTH_USERNAME`と`QWENPAW_AUTH_PASSWORD`で初期adminを自動登録する。
+QwenPaw Consoleは`http://${PUBLIC_HOST}:31003`で公開する。`QWENPAW_AUTH_ENABLED=true`を固定し、`.env`の`QWENPAW_AUTH_USERNAME`と`QWENPAW_AUTH_PASSWORD`で初期adminを自動登録する。`qwenpaw-init`は公式の`qwenpaw init`を初回だけ実行し、`.env`のsecretをruntime設定へ反映する。
 
-モデルはQwenPawからLiteLLMへ集約する。QwenPawにはOpenAI互換providerとして次の値を設定する。
+モデルはQwenPawからLiteLLMへ集約する。OpenAI互換providerとして次の3モデルを登録し、`google/gemma4:31b`をdefaultにする。
 
-| 項目 | 値 |
+| Model ID | 接続先 |
 | --- | --- |
-| Base URL | `http://litellm:4000/v1` |
-| API Key | `.env`の`LITELLM_MASTER_KEY` |
-| Model | `openai/gpt-oss:20b` |
+| `google/gemma4:31b` | `http://litellm:4000/v1` |
+| `openai/gpt-oss:20b` | `http://litellm:4000/v1` |
+| `nvidia/nemotron-3-nano:30b` | `http://litellm:4000/v1` |
 
-Discord channelは`.env`の`QWENPAW_DISCORD_BOT_TOKEN`をQwenPaw container内の`DISCORD_BOT_TOKEN`へ渡して有効化する。Discordの詳細なアクセス制御はQwenPaw Consoleで管理する。
+providerのAPI keyには`.env`の`LITELLM_MASTER_KEY`を使う。QwenPaw由来のrequestへ`QwenPaw` trace名と`qwenpaw` tagを付けるため、LiteLLMの`langfuse_otel` callbackからLangfuse上で識別できる。
+
+Discord channelは`.env`の`QWENPAW_DISCORD_BOT_TOKEN`をruntimeの`agent.json`へ保存して有効化する。group chatではmentionを必須とし、botからのmessageには応答しない。
+
+QwenPawのstateはnamed volumeではなく、`qwenpaw/state/`配下のbind mountへ保存する。conversation、memory、暗号化済みcredential、backup archiveはGitから除外する。人格のauthoritative sourceは次のGit管理fileであり、containerへread-onlyでbind mountする。
+
+- `qwenpaw/persona/AGENTS.md`
+- `qwenpaw/persona/SOUL.md`
+- `qwenpaw/persona/PROFILE.md`
+
+Consoleから上記3fileを編集してもread-only mountには保存できない。人格を変更する場合はrepository側を編集し、QwenPawを再作成する。
 
 ```bash
-# QwenPawだけを再作成して、認証情報とDiscord設定を反映する。
-sudo docker compose --env-file .env --profile qwenpaw up -d --force-recreate qwenpaw
+# QwenPawの初期化を再実行し、Discord、model、人格設定を反映する。
+sudo docker compose --env-file .env --profile qwenpaw up -d --force-recreate qwenpaw-init qwenpaw
+
+# QwenPawのproviderとactive modelを確認する。
+sudo docker compose --env-file .env --profile qwenpaw exec qwenpaw qwenpaw models list
+
+# QwenPawの設定、channel、APIを診断する。
+sudo docker compose --env-file .env --profile qwenpaw exec qwenpaw qwenpaw doctor --deep
 ```
 
 期待結果:
 
+- `qwenpaw-init`がexit code `0`で完了する。
 - `http://${PUBLIC_HOST}:31003`でQwenPaw Consoleにloginできる。
-- QwenPawのmodel requestがLiteLLMを経由する。
-- LiteLLM経由のrequestがLangfuseに記録される。
+- `models list`にLiteLLMの3モデルが表示される。
+- `doctor --deep`がcustom provider、active model、Discord、APIを正常と判定する。
+- Discord botが接続し、mentionを含むmessageへ応答する。
+- QwenPawのmodel requestがLiteLLMを経由し、Langfuseへ`qwenpaw` tag付きで記録される。
+
+QwenPaw v2.1.0の`doctor`はcustom providerのlive checkをskipする。3モデルそれぞれの実推論は、ConsoleのChat画面でmodelを切り替えて確認する。
 
 失敗条件:
 
+- `qwenpaw-init`が必須環境変数の未設定またはJSON不正で終了する。
 - QwenPaw Consoleにloginできない。
 - QwenPawから`http://litellm:4000/v1`へ接続できない。
 - Discord bot tokenを設定してもDiscord gatewayへ接続できない。
+- Git管理した人格fileへcontainerから書き込める。
 
 ## Langfuse連携
 
 Langfuseへの送信はLiteLLMの`langfuse_otel` callbackに集約する。Hermes-Agent、OpenClaw、QwenPawはLangfuse SDKやLangfuse pluginから直接送信せず、LiteLLMへのprovider requestへ集約する。
 
-Hermes-Agentは`litellm-langfuse-headers` pluginで、`session_id`、`turn_id`、`sender_id`、`api_request_id`をLiteLLMのLangfuse連携用headerへ変換する。OpenClawはLiteLLM providerの静的headerで、OpenClaw由来のtrace/generation名とtagを渡す。
+Hermes-Agentは`litellm-langfuse-headers` pluginで、`session_id`、`turn_id`、`sender_id`、`api_request_id`をLiteLLMのLangfuse連携用headerへ変換する。OpenClawとQwenPawはLiteLLM providerの静的headerで、それぞれのtrace、generation名、tagを渡す。
 
 ## 確認手順
 
@@ -207,6 +231,9 @@ sudo docker compose --env-file .env --profile inference exec -it ollama ollama s
 - [Ollama Cloud](https://docs.ollama.com/cloud)
 - [QwenPaw](https://github.com/agentscope-ai/QwenPaw)
 - [QwenPaw Docker Compose](https://raw.githubusercontent.com/agentscope-ai/QwenPaw/main/docker-compose.yml)
+- [QwenPaw Config and Working Directory](https://qwenpaw.agentscope.io/docs/config/)
+- [QwenPaw Models](https://qwenpaw.agentscope.io/docs/models/)
+- [QwenPaw Channels](https://qwenpaw.agentscope.io/docs/channels/)
 - [OpenClaw Docker](https://docs.openclaw.ai/install/docker)
 - [OpenClaw Configuration](https://docs.openclaw.ai/gateway/configuration)
 - [OpenClaw Discord](https://docs.openclaw.ai/channels/discord)
