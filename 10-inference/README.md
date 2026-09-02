@@ -125,7 +125,7 @@ providerのAPI keyには`.env`の`LITELLM_MASTER_KEY`を使う。QwenPaw由来�
 
 Discord channelは`.env`の`QWENPAW_DISCORD_BOT_TOKEN`をruntimeの`agent.json`へ保存して有効化する。group chatではmentionを必須とし、botからのmessageには応答しない。
 
-QwenPawのstateはnamed volumeではなく、`qwenpaw/state/`配下のbind mountへ保存する。conversation、memory、暗号化済みcredential、backup archiveはGitから除外する。人格のauthoritative sourceは次のGit管理fileであり、containerへread-onlyでbind mountする。
+QwenPawのconversationとmemoryは`qwenpaw-data`、暗号化済みcredentialは`qwenpaw-secrets`、backup archiveは`qwenpaw-backups`のnamed volumeへ保存する。人格のauthoritative sourceは次のGit管理fileであり、containerへread-onlyでbind mountする。
 
 - `qwenpaw/persona/AGENTS.md`
 - `qwenpaw/persona/SOUL.md`

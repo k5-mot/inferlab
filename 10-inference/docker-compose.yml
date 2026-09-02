@@ -640,9 +640,9 @@ services:
     volumes:
       - ./qwenpaw/init.sh:/opt/inferlab/init.sh:ro
       - ./qwenpaw/configure.py:/opt/inferlab/configure.py:ro
-      - ./qwenpaw/state/working:/app/working
-      - ./qwenpaw/state/secrets:/app/working.secret
-      - ./qwenpaw/state/backup-archives:/app/working.backups
+      - qwenpaw-data:/app/working
+      - qwenpaw-secrets:/app/working.secret
+      - qwenpaw-backups:/app/working.backups
     networks:
       - internal-nw
 
@@ -665,9 +665,9 @@ services:
     ports:
       - 31003:8088
     volumes:
-      - ./qwenpaw/state/working:/app/working
-      - ./qwenpaw/state/secrets:/app/working.secret
-      - ./qwenpaw/state/backup-archives:/app/working.backups
+      - qwenpaw-data:/app/working
+      - qwenpaw-secrets:/app/working.secret
+      - qwenpaw-backups:/app/working.backups
       - ./qwenpaw/persona/AGENTS.md:/app/working/workspaces/default/AGENTS.md:ro
       - ./qwenpaw/persona/SOUL.md:/app/working/workspaces/default/SOUL.md:ro
       - ./qwenpaw/persona/PROFILE.md:/app/working/workspaces/default/PROFILE.md:ro
@@ -694,6 +694,9 @@ services:
 volumes:
   ollama-cache:
   openclaw-data:
+  qwenpaw-data:
+  qwenpaw-secrets:
+  qwenpaw-backups:
   tei-cache:
   vllm-cache:
   hermes-data:
