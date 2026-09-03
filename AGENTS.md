@@ -13,7 +13,7 @@
 
 - All project documentation MUST use Markdown and MUST have the `.md` extension.
 - Documents under `docs/` MUST be written in Japanese.
-- `AGENTS.md` files MUST be written in English.
+- Project-governance `AGENTS.md` files MUST be written in English. Runtime persona or workspace `AGENTS.md` files for Hermes, OpenClaw, and QwenPaw MAY use the agent's configured language.
 - Language required by an external file format, source code, command, identifier, product name, or quoted specification MAY remain unchanged.
 
 ### Normative Language
