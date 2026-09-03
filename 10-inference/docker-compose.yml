@@ -671,9 +671,9 @@ services:
       - qwenpaw-data:/app/working
       - qwenpaw-secrets:/app/working.secret
       - qwenpaw-backups:/app/working.backups
-      - ./qwenpaw/persona/AGENTS.md:/app/working/workspaces/default/AGENTS.md:ro
-      - ./qwenpaw/persona/SOUL.md:/app/working/workspaces/default/SOUL.md:ro
-      - ./qwenpaw/persona/PROFILE.md:/app/working/workspaces/default/PROFILE.md:ro
+      - ./qwenpaw/persona/AGENTS.md:/app/working/workspaces/default/AGENTS.md
+      - ./qwenpaw/persona/SOUL.md:/app/working/workspaces/default/SOUL.md
+      - ./qwenpaw/persona/PROFILE.md:/app/working/workspaces/default/PROFILE.md
     networks:
       - internal-nw
     depends_on:
