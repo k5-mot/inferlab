@@ -1,0 +1,6 @@
+working/*
+!working/.gitkeep
+secrets/*
+!secrets/.gitkeep
+backup-archives/*
+!backup-archives/.gitkeep

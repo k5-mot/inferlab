@@ -514,6 +514,7 @@ services:
     <<: *external-dns-stabilizer
     image: ghcr.io/openclaw/openclaw:2026.8.2-browser
     container_name: ${STACK_NAME}-openclaw-init
+    user: "0:0"
     restart: "no"
     profiles:
       - inference
@@ -537,15 +538,17 @@ services:
     command:
       - |
         set -eu
+        # 個別bind mountでroot所有になり得るworkspaceを、実行userが書き込める状態へ戻す。
+        install -d -o node -g node -m 0755 /home/node/.openclaw/workspaces
         # coreと同じrelease cohortのDiscord pluginへ永続volumeを収束させる。
-        plugin_json="$$(node dist/index.js plugins list --json)"
+        plugin_json="$$(setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins list --json)"
         plugin_version="$$(printf '%s' "$$plugin_json" | node -e 'const fs = require("node:fs"); const data = JSON.parse(fs.readFileSync(0, "utf8")); process.stdout.write(data.plugins.find((plugin) => plugin.id === "discord")?.version ?? "");')"
         if [ "$$plugin_version" = "2026.8.2" ]; then
           echo "Discord plugin is already at 2026.8.2."
         elif [ -n "$$plugin_version" ]; then
-          node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
         else
-          node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
         fi
     cap_drop:
       - NET_RAW
@@ -620,61 +623,86 @@ services:
       - homepage.name=OpenClaw
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31002
+
+  # https://qwenpaw.agentscope.io/docs/channels#Discord
   # https://github.com/agentscope-ai/QwenPaw/blob/main/docker-compose.yml
-  # qwenpaw:
-  #   <<: *external-dns-stabilizer
-  #   image: docker.io/agentscope/qwenpaw:v2.1.0
-  #   container_name: ${STACK_NAME}-qwenpaw
-  #   restart: unless-stopped
-  #   profiles:
-  #     - inference
-  #     - qwenpaw
-  #   init: true
-  #   environment:
-  #     QWENPAW_PORT: "8088"
-  #     QWENPAW_AUTH_ENABLED: "true"
-  #     QWENPAW_AUTH_USERNAME: ${QWENPAW_AUTH_USERNAME:-qwenpaw-admin}
-  #     QWENPAW_AUTH_PASSWORD: ${QWENPAW_AUTH_PASSWORD:-pw-qwenpaw-admin-password}
-  #     QWENPAW_ENABLED_CHANNELS: console,discord
-  #     OPENAI_BASE_URL: http://litellm:4000/v1
-  #     OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-  #     OPENAI_MODEL: openai/gpt-oss:20b
-  #     DISCORD_CHANNEL_ENABLED: "1"
-  #     DISCORD_BOT_TOKEN: ${QWENPAW_DISCORD_BOT_TOKEN:-}
-  #     DISCORD_REQUIRE_MENTION: "1"
-  #     DISCORD_STREAMING_ENABLED: "1"
-  #     TZ: Asia/Tokyo
-  #   ports:
-  #     - 31003:8088
-  #   volumes:
-  #     - qwenpaw-data:/app/working
-  #     - qwenpaw-secrets:/app/working.secret
-  #     - qwenpaw-backups:/app/working.backups
-  #   networks:
-  #     - internal-nw
-  #   healthcheck:
-  #     test:
-  #       - CMD-SHELL
-  #       - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/', timeout=5)"
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 12
-  #     start_period: 60s
-  #   labels:
-  #     - homepage.group=10-inference
-  #     - homepage.name=QwenPaw
-  #     - homepage.description=Personal AI agent
-  #     - homepage.href=http://${PUBLIC_HOST}:31003
+  qwenpaw-init:
+    image: docker.io/agentscope/qwenpaw:v2.1.0
+    container_name: ${STACK_NAME}-qwenpaw-init
+    restart: no
+    profiles:
+      - inference
+      - qwenpaw
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      QWENPAW_DISCORD_BOT_TOKEN: ${QWENPAW_DISCORD_BOT_TOKEN:-}
+      QWENPAW_ENABLED_CHANNELS: console,discord
+      TZ: Asia/Tokyo
+    entrypoint:
+      - /opt/inferlab/init.sh
+    volumes:
+      - ./qwenpaw/init.sh:/opt/inferlab/init.sh:ro
+      - ./qwenpaw/configure.py:/opt/inferlab/configure.py:ro
+      - qwenpaw-data:/app/working
+      - qwenpaw-secrets:/app/working.secret
+      - qwenpaw-backups:/app/working.backups
+    networks:
+      - internal-nw
+
+  qwenpaw:
+    <<: *external-dns-stabilizer
+    image: docker.io/agentscope/qwenpaw:v2.1.0
+    container_name: ${STACK_NAME}-qwenpaw
+    restart: unless-stopped
+    profiles:
+      - inference
+      - qwenpaw
+    init: true
+    environment:
+      QWENPAW_PORT: "8088"
+      QWENPAW_AUTH_ENABLED: "true"
+      QWENPAW_AUTH_USERNAME: ${QWENPAW_AUTH_USERNAME:-qwenpaw-admin}
+      QWENPAW_AUTH_PASSWORD: ${QWENPAW_AUTH_PASSWORD:-pw-qwenpaw-admin-password}
+      QWENPAW_ENABLED_CHANNELS: console,discord
+      TZ: Asia/Tokyo
+    ports:
+      - 31003:8088
+    volumes:
+      - qwenpaw-data:/app/working
+      - qwenpaw-secrets:/app/working.secret
+      - qwenpaw-backups:/app/working.backups
+      - ./qwenpaw/persona/AGENTS.md:/app/working/workspaces/default/AGENTS.md
+      - ./qwenpaw/persona/SOUL.md:/app/working/workspaces/default/SOUL.md
+      - ./qwenpaw/persona/PROFILE.md:/app/working/workspaces/default/PROFILE.md
+    networks:
+      - internal-nw
+    depends_on:
+      qwenpaw-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    labels:
+      - homepage.icon=/icons/qwenpaw.png
+      - homepage.group=10-inference
+      - homepage.name=QwenPaw
+      - homepage.description=Personal AI agent
+      - homepage.href=http://${PUBLIC_HOST}:31003
 
 volumes:
   ollama-cache:
   openclaw-data:
-  tei-cache:
-  vllm-cache:
-  hermes-data:
   qwenpaw-data:
   qwenpaw-secrets:
   qwenpaw-backups:
+  tei-cache:
+  vllm-cache:
+  hermes-data:
 
 networks:
   internal-nw:

@@ -71,7 +71,7 @@ $Packages = @(
     "ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1",
     # "ghcr.io/remsky/kokoro-fastapi-gpu:v0.8.1",
     "docker.io/nousresearch/hermes-agent:v2026.8.31"
-    "ghcr.io/openclaw/openclaw:2026.7.1-2-browser",
+    "ghcr.io/openclaw/openclaw:2026.8.2-browser",
     "docker.io/agentscope/qwenpaw:v2.1.0",
     ### 11-rag
     "quay.io/docling-project/docling-serve-cpu:v1.31.0",
