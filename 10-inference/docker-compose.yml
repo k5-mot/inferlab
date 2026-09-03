@@ -514,6 +514,7 @@ services:
     <<: *external-dns-stabilizer
     image: ghcr.io/openclaw/openclaw:2026.8.2-browser
     container_name: ${STACK_NAME}-openclaw-init
+    user: "0:0"
     restart: "no"
     profiles:
       - inference
@@ -537,15 +538,17 @@ services:
     command:
       - |
         set -eu
+        # 個別bind mountでroot所有になり得るworkspaceを、実行userが書き込める状態へ戻す。
+        install -d -o node -g node -m 0755 /home/node/.openclaw/workspaces
         # coreと同じrelease cohortのDiscord pluginへ永続volumeを収束させる。
-        plugin_json="$$(node dist/index.js plugins list --json)"
+        plugin_json="$$(setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins list --json)"
         plugin_version="$$(printf '%s' "$$plugin_json" | node -e 'const fs = require("node:fs"); const data = JSON.parse(fs.readFileSync(0, "utf8")); process.stdout.write(data.plugins.find((plugin) => plugin.id === "discord")?.version ?? "");')"
         if [ "$$plugin_version" = "2026.8.2" ]; then
           echo "Discord plugin is already at 2026.8.2."
         elif [ -n "$$plugin_version" ]; then
-          node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
         else
-          node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
         fi
     cap_drop:
       - NET_RAW
