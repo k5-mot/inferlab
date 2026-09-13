@@ -70,7 +70,7 @@ $Registries = @(
         # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
 )
 $Architecture = "x86_64"
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Registries = @(
         "https://download.docker.com/linux/centos/8/x86_64/stable/"
     )

@@ -67,7 +67,7 @@ $Packages = @(
     [pscustomobject]@{ Id = "langgenius/oaicompat_dify_app"; Version = "0.0.15" },
     [pscustomobject]@{ Id = "langgenius/oaicompat_dify_model"; Version = "0.0.10" }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @(
         [pscustomobject]@{ Id = "langgenius/openai_api_compatible"; Version = "0.0.64" }
     )

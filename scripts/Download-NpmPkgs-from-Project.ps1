@@ -57,7 +57,7 @@ $Platforms = @(
     [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" },
     [pscustomobject]@{ Name = "windows"; Os = "win32"; Cpu = "x64" }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Platforms = @(
         [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" }
     )

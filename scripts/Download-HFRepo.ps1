@@ -51,7 +51,7 @@ $Packages = @(
         "cl-nagoya/ruri-v3-310m",
         "cl-nagoya/ruri-v3-reranker-310m"
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @("hf-internal-testing/tiny-random-bert")
 }
 if ($Packages.Count -eq 0) {

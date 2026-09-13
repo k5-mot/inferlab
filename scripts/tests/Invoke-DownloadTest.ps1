@@ -15,7 +15,7 @@ function New-DownloadTestDirectory {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
-    $Directory = Join-Path ([System.IO.Path]::GetTempPath()) "inferlab-download-$Name-$([guid]::NewGuid().ToString("N"))"
+    $Directory = Join-Path ([System.IO.Path]::GetTempPath()) "download-test-$Name-$([guid]::NewGuid().ToString("N"))"
     New-Item -ItemType Directory -Path $Directory -Force | Out-Null
     return $Directory
 }
@@ -117,7 +117,7 @@ scriptへ追加で渡すargument配列です。
 .OUTPUTS
 値を返しません。
 .NOTES
-INFERLAB_DOWNLOAD_TESTを一時的に有効化します。
+DOWNLOAD_TESTを一時的に有効化します。
 #>
 function Invoke-DownloadTestScript {
     param (
@@ -126,8 +126,8 @@ function Invoke-DownloadTestScript {
         [string[]]$Arguments = @()
     )
 
-    $PreviousValue = $env:INFERLAB_DOWNLOAD_TEST
-    $env:INFERLAB_DOWNLOAD_TEST = "1"
+    $PreviousValue = $env:DOWNLOAD_TEST
+    $env:DOWNLOAD_TEST = "1"
     try {
         $ScriptPath = Join-Path $PSScriptRoot "../$ScriptName"
         & $ScriptPath -OutputDir $OutputDir @Arguments
@@ -136,7 +136,7 @@ function Invoke-DownloadTestScript {
         }
     }
     finally {
-        $env:INFERLAB_DOWNLOAD_TEST = $PreviousValue
+        $env:DOWNLOAD_TEST = $PreviousValue
     }
 }
 

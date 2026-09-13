@@ -60,7 +60,7 @@ $Packages = @(
         "ms-vscode-remote.remote-wsl",
         "zoocodeorganization.zoo-code"
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @("p1c2u.docker-compose")
 }
 if ($Packages.Count -eq 0) {

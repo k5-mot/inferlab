@@ -60,7 +60,7 @@ $Packages = @(
     [pscustomobject]@{ Type = "tessdata"; Name = "script/Japanese.traineddata"; Sha256 = "c716f6a9d413b3c127f2f9defd9b6f4bba84eeb6c5bfd6feba7922d8025ddf2f" },
     [pscustomobject]@{ Type = "tessdata"; Name = "script/Japanese_vert.traineddata"; Sha256 = "6eca729ad647326a2149e09cf0589d626f4e746863092e22f46841eae4574a49" }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @(
         [pscustomobject]@{ Type = "hfrepo"; Name = "hf-internal-testing/tiny-random-bert"; Revision = "main" },
         [pscustomobject]@{ Type = "tessdata"; Name = "osd.traineddata"; Sha256 = "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff" }

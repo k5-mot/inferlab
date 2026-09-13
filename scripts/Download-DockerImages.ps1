@@ -162,7 +162,7 @@ $Packages = @(
     # "docker.io/library/postgres:18.6-alpine3.24",
 )
 
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @("docker.io/library/busybox:1.36.1")
 }
 

@@ -19,8 +19,8 @@ try {
 }
 '@ | Set-Content -LiteralPath (Join-Path $ProjectDir "package.json") -Encoding ascii
 
-    $PreviousValue = $env:INFERLAB_DOWNLOAD_TEST
-    $env:INFERLAB_DOWNLOAD_TEST = "1"
+    $PreviousValue = $env:DOWNLOAD_TEST
+    $env:DOWNLOAD_TEST = "1"
     $env:NPM_CONFIG_CACHE = $UserCacheDir
     try {
         & (Join-Path $PSScriptRoot "../Download-NpmPkgs-from-Project.ps1") `
@@ -28,7 +28,7 @@ try {
             -ProjectDir $ProjectDir
     }
     finally {
-        $env:INFERLAB_DOWNLOAD_TEST = $PreviousValue
+        $env:DOWNLOAD_TEST = $PreviousValue
     }
     Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "npm") -Pattern "*.tgz"
     if (Test-Path -LiteralPath $UserCacheDir) {

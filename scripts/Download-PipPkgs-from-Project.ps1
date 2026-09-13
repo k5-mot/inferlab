@@ -69,7 +69,7 @@ $PlatformTargets = @(
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux_2_17_x86_64"; Implementation = "cp"; Abis = @() },
     [pscustomobject]@{ Group = "linux"; Platform = "manylinux2014_x86_64"; Implementation = "cp"; Abis = @() }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $PythonVersions = @("3.12")
     $PlatformTargets = @(
         [pscustomobject]@{ Group = "any"; Platform = "any"; Implementation = "py"; Abis = @("none") }

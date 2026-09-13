@@ -70,7 +70,7 @@ $Packages = @(
         Sha256 = "5ef874606b0afe24cc799b737ba1d9c09259e80ddee7646fc557a8f9e0e1017c"
     }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @($Packages | Where-Object { $_.Type -eq "minisbd" -and $_.Name -eq "en" })
 }
 

@@ -116,7 +116,7 @@ $Packages = @(
     "watchfiles==1.2.0",
     "websockets==17.0.1"
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $PythonVersions = @("3.12")
     $PlatformTargets = @(
         [pscustomobject]@{ Group = "any"; Platform = "any"; Implementation = "py"; Abis = @("none") }

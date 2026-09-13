@@ -96,7 +96,7 @@ $Packages = @(
     "zod@4.4.3",
     "zustand"
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Platforms = @(
         [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" }
     )

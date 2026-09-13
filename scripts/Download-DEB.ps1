@@ -77,7 +77,7 @@ $Registries = @(
         )
     }
 )
-if ($env:INFERLAB_DOWNLOAD_TEST) {
+if ($env:DOWNLOAD_TEST) {
     $Packages = @("hello")
 }
 
