@@ -530,18 +530,26 @@ def wait_for_oikb_sync(
         FILE_LOG_INTERVAL_SECONDS // poll_interval_seconds,
     )
     poll_count = 0
+    observed_current_run = False
     while time.monotonic() < deadline:
         state = get_source_states(oikb_url).get(source.key)
         if state is None:
             raise ValueError(f"Source disappeared from OIKB health: {source.name}")
         status = state.get("status")
         last_sync = state.get("last_sync")
-        is_new_run = (
-            isinstance(last_sync, (int, float))
-            and last_sync >= triggered_at
-            and (previous_last_sync is None or last_sync > previous_last_sync)
+        started_at = state.get("started_at")
+        if (
+            status == "running"
+            and isinstance(started_at, (int, float))
+            and started_at >= triggered_at
+        ):
+            observed_current_run = True
+        has_new_last_sync = isinstance(last_sync, (int, float)) and (
+            previous_last_sync is None or last_sync > previous_last_sync
         )
-        if is_new_run and status in TERMINAL_SYNC_STATUSES:
+        if (
+            observed_current_run or has_new_last_sync
+        ) and status in TERMINAL_SYNC_STATUSES:
             if status != "success":
                 raise ValueError(
                     f"OIKB sync finished with status={status}: {source.name}"
@@ -768,7 +776,7 @@ def wait_for_open_webui_registration(
     open_webui_url: str,
     open_webui_api_key: str,
     source: SourceConfig,
-    previous_linked_ids: set[str],
+    previous_linked_ids: set[str] | None,
     history: dict[str, Any],
     poll_interval_seconds: int,
     timeout_seconds: int,
@@ -779,7 +787,7 @@ def wait_for_open_webui_registration(
         open_webui_url: Open WebUIのbase URL。
         open_webui_api_key: Open WebUI API key。
         source: 監視対象のsource設定。
-        previous_linked_ids: trigger直前のlink済みfile ID set。
+        previous_linked_ids: trigger直前のlink済みfile ID set。再開時はNone。
         history: 今回のOIKB history entry。
         poll_interval_seconds: 状態確認間隔の秒数。
         timeout_seconds: 最大待機秒数。
@@ -795,7 +803,10 @@ def wait_for_open_webui_registration(
     modified = int(history.get("files_modified", 0))
     deleted = int(history.get("files_deleted", 0))
     expected_new_count = added + modified
-    expected_linked_count = len(previous_linked_ids) + added - deleted
+    # 中断前のlink集合は復元できないため、再開時は状態だけを検証する。
+    resumed = previous_linked_ids is None
+    baseline_linked_ids = previous_linked_ids or set()
+    expected_linked_count = len(baseline_linked_ids) + added - deleted
     observed_new_ids: set[str] = set()
     deadline = time.monotonic() + timeout_seconds
 
@@ -806,8 +817,8 @@ def wait_for_open_webui_registration(
             source.knowledge_id,
         )
         pending_ids = set(pending_files)
-        observed_new_ids.update(pending_ids - previous_linked_ids)
-        if len(observed_new_ids) > expected_new_count:
+        observed_new_ids.update(pending_ids - baseline_linked_ids)
+        if not resumed and len(observed_new_ids) > expected_new_count:
             raise ValueError(f"Detected another upload during sync: {source.name}")
 
         if pending_ids:
@@ -828,9 +839,25 @@ def wait_for_open_webui_registration(
             open_webui_api_key,
             source.knowledge_id,
         )
+        status_files = linked_files
+        if any(
+            not isinstance(item.get("data"), dict) or "status" not in item["data"]
+            for item in linked_files
+        ):
+            files_by_id = {
+                item["id"]: item
+                for item in list_open_webui_files(
+                    open_webui_url,
+                    open_webui_api_key,
+                )
+                if isinstance(item.get("id"), str) and item["id"]
+            }
+            status_files = [
+                files_by_id.get(item.get("id"), item) for item in linked_files
+            ]
         failed_files = [
             item
-            for item in linked_files
+            for item in status_files
             if isinstance(item.get("data"), dict)
             and item["data"].get("status") == "failed"
         ]
@@ -844,7 +871,7 @@ def wait_for_open_webui_registration(
             )
         incomplete_files = [
             item
-            for item in linked_files
+            for item in status_files
             if not isinstance(item.get("data"), dict)
             or item["data"].get("status") != "completed"
         ]
@@ -865,11 +892,11 @@ def wait_for_open_webui_registration(
             for item in linked_files
             if isinstance(item.get("id"), str) and item["id"]
         }
-        new_linked_ids = linked_ids - previous_linked_ids
+        new_linked_ids = linked_ids - baseline_linked_ids
         observed_new_ids.update(new_linked_ids)
-        if len(observed_new_ids) > expected_new_count:
+        if not resumed and len(observed_new_ids) > expected_new_count:
             raise ValueError(f"Detected another upload during sync: {source.name}")
-        if (
+        if not resumed and (
             len(linked_ids) != expected_linked_count
             or len(new_linked_ids) != expected_new_count
         ):
@@ -882,7 +909,7 @@ def wait_for_open_webui_registration(
         LOGGER.info(
             "Open WebUI registration completed: source=%s files=%d",
             source.name,
-            expected_new_count,
+            len(linked_files) if resumed else expected_new_count,
         )
         return
 
@@ -922,28 +949,33 @@ def sync_source(
         OIKB同期を開始し、Open WebUIへfileを登録する。
     """
     state = get_source_states(oikb_url).get(source.key, {})
-    if state.get("status") == "running":
-        raise ValueError(f"OIKB source is already syncing: {source.name}")
-    wait_for_existing_pending_files(
-        open_webui_url,
-        open_webui_api_key,
-        source,
-        poll_interval_seconds,
-        open_webui_timeout_seconds,
-    )
-
-    previous_linked_ids = list_linked_file_ids(
-        open_webui_url,
-        open_webui_api_key,
-        source.knowledge_id,
-    )
     previous_last_sync = state.get("last_sync")
     if not isinstance(previous_last_sync, (int, float)):
         previous_last_sync = None
 
-    triggered_at = time.time()
-    trigger_sync(oikb_url, oikb_api_key, source)
-    LOGGER.info("Triggered OIKB sync: source=%s", source.name)
+    if state.get("status") == "running":
+        started_at = state.get("started_at")
+        if not isinstance(started_at, (int, float)):
+            raise ValueError(f"Running OIKB source has no started_at: {source.name}")
+        previous_linked_ids = None
+        triggered_at = float(started_at)
+        LOGGER.info("Resuming OIKB sync: source=%s", source.name)
+    else:
+        wait_for_existing_pending_files(
+            open_webui_url,
+            open_webui_api_key,
+            source,
+            poll_interval_seconds,
+            open_webui_timeout_seconds,
+        )
+        previous_linked_ids = list_linked_file_ids(
+            open_webui_url,
+            open_webui_api_key,
+            source.knowledge_id,
+        )
+        triggered_at = time.time()
+        trigger_sync(oikb_url, oikb_api_key, source)
+        LOGGER.info("Triggered OIKB sync: source=%s", source.name)
     terminal_state = wait_for_oikb_sync(
         oikb_url,
         open_webui_url,

@@ -540,6 +540,52 @@ class TriggerScriptTest(unittest.TestCase):
 
         sleep.assert_called_once_with(1)
 
+    def test_registration_uses_file_search_when_status_is_omitted(self) -> None:
+        """Knowledge一覧で省略されたstatusをfile検索結果から補完する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
+        with (
+            patch.object(TRIGGER, "get_pending_files_by_id", return_value={}),
+            patch.object(
+                TRIGGER,
+                "list_knowledge_files",
+                return_value=[{"id": "old", "filename": "old.pdf", "data": None}],
+            ),
+            patch.object(
+                TRIGGER,
+                "list_open_webui_files",
+                return_value=[
+                    {
+                        "id": "old",
+                        "filename": "old.pdf",
+                        "data": {"status": "completed"},
+                    }
+                ],
+            ) as list_open_webui_files,
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1, 10]),
+            patch.object(TRIGGER.time, "sleep"),
+        ):
+            TRIGGER.wait_for_open_webui_registration(
+                "http://open-webui",
+                "webui-secret",
+                source,
+                {"old"},
+                {"files_added": 0, "files_modified": 0, "files_deleted": 0},
+                poll_interval_seconds=1,
+                timeout_seconds=10,
+            )
+
+        list_open_webui_files.assert_called_once_with(
+            "http://open-webui",
+            "webui-secret",
+        )
+
     def test_registration_rejects_missing_link_after_pending_clears(self) -> None:
         """pending解消後にlink不足があれば即座に失敗する。"""
         source = TRIGGER.SourceConfig("source-key", "source-a", "kb-a")
@@ -631,6 +677,138 @@ class TriggerScriptTest(unittest.TestCase):
                     900,
                 ),
             ],
+        )
+
+    def test_fast_noop_sync_advances_to_next_source(self) -> None:
+        """高速な差分なし同期が完了したら次のsourceへ進む。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        sources = [
+            TRIGGER.SourceConfig("key-a", "a", "kb-a"),
+            TRIGGER.SourceConfig("key-b", "b", "kb-b"),
+        ]
+        source_states = [
+            {"key-a": {"status": "success", "last_sync": 90.0}},
+            {"key-a": {"status": "success", "last_sync": 100.0}},
+            {"key-b": {"status": "success", "last_sync": 190.0}},
+            {"key-b": {"status": "success", "last_sync": 200.0}},
+        ]
+        history = {
+            "files_added": 0,
+            "files_modified": 0,
+            "files_deleted": 0,
+        }
+        with (
+            patch.object(TRIGGER, "discover_sources", return_value=sources),
+            patch.object(TRIGGER, "get_source_states", side_effect=source_states),
+            patch.object(TRIGGER, "wait_for_existing_pending_files"),
+            patch.object(
+                TRIGGER,
+                "list_linked_file_ids",
+                side_effect=[{"file-a"}, {"file-b"}],
+            ),
+            patch.object(TRIGGER, "trigger_sync") as trigger_sync,
+            patch.object(TRIGGER, "wait_for_sync_history", return_value=history),
+            patch.object(TRIGGER, "get_pending_files_by_id", return_value={}),
+            patch.object(
+                TRIGGER,
+                "list_knowledge_files",
+                side_effect=[
+                    [{"id": "file-a", "data": {"status": "completed"}}],
+                    [{"id": "file-b", "data": {"status": "completed"}}],
+                ],
+            ),
+            patch.object(TRIGGER.time, "time", side_effect=[100.5, 200.5]),
+            patch.object(TRIGGER.time, "monotonic", side_effect=range(20)),
+            patch.object(TRIGGER.time, "sleep"),
+        ):
+            count = TRIGGER.trigger_all_syncs(
+                "http://oikb",
+                "oikb-secret",
+                "http://open-webui",
+                "webui-secret",
+                ["a", "b"],
+                1,
+                10,
+                10,
+            )
+
+        self.assertEqual(count, 2)
+        self.assertEqual(
+            [args.args[2] for args in trigger_sync.call_args_list],
+            sources,
+        )
+
+    def test_sync_source_resumes_running_source(self) -> None:
+        """中断後の再実行では進行中sourceの待機を継続する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        source = TRIGGER.SourceConfig("key-a", "a", "kb-a")
+        state = {
+            "status": "running",
+            "started_at": 100.0,
+            "last_sync": 90.0,
+        }
+        history = {
+            "files_added": 1,
+            "files_modified": 0,
+            "files_deleted": 0,
+        }
+        with (
+            patch.object(TRIGGER, "get_source_states", return_value={"key-a": state}),
+            patch.object(TRIGGER, "wait_for_existing_pending_files") as wait_existing,
+            patch.object(TRIGGER, "list_linked_file_ids") as list_linked,
+            patch.object(TRIGGER, "trigger_sync") as trigger_sync,
+            patch.object(
+                TRIGGER,
+                "wait_for_oikb_sync",
+                return_value={"status": "success", "last_sync": 101.0},
+            ) as wait_for_oikb_sync,
+            patch.object(TRIGGER, "wait_for_sync_history", return_value=history),
+            patch.object(TRIGGER, "get_pending_files_by_id", return_value={}),
+            patch.object(
+                TRIGGER,
+                "list_knowledge_files",
+                return_value=[
+                    {"id": "old", "data": {"status": "completed"}},
+                    {"id": "new", "data": {"status": "completed"}},
+                ],
+            ),
+            patch.object(TRIGGER.time, "monotonic", side_effect=[0, 1]),
+        ):
+            TRIGGER.sync_source(
+                "http://oikb",
+                "oikb-secret",
+                "http://open-webui",
+                "webui-secret",
+                source,
+                1,
+                10,
+                10,
+            )
+
+        wait_existing.assert_not_called()
+        list_linked.assert_not_called()
+        trigger_sync.assert_not_called()
+        wait_for_oikb_sync.assert_called_once_with(
+            "http://oikb",
+            "http://open-webui",
+            "webui-secret",
+            source,
+            90.0,
+            100.0,
+            1,
+            10,
         )
 
     def test_scheduler_waits_configured_interval(self) -> None:

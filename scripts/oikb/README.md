@@ -75,6 +75,7 @@ python3 scripts/oikb/oikb_sync.py trigger
 期待結果:
 
 - 1 KBの全fileが`completed`になるまで次のKBはtriggerされない。
+- `Ctrl+C`後に再実行した場合、実行中のsourceへ再接続して待機を継続する。
 - file登録が失敗した場合は、失敗fileを削除して同じfileを1回retryする。
 - OIKB Docker logに`OIKB2 processing file`と`OIKB2 registered file`がfileごとに同じ順で表示される。
 - 全KBの完了後、CLIが終了code 0で終了する。
@@ -157,5 +158,7 @@ rollback:
 
 ## References
 
+- [OIKB v0.4.0 daemon](https://github.com/open-webui/oikb/blob/v0.4.0/src/oikb/daemon.py)
+- [OIKB v0.4.0 sync history](https://github.com/open-webui/oikb/blob/v0.4.0/src/oikb/history.py)
 - [Open WebUI: Retrieval-Augmented Generation](https://docs.openwebui.com/features/chat-conversations/rag/)
 - [Open WebUI v0.11.3 knowledge router](https://github.com/open-webui/open-webui/blob/v0.11.3/backend/open_webui/routers/knowledge.py)
