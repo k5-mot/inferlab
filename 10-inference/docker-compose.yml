@@ -65,7 +65,9 @@ services:
       vllm-reranking:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "python", "-c", "import requests; exit() if requests.get('http://localhost:4000/health/readiness').status_code == 200 else exit(1)" ]
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; exit(urllib.request.urlopen('http://localhost:4000/health/readiness', timeout=3).status != 200)"
       interval: 10s
       timeout: 5s
       retries: 3

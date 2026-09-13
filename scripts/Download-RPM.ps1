@@ -48,7 +48,9 @@ $Packages = @(
         "pkgconf-pkg-config",
         "readline-devel",
         "ncurses-devel",
-        "clang-libs"
+        "clang-libs",
+        "podman",
+        "podman-compose"
 )
 $Registries = @(
         ### Oracle Linux 9
