@@ -69,6 +69,13 @@ $Registries = @(
         # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os/",
         # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
 )
+if ($env:RPM_REPOSITORY_BASE_URLS) {
+    $Registries = @(
+        $env:RPM_REPOSITORY_BASE_URLS -split "[;\r\n]+" |
+            Where-Object { $_ } |
+            ForEach-Object { $_.TrimEnd("/") + "/" }
+    )
+}
 $Architecture = "x86_64"
 if ($env:DOWNLOAD_TEST) {
     $Packages = @("podman")
@@ -217,10 +224,6 @@ RPM primary metadataのpackage要素をpackage情報へ変換します。
 package要素を指しているXmlReaderです。
 .PARAMETER RepositoryBaseUrl
 package fileを取得するrepository rootのURLです。
-.PARAMETER TargetNames
-探索対象のpackage名を保持するhashtableです。
-.PARAMETER MatchPackageNameOnly
-package名が探索対象外の場合にsubtree読み取りを早期終了します。
 .OUTPUTS
 package情報のpscustomobjectを返します。
 .NOTES
@@ -229,15 +232,16 @@ package情報のpscustomobjectを返します。
 function ConvertFrom-RpmPackageElement {
     param(
         [Parameter(Mandatory = $true)][System.Xml.XmlReader]$PackageReader,
-        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
-        [hashtable]$TargetNames,
-        [switch]$MatchPackageNameOnly
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl
     )
 
     $CommonNamespace = "http://linux.duke.edu/metadata/common"
     $RpmNamespace = "http://linux.duke.edu/metadata/rpm"
     $Name = $null
     $Arch = $null
+    $Epoch = "0"
+    $Version = $null
+    $Release = $null
     $Location = $null
     $Requires = [System.Collections.Generic.List[string]]::new()
     $Provides = [System.Collections.Generic.List[string]]::new()
@@ -250,11 +254,12 @@ function ConvertFrom-RpmPackageElement {
                 if ($Subtree.NamespaceURI -eq $CommonNamespace) {
                     if ($Subtree.LocalName -eq "name") {
                         $Name = $Subtree.ReadElementContentAsString()
-                        if ($MatchPackageNameOnly -and $TargetNames -and -not $TargetNames.ContainsKey($Name)) {
-                            return $null
-                        }
                     } elseif ($Subtree.LocalName -eq "arch") {
                         $Arch = $Subtree.ReadElementContentAsString()
+                    } elseif ($Subtree.LocalName -eq "version") {
+                        $Epoch = $Subtree.GetAttribute("epoch")
+                        $Version = $Subtree.GetAttribute("ver")
+                        $Release = $Subtree.GetAttribute("rel")
                     } elseif ($Subtree.LocalName -eq "location") {
                         $Location = $Subtree.GetAttribute("href")
                     }
@@ -284,7 +289,7 @@ function ConvertFrom-RpmPackageElement {
         $Subtree.Dispose()
     }
 
-    if (-not $Name -or -not $Arch -or -not $Location) {
+    if (-not $Name -or -not $Arch -or -not $Version -or -not $Release -or -not $Location) {
         return $null
     }
     if (-not $Provides.Contains($Name)) {
@@ -294,6 +299,9 @@ function ConvertFrom-RpmPackageElement {
     return [pscustomobject]@{
         Name = $Name
         Arch = $Arch
+        Epoch = $Epoch
+        Version = $Version
+        Release = $Release
         RepositoryBaseUrl = $RepositoryBaseUrl
         Location = $Location
         Requires = $Requires.ToArray()
@@ -303,33 +311,170 @@ function ConvertFrom-RpmPackageElement {
 
 <#
 .SYNOPSIS
-RPM primary metadataから指定capabilityを提供するpackageを探します。
+RPMのversionまたはrelease文字列を比較します。
+.PARAMETER Left
+比較する左辺の文字列です。
+.PARAMETER Right
+比較する右辺の文字列です。
+.OUTPUTS
+左辺が新しければ1、同じなら0、右辺が新しければ-1を返します。
+.NOTES
+RPMの英字・数字segmentとtilde、caretの比較規則に従います。
+#>
+function Compare-RpmVersionString {
+    param(
+        [Parameter(Mandatory = $true)][string]$Left,
+        [Parameter(Mandatory = $true)][string]$Right
+    )
+
+    if ($Left -ceq $Right) {
+        return 0
+    }
+
+    $LeftIndex = 0
+    $RightIndex = 0
+    while ($LeftIndex -lt $Left.Length -or $RightIndex -lt $Right.Length) {
+        while (
+            $LeftIndex -lt $Left.Length -and
+            -not [char]::IsLetterOrDigit($Left[$LeftIndex]) -and
+            $Left[$LeftIndex] -ne "~" -and
+            $Left[$LeftIndex] -ne "^"
+        ) {
+            $LeftIndex += 1
+        }
+        while (
+            $RightIndex -lt $Right.Length -and
+            -not [char]::IsLetterOrDigit($Right[$RightIndex]) -and
+            $Right[$RightIndex] -ne "~" -and
+            $Right[$RightIndex] -ne "^"
+        ) {
+            $RightIndex += 1
+        }
+
+        $LeftIsTilde = $LeftIndex -lt $Left.Length -and $Left[$LeftIndex] -eq "~"
+        $RightIsTilde = $RightIndex -lt $Right.Length -and $Right[$RightIndex] -eq "~"
+        if ($LeftIsTilde -or $RightIsTilde) {
+            if (-not $LeftIsTilde) { return 1 }
+            if (-not $RightIsTilde) { return -1 }
+            $LeftIndex += 1
+            $RightIndex += 1
+            continue
+        }
+
+        $LeftIsCaret = $LeftIndex -lt $Left.Length -and $Left[$LeftIndex] -eq "^"
+        $RightIsCaret = $RightIndex -lt $Right.Length -and $Right[$RightIndex] -eq "^"
+        if ($LeftIsCaret -or $RightIsCaret) {
+            if ($LeftIndex -ge $Left.Length) { return -1 }
+            if ($RightIndex -ge $Right.Length) { return 1 }
+            if (-not $LeftIsCaret) { return 1 }
+            if (-not $RightIsCaret) { return -1 }
+            $LeftIndex += 1
+            $RightIndex += 1
+            continue
+        }
+
+        if ($LeftIndex -ge $Left.Length -or $RightIndex -ge $Right.Length) {
+            break
+        }
+
+        $LeftStart = $LeftIndex
+        $RightStart = $RightIndex
+        $IsNumeric = [char]::IsDigit($Left[$LeftStart])
+        if ($IsNumeric) {
+            while ($LeftIndex -lt $Left.Length -and [char]::IsDigit($Left[$LeftIndex])) {
+                $LeftIndex += 1
+            }
+            while ($RightIndex -lt $Right.Length -and [char]::IsDigit($Right[$RightIndex])) {
+                $RightIndex += 1
+            }
+        } else {
+            while ($LeftIndex -lt $Left.Length -and [char]::IsLetter($Left[$LeftIndex])) {
+                $LeftIndex += 1
+            }
+            while ($RightIndex -lt $Right.Length -and [char]::IsLetter($Right[$RightIndex])) {
+                $RightIndex += 1
+            }
+        }
+
+        if ($RightStart -eq $RightIndex) {
+            if ($IsNumeric) { return 1 }
+            return -1
+        }
+
+        $LeftSegment = $Left.Substring($LeftStart, $LeftIndex - $LeftStart)
+        $RightSegment = $Right.Substring($RightStart, $RightIndex - $RightStart)
+        if ($IsNumeric) {
+            $LeftSegment = $LeftSegment.TrimStart("0")
+            $RightSegment = $RightSegment.TrimStart("0")
+            if ($LeftSegment.Length -gt $RightSegment.Length) { return 1 }
+            if ($LeftSegment.Length -lt $RightSegment.Length) { return -1 }
+        }
+
+        $Result = [string]::CompareOrdinal($LeftSegment, $RightSegment)
+        if ($Result -gt 0) { return 1 }
+        if ($Result -lt 0) { return -1 }
+    }
+
+    if ($LeftIndex -ge $Left.Length -and $RightIndex -ge $Right.Length) {
+        return 0
+    }
+    if ($LeftIndex -ge $Left.Length) {
+        return -1
+    }
+    return 1
+}
+
+<#
+.SYNOPSIS
+RPM package情報のEpoch、Version、Releaseを比較します。
+.PARAMETER Left
+比較する左辺のpackage情報です。
+.PARAMETER Right
+比較する右辺のpackage情報です。
+.OUTPUTS
+左辺が新しければ1、同じなら0、右辺が新しければ-1を返します。
+#>
+function Compare-RpmPackageVersion {
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$Left,
+        [Parameter(Mandatory = $true)][pscustomobject]$Right
+    )
+
+    foreach ($PropertyName in @("Epoch", "Version", "Release")) {
+        $LeftValue = [string]$Left.$PropertyName
+        $RightValue = [string]$Right.$PropertyName
+        if ($PropertyName -eq "Epoch") {
+            if (-not $LeftValue) { $LeftValue = "0" }
+            if (-not $RightValue) { $RightValue = "0" }
+        }
+        $Result = Compare-RpmVersionString -Left $LeftValue -Right $RightValue
+        if ($Result -ne 0) {
+            return $Result
+        }
+    }
+    return 0
+}
+
+<#
+.SYNOPSIS
+RPM primary metadataから最新版packageとproviderの索引を作成します。
 .PARAMETER PrimaryMetadataPath
 primary.xml.gzを保存したlocal file pathです。
 .PARAMETER RepositoryBaseUrl
 package fileを取得するrepository rootのURLです。
 .PARAMETER Architecture
 取得対象architectureです。
-.PARAMETER CapabilityNames
-探索するpackage名またはcapability名のhashtableです。
-.PARAMETER MatchPackageNameOnly
-package名だけを探索対象にします。
 .OUTPUTS
-capability名をkey、package情報をvalueにしたhashtableを返します。
+package名とcapability名の索引を持つpscustomobjectを返します。
 #>
-function Find-RpmPackageMatches {
+function Read-RpmRepositoryIndex {
     param(
         [Parameter(Mandatory = $true)][string]$PrimaryMetadataPath,
         [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
-        [Parameter(Mandatory = $true)][string]$Architecture,
-        [Parameter(Mandatory = $true)][hashtable]$CapabilityNames,
-        [switch]$MatchPackageNameOnly
+        [Parameter(Mandatory = $true)][string]$Architecture
     )
 
-    $MatchesByCapability = @{}
-    if ($CapabilityNames.Count -eq 0) {
-        return $MatchesByCapability
-    }
+    $PackagesByName = @{}
 
     $InputStream = [System.IO.File]::OpenRead($PrimaryMetadataPath)
     try {
@@ -352,10 +497,7 @@ function Find-RpmPackageMatches {
 
                     $Package = ConvertFrom-RpmPackageElement `
                         -PackageReader $Reader `
-                        -RepositoryBaseUrl $RepositoryBaseUrl `
-                        -TargetNames $CapabilityNames `
-                        -MatchPackageNameOnly:$MatchPackageNameOnly
-                    $Reader.Skip()
+                        -RepositoryBaseUrl $RepositoryBaseUrl
                     if (-not $Package) {
                         continue
                     }
@@ -363,19 +505,9 @@ function Find-RpmPackageMatches {
                         continue
                     }
 
-                    if ($CapabilityNames.ContainsKey($Package.Name) -and -not $MatchesByCapability.ContainsKey($Package.Name)) {
-                        $MatchesByCapability[$Package.Name] = $Package
-                    }
-                    if (-not $MatchPackageNameOnly) {
-                        foreach ($Provide in $Package.Provides) {
-                            if ($CapabilityNames.ContainsKey($Provide) -and -not $MatchesByCapability.ContainsKey($Provide)) {
-                                $MatchesByCapability[$Provide] = $Package
-                            }
-                        }
-                    }
-
-                    if ($MatchesByCapability.Count -ge $CapabilityNames.Count) {
-                        break
+                    $CurrentPackage = $PackagesByName[$Package.Name]
+                    if (-not $CurrentPackage -or (Compare-RpmPackageVersion -Left $Package -Right $CurrentPackage) -gt 0) {
+                        $PackagesByName[$Package.Name] = $Package
                     }
                 }
             } finally {
@@ -388,6 +520,50 @@ function Find-RpmPackageMatches {
         $InputStream.Dispose()
     }
 
+    $PackagesByCapability = @{}
+    foreach ($Package in @($PackagesByName.Values | Sort-Object Name)) {
+        foreach ($Provide in $Package.Provides) {
+            if (-not $PackagesByCapability.ContainsKey($Provide)) {
+                $PackagesByCapability[$Provide] = $Package
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        PackagesByName = $PackagesByName
+        PackagesByCapability = $PackagesByCapability
+    }
+}
+
+<#
+.SYNOPSIS
+repository索引から指定package名またはcapabilityのproviderを探します。
+.PARAMETER RepositoryIndex
+package名とcapability名の索引です。
+.PARAMETER CapabilityNames
+探索するpackage名またはcapability名のhashtableです。
+.PARAMETER MatchPackageNameOnly
+package名だけを探索対象にします。
+.OUTPUTS
+capability名をkey、package情報をvalueにしたhashtableを返します。
+#>
+function Find-RpmPackageMatches {
+    param(
+        [Parameter(Mandatory = $true)][pscustomobject]$RepositoryIndex,
+        [Parameter(Mandatory = $true)][hashtable]$CapabilityNames,
+        [switch]$MatchPackageNameOnly
+    )
+
+    $MatchesByCapability = @{}
+    foreach ($CapabilityName in $CapabilityNames.Keys) {
+        $Package = $RepositoryIndex.PackagesByName[$CapabilityName]
+        if (-not $Package -and -not $MatchPackageNameOnly) {
+            $Package = $RepositoryIndex.PackagesByCapability[$CapabilityName]
+        }
+        if ($Package) {
+            $MatchesByCapability[$CapabilityName] = $Package
+        }
+    }
     return $MatchesByCapability
 }
 
@@ -450,9 +626,14 @@ function Save-RpmPackagesWithDependencies {
         $PrimaryUrl = Get-RpmPrimaryMetadataUrl -RepositoryBaseUrl $RepositoryBaseUrl
         $PrimaryMetadataFile = New-TemporaryFile
         Save-FileFromUrl -Url $PrimaryUrl -OutputPath $PrimaryMetadataFile.FullName
+        $RepositoryIndex = Read-RpmRepositoryIndex `
+            -PrimaryMetadataPath $PrimaryMetadataFile.FullName `
+            -RepositoryBaseUrl $RepositoryBaseUrl `
+            -Architecture $Architecture
         $Repositories += [pscustomobject]@{
             BaseUrl = $RepositoryBaseUrl
             PrimaryMetadataPath = $PrimaryMetadataFile.FullName
+            Index = $RepositoryIndex
         }
     }
 
@@ -480,14 +661,39 @@ function Save-RpmPackagesWithDependencies {
             $Matches = @{}
             foreach ($Repository in $Repositories) {
                 $RepositoryMatches = Find-RpmPackageMatches `
-                    -PrimaryMetadataPath $Repository.PrimaryMetadataPath `
-                    -RepositoryBaseUrl $Repository.BaseUrl `
-                    -Architecture $Architecture `
+                    -RepositoryIndex $Repository.Index `
                     -CapabilityNames $Batch `
                     -MatchPackageNameOnly
                 foreach ($CapabilityName in $RepositoryMatches.Keys) {
-                    if (-not $Matches.ContainsKey($CapabilityName)) {
+                    if (
+                        -not $Matches.ContainsKey($CapabilityName) -or
+                        (Compare-RpmPackageVersion -Left $RepositoryMatches[$CapabilityName] -Right $Matches[$CapabilityName]) -gt 0
+                    ) {
                         $Matches[$CapabilityName] = $RepositoryMatches[$CapabilityName]
+                    }
+                }
+            }
+
+            $UnresolvedCapabilities = @{}
+            foreach ($CapabilityName in $Batch.Keys) {
+                if (-not $Matches.ContainsKey($CapabilityName)) {
+                    $UnresolvedCapabilities[$CapabilityName] = $true
+                }
+            }
+            foreach ($Repository in $Repositories) {
+                $RepositoryMatches = Find-RpmPackageMatches `
+                    -RepositoryIndex $Repository.Index `
+                    -CapabilityNames $UnresolvedCapabilities
+                foreach ($CapabilityName in $RepositoryMatches.Keys) {
+                    $Candidate = $RepositoryMatches[$CapabilityName]
+                    if (
+                        -not $Matches.ContainsKey($CapabilityName) -or
+                        (
+                            $Candidate.Name -eq $Matches[$CapabilityName].Name -and
+                            (Compare-RpmPackageVersion -Left $Candidate -Right $Matches[$CapabilityName]) -gt 0
+                        )
+                    ) {
+                        $Matches[$CapabilityName] = $Candidate
                     }
                 }
             }
