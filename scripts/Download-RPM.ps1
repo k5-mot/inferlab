@@ -71,10 +71,7 @@ $Registries = @(
 )
 $Architecture = "x86_64"
 if ($env:DOWNLOAD_TEST) {
-    $Registries = @(
-        "https://download.docker.com/linux/centos/8/x86_64/stable/"
-    )
-    $Packages = @("docker-scan-plugin")
+    $Packages = @("podman")
 }
 
 if ($Packages.Count -eq 0) {
