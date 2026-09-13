@@ -4,7 +4,8 @@ if (Skip-DownloadTestIfCommandMissing -Command "npm") {
     exit 0
 }
 
-$OutputDir = New-DownloadTestDirectory -Name "npm-from-project"
+$OutputDir = Join-Path $PSScriptRoot "../../tests/.tmp/download-test-npm-from-project-$([guid]::NewGuid().ToString("N"))"
+New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 $ProjectDir = Join-Path $OutputDir "project"
 $UserCacheDir = Join-Path $OutputDir "user-cache"
 $PreviousCache = $env:NPM_CONFIG_CACHE
