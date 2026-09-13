@@ -165,7 +165,7 @@ for (const [packagePath, packageInfo] of Object.entries(lock.packages || {})) {
   }
 }
 '@
-    $ParserScript = Join-Path $ParserDirectory "npm-lock-parser-$([guid]::NewGuid().ToString("N")).js"
+    $ParserScript = Join-Path $ParserDirectory "npm-lock-parser-$([guid]::NewGuid().ToString("N")).cjs"
     try {
         $Code | Set-Content -LiteralPath $ParserScript -Encoding ascii
         $Specs = Invoke-NativeCommand -FilePath "node" -Arguments @($ParserScript, $LockFile, $Platform.Os, $Platform.Cpu)
@@ -205,17 +205,19 @@ $CacheDirectory = Join-Path $WorkDirectory "cache"
 $AllPackageSpecs = @()
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
+    '{ "private": true }' | Set-Content -LiteralPath (Join-Path $WorkDirectory "package.json") -Encoding ascii
     foreach ($Platform in $Platforms) {
         $PlatformWorkDirectory = Join-Path $WorkDirectory $Platform.Name
         New-Item -ItemType Directory -Path $PlatformWorkDirectory -Force | Out-Null
 
         Push-Location $PlatformWorkDirectory
         try {
-            Invoke-NativeCommand -FilePath "npm" -Arguments @("init", "-y", "--cache=$CacheDirectory") | Out-Null
+            '{ "private": true }' | Set-Content -LiteralPath "package.json" -Encoding ascii
             $InstallArguments = @(
                 "install",
                 "--package-lock-only",
                 "--ignore-scripts",
+                "--legacy-peer-deps",
                 "--registry=$($Registries[0])",
                 "--cache=$CacheDirectory",
                 "--os=$($Platform.Os)",

@@ -39,7 +39,7 @@ $Platforms = @(
     [pscustomobject]@{ Name = "windows"; Os = "win32"; Cpu = "x64" }
 )
 $Packages = @(
-    "@eslint/eslinrc",
+    "@eslint/eslintrc",
     "@fission-ai/openspec@1.7.0",
     "@pandacss/dev@^1.12.0",
     "@serendie/design-token@^1.4.6",
@@ -100,7 +100,12 @@ if ($env:DOWNLOAD_TEST) {
     $Platforms = @(
         [pscustomobject]@{ Name = "linux"; Os = "linux"; Cpu = "x64" }
     )
-    $Packages = @("is-number@6.0.0", "is-number@7.0.0")
+    $Packages = @(
+        "@types/react@18",
+        "@types/react-dom@19",
+        "is-number@6.0.0",
+        "is-number@7.0.0"
+    )
 }
 
 <#
@@ -188,76 +193,54 @@ function ConvertTo-NpmInstallSpecs {
 
 <#
 .SYNOPSIS
-npm packageのOSまたはCPU selectorがtargetに一致するか判定します。
-.PARAMETER Selectors
-package-lock.jsonに記録されたselectorです。
-.PARAMETER Target
-判定対象のOSまたはCPUです。
-.OUTPUTS
-targetへ適用する場合はtrueを返します。
-#>
-function Test-NpmTargetSelector {
-    param(
-        [object]$Selectors,
-        [Parameter(Mandatory = $true)][string]$Target
-    )
-
-    if ($null -eq $Selectors) {
-        return $true
-    }
-
-    $Values = @($Selectors)
-    if ($Values -contains "!$Target") {
-        return $false
-    }
-    $PositiveValues = @($Values | Where-Object { -not ([string]$_).StartsWith("!") })
-    return $PositiveValues.Count -eq 0 -or $PositiveValues -contains $Target
-}
-
-<#
-.SYNOPSIS
 package-lock.jsonからtarget platform向けpackage specを取得します。
 .PARAMETER LockFile
 package-lock.jsonのpathです。
 .PARAMETER Platform
 target platform情報です。
+.PARAMETER ParserDirectory
+一時parserを作成するdirectoryです。
 .OUTPUTS
 package URLまたは`name@version`形式のspec配列を返します。
 #>
 function Get-PackageSpecsFromPackageLock {
     param(
         [Parameter(Mandatory = $true)][string]$LockFile,
-        [Parameter(Mandatory = $true)][pscustomobject]$Platform
+        [Parameter(Mandatory = $true)][pscustomobject]$Platform,
+        [Parameter(Mandatory = $true)][string]$ParserDirectory
     )
 
-    $Lock = Get-Content -Raw -LiteralPath $LockFile | ConvertFrom-Json
-    $PackagesProperty = $Lock.PSObject.Properties["packages"]
-    if (-not $PackagesProperty) {
-        return @()
+    $Code = @'
+const fs = require("fs");
+const lock = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const os = process.argv[3];
+const cpu = process.argv[4];
+function selectorMatches(values, target) {
+  if (!values) return true;
+  const selectors = Array.isArray(values) ? values : [values];
+  if (selectors.includes(`!${target}`)) return false;
+  const positives = selectors.filter((value) => !String(value).startsWith("!"));
+  return positives.length === 0 || positives.includes(target);
+}
+for (const [packagePath, packageInfo] of Object.entries(lock.packages || {})) {
+  if (!packagePath || !packageInfo.version) continue;
+  if (!selectorMatches(packageInfo.os, os)) continue;
+  if (!selectorMatches(packageInfo.cpu, cpu)) continue;
+  if (packageInfo.resolved && /^https?:/.test(packageInfo.resolved)) {
+    console.log(packageInfo.resolved);
+  } else {
+    const name = packagePath.replace(/^.*node_modules\//, "");
+    console.log(`${name}@${packageInfo.version}`);
+  }
+}
+'@
+    $ParserScript = Join-Path $ParserDirectory "npm-lock-parser-$([guid]::NewGuid().ToString("N")).cjs"
+    try {
+        $Code | Set-Content -LiteralPath $ParserScript -Encoding ascii
+        $Specs = Invoke-NativeCommand -FilePath "node" -Arguments @($ParserScript, $LockFile, $Platform.Os, $Platform.Cpu)
     }
-
-    $Specs = @()
-    foreach ($PackageProperty in $PackagesProperty.Value.PSObject.Properties) {
-        $PackagePath = $PackageProperty.Name
-        $PackageInfo = $PackageProperty.Value
-        if (-not $PackagePath -or -not $PackageInfo.version) {
-            continue
-        }
-        if (-not (Test-NpmTargetSelector -Selectors $PackageInfo.os -Target $Platform.Os)) {
-            continue
-        }
-        if (-not (Test-NpmTargetSelector -Selectors $PackageInfo.cpu -Target $Platform.Cpu)) {
-            continue
-        }
-
-        $Resolved = [string]$PackageInfo.resolved
-        if ($Resolved -match "^https?:") {
-            $Specs += $Resolved
-            continue
-        }
-
-        $Name = $PackagePath -replace "^.*node_modules/", ""
-        $Specs += "$Name@$($PackageInfo.version)"
+    finally {
+        Remove-Item -LiteralPath $ParserScript -Force -ErrorAction SilentlyContinue
     }
 
     return @($Specs | Sort-Object -Unique)
@@ -281,17 +264,19 @@ $CacheDirectory = Join-Path $WorkDirectory "cache"
 $AllPackageSpecs = @()
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
+    '{ "private": true }' | Set-Content -LiteralPath (Join-Path $WorkDirectory "package.json") -Encoding ascii
     foreach ($Platform in $Platforms) {
         $PlatformWorkDirectory = Join-Path $WorkDirectory $Platform.Name
         New-Item -ItemType Directory -Path $PlatformWorkDirectory -Force | Out-Null
 
         Push-Location $PlatformWorkDirectory
         try {
-            Invoke-NativeCommand -FilePath "npm" -Arguments @("init", "-y") | Out-Null
+            '{ "private": true }' | Set-Content -LiteralPath "package.json" -Encoding ascii
             $InstallArguments = @(
                 "install",
                 "--package-lock-only",
                 "--ignore-scripts",
+                "--legacy-peer-deps",
                 "--registry=$($Registries[0])",
                 "--cache=$CacheDirectory",
                 "--os=$($Platform.Os)",
@@ -299,7 +284,10 @@ try {
             ) + $InstallPackages
             Write-Host "Resolve npm packages: platform=$($Platform.Name) packages=$($Packages.Count)"
             Invoke-NativeCommand -FilePath "npm" -Arguments $InstallArguments
-            $AllPackageSpecs += Get-PackageSpecsFromPackageLock -LockFile (Join-Path $PlatformWorkDirectory "package-lock.json") -Platform $Platform
+            $AllPackageSpecs += Get-PackageSpecsFromPackageLock `
+                -LockFile (Join-Path $PlatformWorkDirectory "package-lock.json") `
+                -Platform $Platform `
+                -ParserDirectory $WorkDirectory
         } finally {
             Pop-Location
         }
