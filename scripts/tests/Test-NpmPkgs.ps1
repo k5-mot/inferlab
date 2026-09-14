@@ -15,7 +15,8 @@ try {
         "types-react-18.*.tgz",
         "types-react-dom-19.*.tgz",
         "is-number-6.0.0.tgz",
-        "is-number-7.0.0.tgz"
+        "is-number-7.0.0.tgz",
+        "tailwindcss-4.*.tgz"
     )) {
         Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "npm") -Pattern $Pattern
     }

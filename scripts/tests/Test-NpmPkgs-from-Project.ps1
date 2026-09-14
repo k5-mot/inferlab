@@ -15,7 +15,7 @@ try {
 {
   "private": true,
   "dependencies": {
-    "is-number": "7.0.0"
+    "tailwindcss": "4"
   }
 }
 '@ | Set-Content -LiteralPath (Join-Path $ProjectDir "package.json") -Encoding ascii
@@ -31,7 +31,7 @@ try {
     finally {
         $env:DOWNLOAD_TEST = $PreviousValue
     }
-    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "npm") -Pattern "*.tgz"
+    Assert-DownloadTestArtifacts -Directory (Join-Path $OutputDir "npm") -Pattern "tailwindcss-4.*.tgz"
     if (Test-Path -LiteralPath $UserCacheDir) {
         throw "user npm cacheが使用されました: $UserCacheDir"
     }

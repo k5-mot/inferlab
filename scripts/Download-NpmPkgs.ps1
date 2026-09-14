@@ -104,7 +104,8 @@ if ($env:DOWNLOAD_TEST) {
         "@types/react@18",
         "@types/react-dom@19",
         "is-number@6.0.0",
-        "is-number@7.0.0"
+        "is-number@7.0.0",
+        "tailwindcss@4"
     )
 }
 
@@ -296,7 +297,7 @@ try {
     Push-Location $WorkDirectory
     try {
         foreach ($PackageSpec in @($AllPackageSpecs | Sort-Object -Unique)) {
-            Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $PackageSpec, "--pack-destination", $OutputDir, "--registry=$($Registries[0])", "--cache=$CacheDirectory", "--silent")
+            Invoke-NativeCommand -FilePath "npm" -Arguments @("pack", $PackageSpec, "--pack-destination", $OutputDir, "--registry=$($Registries[0])", "--cache=$CacheDirectory", "--allow-remote=all", "--silent")
         }
     } finally {
         Pop-Location
