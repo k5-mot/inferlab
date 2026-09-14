@@ -26,19 +26,24 @@ OpenWebUIへfileをuploadし、Doclingによる文書変換と画像説明を実
 - temperatureを`0.0`へ固定し、再生成による変動を抑えた。
 - full設定とslim設定を分け、画像説明が不要な切り分け時に設定を変更できる構成へ整理した。
 - OpenWebUI起動時にDocling parameterをmultipart送信用へ正規化するscriptを維持した。
+- 100ページを超えるPDFを一時PDFへ分割し、Doclingへ逐次送信するOpen WebUI patchを追加した。
+- 分割後のMarkdownを元PDFのfile IDへ集約し、ページmetadataを元PDFの通し番号として維持した。
 
 ## 現在の運用
 
 通常運用ではComposeで`docling_params_slim.json`をmountし、画像説明を無効にした設定を使用する。画像説明を検証する場合だけ`docling_params_full.json`へ切り替える。再発時は機能を直ちに削除せず、次の順序で切り分ける。
 
+PDFの分割ページ数は`.env`の`DOCLING_PDF_BATCH_PAGES`で指定する。既定値は`100`で、画像が多いPDFでは値を小さくする。`0`は分割を無効化するため、障害の切り分け以外では使用しない。
+
 1. hostのOOM、swap、PSI、Docker resourceを採取する。
-2. Docling、OpenWebUI、LiteLLM、model backendのlog時刻を比較する。
-3. resource pressureが高い場合は、Doclingの同時処理とmodel backend負荷を優先して確認する。
-4. 画像説明が必要な検証期間だけfull設定を使用し、通常構成へ戻す。
+2. Open WebUIの`Docling PDF batch` logで処理中のページ範囲を確認する。
+3. Docling、OpenWebUI、LiteLLM、model backendのlog時刻を比較する。
+4. resource pressureが高い場合は、PDFの分割ページ数とmodel backend負荷を優先して確認する。
+5. 画像説明が必要な検証期間だけfull設定を使用し、通常構成へ戻す。
 
 ## 残存risk
 
-画像数が多い文書では、`concurrency: 1`でも処理時間が長くなり、model backendのmemory使用量が継続する。TEI、Ollama、Doclingを同時に高負荷にする操作はhost resourceの余力を確認してから実施する。
+画像数が多い文書では、100ページ単位でも処理時間が長くなり、model backendのmemory使用量が継続する。分割途中で失敗した場合は元PDF全体が失敗となり、OIKBのretryでは先頭の分割から再処理する。TEI、Ollama、Doclingを同時に高負荷にする操作はhost resourceの余力を確認してから実施する。
 
 ## References
 

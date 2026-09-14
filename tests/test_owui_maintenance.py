@@ -9,7 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, call, patch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1078,6 +1078,138 @@ class Client:
 
         self.assertIn("            kb_id: str,", patch_source)
         self.assertNotIn("upload_kb_id", patch_source)
+
+
+class OpenWebUiDoclingPatchTest(unittest.TestCase):
+    """Open WebUIのDocling向けPDF分割patchを検証する。"""
+
+    def test_large_pdf_is_sent_in_page_batches(self) -> None:
+        """1001ページのPDFを100ページ単位で逐次送信する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        patch_module = load_script(
+            "patch_docling_pdf_batches",
+            "20-owui/open-webui/patch-docling-pdf-batches.py",
+        )
+        source = """class DoclingLoader:
+    def load(self):
+        requests.post(
+            f'{self.url}/v1/convert/file',
+            data={'md_page_break_placeholder': '\\f'},
+        )
+
+
+class Loader:
+    pass
+"""
+        patched = patch_module.patch_source(source)
+
+        requests = Mock()
+
+        def write_pdf(stream: object) -> None:
+            """分割PDFを表すbytesを書き込む。
+
+            Args:
+                stream: 書き込み先stream。
+
+            Returns:
+                なし。
+            """
+            stream.write(b"%PDF-batched")
+
+        def post_docling(url: str, **kwargs: object) -> Mock:
+            """分割file名からDocling responseを生成する。
+
+            Args:
+                url: Docling endpoint URL。
+                **kwargs: multipart request引数。
+
+            Returns:
+                分割ページ数に対応したDocling response。
+            """
+            self.assertEqual(url, "http://docling/v1/convert/file")
+            file_name, stream, content_type = kwargs["files"]["files"]
+            self.assertTrue(stream.read())
+            self.assertEqual(content_type, "application/pdf")
+            page_range = file_name.rsplit("__pages_", 1)[1].removesuffix(".pdf")
+            start_text, end_text = page_range.split("-")
+            response = Mock(ok=True, reason="OK", text="")
+            response.json.return_value = {
+                "document": {
+                    "md_content": "\f".join(
+                        f"page-{page}"
+                        for page in range(int(start_text), int(end_text) + 1)
+                    )
+                }
+            }
+            return response
+
+        requests.post.side_effect = post_docling
+        namespace = {
+            "__name__": "patched_open_webui_loader",
+            "AIOHTTP_CLIENT_SESSION_SSL": False,
+            "Document": SimpleNamespace,
+            "log": Mock(),
+            "os": os,
+            "requests": requests,
+        }
+        writer = Mock()
+        writer.write.side_effect = write_pdf
+        fake_pypdf = ModuleType("pypdf")
+        fake_pypdf.PdfReader = Mock(
+            return_value=SimpleNamespace(pages=list(range(1001)))
+        )
+        fake_pypdf.PdfWriter = Mock(return_value=writer)
+
+        with (
+            patch.dict(sys.modules, {"pypdf": fake_pypdf}),
+            patch.dict(os.environ, {"DOCLING_PDF_BATCH_PAGES": "100"}),
+            tempfile.NamedTemporaryFile(suffix=".pdf") as pdf_file,
+        ):
+            pdf_file.write(b"%PDF-original")
+            pdf_file.flush()
+            exec(patched, namespace)
+            loader = namespace["DoclingLoader"](
+                "http://docling",
+                file_path=pdf_file.name,
+                mime_type="application/pdf",
+            )
+            documents = loader.load()
+
+        self.assertEqual(requests.post.call_count, 11)
+        self.assertEqual(fake_pypdf.PdfWriter.call_count, 11)
+        self.assertEqual(
+            [item.args[0] for item in writer.add_page.call_args_list],
+            list(range(1001)),
+        )
+        self.assertEqual(len(documents), 1001)
+        self.assertEqual(
+            [document.metadata["page"] for document in documents],
+            list(range(1001)),
+        )
+        self.assertIn("'page_range' not in self.params", patched)
+        self.assertEqual(patch_module.patch_source(patched), patched)
+        entrypoint = (
+            REPO_ROOT / "20-owui/open-webui/entrypoint_patch.sh"
+        ).read_text(encoding="utf-8")
+        compose = (REPO_ROOT / "20-owui/docker-compose.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("patch-docling-pdf-batches.py", entrypoint)
+        self.assertIn(
+            "DOCLING_PDF_BATCH_PAGES: ${DOCLING_PDF_BATCH_PAGES:-100}",
+            compose,
+        )
+        self.assertIn(
+            "./open-webui/patch-docling-pdf-batches.py:"
+            "/run/scripts/patch-docling-pdf-batches.py:ro",
+            compose,
+        )
 
 
 class CliHelpTest(unittest.TestCase):

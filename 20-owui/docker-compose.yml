@@ -216,6 +216,7 @@ services:
       CONTENT_EXTRACTION_ENGINE: docling
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
+      DOCLING_PDF_BATCH_PAGES: ${DOCLING_PDF_BATCH_PAGES:-100}
       DOCLING_PARAMS: >-
         {
           "to_formats": [ "md" ],
@@ -250,7 +251,7 @@ services:
       - ./open-webui/docling_params_slim.json:/run/config/docling_params.json:ro
       - ./open-webui/entrypoint_patch.sh:/run/scripts/entrypoint_patch.sh:ro
       - ./open-webui/export_docling_params.py:/run/scripts/export_docling_params.py:ro
-      - ./open-webui/export_docling_params.py:/run/scripts/export_docling_params.py:ro
+      - ./open-webui/patch-docling-pdf-batches.py:/run/scripts/patch-docling-pdf-batches.py:ro
       - /srv/hfrepo:/models:ro
     networks:
       - internal-nw

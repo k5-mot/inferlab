@@ -8,7 +8,7 @@ Open WebUI、Open Terminal、mcpo、SearXNG、OIKB、OIKB用RustFSをまとめ�
 
 | 対象 | 初期化内容 |
 | --- | --- |
-| `open-webui` | `open-webui/entrypoint_patch.sh`でDocling向けJSON設定をmultipart form用の文字列へ変換し、LibreTranslateのOpenAPI toolを登録してからOpen WebUIを起動する。 |
+| `open-webui` | `open-webui/entrypoint_patch.sh`でDocling向けJSON設定をmultipart form用へ変換し、大容量PDFの分割patchを適用してからOpen WebUIを起動する。 |
 | `mcpo` | Docker socket経由でllmwiki containerのstdio MCPを起動し、OpenAPIとしてOpen WebUIへ公開する。 |
 | `oikb-rustfs-init` | Compose内のinit commandでRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
 | `oikb` | APIとsource状態を公開する。内蔵schedulerは無効で、同期は外部scriptが逐次実行する。 |
@@ -18,6 +18,12 @@ Open WebUIのKeycloak連携は、`OAUTH_CLIENT_SECRET`とKeycloak側`open-webui`
 LibreTranslate連携では、`TOOL_SERVER_CONNECTIONS`へ`http://libretranslate:5000/translate`の最小OpenAPI 3仕様を登録する。`owui` profileを起動するとLibreTranslateも起動し、Open WebUIのtool一覧から翻訳APIを利用できる。APIの直接利用方法は[`13-translate/README.md`](../13-translate/README.md)を参照する。
 
 llmwiki連携では、`mcpo`がDocker socketへアクセスして`${STACK_NAME}-llmwiki`内でMCPプロセスを起動する。Docker socketへアクセスできるcontainerはホスト上のDockerを操作できるため、信頼できる設定とイメージだけを使用すること。
+
+## Docling向けPDF分割
+
+Open WebUIは、`DOCLING_PDF_BATCH_PAGES`を超えるPDFを一時PDFへ分割し、Doclingへ1件ずつ送信する。既定値は100ページで、`0`を指定すると分割を無効化する。Open WebUIとOIKBでは元PDFを1つのfileとして維持し、分割fileはDoclingへのrequestにだけ使用する。
+
+Open WebUIのlogには、各分割の元file名とページ範囲を`Docling PDF batch`として記録する。明示的な`page_range`をDocling parameterへ設定した場合は、その指定を優先して自動分割しない。
 
 ## 起動
 

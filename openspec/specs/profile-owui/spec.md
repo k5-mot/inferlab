@@ -57,3 +57,20 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 - **WHEN** OIKBが成功以外で終了するか、Open WebUIのfile処理、link、件数照合、timeout判定またはfile retryが失敗する
 - **THEN** 同じ周期の後続sourceを開始しない
 - **THEN** 失敗したsourceと判定理由をlogへ記録する
+
+### Requirement: Docling向け大容量PDF分割
+
+`owui` profileは、設定したページ数を超えるPDFをOpen WebUI内で一時PDFへ分割し、各分割をDoclingへ逐次送信するものとする（MUST）。Open WebUIとOIKBでは元PDFを1つのfileとして扱い、分割後も元PDF上のページ順序を維持しなければならない（MUST）。
+
+#### Scenario: 大容量PDFを取り込む
+
+- **WHEN** 利用者またはOIKBが設定したページ数を超えるPDFをOpen WebUIへuploadする
+- **THEN** Open WebUIは設定ページ数以下の一時PDFをDoclingへ1件ずつ送信する
+- **THEN** 変換結果を元PDFのfile IDへ集約し、ページmetadataを元PDF上の順序で記録する
+- **THEN** 一時PDFをOpen WebUIまたはOIKBのfileとして永続化しない
+
+#### Scenario: 分割処理が失敗する
+
+- **WHEN** PDFの読み込み、分割、またはいずれかのDocling変換が失敗する
+- **THEN** 元PDFのfile処理を`failed`として扱う
+- **THEN** 不完全な分割結果をKnowledge Baseへlinkしない
