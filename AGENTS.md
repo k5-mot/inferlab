@@ -5,6 +5,7 @@
 - AI agents MUST respond to users in Japanese.
 - Contributors and AI agents MUST follow the [coding rules](docs/rules/CODING_RULES.md) when changing code.
 - Contributors and AI agents MUST follow the [contribution rules](docs/rules/CONTRIBUTING.md) when working with branches, commits, or tags.
+- Contributors and AI agents MUST run Docker Compose commands from the repository root and specify every applicable profile with `--profile`.
 - If a directory contains another `AGENTS.md`, its more specific rules MUST take precedence within that directory.
 
 ## Documentation Rules
