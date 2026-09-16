@@ -8,7 +8,7 @@
 - ダウンロード元の`$Registries`配列と対象packageの`$Packages`配列が定義されている。
 - 出力先directoryが`scripts/README.md`の構成と一致する。
 - すべてのfunctionに目的、parameter、return valueを説明するdocumentation commentがある。
-- PyPI向けscriptにPython 3.12から3.15と8 platformが定義されている。
+- PyPI向けscriptにPython 3.10から3.14と8 platformが定義されている。
 
 ## 実行手順
 

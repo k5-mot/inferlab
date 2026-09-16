@@ -6,3 +6,8 @@ $TestParameters = @{
     ExpectedOutputDirectory = "rpm"
 }
 Assert-DownloadScript @TestParameters
+
+$Source = Get-Content -LiteralPath $TestParameters.ScriptPath -Raw
+if ($Source -notmatch [regex]::Escape('DirectoryName = "oracle-linux-9"')) {
+    throw "Download-RPM.ps1がdistribution別directoryを定義していません。"
+}

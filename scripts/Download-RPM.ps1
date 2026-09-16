@@ -3,8 +3,8 @@
 Linux x86_64向けのRPM packageを取得します。
 
 .DESCRIPTION
-Rocky Linux 9互換repositoryから、指定したRPM packageと依存packageを取得します。
-既定ではBaseOS、AppStream、CRB、EPELを参照し、`/srv/12-registry/rpm/`へ保存します。
+Oracle Linux 9 repositoryから、指定したRPM packageと依存packageを取得します。
+既定ではBaseOS、AppStream、CodeReady Builder、EPELを参照し、`rpm/oracle-linux-9/`へ保存します。
 
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。
@@ -53,27 +53,28 @@ $Packages = @(
         "podman-compose"
 )
 $Registries = @(
-        ### Oracle Linux 9
-        "https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64/",
-        "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/",
-        "https://yum.oracle.com/repo/OracleLinux/OL9/codeready/builder/x86_64/",
-        "https://yum.oracle.com/repo/OracleLinux/OL9/developer/EPEL/x86_64/"
-        ### Rocky Linux 9
-        # "https://dl.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-        # "https://dl.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/",
-        # "https://dl.rockylinux.org/pub/rocky/9/CRB/x86_64/os/",
-        # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
-        ### RedHat Enterprise Linux 9
-        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os/",
-        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/appstream/os/",
-        # "https://cdn.redhat.com/content/dist/rhel9/9/x86_64/codeready-builder/os/",
-        # "https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/"
+    [pscustomobject]@{
+        Name = "Oracle Linux 9"
+        DirectoryName = "oracle-linux-9"
+        BaseUrls = @(
+            "https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64/",
+            "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/",
+            "https://yum.oracle.com/repo/OracleLinux/OL9/codeready/builder/x86_64/",
+            "https://yum.oracle.com/repo/OracleLinux/OL9/developer/EPEL/x86_64/"
+        )
+    }
 )
 if ($env:RPM_REPOSITORY_BASE_URLS) {
     $Registries = @(
-        $env:RPM_REPOSITORY_BASE_URLS -split "[;\r\n]+" |
-            Where-Object { $_ } |
-            ForEach-Object { $_.TrimEnd("/") + "/" }
+        [pscustomobject]@{
+            Name = "Oracle Linux 9 test repository"
+            DirectoryName = "oracle-linux-9"
+            BaseUrls = @(
+                $env:RPM_REPOSITORY_BASE_URLS -split "[;\r\n]+" |
+                    Where-Object { $_ } |
+                    ForEach-Object { $_.TrimEnd("/") + "/" }
+            )
+        }
     )
 }
 $Architecture = "x86_64"
@@ -772,14 +773,19 @@ function Assert-AssetFilesExist {
     }
 }
 
-$DestinationDirectory = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "rpm"
-New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
+$DestinationRoot = Join-Path ([System.IO.Path]::GetFullPath($OutputDir)) "rpm"
+New-Item -ItemType Directory -Path $DestinationRoot -Force | Out-Null
 
 Write-Host "Download RPM packages: $($Packages -join ', ')"
-Save-RpmPackagesWithDependencies `
-    -PackageNames $Packages `
-    -RepositoryBaseUrls $Registries `
-    -Architecture $Architecture `
-    -OutputDirectory $DestinationDirectory
+foreach ($Registry in $Registries) {
+    $DestinationDirectory = Join-Path $DestinationRoot $Registry.DirectoryName
+    New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
+    Write-Host "  Repository: $($Registry.Name)"
+    Save-RpmPackagesWithDependencies `
+        -PackageNames $Packages `
+        -RepositoryBaseUrls $Registry.BaseUrls `
+        -Architecture $Architecture `
+        -OutputDirectory $DestinationDirectory
 
-Assert-AssetFilesExist -Directory $DestinationDirectory -Pattern "*.rpm" -Description "RPM"
+    Assert-AssetFilesExist -Directory $DestinationDirectory -Pattern "*.rpm" -Description $Registry.Name
+}

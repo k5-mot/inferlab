@@ -4,7 +4,7 @@
 
 .DESCRIPTION
 `pyproject.toml`がある場合は`uv export`で`requirements.txt`を生成し、無い場合は既存の`requirements.txt`を使用します。
-Python 3.12から3.15のany、Windows、Linux向けwheelを取得し、pypiserverへ配置できるwheelhouseを作成します。
+Python 3.10から3.14のany、Windows、Linux向けwheelを取得し、pypiserverへ配置できるwheelhouseを作成します。
 
 .PARAMETER OutputDir
 取得したwheelを保存するdirectoryです。
@@ -50,7 +50,7 @@ if (-not $ProjectDir) {
 
 $ErrorActionPreference = "Stop"
 $OutputRoot = [System.IO.Path]::GetFullPath($OutputDir)
-$PythonVersions = @("3.12", "3.13", "3.14", "3.15")
+$PythonVersions = @("3.10", "3.11", "3.12", "3.13", "3.14")
 $Registries = @(
     "https://pypi.org/simple",
     "https://download.pytorch.org/whl/cpu",

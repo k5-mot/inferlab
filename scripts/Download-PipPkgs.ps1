@@ -32,7 +32,7 @@ if (-not $OutputDir) {
 
 $ErrorActionPreference = "Stop"
 $OutputRoot = [System.IO.Path]::GetFullPath($OutputDir)
-$PythonVersions = @("3.12", "3.13", "3.14", "3.15")
+$PythonVersions = @("3.10", "3.11", "3.12", "3.13", "3.14")
 $Registries = @(
     "https://pypi.org/simple",
     "https://download.pytorch.org/whl/cpu",
@@ -121,7 +121,7 @@ if ($env:DOWNLOAD_TEST) {
     $PlatformTargets = @(
         [pscustomobject]@{ Group = "any"; Platform = "any"; Implementation = "py"; Abis = @("none") }
     )
-    $Packages = @("six==1.16.0")
+    $Packages = @("chardet")
 }
 
 <#

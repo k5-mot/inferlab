@@ -74,7 +74,7 @@ $($PackageXml -join "")
 
     $env:RPM_REPOSITORY_BASE_URLS = ([System.Uri]::new($RepositoryDirectory.TrimEnd("\") + "\")).AbsoluteUri
     Invoke-DownloadTestScript -ScriptName "Download-RPM.ps1" -OutputDir $OutputDir
-    $RpmDirectory = Join-Path $OutputDir "rpm"
+    $RpmDirectory = Join-Path $OutputDir "rpm/oracle-linux-9"
     foreach ($Pattern in @(
         "podman-5.8.2-2.el9.x86_64.rpm",
         "iptables-nft-1.8.10-1.el9.x86_64.rpm",

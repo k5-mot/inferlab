@@ -77,6 +77,11 @@ scripts/
 │
 ├── Download-PipPkgs-from-Project.ps1
 ├── Download-NpmPkgs-from-Project.ps1
+├── airgap-docker/
+│  ├── Dockerfile.ubuntu22.04
+│  ├── Dockerfile.node20-alpine
+│  ├── compose.yaml
+│  └── README.md
 ├── Prepare-Offline.ps1
 ├── install-offline.sh
 ├── install-system-packages.sh
@@ -207,12 +212,17 @@ scripts/
 │  └── cl-nagoya--ruri-v3-reranker-310m
 │
 ├── rpm/            # Download-RPM.ps1
-│  ├── *.rpm
-│  └── ...
+│  └── oracle-linux-9/
+│     ├── *.rpm
+│     └── ...
 │
 ├── deb/            # Download-DEB.ps1
-│  ├── *.deb
-│  └── ...
+│  ├── debian-13/
+│  │  └── *.deb
+│  ├── ubuntu-24.04/
+│  │  └── *.deb
+│  └── ubuntu-22.04/
+│     └── *.deb
 │
 ├── vscode/         # Download-VSIX.ps1
 │  ├── *.vsix
@@ -253,9 +263,15 @@ scripts/
 - Hugging Faceのcacheは`OutputDir/.hf-cache`へ作成し、user profileのcacheを使用しない。
 
 ### Download-RPM.ps1
+
+- RPM packageはdistribution別directoryへ保存する。
+
 ### Download-DEB.ps1
 
 - Packages metadataの一時fileは`OutputDir`と同じvolumeへ作成し、user profileの一時directoryを使用しない。
+- DEB packageはdistribution別directoryへ保存する。
+- Debianではmain、Ubuntuではrelease、updates、securityの各repositoryを参照し、同名packageはDebian version順で最新を選択する。
+- virtual packageは`Provides`からproviderを解決する。
 
 ### Download-VSIX.ps1
 ### Download-DockerImages.ps1
@@ -271,10 +287,11 @@ scripts/
 - pip cacheを無効化し、一時directoryは`OutputDir`と同じvolumeへ作成する.
 - 以下の組み合わせのパッケージをダウンロードする.
   - PythonVersion；
+    - 3.10
+    - 3.11
     - 3.12
     - 3.13
     - 3.14
-    - 3.15
   - Platform；
     - any
     - windows：
