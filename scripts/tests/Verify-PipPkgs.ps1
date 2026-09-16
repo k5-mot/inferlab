@@ -3,6 +3,7 @@
 $TestParameters = @{
     ScriptPath = Join-Path $PSScriptRoot "../Download-PipPkgs.ps1"
     ExpectedParameters = @("OutputDir", "Help")
+    ExpectedOutputDirectory = "pypi"
 }
 Assert-DownloadScript @TestParameters
 
@@ -22,4 +23,10 @@ foreach ($PythonVersion in @("3.10", "3.11", "3.12", "3.13", "3.14")) {
 }
 if ($Source -match [regex]::Escape('"3.15"')) {
     throw "対象外のPython version '3.15' が定義されています。"
+}
+if ($Source -notmatch [regex]::Escape('"stopwordsiso"')) {
+    throw "PyPI package 'stopwordsiso' が定義されていません。"
+}
+if ($Source -match [regex]::Escape('"stopwordiso"')) {
+    throw "存在しないPyPI package 'stopwordiso' が定義されています。"
 }

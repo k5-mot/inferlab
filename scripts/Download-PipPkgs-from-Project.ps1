@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
-対象project directoryのPython依存からPyPI wheelhouseを作成します。
+対象project directoryのPython依存からPyPI package archiveを作成します。
 
 .DESCRIPTION
 `pyproject.toml`がある場合は`uv export`で`requirements.txt`を生成し、無い場合は既存の`requirements.txt`を使用します。
-Python 3.10から3.14のany、Windows、Linux向けwheelを取得し、pypiserverへ配置できるwheelhouseを作成します。
+Python 3.10から3.14のany、Windows、Linux向けwheelを取得し、pypiserverへ配置できるpackage archiveを作成します。
 
 .PARAMETER OutputDir
 取得したwheelを保存するdirectoryです。
@@ -18,12 +18,12 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\scripts\Download-PipPkgs-from-Project.ps1 -ProjectDir C:\src\project -OutputDir C:\assets
 
-指定したproject directoryのPython依存からregistry投入用wheelhouseを作成します。
+指定したproject directoryのPython依存からregistry投入用package archiveを作成します。
 
 .EXAMPLE
 .\scripts\Download-PipPkgs-from-Project.ps1 -ProjectDir C:\src\private-chat\api -OutputDir C:\assets
 
-指定したproject directoryのPython依存からregistry投入用wheelhouseを作成します。
+指定したproject directoryのPython依存からregistry投入用package archiveを作成します。
 
 .NOTES
 対象project directoryは変更しません。作業fileはOutputDirと同じvolumeへ生成し、pip cacheを使用せずにpackage archiveを作成または上書きします。
@@ -190,7 +190,7 @@ function Get-RequirementSpecs {
             continue
         }
         if ($Trimmed.StartsWith("-")) {
-            throw "requirements option is not supported in generated wheelhouse input: $Trimmed"
+            throw "requirements option is not supported in generated PyPI input: $Trimmed"
         }
         $Specs += $Trimmed
     }

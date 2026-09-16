@@ -102,7 +102,7 @@ $Packages = @(
     "slowapi",
     "sqlalchemy>=2.0.36",
     "starlette==1.6.0",
-    "stopwordiso",
+    "stopwordsiso",
     "torch>=2.2.2,<3.0.0",
     "torchvision>=0.17.2,<1.0.0",
     "typing-extensions==4.16.0",

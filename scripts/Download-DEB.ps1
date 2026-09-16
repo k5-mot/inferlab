@@ -5,7 +5,7 @@ Debian 13、Ubuntu 24.04 LTS、Ubuntu 22.04 LTS x86_64向けのdeb packageを取
 .DESCRIPTION
 DebianのmainとUbuntuのrelease、updates、security repositoryから、指定したdeb packageと依存packageを取得します。
 
-既定では`/srv/12-registry/deb/`へ保存します。
+`OutputDir/deb/`へdistribution別に保存します。
 
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。

@@ -27,7 +27,7 @@ PowerShell、Python 3、pipを導入した端末でrepository rootから実行�
 # 署名付きDify pluginを取得する。
 .\scripts\Download-Difypkg.ps1 -OutputDir /srv
 
-# script内に固定したPython依存をPython 3.12から3.15の対象platform向けに取得する。
+# script内に固定したPython依存をPython 3.10から3.14の対象platform向けに取得する。
 .\scripts\Download-PipPkgs.ps1 -OutputDir /srv
 
 # Dify plugin packageのchecksumを再確認する。
@@ -42,7 +42,7 @@ Get-ChildItem /srv/pypi/*.whl | Measure-Object
 - `langgenius-openai_api_compatible-0.0.64.difypkg`のSHA-256が`53c6b590f99ed0a9e8d8dcb435afc3700826fd1ac1493d7e255916fabc6679d2`になる。
 - `/srv/dify/SHA256SUMS`とplugin packageが作成される。
 - `/srv/pypi/`に依存wheelが作成される。
-- Python 3.12、3.13、3.14、3.15について8 platformのdownloadが試行される。
+- Python 3.10、3.11、3.12、3.13、3.14について8 platformのdownloadが試行される。
 - `pip download`がsource distributionへfallbackせず完了する。
 
 失敗条件:
