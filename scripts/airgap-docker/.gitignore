@@ -1,0 +1,6 @@
+backend/deb/*
+backend/pypi/*
+frontend/npm/*
+!backend/deb/.gitkeep
+!backend/pypi/.gitkeep
+!frontend/npm/.gitkeep

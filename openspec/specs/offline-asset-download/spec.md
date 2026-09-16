@@ -23,7 +23,7 @@ user profileが容量制限付きnetwork driveである環境でも、事前取�
 #### Scenario: user profileのpip cacheが使用できない
 
 - **WHEN** 呼び出し元のpip cacheが容量制限で使用できない状態でscriptを実行する
-- **THEN** scriptはuser profileのcacheを使用せずwheelhouseを作成する
+- **THEN** scriptはuser profileのcacheを使用せず`pypi` directoryへpackage archiveを作成する
 - **THEN** scriptは処理終了時に一時download directoryと生成したrequirements fileを削除する
 
 ### Requirement: DEB metadataの一時fileはOutputDir側に配置する

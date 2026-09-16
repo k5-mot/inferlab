@@ -1,0 +1,14 @@
+*
+!airgap-docker/
+!airgap-docker/*.ubuntu22.04
+!airgap-docker/*.node20-alpine
+!out/
+!out/deb/
+!out/deb/ubuntu-22.04/
+!out/deb/ubuntu-22.04/*.deb
+!out/pypi/
+!out/pypi/*.whl
+!out/pypi/*.tar.gz
+!out/pypi/*.zip
+!out/npm/
+!out/npm/*.tgz

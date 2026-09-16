@@ -1,11 +1,11 @@
 ﻿<#
 .SYNOPSIS
-Debian 13およびUbuntu 24.04 LTS x86_64向けのdeb packageを取得します。
+Debian 13、Ubuntu 24.04 LTS、Ubuntu 22.04 LTS x86_64向けのdeb packageを取得します。
 
 .DESCRIPTION
-Debian 13（trixie）とUbuntu 24.04 LTS（noble）のrepositoryから、指定したdeb packageと依存packageを取得します。
+DebianのmainとUbuntuのrelease、updates、security repositoryから、指定したdeb packageと依存packageを取得します。
 
-既定では`/srv/12-registry/deb/`へ保存します。
+`OutputDir/deb/`へdistribution別に保存します。
 
 .PARAMETER OutputDir
 READMEで定義した出力treeのbase directoryです。
@@ -25,8 +25,7 @@ Packages metadataの一時fileは`OutputDir`配下に作成し、user profileの
 
 実行にはPowerShellと外部repositoryへのHTTP接続が必要です。
 
-Save-DebPackagesWithDependenciesのPackagesUrl parameterは、
-複数のURLを受け取れる必要があります。
+packageは`deb/<distribution>/`へ分けて保存します。
 #>
 [CmdletBinding()]
 param (
@@ -58,22 +57,65 @@ $Packages = @(
         "libreadline-dev",
         "libncurses-dev",
         "clang",
-        "ncdu"
+        "ncdu",
+        "python3",
+        "python3-pip"
 )
 $Registries = @(
     [pscustomobject]@{
         Name = "Debian 13 (trixie)"
-        BaseUrl = "https://deb.debian.org/debian/"
-        PackagePaths = @(
-            "dists/trixie/main/binary-amd64/Packages.gz"
+        DirectoryName = "debian-13"
+        Sources = @(
+            [pscustomobject]@{
+                BaseUrl = "https://deb.debian.org/debian/"
+                PackagePaths = @(
+                    "dists/trixie/main/binary-amd64/Packages.gz"
+                )
+            }
         )
     },
     [pscustomobject]@{
         Name = "Ubuntu 24.04 LTS (noble)"
-        BaseUrl = "https://archive.ubuntu.com/ubuntu/"
-        PackagePaths = @(
-            "dists/noble/main/binary-amd64/Packages.gz",
-            "dists/noble/universe/binary-amd64/Packages.gz"
+        DirectoryName = "ubuntu-24.04"
+        Sources = @(
+            [pscustomobject]@{
+                BaseUrl = "https://archive.ubuntu.com/ubuntu/"
+                PackagePaths = @(
+                    "dists/noble/main/binary-amd64/Packages.gz",
+                    "dists/noble/universe/binary-amd64/Packages.gz",
+                    "dists/noble-updates/main/binary-amd64/Packages.gz",
+                    "dists/noble-updates/universe/binary-amd64/Packages.gz"
+                )
+            },
+            [pscustomobject]@{
+                BaseUrl = "https://security.ubuntu.com/ubuntu/"
+                PackagePaths = @(
+                    "dists/noble-security/main/binary-amd64/Packages.gz",
+                    "dists/noble-security/universe/binary-amd64/Packages.gz"
+                )
+            }
+        )
+    },
+    [pscustomobject]@{
+        Name = "Ubuntu 22.04 LTS (jammy)"
+        DirectoryName = "ubuntu-22.04"
+        Sources = @(
+            [pscustomobject]@{
+                BaseUrl = "https://archive.ubuntu.com/ubuntu/"
+                PackagePaths = @(
+                    "dists/jammy/main/binary-amd64/Packages.gz",
+                    "dists/jammy/universe/binary-amd64/Packages.gz",
+                    "dists/jammy-updates/main/binary-amd64/Packages.gz",
+                    "dists/jammy-updates/universe/binary-amd64/Packages.gz"
+                )
+            },
+            [pscustomobject]@{
+                BaseUrl = "https://security.ubuntu.com/ubuntu/"
+                PackagePaths = @(
+                    "dists/jammy-security/main/binary-amd64/Packages.gz",
+                    "dists/jammy-security/universe/binary-amd64/Packages.gz"
+                )
+            }
         )
     }
 )
@@ -184,9 +226,121 @@ function Read-GzipTextFromUrl {
 
 <#
 .SYNOPSIS
+Debian package versionを比較します。
+.PARAMETER Left
+比較する左辺のversionです。
+.PARAMETER Right
+比較する右辺のversionです。
+.OUTPUTS
+左辺が新しければ1、同じなら0、右辺が新しければ-1を返します。
+#>
+function Compare-DebVersion {
+    param(
+        [Parameter(Mandatory = $true)][string]$Left,
+        [Parameter(Mandatory = $true)][string]$Right
+    )
+
+    $LeftEpoch = "0"
+    $RightEpoch = "0"
+    $LeftRemainder = $Left
+    $RightRemainder = $Right
+    if ($Left -match "^(?<epoch>\d+):(?<remainder>.*)$") {
+        $LeftEpoch = $Matches.epoch
+        $LeftRemainder = $Matches.remainder
+    }
+    if ($Right -match "^(?<epoch>\d+):(?<remainder>.*)$") {
+        $RightEpoch = $Matches.epoch
+        $RightRemainder = $Matches.remainder
+    }
+
+    $LeftEpochNumber = [System.Numerics.BigInteger]::Parse($LeftEpoch)
+    $RightEpochNumber = [System.Numerics.BigInteger]::Parse($RightEpoch)
+    if ($LeftEpochNumber -gt $RightEpochNumber) { return 1 }
+    if ($LeftEpochNumber -lt $RightEpochNumber) { return -1 }
+
+    $LeftRevision = "0"
+    $RightRevision = "0"
+    $LeftRevisionIndex = $LeftRemainder.LastIndexOf("-")
+    $RightRevisionIndex = $RightRemainder.LastIndexOf("-")
+    if ($LeftRevisionIndex -ge 0) {
+        $LeftRevision = $LeftRemainder.Substring($LeftRevisionIndex + 1)
+        $LeftRemainder = $LeftRemainder.Substring(0, $LeftRevisionIndex)
+    }
+    if ($RightRevisionIndex -ge 0) {
+        $RightRevision = $RightRemainder.Substring($RightRevisionIndex + 1)
+        $RightRemainder = $RightRemainder.Substring(0, $RightRevisionIndex)
+    }
+
+    $LeftParts = @($LeftRemainder, $LeftRevision)
+    $RightParts = @($RightRemainder, $RightRevision)
+    for ($PartIndex = 0; $PartIndex -lt $LeftParts.Count; $PartIndex += 1) {
+        $LeftPart = $LeftParts[$PartIndex]
+        $RightPart = $RightParts[$PartIndex]
+        $LeftIndex = 0
+        $RightIndex = 0
+        while ($LeftIndex -lt $LeftPart.Length -or $RightIndex -lt $RightPart.Length) {
+            while (
+                ($LeftIndex -lt $LeftPart.Length -and -not [char]::IsDigit($LeftPart[$LeftIndex])) -or
+                ($RightIndex -lt $RightPart.Length -and -not [char]::IsDigit($RightPart[$RightIndex]))
+            ) {
+                $LeftOrder = 0
+                $RightOrder = 0
+                if ($LeftIndex -lt $LeftPart.Length -and -not [char]::IsDigit($LeftPart[$LeftIndex])) {
+                    $LeftCharacter = $LeftPart[$LeftIndex]
+                    $LeftOrder = if ($LeftCharacter -eq "~") {
+                        -1
+                    } elseif ([char]::IsLetter($LeftCharacter)) {
+                        [int][char]$LeftCharacter
+                    } else {
+                        [int][char]$LeftCharacter + 256
+                    }
+                    $LeftIndex += 1
+                }
+                if ($RightIndex -lt $RightPart.Length -and -not [char]::IsDigit($RightPart[$RightIndex])) {
+                    $RightCharacter = $RightPart[$RightIndex]
+                    $RightOrder = if ($RightCharacter -eq "~") {
+                        -1
+                    } elseif ([char]::IsLetter($RightCharacter)) {
+                        [int][char]$RightCharacter
+                    } else {
+                        [int][char]$RightCharacter + 256
+                    }
+                    $RightIndex += 1
+                }
+                if ($LeftOrder -gt $RightOrder) { return 1 }
+                if ($LeftOrder -lt $RightOrder) { return -1 }
+            }
+
+            while ($LeftIndex -lt $LeftPart.Length -and $LeftPart[$LeftIndex] -eq "0") { $LeftIndex += 1 }
+            while ($RightIndex -lt $RightPart.Length -and $RightPart[$RightIndex] -eq "0") { $RightIndex += 1 }
+            $FirstDifference = 0
+            while (
+                $LeftIndex -lt $LeftPart.Length -and [char]::IsDigit($LeftPart[$LeftIndex]) -and
+                $RightIndex -lt $RightPart.Length -and [char]::IsDigit($RightPart[$RightIndex])
+            ) {
+                if ($FirstDifference -eq 0) {
+                    $FirstDifference = [int][char]$LeftPart[$LeftIndex] - [int][char]$RightPart[$RightIndex]
+                }
+                $LeftIndex += 1
+                $RightIndex += 1
+            }
+            if ($LeftIndex -lt $LeftPart.Length -and [char]::IsDigit($LeftPart[$LeftIndex])) { return 1 }
+            if ($RightIndex -lt $RightPart.Length -and [char]::IsDigit($RightPart[$RightIndex])) { return -1 }
+            if ($FirstDifference -gt 0) { return 1 }
+            if ($FirstDifference -lt 0) { return -1 }
+        }
+    }
+
+    return 0
+}
+
+<#
+.SYNOPSIS
 Debian Packages metadataをpackage名で引けるindexへ変換します。
 .PARAMETER PackagesUrl
 Packages.gzのURLです。
+.PARAMETER RepositoryBaseUrl
+package fileを取得するrepository rootのURLです。
 .PARAMETER TemporaryDirectory
 Packages.gzを一時保存するdirectoryです。
 .OUTPUTS
@@ -195,6 +349,7 @@ package名をkey、metadata hashtableをvalueにしたhashtableを返します�
 function Get-DebPackageIndex {
     param(
         [Parameter(Mandatory = $true)][string]$PackagesUrl,
+        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
         [Parameter(Mandatory = $true)][string]$TemporaryDirectory
     )
 
@@ -216,8 +371,15 @@ function Get-DebPackageIndex {
             }
         }
 
-        if ($Fields.ContainsKey("Package") -and -not $Index.ContainsKey($Fields["Package"])) {
-            $Index[$Fields["Package"]] = $Fields
+        if ($Fields.ContainsKey("Package") -and $Fields.ContainsKey("Version")) {
+            $Fields["_RepositoryBaseUrl"] = $RepositoryBaseUrl
+            $Name = $Fields["Package"]
+            if (
+                -not $Index.ContainsKey($Name) -or
+                (Compare-DebVersion -Left $Fields["Version"] -Right $Index[$Name]["Version"]) -gt 0
+            ) {
+                $Index[$Name] = $Fields
+            }
         }
     }
 
@@ -229,12 +391,15 @@ function Get-DebPackageIndex {
 deb package metadataから依存package名を取り出します。
 .PARAMETER Package
 Packages metadataの1 package分のhashtableです。
+.PARAMETER PackageIndex
+package名とvirtual package名をkeyにしたindexです。
 .OUTPUTS
 依存package名の配列を返します。
 #>
 function Get-DebDependencyNames {
     param(
-        [Parameter(Mandatory = $true)][hashtable]$Package
+        [Parameter(Mandatory = $true)][hashtable]$Package,
+        [Parameter(Mandatory = $true)][hashtable]$PackageIndex
     )
 
     $Dependencies = [System.Collections.Generic.List[string]]::new()
@@ -244,8 +409,20 @@ function Get-DebDependencyNames {
         }
 
         foreach ($Part in ($Package[$FieldName] -split ",")) {
-            $Candidate = (($Part -split "\|")[0]).Trim()
-            $Name = ($Candidate -replace "\s*\(.*?\)", "" -replace ":[A-Za-z0-9][A-Za-z0-9-]*", "").Trim()
+            $Names = @(
+                foreach ($Candidate in ($Part -split "\|")) {
+                    ($Candidate `
+                        -replace "\s*\(.*?\)", "" `
+                        -replace "\s*\[.*?\]", "" `
+                        -replace "\s*<.*?>", "" `
+                        -replace ":[A-Za-z0-9][A-Za-z0-9-]*", "").Trim()
+                }
+            )
+            $Name = @($Names | Where-Object { $PackageIndex.ContainsKey($_) } | Select-Object -First 1)
+            if ($Name.Count -eq 0) {
+                $Name = @($Names | Select-Object -First 1)
+            }
+            $Name = [string]$Name[0]
             if ($Name -and -not $Dependencies.Contains($Name)) {
                 $Dependencies.Add($Name)
             }
@@ -260,10 +437,8 @@ function Get-DebDependencyNames {
 deb packageと依存packageをHTTP repositoryから取得します。
 .PARAMETER PackageNames
 取得するroot package名です。
-.PARAMETER RepositoryBaseUrl
-Debian repository rootのURLです。
-.PARAMETER PackagesUrl
-Packages.gzのURLです。
+.PARAMETER PackageSources
+Packages.gzのURLとrepository root URLを持つsource配列です。
 .PARAMETER OutputDirectory
 deb fileの保存先directoryです。
 .PARAMETER TemporaryDirectory
@@ -274,8 +449,7 @@ Packages.gzを一時保存するdirectoryです。
 function Save-DebPackagesWithDependencies {
     param(
         [Parameter(Mandatory = $true)][string[]]$PackageNames,
-        [Parameter(Mandatory = $true)][string]$RepositoryBaseUrl,
-        [Parameter(Mandatory = $true)][string[]]$PackagesUrl,
+        [Parameter(Mandatory = $true)][pscustomobject[]]$PackageSources,
         [Parameter(Mandatory = $true)][string]$OutputDirectory,
         [Parameter(Mandatory = $true)][string]$TemporaryDirectory
     )
@@ -284,12 +458,34 @@ function Save-DebPackagesWithDependencies {
         return
     }
 
-    $Index = @{}
-    foreach ($Url in $PackagesUrl) {
-        $PartialIndex = Get-DebPackageIndex -PackagesUrl $Url -TemporaryDirectory $TemporaryDirectory
+    $PackagesByName = @{}
+    foreach ($Source in $PackageSources) {
+        $PartialIndex = Get-DebPackageIndex `
+            -PackagesUrl $Source.PackagesUrl `
+            -RepositoryBaseUrl $Source.BaseUrl `
+            -TemporaryDirectory $TemporaryDirectory
         foreach ($Name in $PartialIndex.Keys) {
-            if (-not $Index.ContainsKey($Name)) {
-                $Index[$Name] = $PartialIndex[$Name]
+            if (
+                -not $PackagesByName.ContainsKey($Name) -or
+                (Compare-DebVersion -Left $PartialIndex[$Name]["Version"] -Right $PackagesByName[$Name]["Version"]) -gt 0
+            ) {
+                $PackagesByName[$Name] = $PartialIndex[$Name]
+            }
+        }
+    }
+
+    $Index = @{}
+    foreach ($Name in $PackagesByName.Keys) {
+        $Index[$Name] = $PackagesByName[$Name]
+    }
+    foreach ($Package in $PackagesByName.Values) {
+        if (-not $Package.ContainsKey("Provides")) {
+            continue
+        }
+        foreach ($Provide in ($Package["Provides"] -split ",")) {
+            $Name = ($Provide -replace "\s*\(.*?\)", "" -replace ":[A-Za-z0-9][A-Za-z0-9-]*", "").Trim()
+            if ($Name -and -not $Index.ContainsKey($Name)) {
+                $Index[$Name] = $Package
             }
         }
     }
@@ -315,9 +511,11 @@ function Save-DebPackagesWithDependencies {
         $Package = $Index[$Name]
         $FileName = Split-Path -Leaf $Package["Filename"]
         $OutputPath = Join-Path $OutputDirectory $FileName
-        Save-FileFromUrl -Url (Join-RepositoryUrl -BaseUrl $RepositoryBaseUrl -RelativePath $Package["Filename"]) -OutputPath $OutputPath
+        Save-FileFromUrl `
+            -Url (Join-RepositoryUrl -BaseUrl $Package["_RepositoryBaseUrl"] -RelativePath $Package["Filename"]) `
+            -OutputPath $OutputPath
 
-        foreach ($Dependency in (Get-DebDependencyNames -Package $Package)) {
+        foreach ($Dependency in (Get-DebDependencyNames -Package $Package -PackageIndex $Index)) {
             if (-not $Seen.ContainsKey($Dependency)) {
                 $Queue.Enqueue($Dependency)
             }
@@ -354,41 +552,47 @@ function Assert-AssetFilesExist {
     }
 }
 
-$DestinationDirectory = Join-Path $OutputRoot "deb"
+$DestinationRoot = Join-Path $OutputRoot "deb"
 
 New-Item `
     -ItemType Directory `
-    -Path $DestinationDirectory `
+    -Path $DestinationRoot `
     -Force |
     Out-Null
 
 Write-Host "Debian and Ubuntu deb packages:"
 Write-Host "  Packages: $($Packages -join ', ')"
-Write-Host "  Destination: $DestinationDirectory"
+Write-Host "  Destination: $DestinationRoot"
 
 foreach ($Registry in $Registries) {
-    $PackagesUrls = @(
-        foreach ($PackagesPath in $Registry.PackagePaths) {
-            Join-RepositoryUrl `
-                -BaseUrl $Registry.BaseUrl `
-                -RelativePath $PackagesPath
+    $DestinationDirectory = Join-Path $DestinationRoot $Registry.DirectoryName
+    New-Item -ItemType Directory -Path $DestinationDirectory -Force | Out-Null
+    $PackageSources = @(
+        foreach ($Source in $Registry.Sources) {
+            foreach ($PackagesPath in $Source.PackagePaths) {
+                [pscustomobject]@{
+                    BaseUrl = $Source.BaseUrl
+                    PackagesUrl = Join-RepositoryUrl `
+                        -BaseUrl $Source.BaseUrl `
+                        -RelativePath $PackagesPath
+                }
+            }
         }
     )
 
     Write-Host "  Repository: $($Registry.Name)"
-    foreach ($PackagesUrl in $PackagesUrls) {
-        Write-Host "    $PackagesUrl"
+    foreach ($Source in $PackageSources) {
+        Write-Host "    $($Source.PackagesUrl)"
     }
 
     Save-DebPackagesWithDependencies `
         -PackageNames $Packages `
-        -PackagesUrl $PackagesUrls `
-        -RepositoryBaseUrl $Registry.BaseUrl `
+        -PackageSources $PackageSources `
         -OutputDirectory $DestinationDirectory `
         -TemporaryDirectory $OutputRoot
-}
 
-Assert-AssetFilesExist `
-    -Directory $DestinationDirectory `
-    -Pattern "*.deb" `
-    -Description "Debian/Ubuntu deb"
+    Assert-AssetFilesExist `
+        -Directory $DestinationDirectory `
+        -Pattern "*.deb" `
+        -Description $Registry.Name
+}

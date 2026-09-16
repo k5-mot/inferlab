@@ -14,3 +14,13 @@ if ($Source -match "New-TemporaryFile") {
 if ($Source -notmatch "\.deb-packages-") {
     throw "Download-DEB.ps1 must create Packages metadata under OutputDir."
 }
+foreach ($DirectoryName in @("debian-13", "ubuntu-24.04", "ubuntu-22.04")) {
+    if ($Source -notmatch [regex]::Escape("DirectoryName = `"$DirectoryName`"")) {
+        throw "Download-DEB.ps1にdistribution別directory '$DirectoryName' がありません。"
+    }
+}
+foreach ($Pocket in @("noble-updates", "noble-security", "jammy-updates", "jammy-security")) {
+    if ($Source -notmatch [regex]::Escape($Pocket)) {
+        throw "Download-DEB.ps1にrepository pocket '$Pocket' がありません。"
+    }
+}

@@ -17,10 +17,13 @@ foreach ($Pattern in @(".requirements-", ".pip-download-", '"--no-cache-dir"')) 
         throw "project版pip作業領域のquota対策がありません: $Pattern"
     }
 }
-foreach ($PythonVersion in @("3.12", "3.13", "3.14", "3.15")) {
+foreach ($PythonVersion in @("3.10", "3.11", "3.12", "3.13", "3.14")) {
     if ($Source -notmatch [regex]::Escape($PythonVersion)) {
         throw "Python version '$PythonVersion' が定義されていません。"
     }
+}
+if ($Source -match [regex]::Escape('"3.15"')) {
+    throw "対象外のPython version '3.15' が定義されています。"
 }
 foreach ($Platform in @(
     "any",
