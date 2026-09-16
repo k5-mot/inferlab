@@ -1,0 +1,16 @@
+services:
+  backend:
+    profiles: [ verify ]
+    build:
+      context: ./backend
+      network: none
+    network_mode: none
+    restart: "no"
+
+  frontend:
+    profiles: [ verify ]
+    build:
+      context: ./frontend
+      network: none
+    network_mode: none
+    restart: "no"

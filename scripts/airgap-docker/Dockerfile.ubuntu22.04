@@ -1,8 +1,0 @@
-FROM ubuntu:22.04
-
-COPY out/deb/ubuntu-22.04/ /opt/airgap/deb/
-COPY out/pypi/ /opt/airgap/pypi/
-
-RUN apt-get install -y /opt/airgap/deb/*.deb \
-    && python3 -m pip install --no-index --find-links=/opt/airgap/pypi chardet \
-    && python3 -c "import chardet; print(chardet.__version__)"

@@ -1,9 +1,0 @@
-FROM node:20-alpine
-
-COPY out/npm/ /opt/airgap/npm/
-
-RUN mkdir /opt/airgap/app \
-    && cd /opt/airgap/app \
-    && npm init -y \
-    && npm install --offline --ignore-scripts /opt/airgap/npm/tailwindcss-*.tgz \
-    && node -e "require('tailwindcss')"
