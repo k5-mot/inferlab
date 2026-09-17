@@ -36,6 +36,9 @@ foreach ($Script in $DownloadScripts) {
     }
 }
 
+### 任意projectのrequirements.txtを完全版と更新版へ展開する。
+powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Refine-PipPkgs.ps1" -ProjectDir "./py_pj"
+
 ### 任意projectのpyproject.toml/requirements.txtを元に、
 ### <output-dir>/pypi/*.whl へダウンロード.
 powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-PipPkgs-from-Project.ps1" -OutputDir $OutputDir -ProjectDir "./py_pj"
@@ -50,7 +53,7 @@ powershell -ExecutionPolicy "Bypass" -Scope "Process" -File "./Download-NpmPkgs-
 以下の引数以外の引数は実装しない。
 
 - `-OutputDir`： 出力ディレクトリ
-- `-ProjectDir`： プロジェクトディレクトリ (from-Projectのみ)
+- `-ProjectDir`： プロジェクトディレクトリ (from-ProjectとRefine)
 - `-Help`： ヘルプ
 
 ## 🛠️ Download Targets
@@ -76,6 +79,7 @@ scripts/
 ├── Download-NpmPkgs.ps1
 │
 ├── Download-PipPkgs-from-Project.ps1
+├── Refine-PipPkgs.ps1
 ├── Download-NpmPkgs-from-Project.ps1
 ├── airgap-docker/
 │  ├── Dockerfile.ubuntu22.04
@@ -320,6 +324,20 @@ scripts/
 - 任意projectの`pyproject.toml`または`requirements.txt`からPython packageをダウンロードする補助script.
 - pip cacheを無効化し、一時requirements fileとdownload directoryは`OutputDir`と同じvolumeへ作成する.
 
+### Refine-PipPkgs.ps1
+
+- `requirements.txt`から推移依存を含む`requirements-full.txt`を作成する。
+- 固定versionを外して最新の互換versionへ解決した`requirements-next.txt`も作成する。
+- source distributionは使用せず、Python 3.10/3.14のWindows x64とLinux x64でwheelを利用できることを検証する。
+
+#### 期待結果
+
+- すべてのwheel検証が成功した後、project directoryの2つのrequirements fileが作成または上書きされる。
+
+#### 失敗条件
+
+- version制約の矛盾または対象Python/platform向けwheelの不足により依存解決できない場合、scriptは非0で終了し、既存の出力fileを上書きしない。
+
 ### Download-NpmPkgs-from-Project.ps1
 
 - 任意projectの`package.json`からnpm packageをダウンロードする補助script.
@@ -330,3 +348,5 @@ scripts/
 - [LibreTranslate 1.9.6 Dockerfile](https://github.com/LibreTranslate/LibreTranslate/blob/v1.9.6/docker/Dockerfile)
 - [Argos Translate Package Index](https://github.com/argosopentech/argospm-index)
 - [MiniSBD v0.0.1](https://github.com/LibreTranslate/MiniSBD/releases/tag/v0.0.1)
+- [uv: Locking environments](https://docs.astral.sh/uv/pip/compile/)
+- [uv: Compatibility with pip](https://docs.astral.sh/uv/pip/compatibility/)
