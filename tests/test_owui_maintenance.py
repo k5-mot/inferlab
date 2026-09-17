@@ -902,6 +902,35 @@ class TriggerScriptTest(unittest.TestCase):
 class OikbImagePatchTest(unittest.TestCase):
     """OIKB imageへ適用するOpen WebUI連携patchを検証する。"""
 
+    def test_compose_runs_external_scheduler(self) -> None:
+        """Composeがexternal schedulerをwatch modeで常駐実行することを検証する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        compose = (REPO_ROOT / "20-owui/docker-compose.yml").read_text(
+            encoding="utf-8"
+        )
+        _, marker, remaining = compose.partition("  oikb-scheduler:\n")
+
+        self.assertTrue(marker)
+        scheduler = remaining.partition("\n  oikb:\n")[0]
+        for expected in (
+            "restart: unless-stopped",
+            "- /app/scripts/oikb/oikb_sync.py",
+            "- trigger",
+            "- --watch",
+            "OIKB_API_URL: http://oikb:8080",
+            "OPEN_WEBUI_API_URL: http://open-webui:8080",
+            "OIKB_TRIGGER_INTERVAL_SECONDS:",
+            "../scripts/oikb/oikb_sync.py:/app/scripts/oikb/oikb_sync.py:ro",
+            "condition: service_healthy",
+        ):
+            self.assertIn(expected, scheduler)
+
     def test_upload_waits_for_open_webui_processing(self) -> None:
         """file uploadが解析とKnowledge登録の完了まで待つようpatchする。"""
         patch_module = load_script(

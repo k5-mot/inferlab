@@ -12,6 +12,7 @@ Open WebUI、Open Terminal、mcpo、SearXNG、OIKB、OIKB用RustFSをまとめ�
 | `mcpo` | Docker socket経由でllmwiki containerのstdio MCPを起動し、OpenAPIとしてOpen WebUIへ公開する。 |
 | `oikb-rustfs-init` | Compose内のinit commandでRustFSがhealthyになった後、`oikb-bucket`が無ければ作成する。 |
 | `oikb` | APIとsource状態を公開する。内蔵schedulerは無効で、同期は外部scriptが逐次実行する。 |
+| `oikb-scheduler` | 外部scriptを常駐実行し、設定した間隔でOIKB sourceを逐次同期する。 |
 
 Open WebUIのKeycloak連携は、`OAUTH_CLIENT_SECRET`とKeycloak側`open-webui` client secretの一致が前提になる。
 
@@ -40,12 +41,14 @@ sudo docker compose --env-file .env --profile owui up -d
 - `open-webui`が`http://${PUBLIC_HOST}:32000`で応答する。
 - `oikb-rustfs-init`が正常終了する。
 - `oikb`が`http://${PUBLIC_HOST}:32001`で応答する。
+- `oikb-scheduler`がhealthyになる。
 
 失敗条件:
 
 - `open-webui/entrypoint_patch.sh`がDocling設定を生成できない。
 - RustFS bucket作成が認証エラーになる。
 - OIKB imageのbuildまたはAPI起動に失敗する。
+- `oikb-scheduler`がOpen WebUIまたはOIKBのAPIへ接続できない。
 
 ### llmwiki連携を含めて起動
 
@@ -86,7 +89,7 @@ curl -fsS -H "Authorization: Bearer ${MCPO_API_KEY:-sk-mcpo-api-secret-key}" \
 
 期待結果:
 
-- `open-webui`と`oikb`がhealthyになる。
+- `open-webui`、`oikb`、`oikb-scheduler`がhealthyになる。
 - `oikb-rustfs-init`が`exited (0)`になる。
 - RustFS上に`oikb-bucket`が存在する。
 - llmwikiのOpenAPI定義を取得できる。

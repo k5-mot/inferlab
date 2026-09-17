@@ -211,32 +211,31 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `documents/`以外のprefixへfileを配置している。
 - `.env`のRustFS認証情報とRustFS containerの認証情報が一致しない。
 
-## 8. OIKBを再buildして逐次同期する
+## 8. OIKBを再buildして定時同期する
 
 ```bash
-# 内蔵schedulerを無効化したOIKB imageをbuildして設定を反映する。
-sudo docker compose --env-file .env --profile owui up -d --build --no-deps oikb
-
-# source順の設定時は指定順、未設定時はOIKBの全sourceを1回だけ逐次同期する。
-python3 scripts/oikb/oikb_sync.py trigger
+# OIKB imageをbuildし、外部schedulerと一緒に起動する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --build oikb oikb-scheduler
 ```
 
 期待結果:
 
 - OIKBがhealthyになる。
-- scriptのlogにsourceごとのtriggerとOpen-WebUI登録完了が処理順で出る。
+- `oikb-scheduler`がhealthyになる。
+- schedulerのlogにsourceごとのtriggerとOpen-WebUI登録完了が処理順で出る。
 - Open-WebUIのKnowledgeに配置したfileが登録される。
+- 全sourceの完了後、`OIKB_TRIGGER_INTERVAL_SECONDS`経過すると次の同期が始まる。
 
 失敗条件:
 
-- scriptにOpen-WebUI APIまたはOIKB APIの認証errorが出る。
-- scriptがKnowledge IDを解決できない。
+- schedulerにOpen-WebUI APIまたはOIKB APIの認証errorが出る。
+- schedulerがKnowledge IDを解決できない。
 - Open-WebUIのpending fileが解消せずtimeoutする。
 - Open-WebUIのKnowledgeにfileが増えない。
 
 ```bash
-# STACK_NAMEを使ってOIKBの同期logを確認する。
-sudo docker logs --tail 200 "${STACK_NAME}-oikb"
+# OIKBとexternal schedulerの同期logを確認する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud logs --tail 200 oikb oikb-scheduler
 ```
 
 ## 9. 再実行とrollback
@@ -244,29 +243,26 @@ sudo docker logs --tail 200 "${STACK_NAME}-oikb"
 再実行:
 
 ```bash
-# OIKBを再作成した後、sourceを1回だけ逐次同期する。
-sudo docker compose --env-file .env --profile owui up -d --no-deps --force-recreate oikb
-
-# 再作成したOIKBでsourceを1回だけ逐次同期する。
-python3 scripts/oikb/oikb_sync.py trigger
+# OIKBとexternal schedulerを再作成して定時同期を再開する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --force-recreate oikb oikb-scheduler
 ```
 
 rollback:
 
 ```bash
-# OIKBを停止してOpen-WebUI Knowledge同期を止める。
-sudo docker compose --env-file .env --profile owui stop oikb
+# external schedulerを停止してOpen-WebUI Knowledgeの定時同期を止める。
+sudo docker compose --env-file .env --profile owui --profile nextcloud stop oikb-scheduler
 ```
 
 期待結果:
 
-- 再実行時はscriptがOIKBの同じKnowledge IDへ逐次同期する。
-- rollback時はOIKBによる追加同期が停止する。
+- 再実行時はschedulerがOIKBの同じKnowledge IDへ逐次同期する。
+- rollback時はOIKB APIとWebUIを維持したまま追加同期が停止する。
 
 失敗条件:
 
 - 再実行後も同じ認証エラーが続く。
-- rollback後もOIKB containerがrunningのまま残る。
+- rollback後も`oikb-scheduler` containerがrunningのまま残る。
 
 ## 10. OpenClawをセットアップする
 

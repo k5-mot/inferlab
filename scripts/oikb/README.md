@@ -86,12 +86,22 @@ python3 scripts/oikb/oikb_sync.py trigger
 - OIKB同期、Open WebUI file処理、KBへのlink、またはpending解消が失敗する。
 - 対象KBのfileがretry後も失敗し、同じKBの次fileと後続KBを開始せず終了する。
 
-継続実行が必要な場合だけ`--watch`を使用する。
+Composeの`oikb-scheduler` serviceは`--watch`を指定したCLIを常駐実行する。全KBの完了後、`OIKB_TRIGGER_INTERVAL_SECONDS`の既定値3,600秒を待って次の同期周期を開始する。
 
 ```bash
-# 全KBの完了後もOIKB_TRIGGER_INTERVAL_SECONDS間隔で同期を繰り返す。
-python3 scripts/oikb/oikb_sync.py trigger --watch
+# external schedulerの稼働状態を確認する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud ps oikb-scheduler
 ```
+
+期待結果:
+
+- `oikb-scheduler`が`healthy`になる。
+- 同期失敗後もserviceが終了せず、次の周期で再試行する。
+
+失敗条件:
+
+- `oikb-scheduler`が起動しない、または`unhealthy`になる。
+- `OPEN_WEBUI_API_KEY`、`OIKB_API_KEY`、またはKnowledge IDが未設定で同期が失敗する。
 
 ## 停止fileの確認と削除
 
