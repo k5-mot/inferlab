@@ -3,6 +3,8 @@
 .agents/
 .roo/
 .tmp/
+.tmp*/
+out/
 *.log
 __pycache__
 devcontainer-lock.json
