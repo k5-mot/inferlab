@@ -17,7 +17,9 @@ foreach ($Pattern in @(
     '"--universal"',
     'requirements-full.txt',
     'requirements-next.txt',
-    'x86_64-manylinux2014',
+    'Test-PinnedRequirementDependencyCompatibility',
+    'ConvertTo-MinimumRequirement',
+    'x86_64-manylinux_2_34',
     '"windows"'
 )) {
     if ($Source -notmatch [regex]::Escape($Pattern)) {

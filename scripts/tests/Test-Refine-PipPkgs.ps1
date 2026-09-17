@@ -6,8 +6,11 @@ if (Skip-DownloadTestIfCommandMissing -Command "uv") {
 
 $OutputDir = New-DownloadTestDirectory -Name "refine-pip"
 $ProjectDir = Join-Path $OutputDir "project"
-$RequirementsFixturePath = Join-Path $PSScriptRoot "../../tests/pypi-legacy/requirements.txt"
+$RequirementsFixturePath = Join-Path $PSScriptRoot "pypi-legacy/requirements.txt"
 try {
+    if (-not ((Get-Content -LiteralPath $RequirementsFixturePath) -match "^cffi==1\.17\.1$")) {
+        throw "test fixtureにはPython 3.14用wheelがないcffi 1.17.1を固定してください。"
+    }
     if ((Get-Content -LiteralPath $RequirementsFixturePath) -match "^pycparser(?:[<=>!~].*)?$") {
         throw "test fixtureにはcffiの推移依存pycparserを記載しないでください。"
     }

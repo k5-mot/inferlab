@@ -39,9 +39,9 @@ if (-not $ProjectDir) {
 $ErrorActionPreference = "Stop"
 $ValidationTargets = @(
     [pscustomobject]@{ PythonVersion = "3.10"; Platform = "windows" },
-    [pscustomobject]@{ PythonVersion = "3.10"; Platform = "x86_64-manylinux2014" },
+    [pscustomobject]@{ PythonVersion = "3.10"; Platform = "x86_64-manylinux_2_34" },
     [pscustomobject]@{ PythonVersion = "3.14"; Platform = "windows" },
-    [pscustomobject]@{ PythonVersion = "3.14"; Platform = "x86_64-manylinux2014" }
+    [pscustomobject]@{ PythonVersion = "3.14"; Platform = "x86_64-manylinux_2_34" }
 )
 
 <#
@@ -145,6 +145,113 @@ function ConvertTo-UnpinnedRequirement {
 
 <#
 .SYNOPSIS
+固定versionを同じversion以上の制約へ変換します。
+.PARAMETER Requirement
+変換する1行のrequirementです。
+.OUTPUTS
+完全固定の場合は下限制約へ変換したrequirement、それ以外は元の値を返します。
+#>
+function ConvertTo-MinimumRequirement {
+    param(
+        [Parameter(Mandatory = $true)][string]$Requirement
+    )
+
+    if ($Requirement -match "^([A-Za-z0-9][A-Za-z0-9_.-]*)(\[[^\]]+\])?==([^;\s]+)(\s*;.*)?$") {
+        return "$($Matches[1])$($Matches[2])>=$($Matches[3])$($Matches[4])".Trim()
+    }
+
+    return $Requirement
+}
+
+<#
+.SYNOPSIS
+固定requirementの全依存をすべての検証対象でwheel解決できるか判定します。
+.PARAMETER Requirement
+検証する1行の固定requirementです。
+.PARAMETER WorkDirectory
+検証結果を一時出力するdirectoryです。
+.PARAMETER CacheDirectory
+uv cacheとして使用する一時directoryです。
+.OUTPUTS
+推移依存を含め、すべての対象でwheel解決できる場合はtrueを返します。
+#>
+function Test-PinnedRequirementDependencyCompatibility {
+    param(
+        [Parameter(Mandatory = $true)][string]$Requirement,
+        [Parameter(Mandatory = $true)][string]$WorkDirectory,
+        [Parameter(Mandatory = $true)][string]$CacheDirectory
+    )
+
+    $ProbeId = [guid]::NewGuid().ToString("N")
+    $InputPath = Join-Path $WorkDirectory "requirement-$ProbeId.in"
+    $Requirement | Set-Content -LiteralPath $InputPath -Encoding ascii
+    foreach ($Target in $ValidationTargets) {
+        $OutputPath = Join-Path $WorkDirectory "requirement-$ProbeId-$($Target.PythonVersion)-$($Target.Platform).txt"
+        try {
+            & {
+                Invoke-RequirementsCompile `
+                    -InputPath $InputPath `
+                    -OutputPath $OutputPath `
+                    -CacheDirectory $CacheDirectory `
+                    -PythonVersion $Target.PythonVersion `
+                    -PythonPlatform $Target.Platform
+            } *> $null
+        }
+        catch {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+<#
+.SYNOPSIS
+依存をwheelだけで解決できない固定versionをupgrade可能な下限制約へ変換します。
+.PARAMETER InputPath
+元のrequirements fileです。
+.PARAMETER OutputPath
+互換制約を書き込むrequirements fileです。
+.PARAMETER WorkDirectory
+検証結果を一時出力するdirectoryです。
+.PARAMETER CacheDirectory
+uv cacheとして使用する一時directoryです。
+.OUTPUTS
+制約を1件以上変換した場合はtrueを返します。
+#>
+function New-WheelCompatibleRequirements {
+    param(
+        [Parameter(Mandatory = $true)][string]$InputPath,
+        [Parameter(Mandatory = $true)][string]$OutputPath,
+        [Parameter(Mandatory = $true)][string]$WorkDirectory,
+        [Parameter(Mandatory = $true)][string]$CacheDirectory
+    )
+
+    $Changed = $false
+    $Requirements = foreach ($Line in Get-Content -LiteralPath $InputPath) {
+        $Trimmed = $Line.Trim()
+        if (
+            $Trimmed -match "^[A-Za-z0-9][A-Za-z0-9_.-]*(?:\[[^\]]+\])?==[^;\s]+(?:\s*;.*)?$" -and
+            -not (Test-PinnedRequirementDependencyCompatibility `
+                -Requirement $Trimmed `
+                -WorkDirectory $WorkDirectory `
+                -CacheDirectory $CacheDirectory)
+        ) {
+            $CompatibleRequirement = ConvertTo-MinimumRequirement -Requirement $Trimmed
+            Write-Warning "依存をwheelだけで解決できない固定versionをupgradeします: $Trimmed -> $CompatibleRequirement"
+            $Changed = $true
+            $CompatibleRequirement
+        }
+        else {
+            $Line
+        }
+    }
+    $Requirements | Set-Content -LiteralPath $OutputPath -Encoding ascii
+    return $Changed
+}
+
+<#
+.SYNOPSIS
 固定済みrequirements fileからupgrade用の入力fileを作成します。
 .PARAMETER InputPath
 uvが生成した固定済みrequirements fileです。
@@ -219,6 +326,8 @@ $CacheDirectory = Join-Path $WorkDirectory "cache"
 $StagedFullRequirementsPath = Join-Path $WorkDirectory "requirements-full.txt"
 $StagedNextRequirementsPath = Join-Path $WorkDirectory "requirements-next.txt"
 $UnpinnedRequirementsPath = Join-Path $WorkDirectory "requirements-next.in"
+$CompatibleRequirementsPath = Join-Path $WorkDirectory "requirements-compatible.in"
+$RefinementInputPath = $RequirementsPath
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
     Invoke-RequirementsCompile `
@@ -227,12 +336,37 @@ try {
         -CacheDirectory $CacheDirectory `
         -Upgrade `
         -PythonVersion "3.10"
+    try {
+        & {
+            Assert-WheelCompatibility `
+                -RequirementsPath $StagedFullRequirementsPath `
+                -WorkDirectory $WorkDirectory `
+                -CacheDirectory $CacheDirectory
+        } *> $null
+    }
+    catch {
+        $Changed = New-WheelCompatibleRequirements `
+            -InputPath $RequirementsPath `
+            -OutputPath $CompatibleRequirementsPath `
+            -WorkDirectory $WorkDirectory `
+            -CacheDirectory $CacheDirectory
+        if (-not $Changed) {
+            throw
+        }
+        $RefinementInputPath = $CompatibleRequirementsPath
+        Invoke-RequirementsCompile `
+            -InputPath $CompatibleRequirementsPath `
+            -OutputPath $StagedFullRequirementsPath `
+            -CacheDirectory $CacheDirectory `
+            -Upgrade `
+            -PythonVersion "3.10"
+    }
     Assert-WheelCompatibility `
         -RequirementsPath $StagedFullRequirementsPath `
         -WorkDirectory $WorkDirectory `
         -CacheDirectory $CacheDirectory
 
-    New-UnpinnedRequirements -InputPath $StagedFullRequirementsPath -OutputPath $UnpinnedRequirementsPath
+    New-UnpinnedRequirements -InputPath $RefinementInputPath -OutputPath $UnpinnedRequirementsPath
     Invoke-RequirementsCompile `
         -InputPath $UnpinnedRequirementsPath `
         -OutputPath $StagedNextRequirementsPath `
