@@ -26,3 +26,17 @@ foreach ($Pattern in @(
         throw "requirements refinementの必須処理がありません: $Pattern"
     }
 }
+foreach ($Pattern in @(
+    '"--no-binary"',
+    '"pip", "install"',
+    '"uv", "build"',
+    'setup.py',
+    'cmake',
+    'cargo',
+    'cl.exe',
+    'msbuild'
+)) {
+    if ($Source -match [regex]::Escape($Pattern)) {
+        throw "requirements refinementがlocal build処理を含んでいます: $Pattern"
+    }
+}

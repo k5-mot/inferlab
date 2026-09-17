@@ -330,13 +330,13 @@ $CompatibleRequirementsPath = Join-Path $WorkDirectory "requirements-compatible.
 $RefinementInputPath = $RequirementsPath
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
-    Invoke-RequirementsCompile `
-        -InputPath $RequirementsPath `
-        -OutputPath $StagedFullRequirementsPath `
-        -CacheDirectory $CacheDirectory `
-        -Upgrade `
-        -PythonVersion "3.10"
     try {
+        Invoke-RequirementsCompile `
+            -InputPath $RequirementsPath `
+            -OutputPath $StagedFullRequirementsPath `
+            -CacheDirectory $CacheDirectory `
+            -Upgrade `
+            -PythonVersion "3.10"
         & {
             Assert-WheelCompatibility `
                 -RequirementsPath $StagedFullRequirementsPath `

@@ -39,3 +39,21 @@ foreach ($Platform in @(
         throw "Python platform '$Platform' が定義されていません。"
     }
 }
+if ($Source -notmatch [regex]::Escape('$SucceededGroups.ContainsKey("any")')) {
+    throw "取得済みの汎用wheelを再downloadしない処理がありません。"
+}
+foreach ($Pattern in @(
+    '"--no-binary"',
+    '"pip", "install"',
+    '"pip", "wheel"',
+    '"uv", "build"',
+    'setup.py',
+    'cmake',
+    'cargo',
+    'cl.exe',
+    'msbuild'
+)) {
+    if ($Source -match [regex]::Escape($Pattern)) {
+        throw "project版pip downloadがlocal build処理を含んでいます: $Pattern"
+    }
+}

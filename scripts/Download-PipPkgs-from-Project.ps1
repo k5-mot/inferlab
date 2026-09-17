@@ -478,6 +478,9 @@ foreach ($PythonVersion in $PythonVersions) {
         $ApplicableGroups = @{}
         $ApplicableTargetCount = 0
         foreach ($Target in $PlatformTargets) {
+            if ($SucceededGroups.ContainsKey("any") -or $SucceededGroups.ContainsKey($Target.Group)) {
+                continue
+            }
             if (-not (Test-RequirementTargetMarker -PythonCommand $PythonCommand -Requirement $Requirement -PythonVersion $PythonVersion -Target $Target)) {
                 continue
             }
