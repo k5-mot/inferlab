@@ -902,8 +902,8 @@ class TriggerScriptTest(unittest.TestCase):
 class OikbImagePatchTest(unittest.TestCase):
     """OIKB imageへ適用するOpen WebUI連携patchを検証する。"""
 
-    def test_compose_runs_external_scheduler(self) -> None:
-        """Composeがexternal schedulerをwatch modeで常駐実行することを検証する。
+    def test_oikb_uses_internal_sequential_scheduler(self) -> None:
+        """OIKB内蔵schedulerがsourceを設定順に処理することを検証する。
 
         Args:
             なし。
@@ -914,22 +914,20 @@ class OikbImagePatchTest(unittest.TestCase):
         compose = (REPO_ROOT / "20-owui/docker-compose.yml").read_text(
             encoding="utf-8"
         )
-        _, marker, remaining = compose.partition("  oikb-scheduler:\n")
+        self.assertNotIn("  oikb-scheduler:\n", compose)
 
-        self.assertTrue(marker)
-        scheduler = remaining.partition("\n  oikb:\n")[0]
-        for expected in (
-            "restart: unless-stopped",
-            "- /app/scripts/oikb/oikb_sync.py",
-            "- trigger",
-            "- --watch",
-            "OIKB_API_URL: http://oikb:8080",
-            "OPEN_WEBUI_API_URL: http://open-webui:8080",
-            "OIKB_TRIGGER_INTERVAL_SECONDS:",
-            "../scripts/oikb/oikb_sync.py:/app/scripts/oikb/oikb_sync.py:ro",
-            "condition: service_healthy",
+        for relative_path in (
+            "20-owui/oikb/patch-daemon-sequential-scheduler.py",
+            "20-owui/oikb2/patch-daemon-sequential-scheduler.py",
         ):
-            self.assertIn(expected, scheduler)
+            patch_source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+            self.assertIn("for entry in entries:", patch_source)
+            self.assertIn("await _run_entry(entry)", patch_source)
+            self.assertIn('status != "success"', patch_source)
+            self.assertIn(
+                ".replace(scheduler_before, scheduler_after, 1)", patch_source
+            )
+            self.assertNotIn("app.state.scheduler_task = None", patch_source)
 
     def test_upload_waits_for_open_webui_processing(self) -> None:
         """file uploadが解析とKnowledge登録の完了まで待つようpatchする。"""
@@ -1024,6 +1022,10 @@ class Client:
             encoding="utf-8"
         )
         self.assertIn("patch-openwebui-sequential-registration.py", containerfile)
+        self.assertLess(
+            containerfile.index("patch-openwebui-sequential-registration.py"),
+            containerfile.index("patch-daemon-sequential-scheduler.py"),
+        )
         compose = (REPO_ROOT / "20-owui/docker-compose.yml").read_text(encoding="utf-8")
         self.assertIn("context: ./oikb2", compose)
         self.assertIn("./oikb2/oikb.yaml:/app/.oikb.yaml:ro", compose)
@@ -1080,7 +1082,7 @@ class Client:
             なし。
         """
         patch_source = (
-            REPO_ROOT / "20-owui/oikb2/patch-daemon-external-scheduler.py"
+            REPO_ROOT / "20-owui/oikb2/patch-daemon-sequential-scheduler.py"
         ).read_text(encoding="utf-8")
 
         self.assertIn('rsplit("/", 1)[-1]', patch_source)
@@ -1102,7 +1104,7 @@ class Client:
             なし。
         """
         patch_source = (
-            REPO_ROOT / "20-owui/oikb2/patch-daemon-external-scheduler.py"
+            REPO_ROOT / "20-owui/oikb2/patch-daemon-sequential-scheduler.py"
         ).read_text(encoding="utf-8")
 
         self.assertIn("            kb_id: str,", patch_source)

@@ -6,5 +6,5 @@ RUN python /tmp/patch-openwebui-timeout.py && rm /tmp/patch-openwebui-timeout.py
 COPY --chown=appuser:appuser patch-openwebui-synchronous-upload.py /tmp/patch-openwebui-synchronous-upload.py
 RUN python /tmp/patch-openwebui-synchronous-upload.py && rm /tmp/patch-openwebui-synchronous-upload.py
 
-COPY --chown=appuser:appuser patch-daemon-external-scheduler.py /tmp/patch-daemon-external-scheduler.py
-RUN python /tmp/patch-daemon-external-scheduler.py && rm /tmp/patch-daemon-external-scheduler.py
+COPY --chown=appuser:appuser patch-daemon-sequential-scheduler.py /tmp/patch-daemon-sequential-scheduler.py
+RUN python /tmp/patch-daemon-sequential-scheduler.py && rm /tmp/patch-daemon-sequential-scheduler.py

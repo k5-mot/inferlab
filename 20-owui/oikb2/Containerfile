@@ -6,5 +6,5 @@ RUN python /tmp/patch-openwebui-timeout.py && rm /tmp/patch-openwebui-timeout.py
 COPY --chown=appuser:appuser patch-openwebui-sequential-registration.py /tmp/patch-openwebui-sequential-registration.py
 RUN python /tmp/patch-openwebui-sequential-registration.py && rm /tmp/patch-openwebui-sequential-registration.py
 
-COPY --chown=appuser:appuser patch-daemon-external-scheduler.py /tmp/patch-daemon-external-scheduler.py
-RUN python /tmp/patch-daemon-external-scheduler.py && rm /tmp/patch-daemon-external-scheduler.py
+COPY --chown=appuser:appuser patch-daemon-sequential-scheduler.py /tmp/patch-daemon-sequential-scheduler.py
+RUN python /tmp/patch-daemon-sequential-scheduler.py && rm /tmp/patch-daemon-sequential-scheduler.py

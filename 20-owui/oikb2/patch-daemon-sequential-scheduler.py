@@ -112,13 +112,14 @@ def _patch_sync_source(source: str) -> str:
 
 
 def _patch_source(source: str) -> str:
-    """daemonの外部scheduler化、dry-run補強、処理中file表示を追加する。
+    """daemonのscheduler逐次化、dry-run補強、処理中file表示を追加する。
 
     Args:
         source: patch前のdaemon.py source code。
 
     Returns:
-        内蔵schedulerを停止しsource metadataと処理中fileを公開するsource code。
+        内蔵schedulerがsourceを設定順に処理し、source metadataと
+        処理中fileを公開するsource code。
 
     Raises:
         RuntimeError: 想定したpatch対象が存在しない場合。
@@ -147,14 +148,84 @@ def _patch_source(source: str) -> str:
     }
     _history = SyncHistory()
 """
-    startup_before = """        @app.on_event("startup")
-        async def _startup():
-            app.state.scheduler_task = asyncio.create_task(_run_scheduler(entries))
-"""
-    startup_after = """        @app.on_event("startup")
-        async def _startup():
-            app.state.scheduler_task = None
-"""
+    scheduler_before = '''async def _run_scheduler(entries: list[dict], handle_signals: bool = False) -> None:
+    """Start all sync tasks and wait for shutdown."""
+    global _shutdown_event
+    _shutdown_event = asyncio.Event()
+
+    if handle_signals:
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, _request_shutdown)
+
+    tasks = [asyncio.create_task(_schedule_entry(e)) for e in entries]
+
+    await _shutdown_event.wait()
+    await asyncio.gather(*tasks, return_exceptions=True)
+'''
+    scheduler_after = '''async def _run_scheduler(entries: list[dict], handle_signals: bool = False) -> None:
+    """OIKB sourceを設定順に1周期ずつ同期する。
+
+    Args:
+        entries: 設定順のOIKB source。
+        handle_signals: SIGINTとSIGTERMをscheduler内で処理するか。
+
+    Returns:
+        なし。scheduler停止まで待機する。
+
+    Raises:
+        ValueError: sourceごとの同期間隔が一致しない場合。
+
+    Side Effects:
+        sourceを1件ずつ同期し、先行sourceの失敗時は後続sourceを開始しない。
+    """
+    global _shutdown_event
+    _shutdown_event = asyncio.Event()
+
+    if handle_signals:
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, _request_shutdown)
+
+    configured_intervals = {
+        str(entry.get("interval", "30m"))
+        for entry in entries
+    }
+    if len(configured_intervals) > 1:
+        raise ValueError("Sequential scheduler requires one shared interval")
+    raw_interval = next(iter(configured_intervals), "30m")
+    use_cron = _is_cron(raw_interval)
+    interval = None if use_cron else parse_interval(raw_interval)
+
+    while not _shutdown_event.is_set():
+        for entry in entries:
+            if _shutdown_event.is_set():
+                break
+            await _run_entry(entry)
+            source = entry.get("source", "unknown")
+            status = _scheduler_state.get(source, {}).get("status")
+            if status != "success":
+                log.error(
+                    f"Stopping sequential sync cycle after {source}: {status}"
+                )
+                break
+
+        if use_cron:
+            delay = _next_cron_delay(raw_interval)
+        else:
+            delay = float(interval)
+        for entry in entries:
+            source = entry.get("source", "unknown")
+            _scheduler_state.setdefault(source, {})["next_sync_in"] = (
+                f"{int(delay)}s"
+            )
+
+        try:
+            await asyncio.wait_for(_shutdown_event.wait(), timeout=delay)
+            break
+        except asyncio.TimeoutError:
+            pass
+'''
     state_before = """        _scheduler_state[source] = {
             "name": entry.get("name", source),
             "status": {status},
@@ -276,8 +347,8 @@ async function poll(){
 
     if initialization_before not in source:
         raise RuntimeError("oikb.daemon initialization patch target was not found")
-    if startup_before not in source:
-        raise RuntimeError("oikb.daemon scheduler patch target was not found")
+    if scheduler_before not in source:
+        raise RuntimeError("oikb.daemon sequential scheduler patch target was not found")
     if dry_run_before not in source:
         raise RuntimeError("oikb.daemon dry-run patch target was not found")
     if client_before not in source:
@@ -307,7 +378,7 @@ async function poll(){
             initialization_before,
             initialization_after,
         )
-        .replace(startup_before, startup_after)
+        .replace(scheduler_before, scheduler_after, 1)
         .replace(
             dry_run_before,
             dry_run_after,

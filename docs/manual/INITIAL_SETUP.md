@@ -214,28 +214,27 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 ## 8. OIKBを再buildして定時同期する
 
 ```bash
-# OIKB imageをbuildし、外部schedulerと一緒に起動する。
-sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --build oikb oikb-scheduler
+# OIKB imageをbuildし、内蔵schedulerを有効にしたdaemonを起動する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --build oikb
 ```
 
 期待結果:
 
 - OIKBがhealthyになる。
-- `oikb-scheduler`がhealthyになる。
-- schedulerのlogにsourceごとのtriggerとOpen-WebUI登録完了が処理順で出る。
+- OIKBのlogにsourceごとの同期とOpen-WebUI登録完了が処理順で出る。
 - Open-WebUIのKnowledgeに配置したfileが登録される。
-- 全sourceの完了後、`OIKB_TRIGGER_INTERVAL_SECONDS`経過すると次の同期が始まる。
+- 全sourceの完了後、`oikb.yaml`に設定した6時間が経過すると次の同期が始まる。
 
 失敗条件:
 
-- schedulerにOpen-WebUI APIまたはOIKB APIの認証errorが出る。
-- schedulerがKnowledge IDを解決できない。
+- OIKBにOpen-WebUI APIの認証errorが出る。
+- OIKBがKnowledge IDを解決できない。
 - Open-WebUIのpending fileが解消せずtimeoutする。
 - Open-WebUIのKnowledgeにfileが増えない。
 
 ```bash
-# OIKBとexternal schedulerの同期logを確認する。
-sudo docker compose --env-file .env --profile owui --profile nextcloud logs --tail 200 oikb oikb-scheduler
+# OIKB内蔵schedulerの同期logを確認する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud logs --tail 200 oikb
 ```
 
 ## 9. 再実行とrollback
@@ -243,26 +242,26 @@ sudo docker compose --env-file .env --profile owui --profile nextcloud logs --ta
 再実行:
 
 ```bash
-# OIKBとexternal schedulerを再作成して定時同期を再開する。
-sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --force-recreate oikb oikb-scheduler
+# OIKBを再作成して内蔵schedulerの定時同期を再開する。
+sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --force-recreate oikb
 ```
 
 rollback:
 
 ```bash
-# external schedulerを停止してOpen-WebUI Knowledgeの定時同期を止める。
-sudo docker compose --env-file .env --profile owui --profile nextcloud stop oikb-scheduler
+# OIKB daemonを停止してOpen-WebUI Knowledgeの定時同期を止める。
+sudo docker compose --env-file .env --profile owui --profile nextcloud stop oikb
 ```
 
 期待結果:
 
-- 再実行時はschedulerがOIKBの同じKnowledge IDへ逐次同期する。
-- rollback時はOIKB APIとWebUIを維持したまま追加同期が停止する。
+- 再実行時はOIKB内蔵schedulerが同じKnowledge IDへ逐次同期する。
+- rollback時はOpen-WebUIを維持したままOIKB APIと追加同期が停止する。
 
 失敗条件:
 
 - 再実行後も同じ認証エラーが続く。
-- rollback後も`oikb-scheduler` containerがrunningのまま残る。
+- rollback後も`oikb` containerがrunningのまま残る。
 
 ## 10. OpenClawをセットアップする
 

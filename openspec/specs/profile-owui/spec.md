@@ -8,12 +8,12 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 
 ### Requirement: owui profileの提供範囲
 
-`owui` profileは`open-webui`、`oikb`、`oikb-scheduler`、`oikb-rustfs`、`oikb-rustfs-init`、`searxng`、`open-terminal`、`mcpo`、`libretranslate`を対象とし、AI chat、検索、翻訳、terminal、MCP、Knowledge Base同期を統合したWeb UIを提供するものとする（MUST）。
+`owui` profileは`open-webui`、`oikb`、`oikb-rustfs`、`oikb-rustfs-init`、`searxng`、`open-terminal`、`mcpo`、`libretranslate`を対象とし、AI chat、検索、翻訳、terminal、MCP、Knowledge Base同期を統合したWeb UIを提供するものとする（MUST）。
 
 #### Scenario: profileを選択する
 
 - **WHEN** 運用者が`owui` profileを選択してCompose設定を解決する
-- **THEN** `open-webui`、`oikb`、`oikb-scheduler`、`oikb-rustfs`、`oikb-rustfs-init`、`searxng`、`open-terminal`、`mcpo`、`libretranslate`がprofileの対象serviceとして含まれる
+- **THEN** `open-webui`、`oikb`、`oikb-rustfs`、`oikb-rustfs-init`、`searxng`、`open-terminal`、`mcpo`、`libretranslate`がprofileの対象serviceとして含まれる
 - **THEN** 長期稼働serviceは定義済みhealthcheckによって正常性を判定できる
 
 ### Requirement: owui profileの公開境界
@@ -38,11 +38,11 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 
 ### Requirement: OIKB sourceの逐次同期
 
-`owui` profileはOIKB内蔵schedulerを無効にし、`oikb-scheduler`が外部trigger scriptを常駐実行して設定順にsourceを1件ずつ定時同期するものとする（MUST）。後続sourceは、OIKBの成功履歴とOpen WebUIのfile処理およびKnowledge link完了を確認するまで開始してはならない（MUST NOT）。
+`owui` profileはOIKB内蔵schedulerが設定順にsourceを1件ずつ定時同期するものとする（MUST）。後続sourceは、OIKBの成功履歴とOpen WebUIのfile処理およびKnowledge link完了を確認するまで開始してはならない（MUST NOT）。
 
 #### Scenario: 全sourceを1周期同期する
 
-- **WHEN** 運用者がOIKBとOpen WebUIのAPI credentialおよびsource順を指定して`oikb-scheduler`を起動する
+- **WHEN** 運用者がOIKBとOpen WebUIのAPI credentialおよびsource順を指定してOIKB daemonを起動する
 - **THEN** 各sourceについて今回のOIKB同期が`success`となりhistoryへ保存されるまで待機する
 - **THEN** 今回のfileがすべて`completed`となりKnowledge Baseへlinkされ、pending fileが0件になった後だけ次のsourceを開始する
 - **THEN** 全sourceの完了後は設定した同期間隔を待って次の周期を開始する

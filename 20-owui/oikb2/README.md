@@ -9,9 +9,9 @@ OIKB2は、OIKB 0.4.0のfile uploadを1件ずつ完了させるcustom imageで�
 3. file statusが`completed`であることを確認する。
 4. file IDが対象Knowledge Baseのfile一覧に現れることを確認する。
 
-`oikb.yaml`の`concurrency: 1`と既存の外部schedulerを併用する。最後のfileの登録確認後にOIKB同期が終了し、`scripts/oikb/oikb_sync.py trigger`が次のKnowledge Baseを開始する。
+内蔵scheduler patchは、`oikb.yaml`のsourceを設定順に1件ずつ同期する。最後のfileの登録確認後に現在のsourceが終了し、成功した場合だけ次のsourceを開始する。全sourceの完了後は、両sourceに設定した共通の6時間を待って次周期を開始する。
 
-外部scheduler patchは、OIKBのdry-run responseへ`added`と`modified`のfile詳細を追加し、dry-run終了後のsource状態を`idle`へ戻す。これにより`oikb_sync.py trigger --dry-run`が未同期fileをlogへ表示した後も、通常のtriggerを開始できる。
+同じpatchは、OIKBのdry-run responseへ`added`と`modified`のfile詳細を追加し、dry-run終了後のsource状態を`idle`へ戻す。これにより`oikb_sync.py trigger --dry-run`が未同期fileをlogへ表示した後も、通常のtriggerを開始できる。
 
 ## ビルド
 
@@ -19,7 +19,7 @@ repository rootから実行する。
 
 ```bash
 # OIKB2 imageをbuildする。
-sudo docker compose --env-file .env --profile owui build oikb
+sudo docker compose --env-file .env --profile owui --profile nextcloud build oikb
 ```
 
 期待結果:
@@ -38,13 +38,13 @@ sudo docker compose --env-file .env --profile owui build oikb
 ```bash
 # OIKB2 imageでOIKB serviceだけを再作成する。
 sudo docker compose --env-file .env \
-  --profile owui up -d --no-deps oikb
+  --profile owui --profile nextcloud up -d --no-deps oikb
 ```
 
 期待結果:
 
 - OIKBがhealthyになる。
-- 内蔵schedulerは起動せず、外部triggerを待機する。
+- 内蔵schedulerが起動し、設定順にsourceの同期を開始する。
 
 失敗条件:
 
@@ -58,15 +58,10 @@ sudo docker compose --env-file .env \
 ```bash
 # 処理開始fileとKnowledge登録完了fileをリアルタイム表示する。
 sudo docker compose --env-file .env \
-  --profile owui logs -f oikb
+  --profile owui --profile nextcloud logs -f oikb
 ```
 
 処理中は`OIKB2 processing file`、登録確認後は`OIKB2 registered file`としてKnowledge Base ID、file名、file IDを出力する。開始logの後に登録完了logがまだないfileが、現在処理中のfileである。
-
-```bash
-# 設定順に1周期だけ同期する。
-python3 scripts/oikb/oikb_sync.py trigger
-```
 
 期待結果:
 
@@ -83,6 +78,8 @@ python3 scripts/oikb/oikb_sync.py trigger
 - fileがKnowledge Baseのfile一覧へ現れずtimeoutになる。
 - retry後も同じfileの登録が失敗する。
 - 失敗後に同じKnowledge Baseの次fileまたは次のKnowledge Baseが開始される。
+
+手動で1周期だけ確認する場合は、OIKB daemonを停止してから`python3 scripts/oikb/oikb_sync.py trigger`を実行する。daemonと保守CLIを同時実行すると同期が重複するため、併用してはならない（MUST NOT）。
 
 ## WebUIで処理中fileを確認
 
@@ -101,7 +98,7 @@ sudo docker build \
 
 # build済みの既存OIKB imageでserviceを再作成する。
 sudo docker compose --env-file .env \
-  --profile owui up -d --no-deps --no-build oikb
+  --profile owui --profile nextcloud up -d --no-deps --no-build oikb
 ```
 
 期待結果:
