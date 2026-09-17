@@ -79,6 +79,8 @@ uvでrequirements fileの依存を解決します。
 固定versionを書き込むrequirements fileです。
 .PARAMETER CacheDirectory
 uv cacheとして使用する一時directoryです。
+.PARAMETER ProjectDirectory
+WindowsとLinuxだけを解決対象にする一時uv project directoryです。
 .PARAMETER Upgrade
 既存の出力versionを無視して更新する場合に指定します。
 .PARAMETER PythonVersion
@@ -93,6 +95,7 @@ function Invoke-RequirementsCompile {
         [Parameter(Mandatory = $true)][string]$InputPath,
         [Parameter(Mandatory = $true)][string]$OutputPath,
         [Parameter(Mandatory = $true)][string]$CacheDirectory,
+        [Parameter(Mandatory = $true)][string]$ProjectDirectory,
         [switch]$Upgrade,
         [string]$PythonVersion,
         [string]$PythonPlatform
@@ -103,6 +106,8 @@ function Invoke-RequirementsCompile {
         "--output-file", $OutputPath,
         "--only-binary", ":all:",
         "--cache-dir", $CacheDirectory,
+        "--project", $ProjectDirectory,
+        "--torch-backend", "cpu",
         "--no-annotate",
         "--no-header",
         "--no-progress"
@@ -193,6 +198,7 @@ function Test-PinnedRequirementDependencyCompatibility {
                     -InputPath $InputPath `
                     -OutputPath $OutputPath `
                     -CacheDirectory $CacheDirectory `
+                    -ProjectDirectory $WorkDirectory `
                     -PythonVersion $Target.PythonVersion `
                     -PythonPlatform $Target.Platform
             } *> $null
@@ -300,6 +306,7 @@ function Assert-WheelCompatibility {
             -InputPath $RequirementsPath `
             -OutputPath $OutputPath `
             -CacheDirectory $CacheDirectory `
+            -ProjectDirectory $WorkDirectory `
             -PythonVersion $Target.PythonVersion `
             -PythonPlatform $Target.Platform
     }
@@ -327,14 +334,27 @@ $StagedFullRequirementsPath = Join-Path $WorkDirectory "requirements-full.txt"
 $StagedNextRequirementsPath = Join-Path $WorkDirectory "requirements-next.txt"
 $UnpinnedRequirementsPath = Join-Path $WorkDirectory "requirements-next.in"
 $CompatibleRequirementsPath = Join-Path $WorkDirectory "requirements-compatible.in"
+$FallbackRequirementsPath = Join-Path $WorkDirectory "requirements-fallback.in"
+$ResolutionProjectPath = Join-Path $WorkDirectory "pyproject.toml"
 $RefinementInputPath = $RequirementsPath
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
+    @(
+        "[project]",
+        'name = "refine-pip"',
+        'version = "0.0.0"',
+        'requires-python = ">=3.10"',
+        "dependencies = []",
+        "",
+        "[tool.uv]",
+        'environments = ["sys_platform == ''win32''", "sys_platform == ''linux''"]'
+    ) | Set-Content -LiteralPath $ResolutionProjectPath -Encoding ascii
     try {
         Invoke-RequirementsCompile `
             -InputPath $RequirementsPath `
             -OutputPath $StagedFullRequirementsPath `
             -CacheDirectory $CacheDirectory `
+            -ProjectDirectory $WorkDirectory `
             -Upgrade `
             -PythonVersion "3.10"
         & {
@@ -350,16 +370,38 @@ try {
             -OutputPath $CompatibleRequirementsPath `
             -WorkDirectory $WorkDirectory `
             -CacheDirectory $CacheDirectory
-        if (-not $Changed) {
-            throw
+        if ($Changed) {
+            $RefinementInputPath = $CompatibleRequirementsPath
+            try {
+                Invoke-RequirementsCompile `
+                    -InputPath $CompatibleRequirementsPath `
+                    -OutputPath $StagedFullRequirementsPath `
+                    -CacheDirectory $CacheDirectory `
+                    -ProjectDirectory $WorkDirectory `
+                    -Upgrade `
+                    -PythonVersion "3.10"
+                & {
+                    Assert-WheelCompatibility `
+                        -RequirementsPath $StagedFullRequirementsPath `
+                        -WorkDirectory $WorkDirectory `
+                        -CacheDirectory $CacheDirectory
+                } *> $null
+            }
+            catch {
+                $Changed = $false
+            }
         }
-        $RefinementInputPath = $CompatibleRequirementsPath
-        Invoke-RequirementsCompile `
-            -InputPath $CompatibleRequirementsPath `
-            -OutputPath $StagedFullRequirementsPath `
-            -CacheDirectory $CacheDirectory `
-            -Upgrade `
-            -PythonVersion "3.10"
+        if (-not $Changed) {
+            New-UnpinnedRequirements -InputPath $RequirementsPath -OutputPath $FallbackRequirementsPath
+            $RefinementInputPath = $FallbackRequirementsPath
+            Invoke-RequirementsCompile `
+                -InputPath $FallbackRequirementsPath `
+                -OutputPath $StagedFullRequirementsPath `
+                -CacheDirectory $CacheDirectory `
+                -ProjectDirectory $WorkDirectory `
+                -Upgrade `
+                -PythonVersion "3.10"
+        }
     }
     Assert-WheelCompatibility `
         -RequirementsPath $StagedFullRequirementsPath `
@@ -371,6 +413,7 @@ try {
         -InputPath $UnpinnedRequirementsPath `
         -OutputPath $StagedNextRequirementsPath `
         -CacheDirectory $CacheDirectory `
+        -ProjectDirectory $WorkDirectory `
         -Upgrade `
         -PythonVersion "3.10"
     Assert-WheelCompatibility `

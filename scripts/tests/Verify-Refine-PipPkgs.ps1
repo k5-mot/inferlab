@@ -19,6 +19,9 @@ foreach ($Pattern in @(
     'requirements-next.txt',
     'Test-PinnedRequirementDependencyCompatibility',
     'ConvertTo-MinimumRequirement',
+    '"--torch-backend", "cpu"',
+    "sys_platform == ''win32''",
+    "sys_platform == ''linux''",
     'x86_64-manylinux_2_34',
     '"windows"'
 )) {

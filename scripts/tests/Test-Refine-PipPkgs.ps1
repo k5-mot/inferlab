@@ -30,10 +30,10 @@ try {
     if (-not ($Full -match "^pycparser==")) {
         throw "requirements-full.txtに推移依存pycparserがありません。"
     }
-    if (-not ($Full -match "^six==1\.16\.0$")) {
+    if (-not ($Full -match "^six==1\.16\.0(?:\s*;.*)?$")) {
         throw "requirements-full.txtが元のversion制約を維持していません。"
     }
-    if (-not ($Next -match "^six==") -or $Next -match "^six==1\.16\.0$") {
+    if (-not ($Next -match "^six==") -or $Next -match "^six==1\.16\.0(?:\s*;.*)?$") {
         throw "requirements-next.txtでsixがupgradeされませんでした。"
     }
 

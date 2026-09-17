@@ -328,6 +328,7 @@ scripts/
 
 - `requirements.txt`から推移依存を含む`requirements-full.txt`を作成する。
 - 固定versionのpackageまたは推移依存に検証対象のwheelがない場合、その依存元の固定packageを元のversion以上へ更新して依存関係を再解決する。
+- 依存元だけの更新で解決できない場合、直接依存全体のversion制約を外し、WindowsとLinux向けに互換versionを再解決する。
 - 固定versionを外して最新の互換versionへ解決した`requirements-next.txt`も作成する。
 - source distributionは使用せず、Python 3.10/3.14のWindows x64とLinux x64でwheelを利用できることを検証する。
 

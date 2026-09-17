@@ -189,7 +189,7 @@ typing-inspection==0.4.2
 urllib3==2.7.0
 uuid-utils==0.16.2
 uvicorn==0.50.2
-uvloop==0.22.1
+uvloop==0.22.1 ; sys_platform != "win32"
 valkey==6.1.1
 watchfiles==1.2.0
 websockets==15.0.1
