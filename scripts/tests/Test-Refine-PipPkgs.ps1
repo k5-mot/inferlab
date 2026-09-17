@@ -6,12 +6,15 @@ if (Skip-DownloadTestIfCommandMissing -Command "uv") {
 
 $OutputDir = New-DownloadTestDirectory -Name "refine-pip"
 $ProjectDir = Join-Path $OutputDir "project"
+$RequirementsFixturePath = Join-Path $PSScriptRoot "../../tests/pypi-legacy/requirements.txt"
 try {
+    if ((Get-Content -LiteralPath $RequirementsFixturePath) -match "^pycparser(?:[<=>!~].*)?$") {
+        throw "test fixtureにはcffiの推移依存pycparserを記載しないでください。"
+    }
     New-Item -ItemType Directory -Path $ProjectDir -Force | Out-Null
-    @'
-cffi
-six==1.16.0
-'@ | Set-Content -LiteralPath (Join-Path $ProjectDir "requirements.txt") -Encoding ascii
+    Copy-Item `
+        -LiteralPath $RequirementsFixturePath `
+        -Destination (Join-Path $ProjectDir "requirements.txt")
 
     & (Join-Path $PSScriptRoot "../Refine-PipPkgs.ps1") -ProjectDir $ProjectDir
 
