@@ -19,6 +19,7 @@ const componentDirectories = [
   "25-cloudflareos",
   "26-octos",
   "27-aion",
+  "28-assistantmd",
   "30-nextcloud",
   "31-xwiki",
   "33-zulip",

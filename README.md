@@ -25,6 +25,7 @@
 | `cloudflareos` | `25-cloudflareos/docker-compose.yml` | AI productivity environment |
 | `octos` | `26-octos/docker-compose.yml` | Agent workspace |
 | `aion` | `27-aion/docker-compose.yml` | AI chatとagent workspace |
+| `assistantmd` | `28-assistantmd/docker-compose.yml` | Markdown-first AI agent workspace |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
 | `xwiki` | `31-xwiki/docker-compose.yml` | Wiki |
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
@@ -108,6 +109,8 @@
 | `cloudflareos` | `cloudflare-os` | `32500` | `25-cloudflareos/docker-compose.yml` |
 | `octos` | `octos` | `32600` | `26-octos/docker-compose.yml` |
 | `aion` | `aion` | `32700` | `27-aion/docker-compose.yml` |
+| `assistantmd` | `assistantmd-init` | - | `28-assistantmd/docker-compose.yml` |
+| `assistantmd` | `assistantmd` | `32800` | `28-assistantmd/docker-compose.yml` |
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
@@ -175,6 +178,7 @@
 - [Cloudflare OS](25-cloudflareos/README.md)
 - [Octos](26-octos/README.md)
 - [AionUi](27-aion/README.md)
+- [Assistant.md](28-assistantmd/README.md)
 - [Nextcloud](30-nextcloud/README.md)
 - [XWiki](31-xwiki/README.md)
 - [Zulip](33-zulip/README.md)
