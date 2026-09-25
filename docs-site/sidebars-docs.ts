@@ -13,6 +13,7 @@ const componentReadmes = [
   "cloudflareos/README",
   "octos/README",
   "aion/README",
+  "assistantmd/README",
   "nextcloud/README",
   "xwiki/README",
   "zulip/README",

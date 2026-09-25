@@ -1,0 +1,77 @@
+x-assistantmd-build: &assistantmd-build
+  context: https://github.com/DodgyBadger/Assistant.md.git#9f2f5071833faa73401025160a25b9a7ebd4ea71
+  dockerfile: docker/Dockerfile
+
+services:
+  assistantmd-init:
+    image: docker.io/library/busybox:1.37.0-musl
+    container_name: ${STACK_NAME}-assistantmd-init
+    restart: "no"
+    profiles:
+      - assistantmd
+    user: "0:0"
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - >-
+        mkdir -p /app/data/Workspace /app/system
+        && chown -R 1000:1000 /app/data /app/system
+    volumes:
+      - assistantmd-data:/app/data
+      - assistantmd-system:/app/system
+    networks:
+      - internal-nw
+
+  assistantmd:
+    build: *assistantmd-build
+    image: inferlab/assistantmd:v0.8.1
+    container_name: ${STACK_NAME}-assistantmd
+    restart: unless-stopped
+    init: true
+    profiles:
+      - assistantmd
+    environment:
+      ASSISTANTMD_AUTH_MODE: owner_token
+      ASSISTANTMD_AUTH_SECRET: ${ASSISTANTMD_AUTH_SECRET:-sk-assistantmd-owner-token-change-me}
+      ASSISTANTMD_PUBLIC_URL: http://${PUBLIC_HOST}:32800
+      ASSISTANTMD_SECRETS_KEY: ${ASSISTANTMD_SECRETS_KEY:-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA}
+      TZ: Asia/Tokyo
+    ports:
+      - 32800:8000
+    volumes:
+      - assistantmd-data:/app/data
+      - assistantmd-system:/app/system
+    networks:
+      - internal-nw
+    depends_on:
+      assistantmd-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - http://127.0.0.1:8000/api/health
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    shm_size: 1gb
+    mem_limit: 2g
+    memswap_limit: 3g
+    pids_limit: 1024
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - homepage.group=28-assistantmd
+      - homepage.name=Assistant.md
+      - homepage.href=http://${PUBLIC_HOST}:32800/
+      - homepage.description=Markdown-first AI agent workspace
+
+volumes:
+  assistantmd-data:
+  assistantmd-system:
+
+networks:
+  internal-nw:
