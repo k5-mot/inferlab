@@ -342,7 +342,7 @@ scripts/
 
 ### Download-NpmPkgs-from-Project.ps1
 
-- 任意projectの`package.json`からnpm packageをダウンロードする補助script.
+- 任意projectの`package-lock.json`に固定されたversionのnpm packageをダウンロードする補助script。lockfileがない場合は`package.json`から依存関係を解決する。
 - npm cache、作業directory、一時parserは`OutputDir`と同じvolumeへ作成し、user profileのcacheと一時directoryを使用しない。
 
 ## References

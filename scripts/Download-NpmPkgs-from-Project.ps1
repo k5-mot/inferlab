@@ -3,7 +3,8 @@
 対象project directoryのpackage.jsonからnpm package archiveを取得します。
 
 .DESCRIPTION
-対象project directoryの`package.json`を読み、Windows x64とLinux x64向けに依存解決します。
+対象project directoryに`package-lock.json`があれば固定されたversionを使用します。
+なければ`package.json`を読み、Windows x64とLinux x64向けに依存解決します。
 解決されたpackageを`npm pack`で`.tgz`として保存し、Verdaccioへpublishできる資材を作成します。
 
 .PARAMETER OutputDir
@@ -132,7 +133,7 @@ target platform情報です。
 .PARAMETER ParserDirectory
 一時parserを作成するdirectoryです。
 .OUTPUTS
-`name@version`形式のpackage spec配列を返します。
+package URLまたは`name@version`形式のspec配列を返します。
 #>
 function Get-PackageSpecsFromPackageLock {
     param(
@@ -202,11 +203,20 @@ New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 
 $WorkDirectory = Join-Path $OutputRoot ".npm-download-$([guid]::NewGuid().ToString("N"))"
 $CacheDirectory = Join-Path $WorkDirectory "cache"
+$ProjectLockFile = Join-Path $ProjectDir "package-lock.json"
 $AllPackageSpecs = @()
 try {
     New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
     '{ "private": true }' | Set-Content -LiteralPath (Join-Path $WorkDirectory "package.json") -Encoding ascii
     foreach ($Platform in $Platforms) {
+        if (Test-Path -LiteralPath $ProjectLockFile -PathType Leaf) {
+            $AllPackageSpecs += Get-PackageSpecsFromPackageLock `
+                -LockFile $ProjectLockFile `
+                -Platform $Platform `
+                -ParserDirectory $WorkDirectory
+            continue
+        }
+
         $PlatformWorkDirectory = Join-Path $WorkDirectory $Platform.Name
         New-Item -ItemType Directory -Path $PlatformWorkDirectory -Force | Out-Null
 
