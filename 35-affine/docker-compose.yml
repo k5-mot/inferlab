@@ -1,0 +1,134 @@
+services:
+  affine:
+    image: ghcr.io/toeverything/affine:0.27.4
+    container_name: ${STACK_NAME}-affine
+    restart: unless-stopped
+    profiles:
+      - affine
+    environment:
+      REDIS_SERVER_HOST: affine-redis
+      DATABASE_URL: postgresql://affine:${AFFINE_DB_PASSWORD:-affine_db_password}@affine-postgres:5432/affine
+      DEPLOYMENT_TYPE: selfhosted
+      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:35000
+      AFFINE_SERVER_HTTPS: "true"
+      AFFINE_SERVER_HOST: ${PUBLIC_HOST}
+    volumes:
+      - affine-storage:/root/.affine/storage
+      - affine-config:/root/.affine/config
+    networks:
+      - internal-nw
+    depends_on:
+      affine-redis:
+        condition: service_healthy
+      affine-postgres:
+        condition: service_healthy
+      affine-migration:
+        condition: service_completed_successfully
+
+  affine-migration:
+    image: ghcr.io/toeverything/affine:0.27.4
+    container_name: ${STACK_NAME}-affine-migration
+    restart: "no"
+    profiles:
+      - affine
+    command:
+      - sh
+      - -c
+      - node ./scripts/self-host-predeploy.js
+    environment:
+      REDIS_SERVER_HOST: affine-redis
+      DATABASE_URL: postgresql://affine:${AFFINE_DB_PASSWORD:-affine_db_password}@affine-postgres:5432/affine
+      DEPLOYMENT_TYPE: selfhosted
+      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:35000
+      AFFINE_SERVER_HTTPS: "true"
+      AFFINE_SERVER_HOST: ${PUBLIC_HOST}
+    volumes:
+      - affine-storage:/root/.affine/storage
+      - affine-config:/root/.affine/config
+    networks:
+      - internal-nw
+    depends_on:
+      affine-redis:
+        condition: service_healthy
+      affine-postgres:
+        condition: service_healthy
+
+  affine-redis:
+    image: docker.io/library/redis:8.10.2-alpine
+    container_name: ${STACK_NAME}-affine-redis
+    restart: unless-stopped
+    profiles:
+      - affine
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  affine-postgres:
+    image: docker.io/pgvector/pgvector:0.8.6-pg16
+    container_name: ${STACK_NAME}-affine-postgres
+    restart: unless-stopped
+    profiles:
+      - affine
+    environment:
+      POSTGRES_USER: affine
+      POSTGRES_PASSWORD: ${AFFINE_DB_PASSWORD:-affine_db_password}
+      POSTGRES_DB: affine
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - affine-postgres-data:/var/lib/postgresql/data
+    networks:
+      - internal-nw
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U affine -d affine" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  affine-caddy:
+    image: docker.io/library/caddy:2.11.6-alpine
+    container_name: ${STACK_NAME}-affine-caddy
+    restart: unless-stopped
+    profiles:
+      - affine
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
+    ports:
+      - "35000:35000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - affine-caddy-data:/data
+      - affine-caddy-config:/config
+    networks:
+      - internal-nw
+    depends_on:
+      affine:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget --no-verbose --tries=1 --spider --no-check-certificate
+          --header="Host: $${PUBLIC_HOST}:35000" https://127.0.0.1:35000/
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - homepage.group=35-affine
+      - homepage.name=AFFiNE
+      - homepage.href=https://${PUBLIC_HOST}:35000
+      - homepage.description=Local-first knowledge workspace
+
+volumes:
+  affine-storage:
+  affine-config:
+  affine-postgres-data:
+  affine-caddy-data:
+  affine-caddy-config:
+
+networks:
+  internal-nw:

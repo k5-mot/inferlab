@@ -137,6 +137,11 @@ $Packages = @(
     ### 34-gitlab
     "docker.io/gitlab/gitlab-ce:19.3.1-ce.0",
     "docker.io/gitlab/gitlab-runner:alpine-v19.3.1",
+    ### 35-affine
+    "ghcr.io/toeverything/affine:0.27.4",
+    "docker.io/library/redis:8.10.2-alpine",
+    "docker.io/pgvector/pgvector:0.8.6-pg16",
+    "docker.io/library/caddy:2.11.6-alpine",
     ### 40-obsidian
     "docker.io/library/couchdb:3.5.2.1",
     ### 41-llmwiki
