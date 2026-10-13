@@ -9,7 +9,7 @@ services:
       REDIS_SERVER_HOST: affine-redis
       DATABASE_URL: postgresql://affine:${AFFINE_DB_PASSWORD:-affine_db_password}@affine-postgres:5432/affine
       DEPLOYMENT_TYPE: selfhosted
-      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:35000
+      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:33500
       AFFINE_SERVER_HTTPS: "true"
       AFFINE_SERVER_HOST: ${PUBLIC_HOST}
     volumes:
@@ -39,7 +39,7 @@ services:
       REDIS_SERVER_HOST: affine-redis
       DATABASE_URL: postgresql://affine:${AFFINE_DB_PASSWORD:-affine_db_password}@affine-postgres:5432/affine
       DEPLOYMENT_TYPE: selfhosted
-      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:35000
+      AFFINE_SERVER_EXTERNAL_URL: https://${PUBLIC_HOST}:33500
       AFFINE_SERVER_HTTPS: "true"
       AFFINE_SERVER_HOST: ${PUBLIC_HOST}
     volumes:
@@ -97,7 +97,7 @@ services:
     environment:
       PUBLIC_HOST: ${PUBLIC_HOST}
     ports:
-      - "35000:35000"
+      - "33500:33500"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - affine-caddy-data:/data
@@ -112,7 +112,7 @@ services:
         - CMD-SHELL
         - >-
           wget --no-verbose --tries=1 --spider --no-check-certificate
-          --header="Host: $${PUBLIC_HOST}:35000" https://127.0.0.1:35000/
+          --header="Host: $${PUBLIC_HOST}:33500" https://127.0.0.1:33500/
       interval: 30s
       timeout: 10s
       retries: 5
@@ -120,7 +120,7 @@ services:
     labels:
       - homepage.group=35-affine
       - homepage.name=AFFiNE
-      - homepage.href=https://${PUBLIC_HOST}:35000
+      - homepage.href=https://${PUBLIC_HOST}:33500
       - homepage.description=Local-first knowledge workspace
 
 volumes:

@@ -18,12 +18,12 @@ Docker Composeの`affine` profileが利用者と運用者へ提供する能力�
 
 ### Requirement: affine profileの公開境界
 
-`affine` profileは、CaddyのHTTPS endpointだけをhostのTCP port `35000`で公開するものとする（MUST）。
+`affine` profileは、CaddyのHTTPS endpointだけをhostのTCP port `33500`で公開するものとする（MUST）。
 
 #### Scenario: 利用者がAFFiNEへ接続する
 
 - **WHEN** profileのserviceが起動してhealth判定に成功する
-- **THEN** `https://${PUBLIC_HOST}:35000`からAFFiNEへ接続できる
+- **THEN** `https://${PUBLIC_HOST}:33500`からAFFiNEへ接続できる
 - **THEN** AFFiNE、PostgreSQL、Redisをhostへ直接公開しない
 
 ### Requirement: affine profileのTLS
