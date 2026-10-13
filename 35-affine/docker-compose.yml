@@ -112,7 +112,7 @@ services:
         - CMD-SHELL
         - >-
           wget --no-verbose --tries=1 --spider --no-check-certificate
-          --header="Host: $${PUBLIC_HOST}:33500" https://127.0.0.1:33500/
+          https://$${PUBLIC_HOST}:33500/
       interval: 30s
       timeout: 10s
       retries: 5
