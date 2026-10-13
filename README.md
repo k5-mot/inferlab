@@ -31,6 +31,7 @@
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
 | `zulip` | `33-zulip/docker-compose.yml` | チャット |
 | `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
+| `affine` | `35-affine/docker-compose.yml` | HTTPS対応knowledge workspace |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
 | `openkb` | `40-obsidian/docker-compose.yml` | 旧OpenKB向けCouchDB互換profile |
 | `llmwiki` | `41-llmwiki/docker-compose.yml` | LLM Wiki compilerとviewer |
@@ -126,6 +127,11 @@
 | `gitlab` | `gitlab` | `33400`, `33422` | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner-register` | - | `34-gitlab/docker-compose.yml` |
 | `gitlab` | `gitlab-runner` | - | `34-gitlab/docker-compose.yml` |
+| `affine` | `affine` | - | `35-affine/docker-compose.yml` |
+| `affine` | `affine-migration` | - | `35-affine/docker-compose.yml` |
+| `affine` | `affine-redis` | - | `35-affine/docker-compose.yml` |
+| `affine` | `affine-postgres` | - | `35-affine/docker-compose.yml` |
+| `affine` | `affine-caddy` | `35000` | `35-affine/docker-compose.yml` |
 | `obsidian`, `llmwiki`, `sage-wiki`, `openkb` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
 | `llmwiki` | `llmwiki-ingester` | - | `41-llmwiki/docker-compose.yml` |
@@ -183,6 +189,7 @@
 - [XWiki](31-xwiki/README.md)
 - [Zulip](33-zulip/README.md)
 - [GitLab](34-gitlab/README.md)
+- [AFFiNE](35-affine/README.md)
 - [LLM Wiki](41-llmwiki/README.md)
 - [Sage Wiki](42-sage-wiki/README.md)
 - [Observability](50-o11y/README.md)
