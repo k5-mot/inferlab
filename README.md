@@ -131,7 +131,7 @@
 | `affine` | `affine-migration` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-redis` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-postgres` | - | `35-affine/docker-compose.yml` |
-| `affine` | `affine-caddy` | `35000` | `35-affine/docker-compose.yml` |
+| `affine` | `affine-caddy` | `33500` | `35-affine/docker-compose.yml` |
 | `obsidian`, `llmwiki`, `sage-wiki`, `openkb` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
 | `llmwiki` | `llmwiki-ingester` | - | `41-llmwiki/docker-compose.yml` |

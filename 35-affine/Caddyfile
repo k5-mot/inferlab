@@ -1,9 +1,9 @@
 {
-	# hostの35000番だけを公開するため、HTTP redirect用listenerを作成しない。
+	# hostの33500番だけを公開するため、HTTP redirect用listenerを作成しない。
 	auto_https disable_redirects
 }
 
-https://{$PUBLIC_HOST}:35000 {
+https://{$PUBLIC_HOST}:33500 {
 	tls internal
 	reverse_proxy affine:3010
 }
