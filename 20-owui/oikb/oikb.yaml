@@ -3,15 +3,6 @@ defaults:
   concurrency: 1
 
 sources:
-  # - name: nextcloud-documents
-  #   source: "/nextcloud/data/admin/files/oikb"
-  #   kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"
-  #   filter:
-  #     exclude:
-  #       - "**/.DS_Store"
-  #       - "**/Thumbs.db"
-  #       - "**/*.url"
-
   - name: nextcloud-documents
     source: nextcloud:/oikb
     kb-id: "${NEXTCLOUD_OPENWEBUI_KB_ID:-}"

@@ -46,12 +46,10 @@ def patch_source(source: str) -> str:
         RuntimeError: 想定したpatch対象が存在しない場合。
     """
     old_imports = """import json
-from typing import Any
 """
     new_imports = """import json
 import logging
 import time
-from typing import Any
 """
     old_docstring = '        """POST /files/ — upload a single file to the KB."""\n'
     new_docstring = '''        """1 fileを登録確認まで処理し、失敗時は1回retryする。
@@ -78,7 +76,7 @@ from typing import Any
 '''
     old_upload_request = '''        resp = self._http.post(
             "/files/",
-            files={"file": (filename, file_content)},
+            files={"file": (filename, file_content, _content_type(filename))},
             data={"metadata": json.dumps(metadata)},
         )
         resp.raise_for_status()
@@ -97,7 +95,7 @@ from typing import Any
                 resp = self._http.post(
                     "/files/",
                     params={"process_in_background": "false"},
-                    files={"file": (filename, file_content)},
+                    files={"file": (filename, file_content, _content_type(filename))},
                     data={"metadata": json.dumps(metadata)},
                 )
                 resp.raise_for_status()
@@ -195,6 +193,14 @@ from typing import Any
                     "status_code",
                     None,
                 )
+                if file_id:
+                    try:
+                        delete_resp = self._http.delete(f"/files/{file_id}")
+                        delete_resp.raise_for_status()
+                    except Exception as cleanup_error:
+                        raise RuntimeError(
+                            f"Open WebUI file cleanup failed: {filename}: {cleanup_error}"
+                        ) from cleanup_error
                 if (
                     isinstance(status_code, int)
                     and status_code < 500
@@ -205,19 +211,6 @@ from typing import Any
                     raise RuntimeError(
                         f"Open WebUI file retry failed: {filename}: {error}"
                     ) from error
-                if file_id:
-                    try:
-                        delete_resp = self._http.delete(f"/files/{file_id}")
-                        delete_resp.raise_for_status()
-                    except Exception as cleanup_error:
-                        logger.warning(
-                            "OIKB2 retry cleanup failed: "
-                            "knowledge_id=%s file=%s file_id=%s error=%s",
-                            kb_id,
-                            filename,
-                            file_id,
-                            cleanup_error,
-                        )
                 logger.warning(
                     "OIKB2 retrying file: knowledge_id=%s file=%s error=%s",
                     kb_id,
