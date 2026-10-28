@@ -1,4 +1,4 @@
-FROM ghcr.io/open-webui/open-terminal:0.12.3 AS docker-cli
+FROM ghcr.io/open-webui/open-terminal:0.14.5 AS docker-cli
 
 FROM ghcr.io/open-webui/mcpo:main
 

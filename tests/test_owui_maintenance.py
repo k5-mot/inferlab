@@ -916,45 +916,34 @@ class OikbImagePatchTest(unittest.TestCase):
         )
         self.assertNotIn("  oikb-scheduler:\n", compose)
 
-        for relative_path in (
-            "20-owui/oikb/patch-daemon-sequential-scheduler.py",
-            "20-owui/oikb2/patch-daemon-sequential-scheduler.py",
-        ):
-            patch_source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
-            self.assertIn("for entry in entries:", patch_source)
-            self.assertIn("await _run_entry(entry)", patch_source)
-            self.assertIn('status != "success"', patch_source)
-            self.assertIn(
-                ".replace(scheduler_before, scheduler_after, 1)", patch_source
-            )
-            self.assertNotIn("app.state.scheduler_task = None", patch_source)
-
-    def test_upload_waits_for_open_webui_processing(self) -> None:
-        """file uploadが解析とKnowledge登録の完了まで待つようpatchする。"""
-        patch_module = load_script(
-            "patch_openwebui_synchronous_upload",
-            "20-owui/oikb/patch-openwebui-synchronous-upload.py",
-        )
-        source = """        resp = self._http.post(
-            "/files/",
-            files={"file": (filename, file_content)},
-            data={"metadata": json.dumps(metadata)},
-        )
-"""
-
-        patched = patch_module.patch_source(source)
-
+        patch_source = (
+            REPO_ROOT / "20-owui/oikb/patch-daemon-sequential-scheduler.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("for group in groups:", patch_source)
+        self.assertIn("await _run_entry(entry)", patch_source)
+        self.assertIn('status != "success"', patch_source)
         self.assertIn(
-            'params={"process_in_background": "false"}',
-            patched,
+            ".replace(scheduler_before, scheduler_after, 1)", patch_source
         )
+        self.assertNotIn("app.state.scheduler_task = None", patch_source)
+
+    def test_oikb_uses_sequential_registration_patch(self) -> None:
+        """OIKB imageが逐次登録patchを適用することを検証する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
         containerfile = (REPO_ROOT / "20-owui/oikb/Containerfile").read_text(
             encoding="utf-8"
         )
-        self.assertIn("patch-openwebui-synchronous-upload.py", containerfile)
+        self.assertIn("patch-openwebui-sequential-registration.py", containerfile)
+        self.assertNotIn("patch-openwebui-synchronous-upload.py", containerfile)
 
-    def test_oikb2_waits_for_each_file_registration(self) -> None:
-        """OIKB2がfile処理、retry、Knowledge linkを順に実行する。
+    def test_oikb_waits_for_each_file_registration(self) -> None:
+        """OIKBがfile処理、retry、Knowledge linkを順に実行する。
 
         Args:
             なし。
@@ -964,7 +953,7 @@ class OikbImagePatchTest(unittest.TestCase):
         """
         patch_module = load_script(
             "patch_openwebui_sequential_registration",
-            "20-owui/oikb2/patch-openwebui-sequential-registration.py",
+            "20-owui/oikb/patch-openwebui-sequential-registration.py",
         )
         source = '''import json
 from typing import Any
@@ -989,7 +978,7 @@ class Client:
 
         resp = self._http.post(
             "/files/",
-            files={"file": (filename, file_content)},
+            files={"file": (filename, file_content, _content_type(filename))},
             data={"metadata": json.dumps(metadata)},
         )
         resp.raise_for_status()
@@ -1018,7 +1007,7 @@ class Client:
             patched.index("OIKB2 registered file"),
             patched.index("return uploaded_file"),
         )
-        containerfile = (REPO_ROOT / "20-owui/oikb2/Containerfile").read_text(
+        containerfile = (REPO_ROOT / "20-owui/oikb/Containerfile").read_text(
             encoding="utf-8"
         )
         self.assertIn("patch-openwebui-sequential-registration.py", containerfile)
@@ -1027,10 +1016,13 @@ class Client:
             containerfile.index("patch-daemon-sequential-scheduler.py"),
         )
         compose = (REPO_ROOT / "20-owui/docker-compose.yml").read_text(encoding="utf-8")
-        self.assertIn("context: ./oikb2", compose)
-        self.assertIn("./oikb2/oikb.yaml:/app/.oikb.yaml:ro", compose)
+        self.assertIn("context: ./oikb", compose)
+        self.assertIn("./oikb/oikb.yaml:/app/.oikb.yaml:ro", compose)
 
-        namespace = {"__name__": "patched_oikb_client"}
+        namespace = {
+            "__name__": "patched_oikb_client",
+            "_content_type": Mock(return_value="application/pdf"),
+        }
         exec(patched, namespace)
         client = namespace["Client"]()
         client._http = Mock()
@@ -1072,8 +1064,8 @@ class Client:
         client._http.delete.assert_called_once_with("/files/failed-file")
         sleep.assert_called_once_with(2)
 
-    def test_oikb2_dashboard_tracks_current_file_safely(self) -> None:
-        """OIKB2 dashboardが処理中のbasenameだけを安全に表示する。
+    def test_oikb_dashboard_tracks_current_file_safely(self) -> None:
+        """OIKB dashboardが処理中のbasenameだけを安全に表示する。
 
         Args:
             なし。
@@ -1082,7 +1074,7 @@ class Client:
             なし。
         """
         patch_source = (
-            REPO_ROOT / "20-owui/oikb2/patch-daemon-sequential-scheduler.py"
+            REPO_ROOT / "20-owui/oikb/patch-daemon-sequential-scheduler.py"
         ).read_text(encoding="utf-8")
 
         self.assertIn('rsplit("/", 1)[-1]', patch_source)
@@ -1094,7 +1086,7 @@ class Client:
             patch_source.index("finally:"),
         )
 
-    def test_oikb2_upload_state_wrapper_preserves_kb_id_keyword(self) -> None:
+    def test_oikb_upload_state_wrapper_preserves_kb_id_keyword(self) -> None:
         """upload wrapperがupstreamのkb_id keyword契約を維持する。
 
         Args:
@@ -1104,7 +1096,7 @@ class Client:
             なし。
         """
         patch_source = (
-            REPO_ROOT / "20-owui/oikb2/patch-daemon-sequential-scheduler.py"
+            REPO_ROOT / "20-owui/oikb/patch-daemon-sequential-scheduler.py"
         ).read_text(encoding="utf-8")
 
         self.assertIn("            kb_id: str,", patch_source)
@@ -1113,6 +1105,38 @@ class Client:
 
 class OpenWebUiDoclingPatchTest(unittest.TestCase):
     """Open WebUIのDocling向けPDF分割patchを検証する。"""
+
+    UPSTREAM_LOADER_SOURCE = """class DoclingLoader:
+    def __init__(self, url, api_key=None, file_path=None, mime_type=None, params=None):
+        self.url = url
+        self.api_key = api_key
+        self.file_path = file_path
+        self.mime_type = mime_type
+        self.params = params or {}
+
+    def load(self):
+        response = requests.post(
+            f'{self.url}/v1/convert/file',
+            data={
+                'md_page_break_placeholder': '\\f',
+                'to_formats': ['md', 'json'],
+            },
+        )
+        conversion_status = response.json().get('status')
+        if conversion_status in ['failure', 'skipped']:
+            raise RuntimeError('conversion failed')
+        document_data = response.json().get('document', {})
+        json_content = document_data.get('json_content') or {}
+        md_content = document_data.get('md_content', '')
+        page_break_marker = '\\f'
+        if page_break_marker in md_content:
+            return json_content
+        return []
+
+
+class Loader:
+    pass
+"""
 
     def test_large_pdf_is_sent_in_page_batches(self) -> None:
         """1001ページのPDFを100ページ単位で逐次送信する。
@@ -1127,20 +1151,7 @@ class OpenWebUiDoclingPatchTest(unittest.TestCase):
             "patch_docling_pdf_batches",
             "20-owui/open-webui/patch-docling-pdf-batches.py",
         )
-        source = """class DoclingLoader:
-    def load(self):
-        requests.post(
-            f'{self.url}/v1/convert/file',
-            data={'md_page_break_placeholder': '\\f'},
-        )
-
-
-class Loader:
-    pass
-"""
-        patched = patch_module.patch_source(source)
-
-        requests = Mock()
+        patched = patch_module.patch_source(self.UPSTREAM_LOADER_SOURCE)
 
         def write_pdf(stream: object) -> None:
             """分割PDFを表すbytesを書き込む。
@@ -1153,42 +1164,11 @@ class Loader:
             """
             stream.write(b"%PDF-batched")
 
-        def post_docling(url: str, **kwargs: object) -> Mock:
-            """分割file名からDocling responseを生成する。
-
-            Args:
-                url: Docling endpoint URL。
-                **kwargs: multipart request引数。
-
-            Returns:
-                分割ページ数に対応したDocling response。
-            """
-            self.assertEqual(url, "http://docling/v1/convert/file")
-            file_name, stream, content_type = kwargs["files"]["files"]
-            self.assertTrue(stream.read())
-            self.assertEqual(content_type, "application/pdf")
-            self.assertEqual(kwargs["data"]["to_formats"], ["md", "json"])
-            page_range = file_name.rsplit("__pages_", 1)[1].removesuffix(".pdf")
-            start_text, end_text = page_range.split("-")
-            response = Mock(ok=True, reason="OK", text="")
-            response.json.return_value = {
-                "document": {
-                    "md_content": "\f".join(
-                        f"page-{page}"
-                        for page in range(int(start_text), int(end_text) + 1)
-                    )
-                }
-            }
-            return response
-
-        requests.post.side_effect = post_docling
         namespace = {
             "__name__": "patched_open_webui_loader",
-            "AIOHTTP_CLIENT_SESSION_SSL": False,
-            "Document": SimpleNamespace,
             "log": Mock(),
             "os": os,
-            "requests": requests,
+            "requests": Mock(),
         }
         writer = Mock()
         writer.write.side_effect = write_pdf
@@ -1206,6 +1186,13 @@ class Loader:
             pdf_file.write(b"%PDF-original")
             pdf_file.flush()
             exec(patched, namespace)
+            base_load = Mock(
+                side_effect=[
+                    [SimpleNamespace(metadata={"page": page}) for page in range(size)]
+                    for size in [100] * 10 + [1]
+                ]
+            )
+            namespace["_InferlabBaseDoclingLoader"].load = base_load
             loader = namespace["DoclingLoader"](
                 "http://docling",
                 file_path=pdf_file.name,
@@ -1213,7 +1200,7 @@ class Loader:
             )
             documents = loader.load()
 
-        self.assertEqual(requests.post.call_count, 11)
+        self.assertEqual(base_load.call_count, 11)
         self.assertEqual(fake_pypdf.PdfWriter.call_count, 11)
         self.assertEqual(
             [item.args[0] for item in writer.add_page.call_args_list],
@@ -1224,7 +1211,7 @@ class Loader:
             [document.metadata["page"] for document in documents],
             list(range(1001)),
         )
-        self.assertIn("'page_range' not in self.params", patched)
+        self.assertIn("'page_range' in self.params", patched)
         self.assertEqual(patch_module.patch_source(patched), patched)
         entrypoint = (
             REPO_ROOT / "20-owui/open-webui/entrypoint_patch.sh"
@@ -1243,8 +1230,8 @@ class Loader:
             compose,
         )
 
-    def test_json_provenance_restores_original_page_numbers(self) -> None:
-        """JSON provenanceと分割位置から原本ページ番号を復元する。
+    def test_non_pdf_uses_upstream_loader(self) -> None:
+        """PDF以外は標準Loaderへ処理を委譲する。
 
         Args:
             なし。
@@ -1253,101 +1240,56 @@ class Loader:
             なし。
         """
         patch_module = load_script(
-            "patch_docling_pdf_batches_provenance",
+            "patch_docling_pdf_batches_non_pdf",
             "20-owui/open-webui/patch-docling-pdf-batches.py",
         )
-        response = Mock(ok=True, reason="OK", text="")
-        response.json.return_value = {
-            "status": "success",
-            "document": {
-                "md_content": "page-101\fpage-103",
-                "json_content": {
-                    "texts": [
-                        {
-                            "content_layer": "body",
-                            "prov": [{"page_no": 1}],
-                        },
-                        {
-                            "content_layer": "body",
-                            "prov": [{"page_no": 3}],
-                        },
-                    ]
-                },
-            },
-        }
-        requests = Mock()
-        requests.post.return_value = response
+        patched = patch_module.patch_source(self.UPSTREAM_LOADER_SOURCE)
         namespace = {
-            "__name__": "patched_open_webui_loader_provenance",
-            "AIOHTTP_CLIENT_SESSION_SSL": False,
-            "Document": SimpleNamespace,
+            "__name__": "patched_open_webui_loader_non_pdf",
             "log": Mock(),
             "os": os,
-            "requests": requests,
+            "requests": Mock(),
         }
-        exec(patch_module.DOCLING_LOADER, namespace)
+        exec(patched, namespace)
+        expected = [SimpleNamespace(metadata={})]
+        base_load = Mock(return_value=expected)
+        namespace["_InferlabBaseDoclingLoader"].load = base_load
         loader = namespace["DoclingLoader"](
             "http://docling",
-            file_path="original.pdf",
-            mime_type="application/pdf",
+            file_path="notes.txt",
+            mime_type="text/plain",
         )
-
-        with tempfile.TemporaryFile(mode="w+b") as pdf_file:
-            documents = loader._post_file(
-                "batch.pdf",
-                pdf_file,
-                page_offset=100,
-                include_page_metadata=True,
-            )
-
-        self.assertEqual(
-            [document.metadata["page"] for document in documents],
-            [100, 102],
-        )
-
-    def test_http_success_rejects_failed_conversion_status(self) -> None:
-        """HTTP成功response内のDocling変換失敗を例外にする。
-
-        Args:
-            なし。
-
-        Returns:
-            なし。
-        """
-        patch_module = load_script(
-            "patch_docling_pdf_batches_failure",
-            "20-owui/open-webui/patch-docling-pdf-batches.py",
-        )
-        response = Mock(ok=True, reason="OK", text="")
-        response.json.return_value = {
-            "status": "failure",
-            "errors": [{"error_message": "conversion failed"}],
-        }
-        requests = Mock()
-        requests.post.return_value = response
-        namespace = {
-            "__name__": "patched_open_webui_loader_failure",
-            "AIOHTTP_CLIENT_SESSION_SSL": False,
-            "Document": SimpleNamespace,
-            "log": Mock(),
-            "os": os,
-            "requests": requests,
-        }
-        exec(patch_module.DOCLING_LOADER, namespace)
-        loader = namespace["DoclingLoader"](
-            "http://docling",
-            file_path="original.pdf",
-            mime_type="application/pdf",
-        )
+        fake_pypdf = ModuleType("pypdf")
+        fake_pypdf.PdfReader = Mock()
+        fake_pypdf.PdfWriter = Mock()
 
         with (
-            tempfile.TemporaryFile(mode="w+b") as pdf_file,
-            self.assertRaisesRegex(
-                RuntimeError,
-                "Docling conversion failure: conversion failed",
-            ),
+            patch.dict(sys.modules, {"pypdf": fake_pypdf}),
+            patch.dict(os.environ, {"DOCLING_PDF_BATCH_PAGES": "100"}),
         ):
-            loader._post_file("batch.pdf", pdf_file)
+            documents = loader.load()
+
+        self.assertIs(documents, expected)
+        base_load.assert_called_once_with()
+
+    def test_upstream_conversion_failure_handling_is_preserved(self) -> None:
+        """標準Loaderの変換失敗処理をbase classへ保持する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        patch_module = load_script(
+            "patch_docling_pdf_batches_preserves_upstream",
+            "20-owui/open-webui/patch-docling-pdf-batches.py",
+        )
+        patched = patch_module.patch_source(self.UPSTREAM_LOADER_SOURCE)
+
+        self.assertIn("class _InferlabBaseDoclingLoader:", patched)
+        self.assertIn("conversion_status in ['failure', 'skipped']", patched)
+        self.assertIn("class DoclingLoader(_InferlabBaseDoclingLoader):", patched)
 
 
 class CliHelpTest(unittest.TestCase):

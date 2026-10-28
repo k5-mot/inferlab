@@ -1,6 +1,6 @@
-# OIKB2
+# OIKB custom image
 
-OIKB2は、OIKB 0.4.0のfile uploadを1件ずつ完了させるcustom imageである。ルートのComposeは`20-owui/oikb2`をbuild contextとして使用する。
+このcustom imageは、OIKB 0.6.0のfile uploadを1件ずつ完了させる。ルートのComposeは`20-owui/oikb`をbuild contextとして使用する。
 
 各fileでは、次の処理を完了してから次のfileへ進む。
 
@@ -18,13 +18,13 @@ OIKB2は、OIKB 0.4.0のfile uploadを1件ずつ完了させるcustom imageで�
 repository rootから実行する。
 
 ```bash
-# OIKB2 imageをbuildする。
+# OIKB custom imageをbuildする。
 sudo docker compose --env-file .env --profile owui --profile nextcloud build oikb
 ```
 
 期待結果:
 
-- base imageのOIKB 0.4.0へ3つのpatchが適用される。
+- base imageのOIKB 0.6.0へ3つのpatchが適用される。
 - `patch-openwebui-sequential-registration.py`がerrorなく終了する。
 - dry-run responseが未同期fileのactionとpathを返す。
 
@@ -36,7 +36,7 @@ sudo docker compose --env-file .env --profile owui --profile nextcloud build oik
 ## 起動
 
 ```bash
-# OIKB2 imageでOIKB serviceだけを再作成する。
+# OIKB custom imageでOIKB serviceだけを再作成する。
 sudo docker compose --env-file .env \
   --profile owui --profile nextcloud up -d --no-deps oikb
 ```
@@ -53,7 +53,7 @@ sudo docker compose --env-file .env \
 
 ## 逐次同期の確認
 
-別terminalでOIKB2のlogを追跡する。
+別terminalでOIKBのlogを追跡する。
 
 ```bash
 # 処理開始fileとKnowledge登録完了fileをリアルタイム表示する。
@@ -66,7 +66,7 @@ sudo docker compose --env-file .env \
 期待結果:
 
 - 同時に処理中となるfileは1件だけになる。
-- OIKB2のDocker logへ処理中のKnowledge Base IDとfile名が表示される。
+- OIKBのDocker logへ処理中のKnowledge Base IDとfile名が表示される。
 - OIKB WebUIの対象source行直下へ、処理中fileのbasenameが表示される。
 - file登録に失敗した場合は、初回のfileを削除して同じfileを1回retryする。
 - fileごとに`completed`とKnowledge Baseへのlinkを確認してから次のfileへ進む。
@@ -92,7 +92,7 @@ file名はHTML escapeして表示する。directory pathは公開せず、dry-ru
 ```bash
 # 既存OIKBのContainerfileを同じlocal tagへbuildする。
 sudo docker build \
-  -t ghcr.io/open-webui/oikb:0.4.0-patch2 \
+  -t ghcr.io/open-webui/oikb:0.6.0-patch \
   -f 20-owui/oikb/Containerfile \
   20-owui/oikb
 
@@ -112,6 +112,6 @@ sudo docker compose --env-file .env \
 
 ## References
 
-- [OIKB v0.4.0 client](https://github.com/open-webui/oikb/blob/f99d2e66e7c0a24e5fe336a0242d5b334f979af6/src/oikb/client.py)
-- [Open WebUI v0.11.1 file API](https://github.com/open-webui/open-webui/blob/d3e8bf3405e848cfba377814d0aa7ba7290e414d/backend/open_webui/routers/files.py)
-- [Open WebUI v0.11.1 Knowledge API](https://github.com/open-webui/open-webui/blob/d3e8bf3405e848cfba377814d0aa7ba7290e414d/backend/open_webui/routers/knowledge.py)
+- [OIKB v0.6.0 client](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/client.py)
+- [Open WebUI v0.12.4 file API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/files.py)
+- [Open WebUI v0.12.4 Knowledge API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/knowledge.py)
