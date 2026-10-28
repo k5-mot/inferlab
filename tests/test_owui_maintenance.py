@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import logging
 import os
 import sys
@@ -967,6 +968,8 @@ class OikbImagePatchTest(unittest.TestCase):
             "20-owui/oikb2/patch-openwebui-sequential-registration.py",
         )
         source = '''import json
+import mimetypes
+import os
 from typing import Any
 
 class Client:
@@ -989,7 +992,7 @@ class Client:
 
         resp = self._http.post(
             "/files/",
-            files={"file": (filename, file_content)},
+            files={"file": (filename, file_content, _content_type(filename))},
             data={"metadata": json.dumps(metadata)},
         )
         resp.raise_for_status()
@@ -1030,7 +1033,10 @@ class Client:
         self.assertIn("context: ./oikb2", compose)
         self.assertIn("./oikb2/oikb.yaml:/app/.oikb.yaml:ro", compose)
 
-        namespace = {"__name__": "patched_oikb_client"}
+        namespace = {
+            "__name__": "patched_oikb_client",
+            "_content_type": lambda filename: "application/pdf",
+        }
         exec(patched, namespace)
         client = namespace["Client"]()
         client._http = Mock()
@@ -1114,6 +1120,73 @@ class Client:
 class OpenWebUiDoclingPatchTest(unittest.TestCase):
     """Open WebUIのDocling向けPDF分割patchを検証する。"""
 
+    def test_active_docling_params_request_json_provenance(self) -> None:
+        """起動時の設定出力がMarkdownとJSONを要求する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        export_module = load_script(
+            "export_docling_params_test",
+            "20-owui/open-webui/export_docling_params.py",
+        )
+        config = REPO_ROOT / "20-owui/open-webui/docling_params_slim.json"
+        params = json.loads(
+            export_module.render_params(
+                export_module.normalize_params(export_module.load_params(config))
+            )
+        )
+        self.assertEqual(params["to_formats"], ["md", "json"])
+        full_params = json.loads(
+            (REPO_ROOT / "20-owui/open-webui/docling_params_full.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(full_params["to_formats"], ["md", "json"])
+        entrypoint = (
+            REPO_ROOT / "20-owui/open-webui/entrypoint_patch.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("unset DOCLING_PARAMS", entrypoint)
+        self.assertIn("export_docling_params.py /run/config/docling_params.json", entrypoint)
+
+    def test_patch_keeps_upstream_loader_and_rejects_incompatible_source(self) -> None:
+        """標準Loaderを保持し、必要な標準機能がない版を拒否する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        patch_module = load_script(
+            "patch_docling_pdf_batches_source_test",
+            "20-owui/open-webui/patch-docling-pdf-batches.py",
+        )
+        source = """class DoclingLoader:
+    def load(self):
+        requests.post('/v1/convert/file', data={
+            'md_page_break_placeholder': '\\f',
+            'to_formats': ['md', 'json'],
+        })
+        conversion_status in ['failure', 'skipped']
+        json_content = document_data.get('json_content') or {}
+        if page_break_marker in md_content:
+            pass
+
+
+class Loader:
+    pass
+"""
+        patched = patch_module.patch_source(source)
+        self.assertIn("class _InferlabBaseDoclingLoader:", patched)
+        self.assertIn("class DoclingLoader(_InferlabBaseDoclingLoader):", patched)
+        self.assertEqual(patch_module.patch_source(patched), patched)
+        with self.assertRaisesRegex(RuntimeError, "incompatible"):
+            patch_module.patch_source(source.replace("'json'", "'html'"))
+
     def test_large_pdf_is_sent_in_page_batches(self) -> None:
         """1001ページのPDFを100ページ単位で逐次送信する。
 
@@ -1127,20 +1200,11 @@ class OpenWebUiDoclingPatchTest(unittest.TestCase):
             "patch_docling_pdf_batches",
             "20-owui/open-webui/patch-docling-pdf-batches.py",
         )
-        source = """class DoclingLoader:
-    def load(self):
-        requests.post(
-            f'{self.url}/v1/convert/file',
-            data={'md_page_break_placeholder': '\\f'},
-        )
-
-
-class Loader:
-    pass
-"""
-        patched = patch_module.patch_source(source)
+        patched = patch_module.DOCLING_LOADER
 
         requests = Mock()
+
+        written_pages = 0
 
         def write_pdf(stream: object) -> None:
             """分割PDFを表すbytesを書き込む。
@@ -1151,6 +1215,13 @@ class Loader:
             Returns:
                 なし。
             """
+            nonlocal written_pages
+            pages = [
+                item.args[0]
+                for item in writer.add_page.call_args_list[written_pages:]
+            ]
+            namespace["batch_range"] = (pages[0], pages[-1])
+            written_pages += len(pages)
             stream.write(b"%PDF-batched")
 
         def post_docling(url: str, **kwargs: object) -> Mock:
@@ -1164,18 +1235,17 @@ class Loader:
                 分割ページ数に対応したDocling response。
             """
             self.assertEqual(url, "http://docling/v1/convert/file")
-            file_name, stream, content_type = kwargs["files"]["files"]
+            _file_name, stream, content_type = kwargs["files"]["files"]
             self.assertTrue(stream.read())
             self.assertEqual(content_type, "application/pdf")
             self.assertEqual(kwargs["data"]["to_formats"], ["md", "json"])
-            page_range = file_name.rsplit("__pages_", 1)[1].removesuffix(".pdf")
-            start_text, end_text = page_range.split("-")
+            start_page, end_page = namespace["batch_range"]
             response = Mock(ok=True, reason="OK", text="")
             response.json.return_value = {
                 "document": {
                     "md_content": "\f".join(
                         f"page-{page}"
-                        for page in range(int(start_text), int(end_text) + 1)
+                        for page in range(start_page + 1, end_page + 2)
                     )
                 }
             }
@@ -1190,6 +1260,51 @@ class Loader:
             "os": os,
             "requests": requests,
         }
+
+        class BaseLoader:
+            """標準Loaderの呼び出し回数と局所ページ番号を模擬する。"""
+
+            def __init__(self, url, api_key=None, file_path=None, mime_type=None, params=None):
+                """変換対象を保持する。
+
+                Args:
+                    url: Docling URL。
+                    api_key: API key。
+                    file_path: PDF path。
+                    mime_type: MIME type。
+                    params: 変換設定。
+
+                Returns:
+                    なし。
+                """
+                self.url = url
+                self.api_key = api_key
+                self.file_path = file_path
+                self.mime_type = mime_type
+                self.params = params or {}
+
+            def load(self):
+                """局所ページ番号を持つ変換結果を返す。
+
+                Args:
+                    なし。
+
+                Returns:
+                    分割PDFのDocument一覧。
+                """
+                with open(self.file_path, "rb") as stream:
+                    requests.post(
+                        "http://docling/v1/convert/file",
+                        files={"files": (Path(self.file_path).name, stream, "application/pdf")},
+                        data={"to_formats": ["md", "json"]},
+                    )
+                start_page, end_page = namespace["batch_range"]
+                return [
+                    SimpleNamespace(page_content=f"page-{page + 1}", metadata={"page": page - start_page})
+                    for page in range(start_page, end_page + 1)
+                ]
+
+        namespace["_InferlabBaseDoclingLoader"] = BaseLoader
         writer = Mock()
         writer.write.side_effect = write_pdf
         fake_pypdf = ModuleType("pypdf")
@@ -1224,8 +1339,7 @@ class Loader:
             [document.metadata["page"] for document in documents],
             list(range(1001)),
         )
-        self.assertIn("'page_range' not in self.params", patched)
-        self.assertEqual(patch_module.patch_source(patched), patched)
+        self.assertIn("'page_range' in self.params", patched)
         entrypoint = (
             REPO_ROOT / "20-owui/open-webui/entrypoint_patch.sh"
         ).read_text(encoding="utf-8")
@@ -1256,54 +1370,72 @@ class Loader:
             "patch_docling_pdf_batches_provenance",
             "20-owui/open-webui/patch-docling-pdf-batches.py",
         )
-        response = Mock(ok=True, reason="OK", text="")
-        response.json.return_value = {
-            "status": "success",
-            "document": {
-                "md_content": "page-101\fpage-103",
-                "json_content": {
-                    "texts": [
-                        {
-                            "content_layer": "body",
-                            "prov": [{"page_no": 1}],
-                        },
-                        {
-                            "content_layer": "body",
-                            "prov": [{"page_no": 3}],
-                        },
-                    ]
-                },
-            },
-        }
-        requests = Mock()
-        requests.post.return_value = response
+        calls = []
+
+        class BaseLoader:
+            """標準Loaderが返すprovenance由来ページ番号を模擬する。"""
+
+            def __init__(self, url, api_key=None, file_path=None, mime_type=None, params=None):
+                """PDF設定を保持する。
+
+                Args:
+                    url: Docling URL。
+                    api_key: API key。
+                    file_path: PDF path。
+                    mime_type: MIME type。
+                    params: 変換設定。
+
+                Returns:
+                    なし。
+                """
+                self.url = url
+                self.api_key = api_key
+                self.file_path = file_path
+                self.mime_type = mime_type
+                self.params = params or {}
+
+            def load(self):
+                """各バッチの局所ページ番号を返す。
+
+                Args:
+                    なし。
+
+                Returns:
+                    局所ページ番号を持つDocument一覧。
+                """
+                calls.append(self.file_path)
+                pages = [0, 2] if len(calls) == 1 else [0]
+                return [SimpleNamespace(page_content="text", metadata={"page": page}) for page in pages]
+
         namespace = {
             "__name__": "patched_open_webui_loader_provenance",
-            "AIOHTTP_CLIENT_SESSION_SSL": False,
             "Document": SimpleNamespace,
             "log": Mock(),
             "os": os,
-            "requests": requests,
+            "_InferlabBaseDoclingLoader": BaseLoader,
         }
-        exec(patch_module.DOCLING_LOADER, namespace)
-        loader = namespace["DoclingLoader"](
-            "http://docling",
-            file_path="original.pdf",
-            mime_type="application/pdf",
-        )
+        fake_pypdf = ModuleType("pypdf")
+        fake_pypdf.PdfReader = Mock(return_value=SimpleNamespace(pages=list(range(4))))
+        writer = Mock()
+        writer.write.side_effect = lambda stream: stream.write(b"%PDF-batched")
+        fake_pypdf.PdfWriter = Mock(return_value=writer)
 
-        with tempfile.TemporaryFile(mode="w+b") as pdf_file:
-            documents = loader._post_file(
-                "batch.pdf",
-                pdf_file,
-                page_offset=100,
-                include_page_metadata=True,
+        with (
+            patch.dict(sys.modules, {"pypdf": fake_pypdf}),
+            patch.dict(os.environ, {"DOCLING_PDF_BATCH_PAGES": "3"}),
+            tempfile.NamedTemporaryFile(suffix=".pdf") as pdf_file,
+        ):
+            exec(patch_module.DOCLING_LOADER, namespace)
+            loader = namespace["DoclingLoader"](
+                "http://docling", file_path=pdf_file.name, mime_type="application/pdf"
             )
+            documents = loader.load()
 
         self.assertEqual(
             [document.metadata["page"] for document in documents],
-            [100, 102],
+            [0, 2, 3],
         )
+        self.assertEqual(len(calls), 2)
 
     def test_http_success_rejects_failed_conversion_status(self) -> None:
         """HTTP成功response内のDocling変換失敗を例外にする。
@@ -1318,36 +1450,68 @@ class Loader:
             "patch_docling_pdf_batches_failure",
             "20-owui/open-webui/patch-docling-pdf-batches.py",
         )
-        response = Mock(ok=True, reason="OK", text="")
-        response.json.return_value = {
-            "status": "failure",
-            "errors": [{"error_message": "conversion failed"}],
-        }
-        requests = Mock()
-        requests.post.return_value = response
+        class BaseLoader:
+            """標準Loaderの失敗を分割処理へ伝播させる。"""
+
+            def __init__(self, url, api_key=None, file_path=None, mime_type=None, params=None):
+                """変換対象を保持する。
+
+                Args:
+                    url: Docling URL。
+                    api_key: API key。
+                    file_path: PDF path。
+                    mime_type: MIME type。
+                    params: 変換設定。
+
+                Returns:
+                    なし。
+                """
+                self.url = url
+                self.api_key = api_key
+                self.file_path = file_path
+                self.mime_type = mime_type
+                self.params = params or {}
+
+            def load(self):
+                """標準Loaderの変換失敗を発生させる。
+
+                Args:
+                    なし。
+
+                Returns:
+                    正常時のDocument一覧。このテストでは返さない。
+
+                Raises:
+                    RuntimeError: Docling変換が失敗した場合。
+                """
+                raise RuntimeError("Docling conversion failure: conversion failed")
+
         namespace = {
             "__name__": "patched_open_webui_loader_failure",
-            "AIOHTTP_CLIENT_SESSION_SSL": False,
             "Document": SimpleNamespace,
             "log": Mock(),
             "os": os,
-            "requests": requests,
+            "_InferlabBaseDoclingLoader": BaseLoader,
         }
-        exec(patch_module.DOCLING_LOADER, namespace)
-        loader = namespace["DoclingLoader"](
-            "http://docling",
-            file_path="original.pdf",
-            mime_type="application/pdf",
-        )
+        fake_pypdf = ModuleType("pypdf")
+        fake_pypdf.PdfReader = Mock(return_value=SimpleNamespace(pages=list(range(2))))
+        writer = Mock()
+        writer.write.side_effect = lambda stream: stream.write(b"%PDF-batched")
+        fake_pypdf.PdfWriter = Mock(return_value=writer)
 
         with (
-            tempfile.TemporaryFile(mode="w+b") as pdf_file,
+            patch.dict(sys.modules, {"pypdf": fake_pypdf}),
+            patch.dict(os.environ, {"DOCLING_PDF_BATCH_PAGES": "1"}),
+            tempfile.NamedTemporaryFile(suffix=".pdf") as pdf_file,
             self.assertRaisesRegex(
                 RuntimeError,
                 "Docling conversion failure: conversion failed",
             ),
         ):
-            loader._post_file("batch.pdf", pdf_file)
+            exec(patch_module.DOCLING_LOADER, namespace)
+            namespace["DoclingLoader"](
+                "http://docling", file_path=pdf_file.name, mime_type="application/pdf"
+            ).load()
 
 
 class CliHelpTest(unittest.TestCase):

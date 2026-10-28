@@ -21,11 +21,15 @@ llmwiki連携では、`mcpo`がDocker socketへアクセスして`${STACK_NAME}-
 
 ## Docling向けPDF分割
 
-Open WebUIは、`DOCLING_PDF_BATCH_PAGES`を超えるPDFを一時PDFへ分割し、Doclingへ1件ずつ送信する。既定値は100ページで、`0`を指定すると分割を無効化する。Open WebUIとOIKBでは元PDFを1つのfileとして維持し、分割fileはDoclingへのrequestにだけ使用する。
+この構成のOpen WebUI 0.12.4は、`DOCLING_PDF_BATCH_PAGES`を超えるPDFを一時PDFへ分割し、Docling Serve 1.38.2へ1件ずつ送信する。既定値は100ページで、`0`を指定すると分割を無効化する。Open WebUIとOIKBでは元PDFを1つのfileとして維持し、分割fileはDoclingへのrequestにだけ使用する。分割ごとの変換には標準DoclingLoaderを使い、JSON provenanceの局所ページ番号へ原本のページ位置を加算する。空白ページの後に本文が1ページだけある分割でもJSONから局所ページ番号を読む。
+
+起動時は`docling_params_slim.json`から`DOCLING_PARAMS`を生成する。slimと切替候補のfullの`to_formats`はともに`md`と`json`であり、Markdown本文とページ番号のprovenanceを同時に取得する。Compose内に別の`DOCLING_PARAMS`は置かない。
 
 Open WebUIのlogには、各分割の元file名とページ範囲を`Docling PDF batch`として記録する。明示的な`page_range`をDocling parameterへ設定した場合は、その指定を優先して自動分割しない。
 
 ## 起動
+
+更新後は[`oikb2/README.md`](oikb2/README.md)の手順で`0.6.0-patch1`をローカルbuildしてから起動する。このtagはrepository内のpatchを適用した成果物であり、公開registryから取得する前提ではない。
 
 ### Open WebUI stackのみを起動
 

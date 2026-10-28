@@ -45,9 +45,22 @@ PDFの分割ページ数は`.env`の`DOCLING_PDF_BATCH_PAGES`で指定する。�
 
 画像数が多い文書では、100ページ単位でも処理時間が長くなり、model backendのmemory使用量が継続する。分割途中で失敗した場合は元PDF全体が失敗となり、OIKBのretryでは先頭の分割から再処理する。TEI、Ollama、Doclingを同時に高負荷にする操作はhost resourceの余力を確認してから実施する。
 
+## 更新後の結合確認手順
+
+次の確認は隔離した検証用KBで、daemonの定期同期と手動triggerが重ならない時間に実施する。既存KBに問題PDFを投入してはならない（MUST NOT）。
+
+1. 1ページの小さいPDFを登録する。Open WebUIでfile statusが`completed`、対象KBのfile一覧に同じfile IDがあることを確認する。
+2. `DOCLING_PDF_BATCH_PAGES`をまたぐPDFを登録する。Open WebUI logの`Docling PDF batch`がページ順に出ること、分割境界の前後で引用元ページ番号が原本と一致することを確認する。空白ページを含むPDFも使い、JSON provenanceが使える範囲を確認する。
+3. 問題PDFを最後に登録する。Docling、Open WebUI、OIKBのlogを同じ時刻で照合し、各fileの`OIKB2 processing file`から`OIKB2 registered file`までの間に次のfileや次のKBが始まらないことを確認する。
+4. hostのOOM記録、Docling containerの最大memory、swap、処理時間を採取する。`OOMKilled`またはPDFのページ番号ずれが再現した場合は失敗とし、`DOCLING_PDF_BATCH_PAGES`と同時処理負荷を調整して再試験する。
+
+実環境で問題PDFが使用できない場合、OOM対策の有効性は未確定とする。Doclingの同期APIは待機上限を超えるとHTTP 504を返すが、処理taskを自動中止する保証はないため、timeout後の再試行時はDocling側の進行中taskとmemoryを確認する。
+
 ## References
 
 - [OpenWebUIとDoclingのCompose設定](https://github.com/k5-mot/inferlab/blob/main/20-owui/docker-compose.yml)
 - [Docling full parameter](https://github.com/k5-mot/inferlab/blob/main/20-owui/open-webui/docling_params_full.json)
 - [Docling slim parameter](https://github.com/k5-mot/inferlab/blob/main/20-owui/open-webui/docling_params_slim.json)
 - [TEI起動時のhost resource枯渇](TEI_RESOURCE_EXHAUSTION.md)
+- [Docling Serve v1.38.2 configuration](https://github.com/docling-project/docling-serve/blob/v1.38.2/docs/configuration.md)
+- [Open WebUI v0.12.4 DoclingLoader](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/retrieval/loaders/main.py)

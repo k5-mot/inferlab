@@ -51,9 +51,13 @@ def _patch_source(source: str) -> str:
     Returns:
         OikbClient: timeout設定を反映したOpen WebUI clientです。
     \"\"\"
+    import math
+
     from oikb.client import OikbClient
 
     timeout = float(os.environ.get("OIKB_OPENWEBUI_TIMEOUT", "120"))
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("OIKB_OPENWEBUI_TIMEOUT must be a positive finite number")
     return OikbClient(
         base_url=resolve_url(url),
         token=resolve_token(token),
@@ -62,7 +66,7 @@ def _patch_source(source: str) -> str:
 """
 
     if old not in source:
-        raise RuntimeError("oikb.client timeout patch target was not found")
+        raise RuntimeError("oikb.cli timeout patch target was not found")
 
     return source.replace(old, new)
 

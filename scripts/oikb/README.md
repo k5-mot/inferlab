@@ -170,7 +170,7 @@ rollback:
 
 ## References
 
-- [OIKB v0.4.0 daemon](https://github.com/open-webui/oikb/blob/v0.4.0/src/oikb/daemon.py)
-- [OIKB v0.4.0 sync history](https://github.com/open-webui/oikb/blob/v0.4.0/src/oikb/history.py)
+- [OIKB v0.6.0 daemon](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/daemon.py)
+- [OIKB v0.6.0 sync history](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/history.py)
 - [Open WebUI: Retrieval-Augmented Generation](https://docs.openwebui.com/features/chat-conversations/rag/)
-- [Open WebUI v0.11.3 knowledge router](https://github.com/open-webui/open-webui/blob/v0.11.3/backend/open_webui/routers/knowledge.py)
+- [Open WebUI v0.12.4 knowledge router](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/knowledge.py)

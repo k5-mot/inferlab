@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open WebUIのDoclingLoaderへPDF分割処理を追加する。"""
+"""Open WebUIの標準DoclingLoaderへPDF事前分割を追加する。"""
 
 from __future__ import annotations
 
@@ -13,42 +13,33 @@ from pathlib import Path
 LOGGER = logging.getLogger(__name__)
 PATCH_MARKER = "_INFERLAB_DOCLING_PDF_BATCHES = True"
 
-DOCLING_LOADER = r'''class DoclingLoader:
-    """PDFを分割してDoclingへ逐次送信するloader。"""
+DOCLING_LOADER = r'''class DoclingLoader(_InferlabBaseDoclingLoader):
+    """標準Loaderの変換結果を利用してPDFだけを物理分割する。"""
 
     _INFERLAB_DOCLING_PDF_BATCHES = True
 
-    def __init__(self, url, api_key=None, file_path=None, mime_type=None, params=None):
-        """Docling接続情報と処理対象fileを保持する。
-
-        Args:
-            url: Docling Serveのbase URL。
-            api_key: Docling ServeのAPI key。
-            file_path: 処理対象fileのpath。
-            mime_type: 処理対象fileのMIME type。
-            params: Docling Serveへ渡すparameter。
-
-        Returns:
-            なし。
-        """
-        self.url = url.rstrip('/')
-        self.api_key = api_key
-        self.file_path = file_path
-        self.mime_type = mime_type
-        self.params = params or {}
-
-    def _batch_pages(self):
-        """環境変数からPDFの分割ページ数を取得する。
+    def load(self) -> list[Document]:
+        """PDFをページ単位で分割し、原本ページ番号を付けて変換する。
 
         Args:
             なし。
 
         Returns:
-            1分割あたりのページ数。0の場合は分割しない。
+            標準Loaderで変換したDocumentのlist。
 
         Raises:
-            ValueError: 環境変数が0以上の整数でない場合。
+            ValueError: 分割ページ数が不正な場合。
+            pypdf.errors.PdfReadError: PDFを読み込めない場合。
+            Exception: Docling変換が失敗した場合。
+
+        Side Effects:
+            分割PDFを一時fileへ書き込み、Docling Serveへ順番に送信する。
         """
+        from pathlib import Path
+        from tempfile import NamedTemporaryFile
+
+        from pypdf import PdfReader, PdfWriter
+
         value = os.getenv('DOCLING_PDF_BATCH_PAGES', '0')
         try:
             batch_pages = int(value)
@@ -60,162 +51,20 @@ DOCLING_LOADER = r'''class DoclingLoader:
             raise ValueError(
                 'DOCLING_PDF_BATCH_PAGES must be a non-negative integer'
             )
-        return batch_pages
 
-    def _is_batch_target(self, batch_pages):
-        """処理対象が分割可能なPDFか判定する。
-
-        Args:
-            batch_pages: 1分割あたりのページ数。
-
-        Returns:
-            PDF分割を行う場合はTrue、それ以外はFalse。
-        """
         is_pdf = self.mime_type == 'application/pdf' or str(
             self.file_path
         ).lower().endswith('.pdf')
-        return batch_pages > 0 and is_pdf and 'page_range' not in self.params
-
-    def _post_file(
-        self,
-        file_name,
-        file_handle,
-        page_offset=0,
-        include_page_metadata=False,
-    ):
-        """1つのfileをDoclingへ送信して文書を生成する。
-
-        Args:
-            file_name: multipartで送るfile名。
-            file_handle: 読み込み可能なfile object。
-            page_offset: 元PDF上の0始まりページ位置。
-            include_page_metadata: 単一文書にもページ位置を付けるか。
-
-        Returns:
-            DoclingのMarkdownから生成したDocumentのlist。
-
-        Raises:
-            Exception: Docling Serveがerror responseを返した場合。
-
-        Side Effects:
-            Docling Serveへ同期HTTP requestを送信する。
-        """
-        page_break_marker = '\f'
-        headers = {}
-        if self.api_key:
-            headers['X-Api-Key'] = f'{self.api_key}'
-
-        response = requests.post(
-            f'{self.url}/v1/convert/file',
-            files={
-                'files': (
-                    file_name,
-                    file_handle,
-                    self.mime_type or 'application/octet-stream',
-                )
-            },
-            data={
-                'image_export_mode': 'placeholder',
-                'md_page_break_placeholder': page_break_marker,
-                'to_formats': ['md', 'json'],
-                **self.params,
-            },
-            headers=headers,
-            verify=AIOHTTP_CLIENT_SESSION_SSL,
-        )
-        if response.ok:
-            result = response.json()
-            conversion_status = result.get('status')
-            if conversion_status in ('failure', 'skipped'):
-                errors = result.get('errors') or []
-                details = '; '.join(
-                    error.get('error_message', '')
-                    for error in errors
-                    if isinstance(error, dict)
-                ) or 'no error message provided'
-                raise RuntimeError(
-                    f'Docling conversion {conversion_status}: {details}'
-                )
-
-            document_data = result.get('document', {})
-            md_content = document_data.get('md_content', '')
-            text = md_content or '<No text content found>'
-            metadata = {'Content-Type': self.mime_type} if self.mime_type else {}
-            if page_break_marker in md_content:
-                pages = md_content.split(page_break_marker)
-                json_content = document_data.get('json_content') or {}
-                page_indices = sorted({
-                    item['prov'][0]['page_no'] - 1
-                    for key in (
-                        'texts',
-                        'tables',
-                        'pictures',
-                        'key_value_items',
-                        'form_items',
-                    )
-                    for item in json_content.get(key, [])
-                    if item.get('content_layer') == 'body'
-                    and item.get('prov')
-                })
-                if len(page_indices) != len(pages):
-                    page_indices = range(len(pages))
-                documents = [
-                    Document(
-                        page_content=page.strip(),
-                        metadata={**metadata, 'page': page_offset + page_index},
-                    )
-                    for page_index, page in zip(page_indices, pages)
-                    if page.strip()
-                ]
-                if documents:
-                    log.debug('Docling extracted text: %s', text)
-                    return documents
-
-            if include_page_metadata:
-                metadata['page'] = page_offset
-            log.debug('Docling extracted text: %s', text)
-            return [Document(page_content=text, metadata=metadata)]
-
-        error_msg = f'Error calling Docling API: {response.reason}'
-        if response.text:
-            try:
-                error_data = response.json()
-                if 'detail' in error_data:
-                    error_msg += f' - {error_data["detail"]}'
-            except Exception:
-                error_msg += f' - {response.text}'
-        raise Exception(f'Error calling Docling: {error_msg}')
-
-    def _load_pdf_batches(self, batch_pages):
-        """PDFを指定ページ数へ分割してDoclingへ逐次送信する。
-
-        Args:
-            batch_pages: 1分割あたりのページ数。
-
-        Returns:
-            全分割から生成したDocumentのlist。
-
-        Raises:
-            pypdf.errors.PdfReadError: PDFを読み込めない場合。
-            Exception: Docling Serveがerror responseを返した場合。
-
-        Side Effects:
-            分割PDFを一時fileへ書き込み、Docling Serveへ逐次送信する。
-        """
-        from pathlib import Path
-        from tempfile import TemporaryFile
-
-        from pypdf import PdfReader, PdfWriter
+        if not batch_pages or not is_pdf or 'page_range' in self.params:
+            return super().load()
 
         with open(self.file_path, 'rb') as source_file:
             reader = PdfReader(source_file)
             page_count = len(reader.pages)
             if page_count <= batch_pages:
-                source_file.seek(0)
-                return self._post_file(self.file_path, source_file)
+                return super().load()
 
             documents = []
-            stem = Path(self.file_path).stem
             for start_index in range(0, page_count, batch_pages):
                 end_index = min(start_index + batch_pages, page_count)
                 log.info(
@@ -228,46 +77,22 @@ DOCLING_LOADER = r'''class DoclingLoader:
                 writer = PdfWriter()
                 for page_index in range(start_index, end_index):
                     writer.add_page(reader.pages[page_index])
-                with TemporaryFile(mode='w+b') as part_file:
+                with NamedTemporaryFile(mode='w+b', suffix='.pdf') as part_file:
                     writer.write(part_file)
-                    part_file.seek(0)
-                    part_name = (
-                        f'{stem}__pages_{start_index + 1:05d}-'
-                        f'{end_index:05d}.pdf'
+                    part_file.flush()
+                    part_loader = _InferlabBaseDoclingLoader(
+                        url=self.url,
+                        api_key=self.api_key,
+                        file_path=part_file.name,
+                        mime_type='application/pdf',
+                        params=self.params,
                     )
-                    documents.extend(
-                        self._post_file(
-                            part_name,
-                            part_file,
-                            page_offset=start_index,
-                            include_page_metadata=True,
+                    for document in part_loader.load():
+                        document.metadata['page'] = (
+                            start_index + document.metadata.get('page', 0)
                         )
-                    )
+                        documents.append(document)
             return documents
-
-    def load(self) -> list[Document]:
-        """対象fileをDoclingでMarkdownへ変換する。
-
-        Args:
-            なし。
-
-        Returns:
-            変換したDocumentのlist。
-
-        Raises:
-            ValueError: PDF分割ページ数が不正な場合。
-            OSError: 対象fileを読み込めない場合。
-            Exception: Docling Serveがerror responseを返した場合。
-
-        Side Effects:
-            Docling Serveへ同期HTTP requestを送信する。
-        """
-        batch_pages = self._batch_pages()
-        if self._is_batch_target(batch_pages):
-            return self._load_pdf_batches(batch_pages)
-
-        with open(self.file_path, 'rb') as file_handle:
-            return self._post_file(self.file_path, file_handle)
 '''
 
 
@@ -297,7 +122,7 @@ def load_loader_path() -> Path:
 
 
 def validate_dependencies() -> None:
-    """PDF分割に必要なinstall済みdependencyを検証する。
+    """PDF分割に必要なpypdfを検証する。
 
     Args:
         なし。
@@ -313,7 +138,7 @@ def validate_dependencies() -> None:
 
 
 def patch_source(source: str) -> str:
-    """Open WebUIのDoclingLoaderをPDF分割対応へ置換する。
+    """標準DoclingLoaderを保持してPDF分割用subclassを追加する。
 
     Args:
         source: patch前のOpen WebUI loader source code。
@@ -322,7 +147,7 @@ def patch_source(source: str) -> str:
         PDF分割対応のDoclingLoaderを含むsource code。
 
     Raises:
-        RuntimeError: 想定したpatch対象が存在しない場合。
+        RuntimeError: 想定したv0.12.4のLoaderが存在しない場合。
     """
     if PATCH_MARKER in source:
         return source
@@ -336,11 +161,26 @@ def patch_source(source: str) -> str:
     required_fragments = (
         "/v1/convert/file",
         "md_page_break_placeholder",
+        "'to_formats': ['md', 'json']",
+        "conversion_status in ['failure', 'skipped']",
+        "json_content = document_data.get('json_content') or {}",
+        "if page_break_marker in md_content:",
         "requests.post",
     )
     if not all(fragment in original_class for fragment in required_fragments):
         raise RuntimeError("Open WebUI DoclingLoader source is incompatible")
-    return source[:class_start] + DOCLING_LOADER + source[class_end:]
+
+    base_class = original_class.replace(
+        "class DoclingLoader:", "class _InferlabBaseDoclingLoader:", 1
+    )
+    base_class = base_class.replace(
+        "if page_break_marker in md_content:",
+        "if page_break_marker in md_content or (self.mime_type == 'application/pdf' and md_content):",
+        1,
+    )
+    return (
+        source[:class_start] + base_class + "\n\n" + DOCLING_LOADER + source[class_end:]
+    )
 
 
 def main(argv: Sequence[str]) -> int:

@@ -21,7 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-webui:0.11.3
+    image: ghcr.io/open-webui/open-webui:0.12.4
     container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped
     profiles:
@@ -217,15 +217,6 @@ services:
       DOCLING_SERVER_URL: http://docling:5001
       DOCLING_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       DOCLING_PDF_BATCH_PAGES: ${DOCLING_PDF_BATCH_PAGES:-100}
-      DOCLING_PARAMS: >-
-        {
-          "to_formats": [ "md" ],
-          "do_ocr": true,
-          "force_ocr": false,
-          "ocr_engine": "tesseract_cli",
-          "ocr_preset": "tesseract",
-          "ocr_lang": [ "jpn", "jpn_vert", "eng" ]
-        }
       ### For Qdrant (Vector DB)
       VECTOR_DB: qdrant
       QDRANT_API_KEY: ${QDRANT_API_KEY:-sk-qdrant-api-key}
@@ -463,7 +454,7 @@ services:
         condition: service_healthy
 
   oikb:
-    image: ghcr.io/open-webui/oikb:0.4.0-patch2
+    image: ghcr.io/open-webui/oikb:0.6.0-patch1
     build:
       context: ./oikb2
       dockerfile: Containerfile

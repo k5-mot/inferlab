@@ -74,8 +74,7 @@ $Packages = @(
     "ghcr.io/openclaw/openclaw:2026.8.2-browser",
     "docker.io/agentscope/qwenpaw:v2.1.0",
     ### 11-rag
-    "quay.io/docling-project/docling-serve-cpu:v1.31.0",
-    # "quay.io/docling-project/docling-serve:v1.31.0",
+    "quay.io/docling-project/docling-serve-cpu:v1.38.2",
     "docker.io/qdrant/qdrant:v1.19.0",
     ### 12-registry
     "docker.io/library/registry:3.1.1",
@@ -89,11 +88,12 @@ $Packages = @(
     ### 13-translate
     "docker.io/libretranslate/libretranslate:v1.9.6",
     ### 20-owui
-    "ghcr.io/open-webui/open-webui:0.11.3",
+    "ghcr.io/open-webui/open-webui:0.12.4",
     "ghcr.io/open-webui/open-terminal:0.12.3",
     "ghcr.io/open-webui/mcpo:main-patch2",
     "ghcr.io/searxng/searxng:2026.8.29-d226b78bc",
-    "ghcr.io/open-webui/oikb:0.4.0-patch2",
+    # Composeのghcr.io/open-webui/oikb:0.6.0-patch1は次の公開imageからbuildする。
+    "ghcr.io/open-webui/oikb:0.6.0",
     ### 21-dify
     "docker.io/langgenius/dify-api:1.17.0",
     "docker.io/langgenius/dify-web:1.17.0",

@@ -1,6 +1,8 @@
 # OIKB2
 
-OIKB2は、OIKB 0.4.0のfile uploadを1件ずつ完了させるcustom imageである。ルートのComposeは`20-owui/oikb2`をbuild contextとして使用する。
+OIKB2は、OIKB 0.6.0のfile uploadを1件ずつ完了させるcustom imageである。ルートのComposeは`20-owui/oikb2`をbuild contextとして使用する。
+
+OIKB 0.6.0の既定`concurrency=1`はupload requestを順番に送るが、標準clientは変換・Embedding・Knowledge Base（KB）登録の完了を待たない。daemonのKB単位lockは同一KBの重複処理を防ぐが、異なるKBの並行処理は防がない。本custom imageはその不足分を補う。CLIの`--concurrency`を1より大きくするとfile単位の逐次性は保証されないため、逐次同期では既定値を使う。
 
 各fileでは、次の処理を完了してから次のfileへ進む。
 
@@ -9,7 +11,7 @@ OIKB2は、OIKB 0.4.0のfile uploadを1件ずつ完了させるcustom imageで�
 3. file statusが`completed`であることを確認する。
 4. file IDが対象Knowledge Baseのfile一覧に現れることを確認する。
 
-内蔵scheduler patchは、`oikb.yaml`のsourceを設定順に1件ずつ同期する。最後のfileの登録確認後に現在のsourceが終了し、成功した場合だけ次のsourceを開始する。全sourceの完了後は、両sourceに設定した共通の6時間を待って次周期を開始する。
+内蔵scheduler patchは、`oikb.yaml`をKB単位にまとめ、設定順に1KBずつ同期する。同じKBの複数sourceはOIKB 0.6.0標準の一括manifest処理を使用する。最後のfileの登録確認後に現在のKBが終了し、成功した場合だけ次のKBを開始する。手動triggerもKB間で重ならない。全KBの完了後は、両sourceに設定した共通の6時間を待って次周期を開始する。
 
 同じpatchは、OIKBのdry-run responseへ`added`と`modified`のfile詳細を追加し、dry-run終了後のsource状態を`idle`へ戻す。これにより`oikb_sync.py trigger --dry-run`が未同期fileをlogへ表示した後も、通常のtriggerを開始できる。
 
@@ -24,13 +26,13 @@ sudo docker compose --env-file .env --profile owui --profile nextcloud build oik
 
 期待結果:
 
-- base imageのOIKB 0.4.0へ3つのpatchが適用される。
+- base imageのOIKB 0.6.0へ3つのpatchが適用される。
 - `patch-openwebui-sequential-registration.py`がerrorなく終了する。
 - dry-run responseが未同期fileのactionとpathを返す。
 
 失敗条件:
 
-- OIKB 0.4.0のsourceとpatch対象が一致せず、buildが終了code 1になる。
+- OIKB 0.6.0のsourceとpatch対象が一致せず、buildが終了code 1になる。
 - base imageまたはPython dependencyを取得できない。
 
 ## 起動
@@ -69,6 +71,7 @@ sudo docker compose --env-file .env \
 - OIKB2のDocker logへ処理中のKnowledge Base IDとfile名が表示される。
 - OIKB WebUIの対象source行直下へ、処理中fileのbasenameが表示される。
 - file登録に失敗した場合は、初回のfileを削除して同じfileを1回retryする。
+- 削除に失敗した場合は重複uploadを避けるためretryせず失敗にする。
 - fileごとに`completed`とKnowledge Baseへのlinkを確認してから次のfileへ進む。
 - 現在のKnowledge Baseの最後のfileを確認してから、次のKnowledge Baseを開始する。
 
@@ -89,14 +92,14 @@ file名はHTML escapeして表示する。directory pathは公開せず、dry-ru
 
 ## Rollback
 
-```bash
-# 既存OIKBのContainerfileを同じlocal tagへbuildする。
-sudo docker build \
-  -t ghcr.io/open-webui/oikb:0.4.0-patch2 \
-  -f 20-owui/oikb/Containerfile \
-  20-owui/oikb
+以前のOIKB imageを使う場合は、Composeの`oikb.image`と`oikb.build.context`を以前の組み合わせ（`0.4.0-patch2`、`./oikb`）へ戻してから次を実行する。新しいimage tagのまま旧imageへ切り替えてはならない（MUST NOT）。
 
-# build済みの既存OIKB imageでserviceを再作成する。
+```bash
+# Composeで指定した旧OIKB imageをbuildする。
+sudo docker compose --env-file .env \
+  --profile owui --profile nextcloud build oikb
+
+# build済みの旧OIKB imageでserviceを再作成する。
 sudo docker compose --env-file .env \
   --profile owui --profile nextcloud up -d --no-deps --no-build oikb
 ```
@@ -112,6 +115,6 @@ sudo docker compose --env-file .env \
 
 ## References
 
-- [OIKB v0.4.0 client](https://github.com/open-webui/oikb/blob/f99d2e66e7c0a24e5fe336a0242d5b334f979af6/src/oikb/client.py)
-- [Open WebUI v0.11.1 file API](https://github.com/open-webui/open-webui/blob/d3e8bf3405e848cfba377814d0aa7ba7290e414d/backend/open_webui/routers/files.py)
-- [Open WebUI v0.11.1 Knowledge API](https://github.com/open-webui/open-webui/blob/d3e8bf3405e848cfba377814d0aa7ba7290e414d/backend/open_webui/routers/knowledge.py)
+- [OIKB v0.6.0 client](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/client.py)
+- [OIKB v0.6.0 daemon](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/daemon.py)
+- [Open WebUI v0.12.4 file API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/files.py)

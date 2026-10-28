@@ -234,8 +234,9 @@ scripts/
 │
 ├── docker/         # Download-DockerImages.ps1
 │  ├── docker.io_library_nginx_1.31.4-trixie-perl.tar
-│  ├── ghcr.io_open-webui_open-webui_0.11.1.tar
-│  ├── quay.io_docling-project_docling-serve_v1.31.0.tar
+│  ├── ghcr.io_open-webui_open-webui_0.12.4.tar
+│  ├── ghcr.io_open-webui_oikb_0.6.0.tar
+│  ├── quay.io_docling-project_docling-serve-cpu_v1.38.2.tar
 │  ├── *.tar
 │  └── ...
 │
@@ -279,6 +280,8 @@ scripts/
 
 ### Download-VSIX.ps1
 ### Download-DockerImages.ps1
+
+- OIKBの`0.6.0-patch1`はrepository内のpatchを適用してbuildするimageのtagである。公開元の`0.6.0`を取得し、持込先で`20-owui/oikb2/Containerfile`をbuildする必要がある（MUST）。
 ### Download-LibreTranslate.ps1
 
 - 英語・日本語のArgos Translate modelとMiniSBD modelをHTTPで取得する.
@@ -347,6 +350,7 @@ scripts/
 
 ## References
 
+- [OIKB v0.6.0 release](https://github.com/open-webui/oikb/releases/tag/v0.6.0)
 - [LibreTranslate 1.9.6 Dockerfile](https://github.com/LibreTranslate/LibreTranslate/blob/v1.9.6/docker/Dockerfile)
 - [Argos Translate Package Index](https://github.com/argosopentech/argospm-index)
 - [MiniSBD v0.0.1](https://github.com/LibreTranslate/MiniSBD/releases/tag/v0.0.1)

@@ -1,6 +1,7 @@
 {
     "to_formats": [
-        "md"
+        "md",
+        "json"
     ],
     "do_ocr": true,
     "force_ocr": false,

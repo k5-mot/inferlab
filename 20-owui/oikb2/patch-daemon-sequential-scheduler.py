@@ -129,6 +129,12 @@ def _patch_source(source: str) -> str:
     from oikb.logging import configure_logging
     configure_logging(log_format=log_format)
 
+    from oikb.kb_sync import group_entries_by_kb
+    from oikb.config import source_status_keys
+    from oikb.webhooks import prepare_webhook_entries
+    group_entries_by_kb(entries)  # Validate shared destinations before starting tasks.
+    source_status_keys(entries)
+    prepare_webhook_entries(entries)
     _entries = entries
     _history = SyncHistory()
 """
@@ -137,9 +143,15 @@ def _patch_source(source: str) -> str:
     from oikb.logging import configure_logging
     configure_logging(log_format=log_format)
 
+    from oikb.kb_sync import group_entries_by_kb
+    from oikb.config import source_status_keys
+    from oikb.webhooks import prepare_webhook_entries
+    group_entries_by_kb(entries)  # 起動前にKB共有先の設定を検証する。
+    source_status_keys(entries)
+    prepare_webhook_entries(entries)
     _entries = entries
     _scheduler_state = {
-        entry["source"]: {
+        _status_key(entry): {
             "name": entry.get("name", entry["source"]),
             "kb_id": entry["kb-id"],
             "status": "idle",
@@ -187,6 +199,9 @@ def _patch_source(source: str) -> str:
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, _request_shutdown)
 
+    from oikb.kb_sync import group_entries_by_kb
+
+    groups = group_entries_by_kb(entries)
     configured_intervals = {
         str(entry.get("interval", "30m"))
         for entry in entries
@@ -198,11 +213,12 @@ def _patch_source(source: str) -> str:
     interval = None if use_cron else parse_interval(raw_interval)
 
     while not _shutdown_event.is_set():
-        for entry in entries:
+        for group in groups:
+            entry = group[0]
             if _shutdown_event.is_set():
                 break
             await _run_entry(entry)
-            source = entry.get("source", "unknown")
+            source = _status_key(entry)
             status = _scheduler_state.get(source, {}).get("status")
             if status != "success":
                 log.error(
@@ -215,7 +231,7 @@ def _patch_source(source: str) -> str:
         else:
             delay = float(interval)
         for entry in entries:
-            source = entry.get("source", "unknown")
+            source = _status_key(entry)
             _scheduler_state.setdefault(source, {})["next_sync_in"] = (
                 f"{int(delay)}s"
             )
@@ -226,9 +242,43 @@ def _patch_source(source: str) -> str:
         except asyncio.TimeoutError:
             pass
 '''
-    state_before = """        _scheduler_state[source] = {
-            "name": entry.get("name", source),
-            "status": {status},
+    lock_before = """    async with lock:
+        return await _run_entry_locked(entry, dry_run=dry_run)
+"""
+    lock_after = """    async with lock:
+        async with _all_sync_lock:
+            return await _run_entry_locked(entry, dry_run=dry_run)
+"""
+    global_lock_before = """_sync_locks: dict[str, asyncio.Lock] = {}
+_history: SyncHistory | None = None
+"""
+    global_lock_after = """_sync_locks: dict[str, asyncio.Lock] = {}
+_all_sync_lock = asyncio.Lock()
+_history: SyncHistory | None = None
+"""
+    state_before = """    def set_state(**state):
+        for member in entries:
+            _scheduler_state[_status_key(member)] = {
+                "name": member.get("name", member["source"]), **state,
+            }
+"""
+    state_after = """    def set_state(**state):
+        \"\"\"KBごとの状態を既存metadataを保って更新する。
+
+        Args:
+            **state: 更新する状態値。
+
+        Returns:
+            なし。
+        \"\"\"
+        for member in entries:
+            key = _status_key(member)
+            _scheduler_state[key] = {
+                **_scheduler_state.get(key, {}),
+                "name": member.get("name", member["source"]),
+                "kb_id": kb_id,
+                **state,
+            }
 """
     dry_run_before = """        if dry_run:
             return {
@@ -242,12 +292,7 @@ def _patch_source(source: str) -> str:
             }
 """
     dry_run_after = """        if dry_run:
-            _scheduler_state[source] = {
-                **_scheduler_state.get(source, {}),
-                "name": entry.get("name", source),
-                "kb_id": kb_id,
-                "status": "idle",
-            }
+            set_state(status="idle")
             return {
                 "added": result.added,
                 "modified": result.modified,
@@ -259,17 +304,10 @@ def _patch_source(source: str) -> str:
                 "summary": result.summary(),
             }
 """
-    client_before = """        client = _make_client(
-            url=entry.get("url"),
-            token=entry.get("token"),
-        )
-
-        mf = None
+    client_before = """        client = _make_client(url=entry.get("url"), token=entry.get("token"))
+        result = await asyncio.to_thread(
 """
-    client_after = '''        client = _make_client(
-            url=entry.get("url"),
-            token=entry.get("token"),
-        )
+    client_after = '''        client = _make_client(url=entry.get("url"), token=entry.get("token"))
         original_upload_file = client.upload_file
 
         def upload_file_with_state(
@@ -295,7 +333,8 @@ def _patch_source(source: str) -> str:
                 処理中だけscheduler stateへbasenameを設定する。
             """
             current_file = filename.replace("\\\\", "/").rsplit("/", 1)[-1]
-            _scheduler_state.setdefault(source, {})["current_file"] = current_file
+            for member in entries:
+                _scheduler_state.setdefault(_status_key(member), {})["current_file"] = current_file
             try:
                 return original_upload_file(
                     file_content,
@@ -305,11 +344,12 @@ def _patch_source(source: str) -> str:
                     directory_id,
                 )
             finally:
-                _scheduler_state.setdefault(source, {}).pop("current_file", None)
+                for member in entries:
+                    _scheduler_state.setdefault(_status_key(member), {}).pop("current_file", None)
 
         client.upload_file = upload_file_with_state
 
-        mf = None
+        result = await asyncio.to_thread(
 '''
     dashboard_style_before = """.row{padding:.5rem 0;border-bottom:1px solid #222;display:flex;gap:1rem;align-items:baseline}
 """
@@ -349,6 +389,10 @@ async function poll(){
         raise RuntimeError("oikb.daemon initialization patch target was not found")
     if scheduler_before not in source:
         raise RuntimeError("oikb.daemon sequential scheduler patch target was not found")
+    if global_lock_before not in source or lock_before not in source:
+        raise RuntimeError("oikb.daemon cross-KB lock patch target was not found")
+    if state_before not in source:
+        raise RuntimeError("oikb.daemon state patch target was not found")
     if dry_run_before not in source:
         raise RuntimeError("oikb.daemon dry-run patch target was not found")
     if client_before not in source:
@@ -360,24 +404,14 @@ async function poll(){
     if dashboard_row_before not in source:
         raise RuntimeError("oikb.daemon dashboard row patch target was not found")
 
-    for status in ("status", '"cancelled"', '"error"'):
-        target = state_before.replace("{status}", status)
-        if target not in source:
-            raise RuntimeError(f"oikb.daemon {status} state patch target was not found")
-        source = source.replace(
-            target,
-            target.replace(
-                '            "status":',
-                '            "kb_id": kb_id,\n            "status":',
-            ),
-            1,
-        )
-
     return (
         source.replace(
             initialization_before,
             initialization_after,
         )
+        .replace(global_lock_before, global_lock_after, 1)
+        .replace(lock_before, lock_after, 1)
+        .replace(state_before, state_after, 1)
         .replace(scheduler_before, scheduler_after, 1)
         .replace(
             dry_run_before,
