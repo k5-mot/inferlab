@@ -22,7 +22,7 @@ services:
   docling:
     <<: *external-dns-stabilizer
     # image: quay.io/docling-project/docling-serve:v1.31.0
-    image: quay.io/docling-project/docling-serve-cpu:v1.31.0
+    image: quay.io/docling-project/docling-serve-cpu:v1.38.2
     container_name: ${STACK_NAME}-docling
     restart: unless-stopped
     profiles:
