@@ -1167,6 +1167,7 @@ class Loader:
             file_name, stream, content_type = kwargs["files"]["files"]
             self.assertTrue(stream.read())
             self.assertEqual(content_type, "application/pdf")
+            self.assertEqual(kwargs["data"]["to_formats"], ["md", "json"])
             page_range = file_name.rsplit("__pages_", 1)[1].removesuffix(".pdf")
             start_text, end_text = page_range.split("-")
             response = Mock(ok=True, reason="OK", text="")
@@ -1241,6 +1242,112 @@ class Loader:
             "/run/scripts/patch-docling-pdf-batches.py:ro",
             compose,
         )
+
+    def test_json_provenance_restores_original_page_numbers(self) -> None:
+        """JSON provenanceと分割位置から原本ページ番号を復元する。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        patch_module = load_script(
+            "patch_docling_pdf_batches_provenance",
+            "20-owui/open-webui/patch-docling-pdf-batches.py",
+        )
+        response = Mock(ok=True, reason="OK", text="")
+        response.json.return_value = {
+            "status": "success",
+            "document": {
+                "md_content": "page-101\fpage-103",
+                "json_content": {
+                    "texts": [
+                        {
+                            "content_layer": "body",
+                            "prov": [{"page_no": 1}],
+                        },
+                        {
+                            "content_layer": "body",
+                            "prov": [{"page_no": 3}],
+                        },
+                    ]
+                },
+            },
+        }
+        requests = Mock()
+        requests.post.return_value = response
+        namespace = {
+            "__name__": "patched_open_webui_loader_provenance",
+            "AIOHTTP_CLIENT_SESSION_SSL": False,
+            "Document": SimpleNamespace,
+            "log": Mock(),
+            "os": os,
+            "requests": requests,
+        }
+        exec(patch_module.DOCLING_LOADER, namespace)
+        loader = namespace["DoclingLoader"](
+            "http://docling",
+            file_path="original.pdf",
+            mime_type="application/pdf",
+        )
+
+        with tempfile.TemporaryFile(mode="w+b") as pdf_file:
+            documents = loader._post_file(
+                "batch.pdf",
+                pdf_file,
+                page_offset=100,
+                include_page_metadata=True,
+            )
+
+        self.assertEqual(
+            [document.metadata["page"] for document in documents],
+            [100, 102],
+        )
+
+    def test_http_success_rejects_failed_conversion_status(self) -> None:
+        """HTTP成功response内のDocling変換失敗を例外にする。
+
+        Args:
+            なし。
+
+        Returns:
+            なし。
+        """
+        patch_module = load_script(
+            "patch_docling_pdf_batches_failure",
+            "20-owui/open-webui/patch-docling-pdf-batches.py",
+        )
+        response = Mock(ok=True, reason="OK", text="")
+        response.json.return_value = {
+            "status": "failure",
+            "errors": [{"error_message": "conversion failed"}],
+        }
+        requests = Mock()
+        requests.post.return_value = response
+        namespace = {
+            "__name__": "patched_open_webui_loader_failure",
+            "AIOHTTP_CLIENT_SESSION_SSL": False,
+            "Document": SimpleNamespace,
+            "log": Mock(),
+            "os": os,
+            "requests": requests,
+        }
+        exec(patch_module.DOCLING_LOADER, namespace)
+        loader = namespace["DoclingLoader"](
+            "http://docling",
+            file_path="original.pdf",
+            mime_type="application/pdf",
+        )
+
+        with (
+            tempfile.TemporaryFile(mode="w+b") as pdf_file,
+            self.assertRaisesRegex(
+                RuntimeError,
+                "Docling conversion failure: conversion failed",
+            ),
+        ):
+            loader._post_file("batch.pdf", pdf_file)
 
 
 class CliHelpTest(unittest.TestCase):

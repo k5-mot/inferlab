@@ -117,6 +117,7 @@ DOCLING_LOADER = r'''class DoclingLoader:
             data={
                 'image_export_mode': 'placeholder',
                 'md_page_break_placeholder': page_break_marker,
+                'to_formats': ['md', 'json'],
                 **self.params,
             },
             headers=headers,
@@ -124,19 +125,46 @@ DOCLING_LOADER = r'''class DoclingLoader:
         )
         if response.ok:
             result = response.json()
+            conversion_status = result.get('status')
+            if conversion_status in ('failure', 'skipped'):
+                errors = result.get('errors') or []
+                details = '; '.join(
+                    error.get('error_message', '')
+                    for error in errors
+                    if isinstance(error, dict)
+                ) or 'no error message provided'
+                raise RuntimeError(
+                    f'Docling conversion {conversion_status}: {details}'
+                )
+
             document_data = result.get('document', {})
             md_content = document_data.get('md_content', '')
             text = md_content or '<No text content found>'
             metadata = {'Content-Type': self.mime_type} if self.mime_type else {}
             if page_break_marker in md_content:
+                pages = md_content.split(page_break_marker)
+                json_content = document_data.get('json_content') or {}
+                page_indices = sorted({
+                    item['prov'][0]['page_no'] - 1
+                    for key in (
+                        'texts',
+                        'tables',
+                        'pictures',
+                        'key_value_items',
+                        'form_items',
+                    )
+                    for item in json_content.get(key, [])
+                    if item.get('content_layer') == 'body'
+                    and item.get('prov')
+                })
+                if len(page_indices) != len(pages):
+                    page_indices = range(len(pages))
                 documents = [
                     Document(
                         page_content=page.strip(),
                         metadata={**metadata, 'page': page_offset + page_index},
                     )
-                    for page_index, page in enumerate(
-                        md_content.split(page_break_marker)
-                    )
+                    for page_index, page in zip(page_indices, pages)
                     if page.strip()
                 ]
                 if documents:
