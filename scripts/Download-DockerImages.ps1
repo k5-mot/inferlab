@@ -119,6 +119,8 @@ $Packages = @(
     "ghcr.io/octos/octos:v2.0.2",
     ### 27-aion
     "ghcr.io/aion/aion:2.2.1",
+    ### 28-assistantmd
+    "docker.io/library/busybox:1.37.0-musl",
     ### 30-nextcloud
     "docker.io/library/nextcloud:34.0.3-apache",
     # "docker.io/library/postgres:18.6-alpine3.24",
