@@ -26,6 +26,8 @@ OpenClawの公式containerは、同じstate/configをmountした新imageの起�
 
 公式pluginはcore versionとの互換性を持つrelease cohortへ収束する。correction releaseのimage tagにsuffixがある場合も、pluginはbase release cohortを使用する。[OpenClaw Updating](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/updating.md#recommended-openclaw-update)
 
+`2026.11.7-browser`ではrepository管理configの`config validate --json`が成功することを確認済みである。release noteの破壊的変更はplugin SDK利用者向けであり、本構成の公式Discord pluginはcoreと同じ`2026.11.7`へ揃える。[OpenClaw 2026.11.7](https://github.com/openclaw/openclaw/releases/tag/v2026.11.7)
+
 ## `2026.8.2`へのconfig移行
 
 `2026.7.1-2`のmanaged configはそのままでは`2026.8.2`のschema validationに失敗する。次の変換をrepository側で行い、候補imageの`config validate --json`を成功させてからstate migrationへ進む。
@@ -46,18 +48,18 @@ OpenClawの公式containerは、同じstate/configをmountした新imageの起�
 
 ## 事前準備
 
-以下のコマンドはrepository rootで実行する。例では現行versionから`2026.8.2`への更新を示す。別versionへ更新するときは、候補imageとplugin versionを読み替える。
+以下のコマンドはrepository rootで実行する。例では`2026.8.2`から`2026.11.7`への更新を示す。別versionへ更新するときは、候補imageとplugin versionを読み替える。
 
 ```bash
 # 更新単位を識別するtimestampを設定する。
 export OPENCLAW_UPGRADE_ID="$(date +%Y%m%d-%H%M%S)"
 
 # 現行と候補の公式imageを固定する。
-export OPENCLAW_CURRENT_IMAGE="ghcr.io/openclaw/openclaw:2026.7.1-2-browser"
-export OPENCLAW_CANDIDATE_IMAGE="ghcr.io/openclaw/openclaw:2026.8.2-browser"
+export OPENCLAW_CURRENT_IMAGE="ghcr.io/openclaw/openclaw:2026.8.2-browser"
+export OPENCLAW_CANDIDATE_IMAGE="ghcr.io/openclaw/openclaw:2026.11.7-browser"
 
 # 候補coreへ合わせるDiscord plugin versionを固定する。
-export OPENCLAW_CANDIDATE_PLUGIN_VERSION="2026.8.2"
+export OPENCLAW_CANDIDATE_PLUGIN_VERSION="2026.11.7"
 
 # backupをrepository外のowner専用directoryへ保存する。
 export OPENCLAW_BACKUP_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/inferlab/openclaw-backups/${OPENCLAW_UPGRADE_ID}"
@@ -444,6 +446,7 @@ sudo docker volume rm "$OPENCLAW_PREFLIGHT_VOLUME"
 
 ## References
 
+- [OpenClaw 2026.11.7 release](https://github.com/openclaw/openclaw/releases/tag/v2026.11.7)
 - [OpenClaw Docker](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/docker.md)
 - [OpenClaw Updating](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/updating.md)
 - [OpenClaw Backups](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/install/backups.md)

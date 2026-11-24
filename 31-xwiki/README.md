@@ -4,7 +4,7 @@ XWikiとPostgreSQLを起動するWiki stack。
 
 ## 構成
 
-- `xwiki`: XWiki 18.6.0 Intermediate Long Term Support（LTS）のPostgreSQL/Tomcat image。
+- `xwiki`: XWiki 18.9.0のPostgreSQL/Tomcat image。
 - `xwiki-postgres`: XWikiの設定、page、attachment metadataを保持するPostgreSQL 18。
 - `xwiki-data`: XWikiの永続directoryを保持するvolume。
 - `xwiki-postgres-data`: PostgreSQL clusterを保持するvolume。

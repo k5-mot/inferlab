@@ -113,5 +113,5 @@ sudo docker compose --env-file .env \
 ## References
 
 - [OIKB v0.6.0 client](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/client.py)
-- [Open WebUI v0.12.4 file API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/files.py)
-- [Open WebUI v0.12.4 Knowledge API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/knowledge.py)
+- [Open WebUI v0.13.4 file API](https://github.com/open-webui/open-webui/blob/v0.13.4/backend/open_webui/routers/files.py)
+- [Open WebUI v0.13.4 Knowledge API](https://github.com/open-webui/open-webui/blob/v0.13.4/backend/open_webui/routers/knowledge.py)

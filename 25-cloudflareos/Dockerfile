@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.7.0-bookworm-slim
+FROM docker.io/library/node:24.22.3-bookworm-slim
 
 ARG CLOUDFLARE_OS_REF=df04e239ed85376643c586a7329d3b8604df489e
 

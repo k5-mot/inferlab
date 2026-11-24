@@ -54,7 +54,7 @@ services:
         condition: service_healthy
 
   affine-redis:
-    image: docker.io/library/redis:8.10.2-alpine
+    image: docker.io/library/redis:8.12.0-alpine
     container_name: ${STACK_NAME}-affine-redis
     restart: unless-stopped
     profiles:
@@ -68,7 +68,7 @@ services:
       retries: 5
 
   affine-postgres:
-    image: docker.io/pgvector/pgvector:0.8.6-pg16
+    image: docker.io/pgvector/pgvector:0.8.7-pg16
     container_name: ${STACK_NAME}-affine-postgres
     restart: unless-stopped
     profiles:
@@ -89,7 +89,7 @@ services:
       retries: 5
 
   affine-caddy:
-    image: docker.io/library/caddy:2.11.6-alpine
+    image: docker.io/library/caddy:2.11.9-alpine
     container_name: ${STACK_NAME}-affine-caddy
     restart: unless-stopped
     profiles:

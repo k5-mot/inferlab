@@ -2,9 +2,9 @@
 
 Dify、plugin daemon、agent backend、sandbox、PostgreSQL、RustFS、Valkey、Qdrant、nginx、内部PyPIをまとめたworkflow stack。
 
-Dify 1.16.1のapplication storageにはS3 backendを指定し、S3互換endpointとしてRustFSを使用する。Difyが発行するpresigned URLをbrowserからも開けるように、`PUBLIC_HOST`はDify containerと利用者端末の両方から到達できるhost名またはIP addressにしなければならない（MUST）。
+Dify 1.20.0のapplication storageにはS3 backendを指定し、S3互換endpointとしてRustFSを使用する。Difyが発行するpresigned URLをbrowserからも開けるように、`PUBLIC_HOST`はDify containerと利用者端末の両方から到達できるhost名またはIP addressにしなければならない（MUST）。
 
-PostgreSQLは`18.6-trixie`、Valkeyは`9.1.1-alpine3.24`へ固定する。Dify 1.16.1公式ComposeのPostgreSQL 15およびRedis 6より新しいmajorを使用するため、本stackではAPI、worker、plugin daemon、queue、cacheを統合testしなければならない（MUST）。
+PostgreSQLは`18.7-alpine3.24`、Valkeyは`9.2.0-alpine3.24`へ固定する。Dify 1.20.0公式ComposeのPostgreSQL 15およびRedis 6より新しいmajorを使用するため、本stackではAPI、worker、plugin daemon、queue、cacheを統合testしなければならない（MUST）。
 
 ValkeyはRedis protocolとの互換性を維持しているため、Dify、Celery、plugin daemon、agent backendの接続設定では`REDIS_*`環境変数と`redis://`schemeをそのまま使用する。
 
@@ -36,10 +36,10 @@ sudo docker compose --env-file .env --profile dify up -d
 期待結果:
 
 - `dify-rustfs-bucket-init`と`dify-postgres-init`が正常終了する。
-- `dify-postgres`がPostgreSQL 18.6でhealthyになる。
+- `dify-postgres`がPostgreSQL 18.7でhealthyになる。
 - `dify-api`、`dify-worker`、`dify-web`、`dify-plugin-daemon`がhealthyになる。
 - `pypiserver`がhealthyになり、plugin daemonから内部wheelを取得できる。
-- `dify-rustfs`とValkey 9.1.1の`dify-valkey`がhealthyになる。
+- `dify-rustfs`とValkey 9.2.0の`dify-valkey`がhealthyになる。
 - `dify-nginx`が`http://${PUBLIC_HOST}:32100`で応答する。
 
 失敗条件:
@@ -78,7 +78,7 @@ sudo docker compose --env-file .env --profile dify exec dify-valkey valkey-cli -
 - Difyの初回セットアップ画面またはlogin画面が表示される。
 - plugin daemon healthcheckが成功する。
 - RustFSのbucket確認が成功し、Valkeyが`PONG`を返す。
-- PostgreSQLが`18.6`、Valkeyが`9.1.1`を報告する。
+- PostgreSQLが`18.7`、Valkeyが`9.2.0`を報告する。
 
 失敗条件:
 

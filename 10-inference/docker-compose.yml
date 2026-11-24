@@ -24,7 +24,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   litellm:
     <<: *external-dns-stabilizer
-    image: docker.io/litellm/litellm:v1.98.0
+    image: docker.io/litellm/litellm:v1.110.2
     container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
@@ -85,7 +85,7 @@ services:
 
   ollama:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.33.2
+    image: docker.io/ollama/ollama:0.40.17
     container_name: ${STACK_NAME}-ollama
     restart: unless-stopped
     profiles:
@@ -116,7 +116,7 @@ services:
 
   ollama-init:
     <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.33.2
+    image: docker.io/ollama/ollama:0.40.17
     container_name: ${STACK_NAME}-ollama-init
     restart: no
     profiles:
@@ -270,7 +270,7 @@ services:
     cpus: 4.0
 
   vllm-embedding:
-    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    image: docker.io/vllm/vllm-openai-cpu:v0.34.0-x86_64
     container_name: ${STACK_NAME}-vllm-embedding
     restart: unless-stopped
     ipc: host
@@ -331,7 +331,7 @@ services:
       - homepage.description=Embedding inference engine
 
   vllm-reranking:
-    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    image: docker.io/vllm/vllm-openai-cpu:v0.34.0-x86_64
     container_name: ${STACK_NAME}-vllm-reranking
     restart: unless-stopped
     ipc: host
@@ -397,8 +397,8 @@ services:
       - homepage.description=Reranking inference engine
 
   kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1
-    # image: ghcr.io/remsky/kokoro-fastapi-gpu:v0.8.1
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0
+    # image: ghcr.io/remsky/kokoro-fastapi-gpu:v0.10.0
     container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
@@ -425,7 +425,7 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: docker.io/nousresearch/hermes-agent:v2026.8.31
+    image: docker.io/nousresearch/hermes-agent:v2026.9.24
     container_name: ${STACK_NAME}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -516,7 +516,7 @@ services:
   # Discord pluginは公式imageとは別に永続volumeへ導入する。
   openclaw-init:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
+    image: ghcr.io/openclaw/openclaw:2026.11.7-browser
     container_name: ${STACK_NAME}-openclaw-init
     user: "0:0"
     restart: "no"
@@ -547,12 +547,12 @@ services:
         # coreと同じrelease cohortのDiscord pluginへ永続volumeを収束させる。
         plugin_json="$$(setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins list --json)"
         plugin_version="$$(printf '%s' "$$plugin_json" | node -e 'const fs = require("node:fs"); const data = JSON.parse(fs.readFileSync(0, "utf8")); process.stdout.write(data.plugins.find((plugin) => plugin.id === "discord")?.version ?? "");')"
-        if [ "$$plugin_version" = "2026.8.2" ]; then
-          echo "Discord plugin is already at 2026.8.2."
+        if [ "$$plugin_version" = "2026.11.7" ]; then
+          echo "Discord plugin is already at 2026.11.7."
         elif [ -n "$$plugin_version" ]; then
-          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.11.7 --accept-capabilities
         else
-          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.11.7 --pin --accept-capabilities
         fi
     cap_drop:
       - NET_RAW
@@ -564,7 +564,7 @@ services:
   # https://docs.openclaw.ai/install/docker
   openclaw:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
+    image: ghcr.io/openclaw/openclaw:2026.11.7-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
@@ -631,7 +631,7 @@ services:
   # https://qwenpaw.agentscope.io/docs/channels#Discord
   # https://github.com/agentscope-ai/QwenPaw/blob/main/docker-compose.yml
   qwenpaw-init:
-    image: docker.io/agentscope/qwenpaw:v2.1.0
+    image: docker.io/agentscope/qwenpaw:v2.3.0
     container_name: ${STACK_NAME}-qwenpaw-init
     restart: no
     profiles:
@@ -655,7 +655,7 @@ services:
 
   qwenpaw:
     <<: *external-dns-stabilizer
-    image: docker.io/agentscope/qwenpaw:v2.1.0
+    image: docker.io/agentscope/qwenpaw:v2.3.0
     container_name: ${STACK_NAME}-qwenpaw
     restart: unless-stopped
     profiles:

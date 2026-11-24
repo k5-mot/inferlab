@@ -21,7 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-webui:0.12.4
+    image: ghcr.io/open-webui/open-webui:v0.13.4
     container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped
     profiles:
@@ -276,7 +276,7 @@ services:
   # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
   open-terminal:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-terminal:0.12.3
+    image: ghcr.io/open-webui/open-terminal:0.17.22
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
@@ -412,7 +412,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
+    image: public.ecr.aws/aws-cli/aws-cli:2.42.2
     container_name: ${STACK_NAME}-oikb-rustfs-init
     restart: "no"
     profiles:

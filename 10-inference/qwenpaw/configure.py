@@ -140,7 +140,7 @@ def _litellm_provider(api_key: str) -> dict[str, Any]:
         api_key: LiteLLM master key。
 
     Returns:
-        QwenPaw v2.1.0向けcustom provider設定。
+        QwenPaw v2.3.0向けcustom provider設定。
     """
     models = [
         {

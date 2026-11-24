@@ -15,7 +15,7 @@
 #
 services:
   docker-registry:
-    image: docker.io/library/registry:3.1.1
+    image: docker.io/library/registry:3.1.2
     container_name: ${STACK_NAME}-docker-registry
     restart: unless-stopped
     profiles:
@@ -43,7 +43,7 @@ services:
       start_period: 10s
 
   pypiserver:
-    image: docker.io/pypiserver/pypiserver:v2.4.1
+    image: docker.io/pypiserver/pypiserver:v2.4.3
     container_name: ${STACK_NAME}-pypiserver
     restart: unless-stopped
     user: "9898:9898"
@@ -84,7 +84,7 @@ services:
       - homepage.icon=/icons/pypi.png
 
   verdaccio:
-    image: docker.io/verdaccio/verdaccio:6.10.1
+    image: docker.io/verdaccio/verdaccio:6.11.3
     container_name: ${STACK_NAME}-verdaccio
     restart: unless-stopped
     profiles:
@@ -178,7 +178,7 @@ services:
       start_period: 10s
 
   npm-importer:
-    image: docker.io/library/node:24.20.0-alpine3.24
+    image: docker.io/library/node:24.22.3-alpine3.24
     container_name: ${STACK_NAME}-npm-importer
     profiles:
       - registry
@@ -237,7 +237,7 @@ services:
       start_period: 10s
 
   rpm-dist:
-    image: docker.io/library/nginx:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.10-alpine
     container_name: ${STACK_NAME}-rpm-dist
     restart: unless-stopped
     profiles:
@@ -304,7 +304,7 @@ services:
       - internal-nw
 
   deb-dist:
-    image: docker.io/library/nginx:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.10-alpine
     container_name: ${STACK_NAME}-deb-dist
     restart: unless-stopped
     profiles:

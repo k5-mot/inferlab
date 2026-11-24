@@ -153,7 +153,7 @@ sudo docker compose --env-file .env --profile qwenpaw exec qwenpaw qwenpaw docto
 - Discord botが接続し、mentionを含むmessageへ応答する。
 - QwenPawのmodel requestがLiteLLMを経由し、Langfuseへ`qwenpaw` tag付きで記録される。
 
-QwenPaw v2.1.0の`doctor`はcustom providerのlive checkをskipする。3モデルそれぞれの実推論は、ConsoleのChat画面でmodelを切り替えて確認する。
+3モデルそれぞれの実推論は、ConsoleのChat画面でmodelを切り替えて確認する。
 
 失敗条件:
 
