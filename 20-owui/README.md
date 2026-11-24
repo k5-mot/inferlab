@@ -104,6 +104,58 @@ sudo docker compose --env-file .env --profile owui up -d
 
 3つの保守scriptの設定、実行方法、期待結果、失敗条件は、[`scripts/oikb/README.md`](../scripts/oikb/README.md)を参照する。
 
+## Open TerminalのPiとOffice機能 (試行)
+
+`open-terminal`は、[Pi coding agent](https://github.com/earendil-works/pi)と[OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)を追加した派生image (`open-terminal/Dockerfile`) から起動する。Open WebUIでterminalを選択すると、`inferlab/`で始まるPiのmodelを選択できる。
+
+| file | 役割 |
+| --- | --- |
+| `open-terminal/Dockerfile` | PiとOfficeCLIを`/usr/local`へ導入し、OfficeCLIのWord、PowerPoint、Excel skillをbuild時に固定する。 |
+| `open-terminal/pi/models.json` | PiのLiteLLM provider定義。API keyは`/run/secrets/pi-litellm-api-key`から読む。 |
+| `open-terminal/pi/settings.json` | 既定modelとtelemetry無効化。 |
+| `open-terminal/pi/inferlab-pi.sh` | Pi起動前に、管理設定をOpen WebUI userごとの`~/.pi/agent`へ同期する。 |
+
+multi-user modeでは、agentはOpen WebUI userごとのOS userで起動する。Open TerminalはそのOS userへ`PI_`で始まる環境変数を渡さないため、`PI_CODING_AGENT_DIR`ではなく`OPEN_TERMINAL_PI_COMMAND`のwrapperで設定を配布する。npm packageを`/home/user`配下へ導入すると、他のOS userが実行できない (`/home/user`はmode `700`)。
+
+```bash
+# 派生imageをbuildし、Open Terminalを再作成する。
+sudo docker compose --env-file .env --profile owui up -d --build --force-recreate open-terminal
+```
+
+期待結果:
+
+- `open-terminal`が`healthy`になる。
+- Open WebUIのterminal選択時に、Piの`inferlab/openai/gpt-oss:20b`、`inferlab/google/gemma4:31b`、`inferlab/google/gemma4:12b`が表示される。
+
+失敗条件:
+
+- build時にnpm registryまたはOfficeCLIのrelease binaryへ到達できない。
+- Piの一覧に`Agent discovery failed`が表示される。
+
+### 試行結果
+
+2026-11-25に次を確認した。
+
+| 確認内容 | 結果 |
+| --- | --- |
+| 新規OS userでのPi discoveryとmodel一覧 | 成功 |
+| 新規OS userでのPiからLiteLLMへの推論 | 成功 |
+| OfficeCLIでのpptx、xlsx作成、`validate`、LibreOfficeでのPDF化と日本語描画 | 成功 |
+| `openai/gpt-oss:20b`でのOffice生成agent loop | 失敗。tool callを思考文へ出力して停止した |
+| `google/gemma4:31b`でのOffice生成agent loop | 未完了。上流providerのrate limit (429) |
+| `google/gemma4:12b` (LM Studio) でのOffice生成agent loop | 未完了。tool callは正しいが、15分で文書を完成できなかった |
+
+基盤とtoolは動作する。Office生成の完走には、tool callingが安定し、十分な生成速度を持つmodelが必要である。
+
+既知の未対応事項:
+
+- `open-terminal`の`/var/run/docker.sock`のmountは残っている。Piがshellを操作できるため、本番利用前に除去する必要がある。
+- LiteLLMはdatabaseなしで動作しているため、Pi専用のvirtual keyを発行できず、master keyを共有している。
+
 ## References
 
 - [Open WebUI: LibreTranslate Integration](https://docs.openwebui.com/tutorials/integrations/libre-translate/)
+- [Open Terminal agents](https://github.com/open-webui/open-terminal/blob/v0.17.22/open_terminal/agents/sessions.py)
+- [Pi: Choose a Model](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md)
+- [Pi: Configuration](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/configuration.md)
+- [OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)

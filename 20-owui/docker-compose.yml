@@ -276,7 +276,10 @@ services:
   # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
   open-terminal:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-terminal:0.17.22
+    # Pi coding agentとOfficeCLIを/usr/localへ追加した派生image。
+    build:
+      context: ./open-terminal
+    image: inferlab/open-terminal:0.17.22-pi
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
@@ -287,8 +290,14 @@ services:
       OPEN_TERMINAL_NPM_PACKAGES: "typescript tsx"
       OPEN_TERMINAL_MULTI_USER: "true"
       OPEN_TERMINAL_API_KEY: ${OPEN_TERMINAL_API_KEY:-sk-open-terminal-api-key}
+      # Piは管理設定をuserごとの~/.pi/agentへ配布するwrapper経由で起動する。
+      OPEN_TERMINAL_PI_COMMAND: /usr/local/bin/inferlab-pi
       NPM_CONFIG_PREFIX: /home/user/.npm-global
       PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    secrets:
+      # Piのmodels.jsonが!commandで読むLiteLLM API key。multi-userの全OS userが読める。
+      - source: pi-litellm-api-key
+        target: /run/secrets/pi-litellm-api-key
     ports:
       - 32003:8000
     volumes:
@@ -497,6 +506,10 @@ volumes:
   open-webui-data:
   open-terminal-data:
   oikb-rustfs-data:
+
+secrets:
+  pi-litellm-api-key:
+    environment: LITELLM_MASTER_KEY
 
 networks:
   internal-nw:
