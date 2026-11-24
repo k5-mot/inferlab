@@ -1,6 +1,6 @@
 services:
   dify-api:
-    image: docker.io/langgenius/dify-api:1.17.0
+    image: docker.io/langgenius/dify-api:1.20.0
     container_name: ${STACK_NAME}-dify-api
     restart: unless-stopped
     profiles:
@@ -101,7 +101,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-worker:
-    image: docker.io/langgenius/dify-api:1.17.0
+    image: docker.io/langgenius/dify-api:1.20.0
     container_name: ${STACK_NAME}-dify-worker
     restart: unless-stopped
     profiles:
@@ -141,7 +141,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-worker-beat:
-    image: docker.io/langgenius/dify-api:1.17.0
+    image: docker.io/langgenius/dify-api:1.20.0
     container_name: ${STACK_NAME}-dify-worker-beat
     restart: unless-stopped
     profiles:
@@ -173,7 +173,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-web:
-    image: docker.io/langgenius/dify-web:1.17.0
+    image: docker.io/langgenius/dify-web:1.20.0
     container_name: ${STACK_NAME}-dify-web
     restart: unless-stopped
     profiles:
@@ -208,7 +208,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-plugin-daemon:
-    image: docker.io/langgenius/dify-plugin-daemon:0.6.10-local
+    image: docker.io/langgenius/dify-plugin-daemon:0.6.15-local
     container_name: ${STACK_NAME}-dify-plugin-daemon
     restart: unless-stopped
     profiles:
@@ -311,7 +311,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-local-sandbox:
-    image: docker.io/langgenius/dify-agent-local-sandbox:1.17.0
+    image: docker.io/langgenius/dify-agent-local-sandbox:1.20.0
     container_name: ${STACK_NAME}-dify-local-sandbox
     restart: unless-stopped
     profiles:
@@ -335,7 +335,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-agent-backend:
-    image: docker.io/langgenius/dify-agent-backend:1.17.0
+    image: docker.io/langgenius/dify-agent-backend:1.20.0
     container_name: ${STACK_NAME}-dify-agent-backend
     restart: unless-stopped
     profiles:
@@ -347,9 +347,11 @@ services:
       DIFY_AGENT_PLUGIN_DAEMON_API_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-sk-dify-plugin-daemon-key}
       DIFY_AGENT_INNER_API_URL: http://dify-api:5001
       DIFY_AGENT_INNER_API_KEY: ${DIFY_PLUGIN_INNER_API_KEY:-sk-dify-plugin-inner-api-key}
-      DIFY_AGENT_SHELLCTL_ENTRYPOINT: http://dify-local-sandbox:5004
-      DIFY_AGENT_SHELLCTL_AUTH_TOKEN: ${DIFY_AGENT_SHELLCTL_AUTH_TOKEN:-sk-dify-agent-shellctl-token}
+      DIFY_AGENT_RUNTIME_BACKEND: local
+      DIFY_AGENT_LOCAL_SANDBOX_ENDPOINT: http://dify-local-sandbox:5004
+      DIFY_AGENT_LOCAL_SANDBOX_AUTH_TOKEN: ${DIFY_AGENT_SHELLCTL_AUTH_TOKEN:-sk-dify-agent-shellctl-token}
       DIFY_AGENT_STUB_API_BASE_URL: http://dify-agent-backend:5050/agent-stub
+      DIFY_AGENT_SANDBOX_FILES_BASE_URL: http://dify-api:5001
       DIFY_AGENT_SERVER_SECRET_KEY: ${DIFY_AGENT_SERVER_SECRET_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY}
       DIFY_AGENT_SHUTDOWN_GRACE_SECONDS: 30
       DIFY_AGENT_RUN_RETENTION_SECONDS: 259200
@@ -377,7 +379,7 @@ services:
       - homepage.description=AI workflow platform
 
   dify-postgres:
-    image: docker.io/library/postgres:18.6-alpine3.24
+    image: docker.io/library/postgres:18.7-alpine3.24
     container_name: ${STACK_NAME}-dify-postgres
     restart: unless-stopped
     profiles:
@@ -406,7 +408,7 @@ services:
       - homepage.description=Relational database
 
   dify-postgres-init:
-    image: docker.io/library/postgres:18.6-alpine3.24
+    image: docker.io/library/postgres:18.7-alpine3.24
     container_name: ${STACK_NAME}-dify-postgres-init
     restart: "no"
     profiles:
@@ -461,7 +463,7 @@ services:
       - homepage.description=S3-compatible object storage
 
   dify-rustfs-bucket-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
+    image: public.ecr.aws/aws-cli/aws-cli:2.42.2
     container_name: ${STACK_NAME}-dify-rustfs-bucket-init
     restart: "no"
     profiles:
@@ -493,7 +495,7 @@ services:
         condition: service_healthy
 
   dify-valkey:
-    image: docker.io/valkey/valkey:9.1.1-alpine3.24
+    image: docker.io/valkey/valkey:9.2.0-alpine3.24
     container_name: ${STACK_NAME}-dify-valkey
     restart: unless-stopped
     profiles:
@@ -523,7 +525,7 @@ services:
       - homepage.description=Inmemory key-value NoSQL database
 
   dify-qdrant:
-    image: docker.io/qdrant/qdrant:v1.19.0
+    image: docker.io/qdrant/qdrant:v1.20.2
     container_name: ${STACK_NAME}-dify-qdrant
     restart: unless-stopped
     profiles:
@@ -551,7 +553,7 @@ services:
       - homepage.description=Vector search database
 
   dify-nginx:
-    image: docker.io/library/nginx:1.31.4-alpine
+    image: docker.io/library/nginx:1.31.10-alpine
     container_name: ${STACK_NAME}-dify-nginx
     restart: unless-stopped
     profiles:

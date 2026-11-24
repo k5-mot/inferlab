@@ -1,6 +1,6 @@
 services:
   zulip:
-    image: ghcr.io/zulip/zulip-server:12.2-0
+    image: ghcr.io/zulip/zulip-server:12.5-0
     container_name: ${STACK_NAME}-zulip
     restart: unless-stopped
     profiles:
@@ -193,7 +193,7 @@ services:
       - homepage.icon=/icons/memcached.png
 
   zulip-rabbitmq:
-    image: docker.io/library/rabbitmq:4.3.5
+    image: docker.io/library/rabbitmq:4.4.1
     container_name: ${STACK_NAME}-zulip-rabbitmq
     restart: unless-stopped
     profiles:
@@ -228,7 +228,7 @@ services:
       - homepage.description=Reliable message broker
 
   zulip-redis:
-    image: docker.io/valkey/valkey:9.1.1-alpine3.24
+    image: docker.io/valkey/valkey:9.2.0-alpine3.24
     container_name: ${STACK_NAME}-zulip-redis
     restart: unless-stopped
     profiles:

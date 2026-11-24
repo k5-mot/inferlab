@@ -447,7 +447,7 @@ def preview_sync(
     if not isinstance(files, list):
         if changed_count:
             raise ValueError(
-                "OIKB dry-run response has no file details; rebuild the OIKB2 image"
+                "OIKB dry-run response has no file details; rebuild the OIKB image"
             )
         files = []
     for file_item in files:

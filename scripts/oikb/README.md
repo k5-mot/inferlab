@@ -55,7 +55,7 @@ python3 scripts/oikb/oikb_sync.py trigger --dry-run
 
 失敗条件:
 
-- OIKB2 imageが古く、dry-run responseにfile詳細がない。
+- OIKB imageが古く、dry-run responseにfile詳細がない。
 - OIKBがsource manifestまたはOpen WebUIとの差分を取得できない。
 
 ## KBの逐次同期
@@ -77,7 +77,7 @@ python3 scripts/oikb/oikb_sync.py trigger
 - 1 KBの全fileが`completed`になるまで次のKBはtriggerされない。
 - `Ctrl+C`後に再実行した場合、実行中のsourceへ再接続して待機を継続する。
 - file登録が失敗した場合は、失敗fileを削除して同じfileを1回retryする。
-- OIKB Docker logに`OIKB2 processing file`と`OIKB2 registered file`がfileごとに同じ順で表示される。
+- OIKB Docker logに`OIKB processing file`と`OIKB registered file`がfileごとに同じ順で表示される。
 - 全KBの完了後、CLIが終了code 0で終了する。
 
 失敗条件:
@@ -86,7 +86,7 @@ python3 scripts/oikb/oikb_sync.py trigger
 - OIKB同期、Open WebUI file処理、KBへのlink、またはpending解消が失敗する。
 - 対象KBのfileがretry後も失敗し、同じKBの次fileと後続KBを開始せず終了する。
 
-Composeの`oikb` serviceは内蔵schedulerを使用し、`20-owui/oikb2/oikb.yaml`の設定順でsourceを処理する。現在は両sourceに共通の6時間間隔を設定している。先行sourceが失敗した周期では後続sourceを開始せず、6時間後の次周期で先頭sourceから再試行する。
+Composeの`oikb` serviceは内蔵schedulerを使用し、`20-owui/oikb/oikb.yaml`の設定順でsourceを処理する。現在は両sourceに共通の6時間間隔を設定している。先行sourceが失敗した周期では後続sourceを開始せず、6時間後の次周期で先頭sourceから再試行する。
 
 ```bash
 # OIKB内蔵schedulerを実行するserviceの稼働状態を確認する。

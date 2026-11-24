@@ -147,7 +147,7 @@ def patch_source(source: str) -> str:
         PDF分割対応のDoclingLoaderを含むsource code。
 
     Raises:
-        RuntimeError: 想定したv0.12.4のLoaderが存在しない場合。
+        RuntimeError: 想定したv0.13.4のLoaderが存在しない場合。
     """
     if PATCH_MARKER in source:
         return source

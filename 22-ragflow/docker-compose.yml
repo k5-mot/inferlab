@@ -12,7 +12,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   ragflow:
     <<: *external-dns-stabilizer
-    image: docker.io/infiniflow/ragflow:v0.27.1
+    image: docker.io/infiniflow/ragflow:v0.27.3
     container_name: ${STACK_NAME}-ragflow
     restart: unless-stopped
     profiles:
@@ -82,7 +82,7 @@ services:
       - homepage.description=Retrieval-augmented generation platform
 
   ragflow-opensearch:
-    image: docker.io/opensearchproject/opensearch:2.19.1
+    image: docker.io/opensearchproject/opensearch:2.19.7
     container_name: ${STACK_NAME}-ragflow-opensearch
     restart: unless-stopped
     profiles:
@@ -129,7 +129,7 @@ services:
       - homepage.description=Document search engine
 
   ragflow-mysql:
-    image: docker.io/library/mysql:8.0.39
+    image: docker.io/library/mysql:8.0.44
     container_name: ${STACK_NAME}-ragflow-mysql
     restart: unless-stopped
     profiles:
@@ -197,7 +197,7 @@ services:
       - homepage.description=S3-compatible object storage
 
   ragflow-rustfs-bucket-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
+    image: public.ecr.aws/aws-cli/aws-cli:2.42.2
     container_name: ${STACK_NAME}-ragflow-rustfs-bucket-init
     restart: "no"
     profiles:
@@ -229,7 +229,7 @@ services:
         condition: service_healthy
 
   ragflow-valkey:
-    image: docker.io/valkey/valkey:9.1.1-alpine3.24
+    image: docker.io/valkey/valkey:9.2.0-alpine3.24
     container_name: ${STACK_NAME}-ragflow-valkey
     restart: unless-stopped
     profiles:

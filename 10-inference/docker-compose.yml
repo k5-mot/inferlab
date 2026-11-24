@@ -2,8 +2,6 @@
 # 参考資料:
 # - LiteLLM
 #   - https://docs.litellm.ai/docs/simple_proxy
-# - Ollama
-#   - https://docs.ollama.com/docker
 # - TEI; HuggingFace Text Embedding Inference
 #   - https://huggingface.co/docs/text-embeddings-inference/quick_tour
 # - QwenPaw
@@ -24,7 +22,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   litellm:
     <<: *external-dns-stabilizer
-    image: docker.io/litellm/litellm:v1.98.0
+    image: docker.io/litellm/litellm:v1.110.2
     container_name: ${STACK_NAME}-litellm
     restart: unless-stopped
     profiles:
@@ -54,8 +52,6 @@ services:
     networks:
       - internal-nw
     depends_on:
-      ollama:
-        condition: service_healthy
       # tei-embedding-jp:
       #   condition: service_healthy
       # tei-reranking-jp:
@@ -82,78 +78,6 @@ services:
       - homepage.name=LiteLLM
       - homepage.href=http://${PUBLIC_HOST}:31000/ui
       - homepage.description=LLM proxy
-
-  ollama:
-    <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.33.2
-    container_name: ${STACK_NAME}-ollama
-    restart: unless-stopped
-    profiles:
-      - inference
-    tty: true
-    environment:
-      OLLAMA_HOST: "0.0.0.0:11434"
-    volumes:
-      - ollama-cache:/root/.ollama
-    networks:
-      - internal-nw
-    depends_on:
-      ollama-init:
-        condition: service_completed_successfully
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - OLLAMA_HOST=127.0.0.1:11434 ollama list > /dev/null 2>&1
-      interval: 30s
-      timeout: 10s
-      retries: 20
-      start_period: 30s
-    labels:
-      - homepage.icon=/icons/ollama.png
-      - homepage.group=10-inference
-      - homepage.name=Ollama
-      - homepage.description=Inference engine
-
-  ollama-init:
-    <<: *external-dns-stabilizer
-    image: docker.io/ollama/ollama:0.33.2
-    container_name: ${STACK_NAME}-ollama-init
-    restart: no
-    profiles:
-      - inference
-    tty: true
-    environment:
-      OLLAMA_HOST: "0.0.0.0:11434"
-      OLLAMA_KEEP_ALIVE: 24h
-      OLLAMA_INIT_MODELS: "gemma4:31b-cloud gpt-oss:20b-cloud nemotron-3-nano:30b-cloud"
-    volumes:
-      - ollama-cache:/root/.ollama
-    networks:
-      - internal-nw
-    entrypoint:
-      - /bin/sh
-      - -lc
-    command:
-      - |
-        set -eu
-        # `ollama pull`にはlocal daemonが必要なため、init container内で一時的にserverを起動する。
-        # 本体serviceはこのcontainerの正常終了後に同じvolumeを使って起動する。
-        ollama serve &
-        OLLAMA_PID=$$!
-        trap 'kill "$${OLLAMA_PID}" 2>/dev/null || true' INT TERM EXIT
-        until ollama list > /dev/null 2>&1; do
-          echo 'Waiting for Ollama to be ready...'
-          sleep 1
-        done
-        echo 'Ollama is ready. Importing models sequentially...'
-        for model in $${OLLAMA_INIT_MODELS}; do
-          echo "Pulling $${model}..."
-          ollama pull "$${model}"
-        done
-        echo 'All models pulled.'
-        trap - INT TERM EXIT
-        kill "$${OLLAMA_PID}"
-        wait "$${OLLAMA_PID}" 2>/dev/null || true
 
   tei-embedding:
     <<: *external-dns-stabilizer
@@ -270,7 +194,7 @@ services:
     cpus: 4.0
 
   vllm-embedding:
-    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    image: docker.io/vllm/vllm-openai-cpu:v0.34.0-x86_64
     container_name: ${STACK_NAME}-vllm-embedding
     restart: unless-stopped
     ipc: host
@@ -331,7 +255,7 @@ services:
       - homepage.description=Embedding inference engine
 
   vllm-reranking:
-    image: docker.io/vllm/vllm-openai-cpu:v0.28.0-x86_64
+    image: docker.io/vllm/vllm-openai-cpu:v0.34.0-x86_64
     container_name: ${STACK_NAME}-vllm-reranking
     restart: unless-stopped
     ipc: host
@@ -397,8 +321,8 @@ services:
       - homepage.description=Reranking inference engine
 
   kokoro:
-    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.8.1
-    # image: ghcr.io/remsky/kokoro-fastapi-gpu:v0.8.1
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0
+    # image: ghcr.io/remsky/kokoro-fastapi-gpu:v0.10.0
     container_name: ${STACK_NAME}-kokoro
     restart: unless-stopped
     profiles:
@@ -425,7 +349,7 @@ services:
 
   hermes-agent:
     <<: *external-dns-stabilizer
-    image: docker.io/nousresearch/hermes-agent:v2026.8.31
+    image: docker.io/nousresearch/hermes-agent:v2026.9.24
     container_name: ${STACK_NAME}-hermes-agent
     restart: unless-stopped
     profiles:
@@ -481,8 +405,6 @@ services:
       DOCLING_MCP_SERVICE_API_KEY: ${DOCLING_SERVE_API_KEY:-sk-docling-serve-api-key}
       ### Model providers
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
-      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       CODEX_HOME: /opt/data/.codex
@@ -516,7 +438,7 @@ services:
   # Discord pluginは公式imageとは別に永続volumeへ導入する。
   openclaw-init:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
+    image: ghcr.io/openclaw/openclaw:2026.11.7-browser
     container_name: ${STACK_NAME}-openclaw-init
     user: "0:0"
     restart: "no"
@@ -533,7 +455,7 @@ services:
       TZ: Asia/Tokyo
     volumes:
       - openclaw-data:/home/node/.openclaw
-      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.managed.json:ro
+      - ./openclaw/openclaw.json:/opt/inferlab/openclaw.json:ro
     networks:
       - internal-nw
     entrypoint:
@@ -542,17 +464,19 @@ services:
     command:
       - |
         set -eu
+        # Doctorがschema migrationを書き戻せるよう、管理設定を永続volumeへ複製する。
+        install -o node -g node -m 0644 /opt/inferlab/openclaw.json /home/node/.openclaw/openclaw.managed.json
         # 個別bind mountでroot所有になり得るworkspaceを、実行userが書き込める状態へ戻す。
         install -d -o node -g node -m 0755 /home/node/.openclaw/workspaces
         # coreと同じrelease cohortのDiscord pluginへ永続volumeを収束させる。
         plugin_json="$$(setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins list --json)"
         plugin_version="$$(printf '%s' "$$plugin_json" | node -e 'const fs = require("node:fs"); const data = JSON.parse(fs.readFileSync(0, "utf8")); process.stdout.write(data.plugins.find((plugin) => plugin.id === "discord")?.version ?? "");')"
-        if [ "$$plugin_version" = "2026.8.2" ]; then
-          echo "Discord plugin is already at 2026.8.2."
+        if [ "$$plugin_version" = "2026.11.7" ]; then
+          echo "Discord plugin is already at 2026.11.7."
         elif [ -n "$$plugin_version" ]; then
-          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.8.2 --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins update @openclaw/discord@2026.11.7 --accept-capabilities
         else
-          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.8.2 --pin --accept-capabilities
+          setpriv --reuid=node --regid=node --init-groups node dist/index.js plugins install @openclaw/discord@2026.11.7 --pin --accept-capabilities
         fi
     cap_drop:
       - NET_RAW
@@ -564,7 +488,7 @@ services:
   # https://docs.openclaw.ai/install/docker
   openclaw:
     <<: *external-dns-stabilizer
-    image: ghcr.io/openclaw/openclaw:2026.8.2-browser
+    image: ghcr.io/openclaw/openclaw:2026.11.7-browser
     container_name: ${STACK_NAME}-openclaw
     restart: unless-stopped
     profiles:
@@ -601,7 +525,6 @@ services:
       - 31002:18789
     volumes:
       - openclaw-data:/home/node/.openclaw
-      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.managed.json:ro
       - ./openclaw/AGENTS.md:/home/node/.openclaw/workspaces/AGENTS.md:ro
       - ./openclaw/IDENTITY.md:/home/node/.openclaw/workspaces/IDENTITY.md:ro
       - ./openclaw/SOUL.md:/home/node/.openclaw/workspaces/SOUL.md:ro
@@ -631,7 +554,7 @@ services:
   # https://qwenpaw.agentscope.io/docs/channels#Discord
   # https://github.com/agentscope-ai/QwenPaw/blob/main/docker-compose.yml
   qwenpaw-init:
-    image: docker.io/agentscope/qwenpaw:v2.1.0
+    image: docker.io/agentscope/qwenpaw:v2.3.0
     container_name: ${STACK_NAME}-qwenpaw-init
     restart: no
     profiles:
@@ -655,7 +578,7 @@ services:
 
   qwenpaw:
     <<: *external-dns-stabilizer
-    image: docker.io/agentscope/qwenpaw:v2.1.0
+    image: docker.io/agentscope/qwenpaw:v2.3.0
     container_name: ${STACK_NAME}-qwenpaw
     restart: unless-stopped
     profiles:
@@ -699,7 +622,6 @@ services:
       - homepage.href=http://${PUBLIC_HOST}:31003
 
 volumes:
-  ollama-cache:
   openclaw-data:
   qwenpaw-data:
   qwenpaw-secrets:

@@ -4,7 +4,7 @@
 
 ### Profile一覧
 
-`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`translate`、`owui`、`nextcloud`、`obsidian`、`llmwiki`、`sage-wiki`、`langfuse` です。その他のprofileは必要な場合に個別に指定します。
+`dc.sh up` の標準起動に含まれる profile は `common`、`keycloak`、`pubnet`、`inference`、`rag`、`translate`、`owui`、`nextcloud`、`obsidian`、`langfuse` です。その他のprofileは必要な場合に個別に指定します。
 
 | Profile | Compose file | 用途 |
 | --- | --- | --- |
@@ -23,9 +23,6 @@
 | `dify` | `21-dify/docker-compose.yml` | 自動化 |
 | `ragflow` | `22-ragflow/docker-compose.yml` | RAGとAgent platform |
 | `cloudflareos` | `25-cloudflareos/docker-compose.yml` | AI productivity environment |
-| `octos` | `26-octos/docker-compose.yml` | Agent workspace |
-| `aion` | `27-aion/docker-compose.yml` | AI chatとagent workspace |
-| `assistantmd` | `28-assistantmd/docker-compose.yml` | Markdown-first AI agent workspace |
 | `nextcloud` | `30-nextcloud/docker-compose.yml` | ファイル保存 |
 | `xwiki` | `31-xwiki/docker-compose.yml` | Wiki |
 | `kaneo` | `32-kaneo/docker-compose.yml` | プロジェクト管理 |
@@ -33,9 +30,6 @@
 | `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
 | `affine` | `35-affine/docker-compose.yml` | HTTPS対応knowledge workspace |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
-| `openkb` | `40-obsidian/docker-compose.yml` | 旧OpenKB向けCouchDB互換profile |
-| `llmwiki` | `41-llmwiki/docker-compose.yml` | LLM Wiki compilerとviewer |
-| `sage-wiki` | `42-sage-wiki/docker-compose.yml` | Sage Wiki compiler、knowledge graphとviewer |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `o11y-gpu` | `50-o11y/docker-compose.yml` | NVIDIA GPU metrics |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
@@ -54,8 +48,6 @@
 | `keycloak` | `keycloak-config` | - | `01-keycloak/docker-compose.yml` |
 | `pubnet` | `cloudflare` | - | `02-pubnet/docker-compose.yml` |
 | `inference` | `litellm` | `31000` | `10-inference/docker-compose.yml` |
-| `inference` | `ollama` | - | `10-inference/docker-compose.yml` |
-| `inference` | `ollama-init` | - | `10-inference/docker-compose.yml` |
 | `inference` | `vllm-embedding` | - | `10-inference/docker-compose.yml` |
 | `inference` | `vllm-reranking` | - | `10-inference/docker-compose.yml` |
 | `inference-tei` | `tei-embedding` | - | `10-inference/docker-compose.yml` |
@@ -108,10 +100,6 @@
 | `ragflow` | `ragflow-rustfs-bucket-init` | - | `22-ragflow/docker-compose.yml` |
 | `ragflow` | `ragflow-valkey` | - | `22-ragflow/docker-compose.yml` |
 | `cloudflareos` | `cloudflare-os` | `32500` | `25-cloudflareos/docker-compose.yml` |
-| `octos` | `octos` | `32600` | `26-octos/docker-compose.yml` |
-| `aion` | `aion` | `32700` | `27-aion/docker-compose.yml` |
-| `assistantmd` | `assistantmd-init` | - | `28-assistantmd/docker-compose.yml` |
-| `assistantmd` | `assistantmd` | `32800` | `28-assistantmd/docker-compose.yml` |
 | `nextcloud` | `nextcloud` | `33000` | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-postgres` | - | `30-nextcloud/docker-compose.yml` |
 | `nextcloud` | `nextcloud-valkey` | - | `30-nextcloud/docker-compose.yml` |
@@ -132,11 +120,7 @@
 | `affine` | `affine-redis` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-postgres` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-caddy` | `33500` | `35-affine/docker-compose.yml` |
-| `obsidian`, `llmwiki`, `sage-wiki`, `openkb` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
-| `llmwiki` | `llmwiki` | `34100` | `41-llmwiki/docker-compose.yml` |
-| `llmwiki` | `llmwiki-ingester` | - | `41-llmwiki/docker-compose.yml` |
-| `sage-wiki` | `sage-wiki-ingester` | `34201` | `42-sage-wiki/docker-compose.yml` |
-| `sage-wiki` | `sage-wiki` | `34200` | `42-sage-wiki/docker-compose.yml` |
+| `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
@@ -182,16 +166,11 @@
 - [Dify](21-dify/README.md)
 - [RAGFlow](22-ragflow/README.md)
 - [Cloudflare OS](25-cloudflareos/README.md)
-- [Octos](26-octos/README.md)
-- [AionUi](27-aion/README.md)
-- [Assistant.md](28-assistantmd/README.md)
 - [Nextcloud](30-nextcloud/README.md)
 - [XWiki](31-xwiki/README.md)
 - [Zulip](33-zulip/README.md)
 - [GitLab](34-gitlab/README.md)
 - [AFFiNE](35-affine/README.md)
-- [LLM Wiki](41-llmwiki/README.md)
-- [Sage Wiki](42-sage-wiki/README.md)
 - [Observability](50-o11y/README.md)
 - [Langfuse](51-langfuse/README.md)
 

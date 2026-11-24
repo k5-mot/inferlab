@@ -41,13 +41,6 @@
                         "contextWindow": 131000,
                         "maxTokens": 8192,
                         "reasoning": true
-                    },
-                    {
-                        "id": "nvidia/nemotron-3-nano:30b",
-                        "name": "Nemotron 3 Nano 30B via LiteLLM",
-                        "contextWindow": 262000,
-                        "maxTokens": 8192,
-                        "reasoning": true
                     }
                 ]
             }
@@ -59,20 +52,17 @@
                 "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
-                    "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/openai/gpt-oss:20b"
                 ]
             },
             "models": {
                 "litellm/google/gemma4:31b": {},
-                "litellm/openai/gpt-oss:20b": {},
-                "litellm/nvidia/nemotron-3-nano:30b": {}
+                "litellm/openai/gpt-oss:20b": {}
             },
             "modelPolicy": {
                 "allow": [
                     "litellm/google/gemma4:31b",
-                    "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/openai/gpt-oss:20b"
                 ]
             },
             "utilityModel": "litellm/google/gemma4:31b",
@@ -80,24 +70,21 @@
                 "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
-                    "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/openai/gpt-oss:20b"
                 ]
             },
             "voiceModel": {
                 "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
-                    "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/openai/gpt-oss:20b"
                 ]
             },
             "pdfModel": {
                 "primary": "litellm/google/gemma4:31b",
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
-                    "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/openai/gpt-oss:20b"
                 ]
             },
             "subagents": {
@@ -105,14 +92,23 @@
                     "primary": "litellm/google/gemma4:31b",
                     "fallbacks": [
                         "litellm/google/gemma4:31b",
-                        "litellm/openai/gpt-oss:20b",
-                        "litellm/nvidia/nemotron-3-nano:30b"
+                        "litellm/openai/gpt-oss:20b"
                     ]
                 }
             }
         },
         "entries": {
             "main": {}
+        }
+    },
+    "skills": {
+        "entries": {
+            "openai-whisper-api": {
+                "enabled": false
+            },
+            "sherpa-onnx-tts": {
+                "enabled": false
+            }
         }
     },
     "tools": {
@@ -137,16 +133,6 @@
                         "audio"
                     ],
                     "type": "provider"
-                },
-                {
-                    "provider": "litellm",
-                    "model": "nvidia/nemotron-3-nano:30b",
-                    "capabilities": [
-                        "image",
-                        "video",
-                        "audio"
-                    ],
-                    "type": "provider"
                 }
             ]
         },
@@ -156,8 +142,7 @@
                     "primary": "litellm/google/gemma4:31b",
                     "fallbacks": [
                         "litellm/google/gemma4:31b",
-                        "litellm/openai/gpt-oss:20b",
-                        "litellm/nvidia/nemotron-3-nano:30b"
+                        "litellm/openai/gpt-oss:20b"
                     ]
                 }
             }
@@ -228,9 +213,16 @@
         }
     },
     "meta": {
-        "lastTouchedVersion": "2026.8.2",
+        "lastTouchedVersion": "2026.11.7",
         "migrations": {
-            "modelPolicyAllowlist": true
+            "modelPolicyAllowlist": true,
+            "webhookListeners": {
+                "telegram": [],
+                "feishu": [],
+                "msteams": [],
+                "nextcloud-talk": []
+            },
+            "utilityModelSeparation": true
         }
     },
     "channels": {

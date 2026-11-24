@@ -1,7 +1,0 @@
-services:
-  sage-wiki-ingester:
-    build:
-      dockerfile: Dockerfile.offline
-      network: none
-      additional_contexts:
-        npm-packages: ${SAGE_WIKI_NPM_PACKAGES_DIR:-/srv/npm}

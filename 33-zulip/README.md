@@ -13,6 +13,8 @@ Zulip本体は`/data/post-setup.d`を実行する。Composeでは`33-zulip/post-
 
 Zulipの初期管理者passwordは、`ZULIP_AUTO_CREATE_ADMIN_PASSWORD`があればその値を使う。未指定の場合は`/data/initial-admin-password`へランダム値を生成する。
 
+Redis 8のRDBからValkey 9へ切り替える場合は、[Zulip migration manual](../docs/manual/migration/ZULIP.md)に従う。
+
 ## 起動
 
 ```bash

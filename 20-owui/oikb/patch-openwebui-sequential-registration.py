@@ -87,7 +87,7 @@ import time
             file_id = None
             try:
                 logger.info(
-                    "OIKB2 processing file: knowledge_id=%s file=%s attempt=%d/2",
+                    "OIKB processing file: knowledge_id=%s file=%s attempt=%d/2",
                     kb_id,
                     filename,
                     attempt + 1,
@@ -174,7 +174,7 @@ import time
 
                     if status == "completed" and linked:
                         logger.info(
-                            "OIKB2 registered file: "
+                            "OIKB registered file: "
                             "knowledge_id=%s file=%s file_id=%s",
                             kb_id,
                             filename,
@@ -212,7 +212,7 @@ import time
                         f"Open WebUI file retry failed: {filename}: {error}"
                     ) from error
                 logger.warning(
-                    "OIKB2 retrying file: knowledge_id=%s file=%s error=%s",
+                    "OIKB retrying file: knowledge_id=%s file=%s error=%s",
                     kb_id,
                     filename,
                     error,

@@ -21,7 +21,7 @@ x-external-dns-stabilizer: &external-dns-stabilizer
 services:
   open-webui:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-webui:0.12.4
+    image: ghcr.io/open-webui/open-webui:v0.13.4
     container_name: ${STACK_NAME}-open-webui
     restart: unless-stopped
     profiles:
@@ -86,21 +86,6 @@ services:
           },
           {
             "type": "openapi",
-            "url": "http://mcpo:8000/llmwiki",
-            "spec_type": "url",
-            "spec": "",
-            "path": "openapi.json",
-            "auth_type": "bearer",
-            "key": "${MCPO_API_KEY:-sk-mcpo-api-secret-key}",
-            "config": { "enable": true },
-            "info": {
-              "id": "llmwiki",
-              "name": "llmwiki",
-              "description": "Repository knowledge tools provided by llmwiki through mcpo."
-            }
-          },
-          {
-            "type": "openapi",
             "url": "http://libretranslate:5000",
             "spec_type": "json",
             "spec": "{\"openapi\":\"3.0.3\",\"info\":{\"title\":\"LibreTranslate\",\"version\":\"1.9.6\"},\"paths\":{\"/translate\":{\"post\":{\"operationId\":\"translateText\",\"summary\":\"Translate text\",\"requestBody\":{\"required\":true,\"content\":{\"application/json\":{\"schema\":{\"type\":\"object\",\"required\":[\"q\",\"source\",\"target\"],\"properties\":{\"q\":{\"type\":\"string\",\"description\":\"Text to translate\"},\"source\":{\"type\":\"string\",\"description\":\"Source language code or auto\"},\"target\":{\"type\":\"string\",\"description\":\"Target language code\"},\"format\":{\"type\":\"string\",\"enum\":[\"text\",\"html\"],\"default\":\"text\"}}}}}},\"responses\":{\"200\":{\"description\":\"Translation result\"}}}}}}",
@@ -130,7 +115,7 @@ services:
       ENABLE_EVALUATION_ARENA_MODELS: "false"
       ### For LLM on LiteLLM
       DEFAULT_MODELS: "google/gemma4:31b"
-      DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
+      DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b"
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
       OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}"
       OPENAI_API_CONFIGS: >-
@@ -291,7 +276,7 @@ services:
   # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
   open-terminal:
     <<: *external-dns-stabilizer
-    image: ghcr.io/open-webui/open-terminal:0.12.3
+    image: ghcr.io/open-webui/open-terminal:0.17.22
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped
     profiles:
@@ -314,7 +299,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" http://127.0.0.1:8000/files/list"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -328,15 +313,11 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    build:
-      context: ./mcpo
-    image: ghcr.io/open-webui/mcpo:main-patch2
+    image: ghcr.io/open-webui/mcpo:main
     container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:
       - owui
-    environment:
-      LLMWIKI_CONTAINER_NAME: ${STACK_NAME}-llmwiki
     entrypoint:
       - /app/.venv/bin/mcpo
     command:
@@ -352,8 +333,6 @@ services:
       - 32004:8000
     volumes:
       - ./mcpo/config.json:/config/config.json:ro
-      - ./mcpo/llmwiki-mcp.sh:/config/llmwiki-mcp.sh:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - internal-nw
     healthcheck:
@@ -431,7 +410,7 @@ services:
       - homepage.icon=/icons/rustfs.png
 
   oikb-rustfs-init:
-    image: public.ecr.aws/aws-cli/aws-cli:2.36.34
+    image: public.ecr.aws/aws-cli/aws-cli:2.42.2
     container_name: ${STACK_NAME}-oikb-rustfs-init
     restart: "no"
     profiles:

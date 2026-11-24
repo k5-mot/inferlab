@@ -1,6 +1,6 @@
 services:
   kaneo:
-    image: ghcr.io/usekaneo/kaneo:2.22.0
+    image: ghcr.io/usekaneo/kaneo:2.50.0
     container_name: ${STACK_NAME}-kaneo
     restart: unless-stopped
     profiles:
@@ -40,7 +40,7 @@ services:
       - homepage.icon=/icons/kaneo.png
 
   kaneo-postgres:
-    image: docker.io/library/postgres:18.6-alpine3.24
+    image: docker.io/library/postgres:18.7-alpine3.24
     container_name: ${STACK_NAME}-kaneo-postgres
     restart: unless-stopped
     profiles:
@@ -50,7 +50,7 @@ services:
       POSTGRES_USER: kaneo_db_user
       POSTGRES_PASSWORD: kaneo_db_password
     volumes:
-      - kaneo-postgres-data:/var/lib/postgresql/data
+      - kaneo-postgres-18-data:/var/lib/postgresql
     networks:
       - internal-nw
     healthcheck:
@@ -65,7 +65,7 @@ services:
       - homepage.icon=/icons/postgresql.png
 
 volumes:
-  kaneo-postgres-data:
+  kaneo-postgres-18-data:
 
 networks:
   internal-nw:

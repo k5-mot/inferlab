@@ -59,6 +59,62 @@ foreach ($Script in $DownloadScripts) {
 - checksumが一致しない。
 - 対象Python versionで利用できるpackage archiveがない。
 
+### Compose imageだけをcraneで取得する
+
+root Composeから全profileのimage参照を取得するため、削除済みstackや重複imageを手作業で管理する必要はない。次の手順はimageをDocker互換tarballとして`/srv/docker`へ保存する。非公開registryを使用する場合は、実行前に対象registryへ`crane auth login`で認証する。
+
+```powershell
+# root Composeを評価して全profile名を取得する。
+$Profiles = & docker compose --env-file .env config --profiles
+if ($LASTEXITCODE -ne 0) {
+    throw "Compose profileの取得に失敗しました。"
+}
+
+# 全profileをComposeへ明示する引数を組み立てる。
+$ProfileArguments = foreach ($Profile in $Profiles) {
+    "--profile"
+    $Profile
+}
+
+# 削除済みstackを除くroot Composeのimage参照を重複なしで取得する。
+$Images = & docker compose --env-file .env @ProfileArguments config --images |
+    Sort-Object -Unique
+if (($LASTEXITCODE -ne 0) -or ($Images.Count -eq 0)) {
+    throw "Compose imageの取得に失敗しました。"
+}
+
+# image archiveと取得元一覧の保存directoryを作成する。
+$DockerOutputDirectory = "/srv/docker"
+New-Item -ItemType Directory -Path $DockerOutputDirectory -Force | Out-Null
+
+# 復元時に元のimage参照を確認できるよう一覧を保存する。
+$Images | Set-Content -Path (Join-Path $DockerOutputDirectory "images.txt")
+
+# linux/amd64向けimageをDocker互換tarballとして1件ずつ取得する。
+foreach ($Image in $Images) {
+    $ArchiveName = ($Image -replace "[/:@]", "_") + ".tar"
+    $ArchivePath = Join-Path $DockerOutputDirectory $ArchiveName
+    & crane pull --platform linux/amd64 --format tarball $Image $ArchivePath
+    if ($LASTEXITCODE -ne 0) {
+        throw "imageの取得に失敗しました: $Image"
+    }
+}
+```
+
+期待結果:
+
+- `images.txt`にroot Composeが参照する一意なimage参照が記録される。
+- `images.txt`の各imageに対応する`.tar`が`/srv/docker`へ保存される。
+- 削除済みstackのimageはroot Composeから除外されるため、取得対象へ含まれない。
+
+失敗条件:
+
+- `.env`が不足し、root Composeを解決できない。
+- `docker compose config --profiles`または`docker compose config --images`が非0で終了する。
+- registryの認証またはimage取得に失敗し、`crane pull`が非0で終了する。
+
+再実行する場合は同名`.tar`が上書きされる。取得を中止して元へ戻す場合は、専用staging先である`/srv/docker`の未完成`.tar`だけを削除し、`images.txt`を基準に再取得する。
+
 ## 2. 取得済み資材を確認する
 
 ```powershell
@@ -129,13 +185,13 @@ sudo cp -a /srv/deb/. /srv/12-registry/deb/
 sudo cp -a /srv/vscode/. /srv/12-registry/vsix/
 ```
 
-`/srv/docling`と`/srv/libretranslate`は各serviceがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、llmwiki Offline版のBuildKit named contextとVerdaccioの`npm-importer`の両方からread-onlyで参照する。llmwikiのOffline Docker buildはVerdaccioを経由しない。`/srv/docker/*.tar`のcontainer engineへのloadは環境運用者が実施する。
+`/srv/docling`と`/srv/libretranslate`は各serviceがbind mountする取得先をそのまま使用する。`/srv/npm/*.tgz`も配置変更せず、Verdaccioの`npm-importer`からread-onlyで参照する。`/srv/docker/*.tar`のcontainer engineへのloadは環境運用者が実施する。
 
 期待結果:
 
 - 各serviceのbind mount元に必要な資材が配置される。
 - `/srv/libretranslate`に英語・日本語のArgos Translate modelとMiniSBD modelが配置される。
-- `/srv/npm`がnpm packageの共通bind mount元とllmwiki Offline build入力として保持される。
+- `/srv/npm`がnpm packageの共通bind mount元として保持される。
 - `/srv/docker/*.tar`が環境運用者によるimage load用の入力資材として保持される。
 
 失敗条件:
@@ -179,3 +235,9 @@ cd <AIRGAP_REPO_DIR> && sudo docker compose --env-file .env down
 失敗条件:
 
 - `docker compose down`が非0で終了する。
+
+## References
+
+- [go-containerregistry: crane](https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane.md)
+- [go-containerregistry: crane pull](https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane_pull.md)
+- [go-containerregistry: crane auth login](https://github.com/google/go-containerregistry/blob/main/cmd/crane/doc/crane_auth_login.md)

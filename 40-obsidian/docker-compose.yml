@@ -7,9 +7,6 @@ services:
     restart: unless-stopped
     profiles:
       - obsidian
-      - llmwiki
-      - sage-wiki
-      - openkb
     ports:
       - 34000:5984
     environment:

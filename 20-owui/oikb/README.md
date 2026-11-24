@@ -61,7 +61,7 @@ sudo docker compose --env-file .env \
   --profile owui --profile nextcloud logs -f oikb
 ```
 
-処理中は`OIKB2 processing file`、登録確認後は`OIKB2 registered file`としてKnowledge Base ID、file名、file IDを出力する。開始logの後に登録完了logがまだないfileが、現在処理中のfileである。
+処理中は`OIKB processing file`、登録確認後は`OIKB registered file`としてKnowledge Base ID、file名、file IDを出力する。開始logの後に登録完了logがまだないfileが、現在処理中のfileである。
 
 期待結果:
 
@@ -113,5 +113,5 @@ sudo docker compose --env-file .env \
 ## References
 
 - [OIKB v0.6.0 client](https://github.com/open-webui/oikb/blob/v0.6.0/src/oikb/client.py)
-- [Open WebUI v0.12.4 file API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/files.py)
-- [Open WebUI v0.12.4 Knowledge API](https://github.com/open-webui/open-webui/blob/v0.12.4/backend/open_webui/routers/knowledge.py)
+- [Open WebUI v0.13.4 file API](https://github.com/open-webui/open-webui/blob/v0.13.4/backend/open_webui/routers/files.py)
+- [Open WebUI v0.13.4 Knowledge API](https://github.com/open-webui/open-webui/blob/v0.13.4/backend/open_webui/routers/knowledge.py)

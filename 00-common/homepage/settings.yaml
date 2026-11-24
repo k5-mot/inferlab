@@ -66,14 +66,6 @@ layout:
       icon: /icons/obsidian.png
       style: row
       columns: 4
-  - 41-llmwiki:
-      icon: /icons/llm-wiki.png
-      style: row
-      columns: 4
-  - 42-sage-wiki:
-      icon: /icons/llm-wiki.png
-      style: row
-      columns: 4
   - 50-o11y:
       icon: /icons/grafana.png
       style: row

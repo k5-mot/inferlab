@@ -147,7 +147,6 @@ scripts/
 ├── dify/           # Download-Difypkg.ps1
 │  │
 │  ├── langgenius-openai_api_compatible_0.0.64.difypkg
-│  ├── langgenius-ollama_1.0.0.difypkg
 │  ├── langgenius-huggingface_tei_0.1.10.difypkg
 │  ├── langgenius-cohere_0.0.17.difypkg
 │  │

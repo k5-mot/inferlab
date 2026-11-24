@@ -129,15 +129,6 @@ service_catalog: {
         stroke-width: 2
       }
 
-      ollama: {
-        label: "Ollama"
-        icon: "../../00-common/homepage/icons/ollama.png"
-        style: {
-          fill: "#ffffff"
-          stroke: "#a16207"
-        }
-      }
-
       tei: {
         label: "TEI\nEmbedding / Reranking"
         icon: "../../00-common/homepage/icons/hugging-face.png"
@@ -633,7 +624,6 @@ public_host -> service_catalog: "published services"
 # service_catalog.row_3 -> service_catalog.row_4: "観測"
 
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.tei
-service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.ollama
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.openrouter
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.google_ai_studio
 service_catalog.row_2.10_inference.litellm -> service_catalog.row_2.10_inference.kokoro

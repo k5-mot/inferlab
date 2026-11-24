@@ -16,11 +16,13 @@ Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scri
 | `/srv/12-registry/rpm` | `.rpm` | createrepo_c が metadata を生成し、nginx が配信する。 |
 | `/srv/12-registry/deb` | `.deb` | reprepro が `/srv/12-registry/deb/public` へ APT repository を生成し、nginx が配信する。 |
 | `/srv/12-registry/pypi` | `.whl`、`.tar.gz`、`.zip` | pypiserver が配信する。 |
-| `/srv/npm` | `.tgz` | Verdaccioへpublishし、llmwikiのOffline Docker build入力と共用する。 |
+| `/srv/npm` | `.tgz` | Verdaccioへpublishする。 |
 | `/srv/12-registry/vsix` | `.vsix` | Code Marketplace importer が配信storageへ反映する。 |
 | `/srv/oci-archive` | `docker save` 形式の `.tar` | Container engineへ手動loadするための入力資材。 |
 
 Container image registry は Docker 公式 `registry` image を使用する。
+
+Verdaccio 6から7への更新は、[Verdaccio migration manual](../docs/manual/migration/VERDACCIO.md)に従う。
 
 PyPIserverはpackage資材を変更しない配信専用serviceとして、UID/GID `9898`の非root userで`pypi-server`を直接起動する。image標準のentrypointはpackage directoryの所有権変更を試行するため使用せず、`/srv/12-registry/pypi`のread-only mountを維持する。
 
