@@ -993,18 +993,18 @@ class Client:
         self.assertIn('f"/knowledge/{kb_id}/files"', patched)
         self.assertIn("for attempt in range(2):", patched)
         self.assertIn('self._http.delete(f"/files/{file_id}")', patched)
-        self.assertIn("OIKB2 retrying file", patched)
+        self.assertIn("OIKB retrying file", patched)
         self.assertIn("Open WebUI file retry failed", patched)
         self.assertLess(
-            patched.index("OIKB2 processing file"),
+            patched.index("OIKB processing file"),
             patched.index("self._http.post("),
         )
         self.assertLess(
             patched.index('status == "completed" and linked'),
-            patched.index("OIKB2 registered file"),
+            patched.index("OIKB registered file"),
         )
         self.assertLess(
-            patched.index("OIKB2 registered file"),
+            patched.index("OIKB registered file"),
             patched.index("return uploaded_file"),
         )
         containerfile = (REPO_ROOT / "20-owui/oikb/Containerfile").read_text(

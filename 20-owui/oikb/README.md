@@ -61,7 +61,7 @@ sudo docker compose --env-file .env \
   --profile owui --profile nextcloud logs -f oikb
 ```
 
-処理中は`OIKB2 processing file`、登録確認後は`OIKB2 registered file`としてKnowledge Base ID、file名、file IDを出力する。開始logの後に登録完了logがまだないfileが、現在処理中のfileである。
+処理中は`OIKB processing file`、登録確認後は`OIKB registered file`としてKnowledge Base ID、file名、file IDを出力する。開始logの後に登録完了logがまだないfileが、現在処理中のfileである。
 
 期待結果:
 
