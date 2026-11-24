@@ -1,0 +1,51 @@
+# GitLab CIでcosignによるkeyless署名と検証を行うサンプル。
+# 対象projectの.gitlab-ci.ymlとして配置する。
+#
+# 参考資料:
+# - https://docs.gitlab.com/ci/secrets/id_token_authentication/
+# - https://github.com/sigstore/cosign/blob/main/doc/cosign_sign-blob.md
+# - https://github.com/sigstore/cosign/blob/main/doc/cosign_verify-blob.md
+
+variables:
+  # sigstore-distが配信するtrust materialの取得元。
+  SIGSTORE_TRUST_URL: http://${CI_SERVER_HOST}:33603/trust
+  # 初期MVPはCT logを持たず証明書にSCTが付かないため、SCT検証を省略する。
+  # 最終MVP (docker-compose.final.yml) では空文字にし、SCTも検証する。
+  COSIGN_VERIFY_EXTRA_FLAGS: "--insecure-ignore-sct"
+
+sign-and-verify:
+  # 通常のcosign imageにはshellがないため、CI jobではshell付きの-dev imageを使用する。
+  image:
+    name: ghcr.io/sigstore/cosign/cosign:v3.1.4-dev
+    entrypoint: [""]
+  id_tokens:
+    # Fulcioのclient-idと一致させる。
+    SIGSTORE_ID_TOKEN:
+      aud: sigstore
+  script:
+    # trust materialを取得する。
+    - wget -q -O trusted_root.json "${SIGSTORE_TRUST_URL}/trusted_root.json"
+    - wget -q -O signing_config.json "${SIGSTORE_TRUST_URL}/signing_config.json"
+    # 署名対象のartifactを作成する。
+    - echo "artifact for ${CI_PROJECT_PATH}@${CI_COMMIT_SHA}" > artifact.txt
+    # GitLab ID tokenでFulcio証明書を取得し、Rekorへ記録してbundleを出力する。
+    - >-
+      cosign sign-blob --yes
+      --identity-token "${SIGSTORE_ID_TOKEN}"
+      --signing-config signing_config.json
+      --trusted-root trusted_root.json
+      --bundle artifact.sigstore.json
+      artifact.txt
+    # 証明書のidentity (SAN) とissuerを固定して検証する。
+    - >-
+      cosign verify-blob
+      --trusted-root trusted_root.json
+      --bundle artifact.sigstore.json
+      --certificate-identity-regexp "^http://${CI_SERVER_HOST}(:[0-9]+)?/${CI_PROJECT_PATH}//\\.gitlab-ci\\.yml@refs/heads/${CI_COMMIT_REF_NAME}$"
+      --certificate-oidc-issuer "${CI_SERVER_URL}"
+      ${COSIGN_VERIFY_EXTRA_FLAGS}
+      artifact.txt
+  artifacts:
+    paths:
+      - artifact.txt
+      - artifact.sigstore.json

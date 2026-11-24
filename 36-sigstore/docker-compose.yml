@@ -1,0 +1,367 @@
+#
+# 参考資料:
+# - Rekor v2 (rekor-tiles)
+#   - https://github.com/sigstore/rekor-tiles
+#   - https://github.com/sigstore/rekor-tiles/blob/main/posix-compose.yml
+# - Fulcio
+#   - https://github.com/sigstore/fulcio
+#   - https://github.com/sigstore/fulcio/blob/main/docs/setup.md
+#   - https://github.com/sigstore/fulcio/blob/main/config/identity/config.yaml
+# - Timestamp Authority
+#   - https://github.com/sigstore/timestamp-authority
+# - Cosign
+#   - https://github.com/sigstore/cosign/blob/main/doc/cosign_trusted-root_create.md
+#   - https://github.com/sigstore/cosign/blob/main/doc/cosign_signing-config_create.md
+# - GitLab CI ID token
+#   - https://docs.gitlab.com/ci/secrets/id_token_authentication/
+#
+# 初期MVP: Fulcio + Rekor v2 + GitLab OIDC (+ Rekor v2の必須依存であるTimestamp Authority)。
+# 最終MVP (CT log追加) は docker-compose.final.yml をoverrideとして重ねる。
+# 詳細は README.md を参照する。
+#
+# GitLab CI jobのcontainerはCompose networkの外で動くため、公開URLはPUBLIC_HOST経由に統一する。
+#
+services:
+  sigstore-init:
+    image: docker.io/alpine/openssl:3.5.9
+    container_name: ${STACK_NAME}-sigstore-init
+    restart: "no"
+    profiles:
+      - sigstore
+    user: "0:0"
+    entrypoint:
+      - sh
+      - -euc
+    command:
+      - |
+        # 鍵は初回だけ生成する。再生成するとtrust materialが変わり、既存署名を検証できなくなる。
+        umask 077
+
+        if [ ! -s /fulcio-ca/root.key ]; then
+          echo "Generate Fulcio CA."
+          openssl req -x509 \
+            -newkey ec -pkeyopt ec_paramgen_curve:P-384 -sha384 \
+            -keyout /fulcio-ca/root.key -out /fulcio-ca/root.pem \
+            -subj "/O=$${SIGSTORE_ORGANIZATION}/CN=$${SIGSTORE_ORGANIZATION} Fulcio Root CA" \
+            -days 3650 \
+            -addext basicConstraints=critical,CA:TRUE,pathlen:1 \
+            -addext keyUsage=critical,keyCertSign,cRLSign \
+            -passout env:FULCIO_CA_PASSWORD
+        fi
+
+        if [ ! -s /rekor-key/signer.pem ]; then
+          echo "Generate Rekor signing key."
+          openssl genpkey -algorithm ed25519 -out /rekor-key/signer.pem
+        fi
+
+        # 最終MVPだけで使うCT log鍵。初期MVPでは生成しない。
+        if [ "$${SIGSTORE_ENABLE_CTLOG}" = "true" ] && [ ! -s /ctlog-key/privkey.pem ]; then
+          echo "Generate CT log signing key."
+          openssl ecparam -name prime256v1 -genkey -noout -out /ctlog-key/privkey.pem
+        fi
+
+        # Rekor v2はintegrated timeを返さないため、cosign v3はTSAなしでの署名を拒否する。
+        if [ ! -s /tsa-key/signer.key ]; then
+          echo "Generate Timestamp Authority chain."
+          # timestamp-serverはleaf証明書にcriticalなtimeStamping EKUを要求する。
+          openssl req -x509 \
+            -newkey ec -pkeyopt ec_paramgen_curve:P-384 -sha384 \
+            -keyout /tmp/tsa-root.key -out /tsa-key/root.pem \
+            -subj "/O=$${SIGSTORE_ORGANIZATION}/CN=$${SIGSTORE_ORGANIZATION} TSA Root CA" \
+            -days 3650 \
+            -addext basicConstraints=critical,CA:TRUE,pathlen:0 \
+            -addext keyUsage=critical,keyCertSign,cRLSign \
+            -passout env:TSA_SIGNER_PASSWORD
+          openssl req -new \
+            -newkey ec -pkeyopt ec_paramgen_curve:P-384 -sha384 \
+            -keyout /tsa-key/signer.key -out /tmp/tsa.csr \
+            -subj "/O=$${SIGSTORE_ORGANIZATION}/CN=$${SIGSTORE_ORGANIZATION} Timestamp Authority" \
+            -passout env:TSA_SIGNER_PASSWORD
+          printf '%s\n' \
+            'basicConstraints=critical,CA:FALSE' \
+            'keyUsage=critical,digitalSignature' \
+            'extendedKeyUsage=critical,timeStamping' > /tmp/tsa.ext
+          openssl x509 -req -sha384 \
+            -in /tmp/tsa.csr \
+            -CA /tsa-key/root.pem -CAkey /tmp/tsa-root.key -set_serial "0x$$(openssl rand -hex 16)" \
+            -passin env:TSA_SIGNER_PASSWORD \
+            -days 1825 -extfile /tmp/tsa.ext -out /tsa-key/signer.pem
+          cat /tsa-key/signer.pem /tsa-key/root.pem > /tsa-key/chain.pem
+          # TSA root鍵はleaf発行後に不要となるため、volumeへ残さない。
+          rm -f /tmp/tsa-root.key /tmp/tsa.csr /tmp/tsa.ext
+        fi
+
+        # 公開情報だけをtrust volumeへ配置し、sigstore-distとcosign jobから参照させる。
+        umask 022
+        install -m 0644 /fulcio-ca/root.pem /trust/fulcio-root.pem
+        openssl pkey -in /rekor-key/signer.pem -pubout -out /trust/rekor.pub
+        if [ -s /ctlog-key/privkey.pem ]; then
+          openssl ec -in /ctlog-key/privkey.pem -pubout -out /trust/ctlog.pub
+        fi
+        install -m 0644 /tsa-key/chain.pem /trust/tsa-chain.pem
+
+        # distroless imageはuid 65532で動作するため、volumeの所有者を合わせる。
+        chown -R 65532:65532 /fulcio-ca /rekor-key /rekor-data /ctlog-key /ctlog-data /tsa-key /trust
+        chmod 0755 /rekor-data /ctlog-data /trust
+        echo "Sigstore key material is ready."
+    environment:
+      SIGSTORE_ORGANIZATION: ${SIGSTORE_ORGANIZATION:-InferLab}
+      SIGSTORE_ENABLE_CTLOG: "false"
+      FULCIO_CA_PASSWORD: ${FULCIO_CA_PASSWORD:-pw-fulcio-ca-password-change-me}
+      TSA_SIGNER_PASSWORD: ${TSA_SIGNER_PASSWORD:-pw-tsa-signer-password-change-me}
+    volumes:
+      - sigstore-fulcio-ca:/fulcio-ca
+      - sigstore-rekor-key:/rekor-key
+      - sigstore-rekor-data:/rekor-data
+      - sigstore-ctlog-key:/ctlog-key
+      - sigstore-ctlog-data:/ctlog-data
+      - sigstore-tsa-key:/tsa-key
+      - sigstore-trust:/trust
+    network_mode: none
+
+  fulcio:
+    image: ghcr.io/sigstore/fulcio:v1.10.2
+    container_name: ${STACK_NAME}-fulcio
+    restart: unless-stopped
+    profiles:
+      - sigstore
+    # configs.contentはread_only containerへ注入できないため、read_onlyは指定しない。
+    command:
+      - serve
+      - --host=0.0.0.0
+      - --port=5555
+      - --grpc-port=5554
+      - --log_type=prod
+      - --config-path=/etc/fulcio-config/config.yaml
+      - --ca=fileca
+      - --fileca-cert=/fulcio-ca/root.pem
+      - --fileca-key=/fulcio-ca/root.key
+      - --fileca-key-passwd=${FULCIO_CA_PASSWORD:-pw-fulcio-ca-password-change-me}
+      # 初期MVPではCT logを使わない。最終MVPでoverrideする。
+      - --ct-log-url=
+    ports:
+      - 33600:5555
+    configs:
+      - source: fulcio-config
+        target: /etc/fulcio-config/config.yaml
+    volumes:
+      - sigstore-fulcio-ca:/fulcio-ca:ro
+      - sigstore-trust:/trust:ro
+    networks:
+      - internal-nw
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+    # distroless imageにはshellとHTTP clientがないため、container内healthcheckは定義しない。
+    labels:
+      - homepage.group=36-sigstore
+      - homepage.name=Fulcio
+      - homepage.href=http://${PUBLIC_HOST}:33600/api/v2/configuration
+      - homepage.description=Keyless code signing CA
+      - homepage.icon=/icons/sigstore.png
+
+  rekor:
+    image: ghcr.io/sigstore/rekor-tiles/posix:v2.4.6
+    container_name: ${STACK_NAME}-rekor
+    restart: unless-stopped
+    profiles:
+      - sigstore
+    command:
+      - rekor-server
+      - serve
+      - --http-address=0.0.0.0
+      - --grpc-address=0.0.0.0
+      # checkpoint originはcosign (sigstore-go) がtrusted rootのbaseUrlから導出するhost名 (port除く) と一致させる。
+      - --hostname=${PUBLIC_HOST}
+      - --storage-dir=/rekor-data
+      - --signer-filepath=/rekor-key/signer.pem
+      - --checkpoint-interval=2s
+      - --persistent-antispam=true
+    ports:
+      - 33601:3000
+    volumes:
+      - sigstore-rekor-key:/rekor-key:ro
+      - sigstore-rekor-data:/rekor-data
+    networks:
+      - internal-nw
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+    # distroless imageにはshellとHTTP clientがないため、container内healthcheckは定義しない。
+    labels:
+      - homepage.group=36-sigstore
+      - homepage.name=Rekor v2
+      - homepage.href=http://${PUBLIC_HOST}:33603/rekor/checkpoint
+      - homepage.description=Signature transparency log
+      - homepage.icon=/icons/sigstore.png
+
+  timestamp-authority:
+    image: ghcr.io/sigstore/timestamp-server:v2.2.2
+    container_name: ${STACK_NAME}-timestamp-authority
+    restart: unless-stopped
+    profiles:
+      - sigstore
+    read_only: true
+    command:
+      - timestamp-server
+      - serve
+      - --host=0.0.0.0
+      - --port=3004
+      - --log-type=prod
+      - --timestamp-signer=file
+      - --file-signer-key-path=/tsa-key/signer.key
+      - --file-signer-passwd=${TSA_SIGNER_PASSWORD:-pw-tsa-signer-password-change-me}
+      - --certificate-chain-path=/tsa-key/chain.pem
+      # air-gap環境では公開NTP serverへ到達できないため、host側の時刻同期に委ねる。
+      - --disable-ntp-monitoring
+    ports:
+      - 33602:3004
+    volumes:
+      - sigstore-tsa-key:/tsa-key:ro
+    networks:
+      - internal-nw
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+    # distroless imageにはshellとHTTP clientがないため、container内healthcheckは定義しない。
+    labels:
+      - homepage.group=36-sigstore
+      - homepage.name=Timestamp Authority
+      - homepage.href=http://${PUBLIC_HOST}:33602/api/v1/timestamp/certchain
+      - homepage.description=RFC 3161 timestamp authority
+      - homepage.icon=/icons/sigstore.png
+
+  sigstore-trusted-root:
+    image: ghcr.io/sigstore/cosign/cosign:v3.1.4
+    container_name: ${STACK_NAME}-sigstore-trusted-root
+    restart: "no"
+    profiles:
+      - sigstore
+    command:
+      - trusted-root
+      - create
+      - --fulcio=url=http://${PUBLIC_HOST}:33600,certificate-chain=/trust/fulcio-root.pem,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z}
+      - --rekor=url=http://${PUBLIC_HOST}:33601,public-key=/trust/rekor.pub,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},origin=${PUBLIC_HOST}
+      - --tsa=url=http://${PUBLIC_HOST}:33602/api/v1/timestamp,certificate-chain=/trust/tsa-chain.pem,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z}
+      - --out=/trust/trusted_root.json
+    volumes:
+      - sigstore-trust:/trust
+    network_mode: none
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+
+  sigstore-signing-config:
+    image: ghcr.io/sigstore/cosign/cosign:v3.1.4
+    container_name: ${STACK_NAME}-sigstore-signing-config
+    restart: "no"
+    profiles:
+      - sigstore
+    command:
+      - signing-config
+      - create
+      - --fulcio=url=http://${PUBLIC_HOST}:33600,api-version=1,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},operator=${SIGSTORE_ORGANIZATION:-InferLab}
+      - --rekor=url=http://${PUBLIC_HOST}:33601,api-version=2,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},operator=${SIGSTORE_ORGANIZATION:-InferLab}
+      - --rekor-config=EXACT:1
+      - --tsa=url=http://${PUBLIC_HOST}:33602/api/v1/timestamp,api-version=1,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},operator=${SIGSTORE_ORGANIZATION:-InferLab}
+      - --tsa-config=EXACT:1
+      - --out=/trust/signing_config.json
+    volumes:
+      - sigstore-trust:/trust
+    network_mode: none
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+
+  sigstore-dist:
+    image: docker.io/library/nginx:1.31.10-alpine
+    container_name: ${STACK_NAME}-sigstore-dist
+    restart: unless-stopped
+    profiles:
+      - sigstore
+    # cosignはtrust materialを0600で書き出すため、nginx workerが読めるよう起動前に権限を揃える。
+    command:
+      - sh
+      - -euc
+      - |
+        chmod 0644 /usr/share/nginx/html/trust/*.json
+        exec nginx -g 'daemon off;'
+    ports:
+      - 33603:80
+    volumes:
+      # Rekor v2はtile形式のread APIを静的fileとして公開する。
+      - sigstore-rekor-data:/usr/share/nginx/html/rekor:ro
+      # 秘密鍵を含まない公開trust materialだけを配信する。
+      - sigstore-trust:/usr/share/nginx/html/trust
+    networks:
+      - internal-nw
+    depends_on:
+      sigstore-trusted-root:
+        condition: service_completed_successfully
+      sigstore-signing-config:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1/trust/trusted_root.json
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - homepage.group=36-sigstore
+      - homepage.name=Sigstore Trust Material
+      - homepage.href=http://${PUBLIC_HOST}:33603/trust/trusted_root.json
+      - homepage.description=Trusted root and signing config for cosign
+      - homepage.icon=/icons/sigstore.png
+
+configs:
+  fulcio-config:
+    # GitLab CIのID tokenだけを受け付ける。issuerはGitLabのexternal_urlと完全一致させる。
+    content: |
+      oidc-issuers:
+        http://${PUBLIC_HOST}:33400:
+          issuer-url: http://${PUBLIC_HOST}:33400
+          client-id: sigstore
+          type: ci-provider
+          ci-provider: gitlab-pipeline
+          contact: ${SIGSTORE_CONTACT:-admin@example.com}
+          description: "Local GitLab CI ID token"
+      ci-issuer-metadata:
+        gitlab-pipeline:
+          default-template-values:
+            url: http://${PUBLIC_HOST}:33400
+            environment: ""
+          extension-templates:
+            build-signer-uri: "http://{{ .ci_config_ref_uri }}"
+            build-signer-digest: "ci_config_sha"
+            runner-environment: "runner_environment"
+            source-repository-uri: "{{ .url }}/{{ .project_path }}"
+            source-repository-digest: "sha"
+            source-repository-ref: refs/{{if eq .ref_type "branch"}}heads/{{ else }}tags/{{end}}{{ .ref }}
+            source-repository-identifier: "project_id"
+            source-repository-owner-uri: "{{ .url }}/{{ .namespace_path }}"
+            source-repository-owner-identifier: "namespace_id"
+            build-config-uri: "http://{{ .ci_config_ref_uri }}"
+            build-config-digest: "ci_config_sha"
+            build-trigger: "pipeline_source"
+            run-invocation-uri: "{{ .url }}/{{ .project_path }}/-/jobs/{{ .job_id }}"
+            source-repository-visibility-at-signing: "project_visibility"
+            deployment-environment: "environment"
+          subject-alternative-name-template: "http://{{ .ci_config_ref_uri }}"
+
+volumes:
+  sigstore-fulcio-ca:
+  sigstore-rekor-key:
+  sigstore-rekor-data:
+  sigstore-ctlog-key:
+  sigstore-ctlog-data:
+  sigstore-tsa-key:
+  sigstore-trust:
+
+networks:
+  internal-nw:

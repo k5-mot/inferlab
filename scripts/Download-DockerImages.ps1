@@ -137,6 +137,14 @@ $Packages = @(
     "docker.io/library/redis:8.12.0-alpine",
     "docker.io/pgvector/pgvector:0.8.7-pg16",
     "docker.io/library/caddy:2.11.9-alpine",
+    ### 36-sigstore
+    "docker.io/alpine/openssl:3.5.9",
+    "ghcr.io/sigstore/fulcio:v1.10.2",
+    "ghcr.io/sigstore/rekor-tiles/posix:v2.4.6",
+    "ghcr.io/sigstore/timestamp-server:v2.2.2",
+    "ghcr.io/sigstore/cosign/cosign:v3.1.4",
+    "ghcr.io/sigstore/cosign/cosign:v3.1.4-dev",
+    "ghcr.io/transparency-dev/tesseract/posix:v0.2.0",
     ### 40-obsidian
     "docker.io/library/couchdb:3.5.2.1",
     ### 50-o11y

@@ -1,0 +1,77 @@
+#
+# 最終MVP override: 初期MVP (docker-compose.yml) へFulcio用CT logを追加し、SCT検証を有効にする。
+# 単独では使用せず、repository rootから次のように重ねて使用する。
+#   docker compose -f docker-compose.yml -f 36-sigstore/docker-compose.final.yml --profile sigstore up -d
+#
+# 参考資料:
+# - TesseraCT (Fulcio用Certificate Transparency log)
+#   - https://github.com/transparency-dev/tesseract
+# - Fulcio CT log設定
+#   - https://github.com/sigstore/fulcio/blob/main/docker-compose.yml
+#
+services:
+  sigstore-init:
+    environment:
+      SIGSTORE_ENABLE_CTLOG: "true"
+
+  ctlog:
+    image: ghcr.io/transparency-dev/tesseract/posix:v0.2.0
+    container_name: ${STACK_NAME}-ctlog
+    restart: unless-stopped
+    profiles:
+      - sigstore
+    command:
+      # originはFulcioの--ct-log-originとtrusted rootのoriginに一致させる。
+      - --origin=ctlog
+      - --http_endpoint=0.0.0.0:6962
+      - --private_key=/keys/privkey.pem
+      - --storage_dir=/ctfe
+      - --roots_pem_file=/trust/fulcio-root.pem
+      - --ext_key_usages=CodeSigning
+    volumes:
+      - sigstore-ctlog-key:/keys:ro
+      - sigstore-ctlog-data:/ctfe
+      - sigstore-trust:/trust:ro
+    networks:
+      - internal-nw
+    depends_on:
+      sigstore-init:
+        condition: service_completed_successfully
+    # distroless imageにはshellとHTTP clientがないため、container内healthcheckは定義しない。
+
+  fulcio:
+    # Compose overrideではcommand listが置換されるため、初期MVPの引数も再掲する。
+    command:
+      - serve
+      - --host=0.0.0.0
+      - --port=5555
+      - --grpc-port=5554
+      - --log_type=prod
+      - --config-path=/etc/fulcio-config/config.yaml
+      - --ca=fileca
+      - --fileca-cert=/fulcio-ca/root.pem
+      - --fileca-key=/fulcio-ca/root.key
+      - --fileca-key-passwd=${FULCIO_CA_PASSWORD:-pw-fulcio-ca-password-change-me}
+      - --ct-log-url=http://ctlog:6962
+      # TesseraCTはhost:port形式のoriginを受け付けないため、URLと異なるoriginを明示する。
+      - --ct-log-origin=ctlog
+      - --ct-log-public-key-path=/trust/ctlog.pub
+    depends_on:
+      ctlog:
+        condition: service_started
+
+  sigstore-trusted-root:
+    command:
+      - trusted-root
+      - create
+      - --fulcio=url=http://${PUBLIC_HOST}:33600,certificate-chain=/trust/fulcio-root.pem,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z}
+      - --rekor=url=http://${PUBLIC_HOST}:33601,public-key=/trust/rekor.pub,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},origin=${PUBLIC_HOST}
+      - --ctfe=url=http://ctlog:6962,public-key=/trust/ctlog.pub,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z},origin=ctlog
+      - --tsa=url=http://${PUBLIC_HOST}:33602/api/v1/timestamp,certificate-chain=/trust/tsa-chain.pem,start-time=${SIGSTORE_TRUST_START_TIME:-2026-01-01T00:00:00Z}
+      - --out=/trust/trusted_root.json
+
+  sigstore-dist:
+    volumes:
+      - sigstore-rekor-data:/usr/share/nginx/html/rekor:ro
+      - sigstore-ctlog-data:/usr/share/nginx/html/ct:ro
+      - sigstore-trust:/usr/share/nginx/html/trust

@@ -22,6 +22,7 @@ const componentDirectories = [
   "33-zulip",
   "34-gitlab",
   "35-affine",
+  "36-sigstore",
   "50-o11y",
   "51-langfuse",
   "scripts",
