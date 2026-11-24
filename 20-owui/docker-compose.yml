@@ -313,9 +313,7 @@ services:
 
   mcpo:
     <<: *external-dns-stabilizer
-    build:
-      context: ./mcpo
-    image: ghcr.io/open-webui/mcpo:main-patch2
+    image: ghcr.io/open-webui/mcpo:main
     container_name: ${STACK_NAME}-mcpo
     restart: unless-stopped
     profiles:

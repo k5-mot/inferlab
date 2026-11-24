@@ -90,7 +90,7 @@ $Packages = @(
     ### 20-owui
     "ghcr.io/open-webui/open-webui:v0.13.4",
     "ghcr.io/open-webui/open-terminal:0.17.22",
-    "ghcr.io/open-webui/mcpo:main-patch2",
+    "ghcr.io/open-webui/mcpo:main",
     "ghcr.io/searxng/searxng:2026.8.29-d226b78bc",
     "ghcr.io/open-webui/oikb:0.6.0-patch",
     ### 21-dify
