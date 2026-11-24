@@ -8,9 +8,31 @@
 
 ### 結論
 
-Ollama の現行料金体系では、Cloud の全モデルが usage credit による従量課金である。無料サブスクリプションを意味する `Pay as you go` は月額が 0 ドルであるだけで、Cloud 推論そのものは無償ではない。費用ゼロを要件にする場合は、Cloud tag ではなくローカルモデルを使う必要がある。
+Ollama Cloud の無料枠は変更されている。現行料金体系では Cloud の全モデルが usage credit による従量課金である。`Pay as you go` の 0 ドルは月額 subscription がないことを意味するだけで、Cloud 推論そのものは無償ではない。費用ゼロを要件にする場合は、期間限定 promotion を除き、Cloud tag ではなくローカルモデルを使う必要がある。
 
 公式ライブラリは `nemotron-3-nano:30b-cloud` を掲載しているが、実環境では manifest が取得できなかった。Cloud model は廃止され得ることが公式 lifecycle に明記されているため、ライブラリ掲載だけでなく、運用中の Ollama server から pull できることを採用条件にする。
+
+### 料金体系の時系列
+
+| 時点 | 公式発表の内容 | 無料利用の意味 |
+| --- | --- | --- |
+| 2025-09-19 | Cloud models を preview として公開した | 公開記事は料金を明記せず、利用には sign-in が必要だった |
+| 2026-01-23 | 公式 Blog が Cloud の free tier と 5-hour coding session limit を明記した | subscription なしで対象 Cloud model を上限内まで利用できた |
+| 2026-08-31 | token 単位の新料金を導入した | Free plan に starter model 向けの少量の monthly included usage があり、超過分または対象外 model は購入 credit を使った |
+| 2026-10-16 | Beam を期間限定で無料提供した | plan 全体の無料枠ではなく model 単位の promotion だった |
+| 2026-11-24 | 現行 Pricing は Free plan と starter usage の記載を削除し、`Pay as you go` で every cloud model を token 課金すると明記している | monthly included starter credit はなく、Cloud 利用には購入 credit または paid plan が必要になった |
+
+2026-08-31 の公式発表では、Free plan の included usage は毎月更新され、未使用分は繰り越さないとされていた。これは購入 credit とは別である。購入 credit は残高として従量課金に使われ、現行 Terms of Service では追加から 1 年で失効する。したがって「無料枠」と「購入済み credit」は同じものではない。
+
+Ollama は 2026-11-24 までに starter credit を廃止した正確な日付や、Free account 向けの移行告知を公式 Blog では公開していない。確認できる一次情報から断定できるのは、8 月 31 日時点では monthly starter usage が存在し、11 月 24 日時点の現行 Pricing では存在しないことまでである。
+
+### 既存利用者への影響
+
+- 既存の Free account に starter credit を維持する grandfathering は、現行 Pricing と Terms of Service のどちらにも記載されていない。Cloud request は購入 credit または paid plan を前提にする。
+- 2026-08-31 より前の legacy Pro/Max は、自動更新を継続する限り旧料金を維持できる。billing cycle または subscription tier を変更すると新料金へ移行する。
+- legacy Pro/Max から新料金へ切り替えると、その時点で usage が reset され、新 plan の monthly credit が付与される。元の月次更新日は維持される。
+- ローカル推論は料金改定の対象外で、現行 Pricing も unlimited としている。
+- Beam のような期間限定無料 model は別途あり得るが、終了時期が保証されないため Compose の必須 model には適さない。
 
 ### 推奨
 
@@ -50,6 +72,8 @@ Ollama の現行料金体系では、Cloud の全モデルが usage credit に�
 
 実volumeをread-onlyで確認すると、`agents/main/agent/openclaw-agent.sqlite`、WAL、migration前backup、Discord session archive、model設定が保存されていた。これらは現在のbind mountに含まれないため、volume削除で実データを失うことも確認できた。
 
+実際の移行では停止中の`openclaw-data`をarchiveした後、repository管理設定を永続volumeへ書き込み可能なfileとして複製し、Doctorにschema migrationを書き戻させた。migration markerをrepository側へ反映して再起動した結果、restart 0でhealthyになり、SQLite内の既存session 3件も維持された。
+
 ## Kaneo の PostgreSQL 16 から 18 への移行
 
 ### 原因
@@ -71,6 +95,8 @@ PostgreSQL major version を跨ぐ data directory は直接再利用できない
 
 データ量が大きく停止時間を短縮する場合だけ `pg_upgrade` を選ぶ。その場合は PostgreSQL 18 の `pg_upgrade` binary を使い、旧 16 と新 18 の binary/data directory を同時に参照させ、最初に `--check` を実行する。`--link` は高速だが、新 cluster 起動後に旧 cluster を安全な rollback 元として使えなくなるため、Kaneo では通常 copy mode の方が安全である。
 
+実環境には以前の専用branchで移行済みの`kaneo-postgres-18-data`が残っており、`PG_VERSION=18`と35個のpublic tableを確認できた。raw archive取得後にComposeをこのvolumeと`/var/lib/postgresql` mountへ戻し、PostgreSQL 18.7とKaneo 2.50.0を起動した。Kaneoのapplication migrationは成功し、public tableは50個になり、両serviceがhealthyになった。
+
 ## registry の NGINX healthcheck
 
 ### 実測した原因
@@ -79,11 +105,21 @@ PostgreSQL major version を跨ぐ data directory は直接再利用できない
 
 port mappingを`31203:80`と`31204:80`へ変更し、healthcheckを`127.0.0.1:80`へ合わせる必要がある。その後に403が発生する場合は、NGINXの`autoindex`が既定で`off`であるため、専用readiness endpointを用意するか、実際のrepository metadataをprobeする。RPMは`repodata/repomd.xml`、DEBは`dists/stable/Release`をcontent readinessに使用すると、配信processとpublish完了を区別できる。
 
+portとhealthcheckを80へ修正後、既存のRPM/DEB repositoryで両serviceがhealthyになることを確認した。
+
 ## Zulip
 
-`zulip-redis`だけを起動した実測では、healthcheck以前にValkey本体がrestart loopへ入った。logは`Can't handle RDB format version 14`とfatalなdatabase load failureを示した。原因はpassword不一致ではなく、既存`zulip-redis-data` volume内のRDBが、更新後の`valkey:9.2.0-alpine3.24`で読み込めないことである。
+`zulip-redis`だけを起動した実測では、healthcheck以前にValkey本体がrestart loopへ入った。logは`Can't handle RDB format version 14`とfatalなdatabase load failureを示した。原因はpassword不一致ではなく、既存`zulip-redis-data` volume内のRDBが、更新後の`valkey:9.2.0-alpine3.24`で読み込めないことである。このRDBはRedis 8.8.0が生成したversion 14で、`redis-check-rdb`によるread-only検査ではchecksum正常、key 0件、expire 0件だった。
 
-volumeを消すとqueue/cache系の状態を失うため、先に旧imageで起動して互換形式へexportするか、データを破棄可能と判断したうえでvolumeを再作成する必要がある。復旧後は、credentialをcommand lineへ露出しないようhealthcheckの`-a`を`VALKEYCLI_AUTH`へ変更することも推奨するが、これは今回のrestart原因ではない。
+今回のvolumeには移行対象keyがないため、次の手順を推奨する。
+
+1. `dump.rdb`を含むvolumeのraw archiveを取得する。
+2. `redis-check-rdb`でchecksumとkey件数を再確認する。
+3. 旧volumeを保持したまま、空のValkey 9.2用volumeへComposeを切り替える。
+4. Zulipを起動し、login、message送受信、background jobを確認する。
+5. rollback期間後に旧volumeを削除する。
+
+keyが存在する環境ではRDB fileをValkeyへ直接渡さず、Redis 8.8互換imageでvolume copyを起動し、型ごとの論理export/importまたはapplication側で再生成する。Redis 8系からValkey 9系のRDB互換性は公式migration matrixの保証範囲外である。復旧後はcredentialをcommand lineへ露出しないようhealthcheckの`-a`を`VALKEYCLI_AUTH`へ変更することも推奨するが、これは今回のrestart原因ではない。
 
 ## Dify
 
@@ -100,6 +136,8 @@ Dify 1.20.0 は API、worker、web、Agent Backend、Local Sandbox を同じ rel
 - `DIFY_AGENT_SANDBOX_FILES_BASE_URL=http://dify-api:5001`
 
 Dify 公式は Docker Compose 2.35.0 以上を要求している。古い Compose では `.env` override precedence が異なり、service 間で token が不一致になる可能性がある。
+
+設定を1.20.0の環境変数名へ修正後、Agent Backendはrestart 0でhealthyになり、API、worker、webを含むDify profile全体の起動にも成功した。
 
 ## GitLab
 
@@ -125,6 +163,12 @@ runnerを起動せず`gitlab`だけを起動したところ、約3分30秒でhea
 
 - [Ollama Pricing](https://ollama.com/pricing)
 - [Ollama Cloud](https://docs.ollama.com/cloud)
+- [Ollama Cloud models preview](https://ollama.com/blog/cloud-models)
+- [Ollama launch](https://ollama.com/blog/launch)
+- [Ollama's transparent pricing](https://ollama.com/blog/transparent-pricing)
+- [Ollama: Reflection's Beam](https://ollama.com/blog/reflection-beam)
+- [Ollama Terms of Service](https://ollama.com/terms)
+- [Ollama OpenAPI specification](https://github.com/ollama/ollama/blob/main/docs/openapi.yaml)
 - [Ollama nemotron-3-nano](https://ollama.com/library/nemotron-3-nano)
 - [OpenClaw: Where things live on disk](https://github.com/openclaw/openclaw/blob/main/docs/help/faq/where-things-live-on-disk.md)
 - [OpenClaw Docker](https://docs.openclaw.ai/docker)
@@ -135,6 +179,7 @@ runnerを起動せず`gitlab`だけを起動したところ、約3分30秒でhea
 - [NGINX autoindex module](https://nginx.org/en/docs/http/ngx_http_autoindex_module.html)
 - [Zulip Docker Compose](https://github.com/zulip/docker-zulip/blob/main/compose.yaml)
 - [Valkey CLI](https://valkey.io/topics/cli/)
+- [Valkey: Migration from Redis](https://valkey.io/topics/migration/)
 - [Dify 1.20.0 release](https://github.com/langgenius/dify/releases/tag/1.20.0)
 - [Dify Agent guide](https://github.com/langgenius/dify/blob/main/dify-agent/docs/dify-agent/guide/index.md)
 - [Dify Docker deployment](https://github.com/langgenius/dify/blob/main/docker/README.md)
