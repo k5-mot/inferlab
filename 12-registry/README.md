@@ -22,6 +22,8 @@ Windows Clientで資材を取得する場合は、DockerやWSLを使わず `scri
 
 Container image registry は Docker 公式 `registry` image を使用する。
 
+Verdaccio 6から7への更新は、[Verdaccio migration manual](../docs/manual/migration/VERDACCIO.md)に従う。
+
 PyPIserverはpackage資材を変更しない配信専用serviceとして、UID/GID `9898`の非root userで`pypi-server`を直接起動する。image標準のentrypointはpackage directoryの所有権変更を試行するため使用せず、`/srv/12-registry/pypi`のread-only mountを維持する。
 
 ## Airgap構成

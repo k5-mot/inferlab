@@ -1,12 +1,14 @@
 # 22-ragflow
 
-RAGFlow、Elasticsearch、MySQL、RustFS、ValkeyをまとめたRAG platform stack。
+RAGFlow、OpenSearch、MySQL、RustFS、ValkeyをまとめたRAG platform stack。
+
+RAGFlow 0.xから1.xへの更新は[RAGFlow migration manual](../docs/manual/migration/RAGFLOW.md)、OpenSearch 2から3への更新は[OpenSearch migration manual](../docs/manual/migration/OPENSEARCH.md)に従う。
 
 RAGFlow 0.26.4の公式Docker Composeを基準に、次の変更を加えている。
 
 - object storageはMinIO互換APIを提供するRustFSを使用する。
 - cacheとtask queueは、RAGFlow公式構成と同じValkeyをversion固定して使用する。
-- document engineはElasticsearchを使用する。
+- document engineはOpenSearchを使用する。
 - RAGFlow imageに同梱された設定templateとentrypointを使用し、service接続先は環境変数で指定する。
 
 ## 構成
@@ -14,7 +16,7 @@ RAGFlow 0.26.4の公式Docker Composeを基準に、次の変更を加えてい�
 | Service | 用途 | Host port |
 | --- | --- | --- |
 | `ragflow` | Web UI、REST API、task executor | `32200`、`32201` |
-| `ragflow-elasticsearch` | document indexとvector検索 | - |
+| `ragflow-opensearch` | document indexとvector検索 | - |
 | `ragflow-mysql` | application database | - |
 | `ragflow-rustfs` | S3互換object storageと管理console | `32202`、`32203` |
 | `ragflow-rustfs-bucket-init` | `ragflow-bucket`の冪等作成 | - |
@@ -34,15 +36,15 @@ sudo docker compose --env-file .env --profile ragflow up -d
 期待結果:
 
 - `ragflow-rustfs-bucket-init`が`exited (0)`になる。
-- Elasticsearch、MySQL、RustFS、Valkeyがhealthyになる。
+- OpenSearch、MySQL、RustFS、Valkeyがhealthyになる。
 - RAGFlowがdatabase migrationを完了し、healthyになる。
 - Web UIが`http://${PUBLIC_HOST}:32200`で応答する。
 
 失敗条件:
 
-- hostのmemoryまたはdisk不足によりElasticsearchかRAGFlowが終了する。
+- hostのmemoryまたはdisk不足によりOpenSearchかRAGFlowが終了する。
 - RustFSのcredential不一致により`ragflow-bucket`を作成できない。
-- MySQLまたはElasticsearchの初期化がRAGFlowのhealthcheck開始期間内に完了しない。
+- MySQLまたはOpenSearchの初期化がRAGFlowのhealthcheck開始期間内に完了しない。
 - hostの`32200`から`32203`までの使用portが他processと競合する。
 
 ## 確認手順
@@ -66,14 +68,14 @@ sudo docker compose --env-file .env --profile ragflow exec ragflow-valkey valkey
 
 期待結果:
 
-- `ragflow`、`ragflow-elasticsearch`、`ragflow-mysql`、`ragflow-rustfs`、`ragflow-valkey`がhealthyになる。
+- `ragflow`、`ragflow-opensearch`、`ragflow-mysql`、`ragflow-rustfs`、`ragflow-valkey`がhealthyになる。
 - 統合health endpointがHTTP 200を返し、`db`、`redis`、`doc_engine`、`storage`がすべて`ok`になる。
 - RustFSのbucket確認が成功し、Valkeyが`PONG`を返す。
 
 失敗条件:
 
 - 統合health endpointがHTTP 500を返し、いずれかのmiddlewareが`nok`になる。
-- RAGFlow logがdatabase migration、Elasticsearch認証、object storage接続のerrorを出力する。
+- RAGFlow logがdatabase migration、OpenSearch認証、object storage接続のerrorを出力する。
 - task executor heartbeatが登録されず、文書解析taskが開始されない。
 
 ## Model設定
@@ -102,7 +104,7 @@ credentialを変更する場合、既存volumeが初期化済みの状態で環�
 sudo docker compose --env-file .env --profile ragflow down
 
 # RAGFlow関連の永続volumeを削除する。
-sudo docker volume rm "${STACK_NAME}_ragflow-logs" "${STACK_NAME}_ragflow-elasticsearch-data" "${STACK_NAME}_ragflow-mysql-data" "${STACK_NAME}_ragflow-rustfs-data" "${STACK_NAME}_ragflow-valkey-data"
+sudo docker volume rm "${STACK_NAME}_ragflow-logs" "${STACK_NAME}_ragflow-opensearch-data" "${STACK_NAME}_ragflow-mysql-data" "${STACK_NAME}_ragflow-rustfs-data" "${STACK_NAME}_ragflow-valkey-data"
 
 # 空のvolumeでRAGFlow stackを再作成する。
 sudo docker compose --env-file .env --profile ragflow up -d
@@ -118,7 +120,7 @@ sudo docker compose --env-file .env --profile ragflow up -d
 - containerが停止しておらずvolumeを削除できない。
 - resource不足またはcredential不一致により再作成後のhealthcheckが失敗する。
 
-rollbackする場合は、再初期化前に取得したMySQL、Elasticsearch、RustFSの整合したbackupを同時点へ復元する。いずれか1つのmiddlewareだけを異なる時点へ戻してはならない（MUST NOT）。
+rollbackする場合は、再初期化前に取得したMySQL、OpenSearch、RustFSの整合したbackupを同時点へ復元する。いずれか1つのmiddlewareだけを異なる時点へ戻してはならない（MUST NOT）。
 
 ## References
 

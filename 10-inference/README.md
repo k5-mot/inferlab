@@ -12,7 +12,7 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、QwenPaw、Kokoroをまとめ�
 | `litellm` | `litellm/config-litellm.yaml`を読み込み、Ollama、TEI、外部provider、Langfuse連携をまとめる。Ollama chat modelはtool callの本文JSON漏れを避けるため、`ollama_chat/...` routeを使う。 |
 | `hermes-agent` | LiteLLM向けの相関ID header bridgeを有効にしてgatewayを起動する。Langfuseへの送信はLiteLLMに集約する。 |
 | `openclaw-init` | OpenClaw公式imageに含まれないDiscord pluginを、初回だけ`openclaw-data` volumeへ導入する。 |
-| `openclaw` | 公式imageでread-onlyの`openclaw/openclaw.json`を読み込む。Langfuseへの送信はLiteLLMに集約する。 |
+| `openclaw` | `openclaw-init`が永続volumeへ複製したmanaged configを読み込む。Langfuseへの送信はLiteLLMに集約する。 |
 | `qwenpaw-init` | 公式初期化後、`.env`のsecretをDiscordとLiteLLM provider設定へ反映する。 |
 | `qwenpaw` | 公式imageでConsoleとDiscord channelを起動する。3つの基盤modelをLiteLLMへ向け、Langfuseへの送信はLiteLLMに集約する。 |
 
@@ -20,24 +20,24 @@ LiteLLM、Ollama、TEI、Hermes-Agent、OpenClaw、QwenPaw、Kokoroをまとめ�
 
 ## OpenClaw構成
 
-OpenClawは`ghcr.io/openclaw/openclaw`の公式imageを直接使用する。設定は`openclaw/openclaw.json`を`/home/node/.openclaw/openclaw.managed.json`へread-onlyでmountし、`OPENCLAW_CONFIG_PATH`で参照する。設定のauthoritative sourceはrepositoryとし、Control UIやDiscord channelからの設定書き込みは無効にする。OpenClawが生成する`openclaw.managed.json.last-good`は、同じstate volumeへ保存する。
+OpenClawは`ghcr.io/openclaw/openclaw`の公式imageを直接使用する。`openclaw-init`はrepository管理の`openclaw/openclaw.json`を、Doctorがschema migrationを書き戻せる`/home/node/.openclaw/openclaw.managed.json`へ複製する。設定のauthoritative sourceはrepositoryとし、Doctorが追加したschema変更はrepository側へ反映する。version更新は[OpenClaw migration manual](../docs/manual/migration/OPENCLAW.md)に従う。
 
 LiteLLM API keyとDiscord bot tokenはOpenClawのSecretRefでprocess environmentから解決する。Discord guild IDとchannel IDはsecretではなくrouting識別子であり、`openclaw/openclaw.json`へ記録する。接続先を変更する場合は、同fileの`channels.discord.guilds`を更新する。
 
 `openclaw-init`は`openclaw-data` volumeのDiscord plugin versionを確認し、OpenClaw coreと同じrelease cohortへinstallまたはupdateする。Docling MCPは専用コンテナを増やさない方針とし、OpenClawとの連携対象に含めない。
 
 ```bash
-# read-only設定をOpenClawのschemaで検証する。
-sudo docker compose --env-file .env --profile openclaw run --rm --no-deps openclaw node dist/index.js config validate
+# managed configをOpenClawのschemaで検証する。
+sudo docker compose --env-file .env --profile inference --profile openclaw run --rm --no-deps openclaw node dist/index.js config validate
 
 # OpenClaw profileを起動し、初期化serviceを含めて反映する。
-sudo docker compose --env-file .env --profile openclaw up -d
+sudo docker compose --env-file .env --profile inference --profile openclaw up -d
 
 # Discord pluginの読み込み元と状態を確認する。
-sudo docker compose --env-file .env --profile openclaw exec openclaw node dist/index.js plugins list
+sudo docker compose --env-file .env --profile inference --profile openclaw exec openclaw node dist/index.js plugins list
 
 # Discord channelの接続状態を確認する。
-sudo docker compose --env-file .env --profile openclaw exec openclaw node dist/index.js channels status --channel discord --probe
+sudo docker compose --env-file .env --profile inference --profile openclaw exec openclaw node dist/index.js channels status --channel discord --probe
 ```
 
 期待結果:

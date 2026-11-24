@@ -2,6 +2,8 @@
 
 Nextcloud、PostgreSQL、Valkeyをまとめたfile storage stack。
 
+Nextcloud 34から35への更新は、[Nextcloud migration manual](../docs/manual/migration/NEXTCLOUD.md)に従う。
+
 ## 起動時初期化
 
 Nextcloud公式entrypointの`before-starting` hookを使い、既存volumeで再起動した場合も設定を再適用する。外部から取得する`user_oidc` archiveは、事前に`/srv/30-nextcloud/apps/`へ配置する。
