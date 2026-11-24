@@ -115,7 +115,7 @@ services:
       ENABLE_EVALUATION_ARENA_MODELS: "false"
       ### For LLM on LiteLLM
       DEFAULT_MODELS: "google/gemma4:31b"
-      DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:30b"
+      DEFAULT_PINNED_MODELS: "google/gemma4:31b,openai/gpt-oss:20b,nvidia/nemotron-3-nano:4b"
       OPENAI_API_BASE_URLS: "http://litellm:4000/v1;http://hermes-agent:8642/v1"
       OPENAI_API_KEYS: "${LITELLM_MASTER_KEY:-sk-litellm-master-key};${HERMES_AGENT_API_SERVER_KEY:-hermes-agent-secret-key}"
       OPENAI_API_CONFIGS: >-

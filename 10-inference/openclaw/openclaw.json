@@ -43,8 +43,8 @@
                         "reasoning": true
                     },
                     {
-                        "id": "nvidia/nemotron-3-nano:30b",
-                        "name": "Nemotron 3 Nano 30B via LiteLLM",
+                        "id": "nvidia/nemotron-3-nano:4b",
+                        "name": "Nemotron 3 Nano 4B via LiteLLM",
                         "contextWindow": 262000,
                         "maxTokens": 8192,
                         "reasoning": true
@@ -60,19 +60,19 @@
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
                     "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/nvidia/nemotron-3-nano:4b"
                 ]
             },
             "models": {
                 "litellm/google/gemma4:31b": {},
                 "litellm/openai/gpt-oss:20b": {},
-                "litellm/nvidia/nemotron-3-nano:30b": {}
+                "litellm/nvidia/nemotron-3-nano:4b": {}
             },
             "modelPolicy": {
                 "allow": [
                     "litellm/google/gemma4:31b",
                     "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/nvidia/nemotron-3-nano:4b"
                 ]
             },
             "utilityModel": "litellm/google/gemma4:31b",
@@ -81,7 +81,7 @@
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
                     "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/nvidia/nemotron-3-nano:4b"
                 ]
             },
             "voiceModel": {
@@ -89,7 +89,7 @@
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
                     "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/nvidia/nemotron-3-nano:4b"
                 ]
             },
             "pdfModel": {
@@ -97,7 +97,7 @@
                 "fallbacks": [
                     "litellm/google/gemma4:31b",
                     "litellm/openai/gpt-oss:20b",
-                    "litellm/nvidia/nemotron-3-nano:30b"
+                    "litellm/nvidia/nemotron-3-nano:4b"
                 ]
             },
             "subagents": {
@@ -106,7 +106,7 @@
                     "fallbacks": [
                         "litellm/google/gemma4:31b",
                         "litellm/openai/gpt-oss:20b",
-                        "litellm/nvidia/nemotron-3-nano:30b"
+                        "litellm/nvidia/nemotron-3-nano:4b"
                     ]
                 }
             }
@@ -140,7 +140,7 @@
                 },
                 {
                     "provider": "litellm",
-                    "model": "nvidia/nemotron-3-nano:30b",
+                    "model": "nvidia/nemotron-3-nano:4b",
                     "capabilities": [
                         "image",
                         "video",
@@ -157,7 +157,7 @@
                     "fallbacks": [
                         "litellm/google/gemma4:31b",
                         "litellm/openai/gpt-oss:20b",
-                        "litellm/nvidia/nemotron-3-nano:30b"
+                        "litellm/nvidia/nemotron-3-nano:4b"
                     ]
                 }
             }

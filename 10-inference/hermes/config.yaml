@@ -15,7 +15,7 @@ fallback_providers:
   - provider: custom:litellm
     model: openai/gpt-oss:20b
   - provider: custom:litellm
-    model: nvidia/nemotron-3-nano:30b
+    model: nvidia/nemotron-3-nano:4b
 agent:
   verify_on_stop: false
 auxiliary:
@@ -28,7 +28,7 @@ auxiliary:
     - provider: custom:litellm
       model: openai/gpt-oss:20b
     - provider: custom:litellm
-      model: nvidia/nemotron-3-nano:30b
+      model: nvidia/nemotron-3-nano:4b
   compression:
     provider: custom:litellm
     model: google/gemma4:31b
@@ -38,7 +38,7 @@ auxiliary:
       - provider: custom:litellm
         model: openai/gpt-oss:20b
       - provider: custom:litellm
-        model: nvidia/nemotron-3-nano:30b
+        model: nvidia/nemotron-3-nano:4b
   skills_hub:
     provider: custom:litellm
     model: google/gemma4:31b
@@ -48,7 +48,7 @@ auxiliary:
       - provider: custom:litellm
         model: openai/gpt-oss:20b
       - provider: custom:litellm
-        model: nvidia/nemotron-3-nano:30b
+        model: nvidia/nemotron-3-nano:4b
   mcp:
     provider: custom:litellm
     model: google/gemma4:31b
@@ -58,7 +58,7 @@ auxiliary:
       - provider: custom:litellm
         model: openai/gpt-oss:20b
       - provider: custom:litellm
-        model: nvidia/nemotron-3-nano:30b
+        model: nvidia/nemotron-3-nano:4b
 mcp_servers:
   searxng:
     command: npx
