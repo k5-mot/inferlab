@@ -85,7 +85,7 @@ $Packages = @(
     "docker.io/library/node:24.20.0-alpine3.24",
     "docker.io/openitcockpit/createrepo_c:bullseye-0.17.0",
     # "docker.io/library/nginx:1.31.4-alpine",
-    "docker.io/eilandert/reprepro:latest"
+    "docker.io/eilandert/reprepro:latest@sha256:b63347393b28f22c7b2dd004d8d1386ad620e3a6f70873df6e2d27bf481ada63"
     ### 13-translate
     "docker.io/libretranslate/libretranslate:v1.9.6",
     ### 20-owui

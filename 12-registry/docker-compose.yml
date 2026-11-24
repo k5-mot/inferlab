@@ -270,7 +270,7 @@ services:
       - homepage.icon=/icons/redhat-linux.png
 
   reprepro:
-    image: docker.io/eilandert/reprepro:latest
+    image: docker.io/eilandert/reprepro:latest@sha256:b63347393b28f22c7b2dd004d8d1386ad620e3a6f70873df6e2d27bf481ada63
     container_name: ${STACK_NAME}-reprepro
     profiles:
       - registry
