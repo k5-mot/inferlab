@@ -533,7 +533,7 @@ services:
       TZ: Asia/Tokyo
     volumes:
       - openclaw-data:/home/node/.openclaw
-      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.managed.json:ro
+      - ./openclaw/openclaw.json:/opt/inferlab/openclaw.json:ro
     networks:
       - internal-nw
     entrypoint:
@@ -542,6 +542,8 @@ services:
     command:
       - |
         set -eu
+        # Doctorがschema migrationを書き戻せるよう、管理設定を永続volumeへ複製する。
+        install -o node -g node -m 0644 /opt/inferlab/openclaw.json /home/node/.openclaw/openclaw.managed.json
         # 個別bind mountでroot所有になり得るworkspaceを、実行userが書き込める状態へ戻す。
         install -d -o node -g node -m 0755 /home/node/.openclaw/workspaces
         # coreと同じrelease cohortのDiscord pluginへ永続volumeを収束させる。
@@ -601,7 +603,6 @@ services:
       - 31002:18789
     volumes:
       - openclaw-data:/home/node/.openclaw
-      - ./openclaw/openclaw.json:/home/node/.openclaw/openclaw.managed.json:ro
       - ./openclaw/AGENTS.md:/home/node/.openclaw/workspaces/AGENTS.md:ro
       - ./openclaw/IDENTITY.md:/home/node/.openclaw/workspaces/IDENTITY.md:ro
       - ./openclaw/SOUL.md:/home/node/.openclaw/workspaces/SOUL.md:ro

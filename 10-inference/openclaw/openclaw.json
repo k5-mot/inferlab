@@ -115,6 +115,16 @@
             "main": {}
         }
     },
+    "skills": {
+        "entries": {
+            "openai-whisper-api": {
+                "enabled": false
+            },
+            "sherpa-onnx-tts": {
+                "enabled": false
+            }
+        }
+    },
     "tools": {
         "media": {
             "models": [
@@ -230,7 +240,14 @@
     "meta": {
         "lastTouchedVersion": "2026.11.7",
         "migrations": {
-            "modelPolicyAllowlist": true
+            "modelPolicyAllowlist": true,
+            "webhookListeners": {
+                "telegram": [],
+                "feishu": [],
+                "msteams": [],
+                "nextcloud-talk": []
+            },
+            "utilityModelSeparation": true
         }
     },
     "channels": {
