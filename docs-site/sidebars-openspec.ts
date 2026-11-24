@@ -18,12 +18,12 @@ const profileSpecifications = [
   "specs/profile-openclaw/spec",
   "specs/profile-owui/spec",
   "specs/profile-pubnet/spec",
-  "specs/profile-qwenpaw/spec",
   "specs/profile-rag/spec",
   "specs/profile-ragflow/spec",
   "specs/profile-registry/spec",
   "specs/profile-translate/spec",
   "specs/profile-xwiki/spec",
+  "specs/profile-zeroclaw/spec",
   "specs/profile-zulip/spec",
 ];
 

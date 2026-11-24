@@ -8,12 +8,12 @@ Docker Composeの`inference` profileが利用者と運用者へ提供する能�
 
 ### Requirement: inference profileの提供範囲
 
-`inference` profileは`litellm`、`vllm-embedding`、`vllm-reranking`、`hermes-agent`、`openclaw`、`openclaw-init`、`qwenpaw`、`qwenpaw-init`、`kokoro`を対象とし、OpenAI互換LLM gateway、chat model、embedding、reranking、agent UI、音声合成をまとめて提供するものとする（MUST）。
+`inference` profileは`litellm`、`vllm-embedding`、`vllm-reranking`、`hermes-agent`、`openclaw`、`openclaw-init`、`zeroclaw`、`zeroclaw-init`、`kokoro`を対象とし、OpenAI互換LLM gateway、chat model、embedding、reranking、agent UI、音声合成をまとめて提供するものとする（MUST）。
 
 #### Scenario: profileを選択する
 
 - **WHEN** 運用者が`inference` profileを選択してCompose設定を解決する
-- **THEN** `litellm`、`vllm-embedding`、`vllm-reranking`、`hermes-agent`、`openclaw`、`openclaw-init`、`qwenpaw`、`qwenpaw-init`、`kokoro`がprofileの対象serviceとして含まれる
+- **THEN** `litellm`、`vllm-embedding`、`vllm-reranking`、`hermes-agent`、`openclaw`、`openclaw-init`、`zeroclaw`、`zeroclaw-init`、`kokoro`がprofileの対象serviceとして含まれる
 - **THEN** 長期稼働serviceは定義済みhealthcheckによって正常性を判定できる
 
 ### Requirement: inference profileの公開境界

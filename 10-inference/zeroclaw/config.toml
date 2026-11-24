@@ -1,0 +1,25 @@
+# inferlab-managed-config: 1
+# ZeroClawの基底設定。zeroclaw-initは上の版番号が異なる場合だけ、この内容でconfig.tomlを置き換える。
+# provider、channel、peer groupなど環境ごとの値とsecretはComposeの環境変数で注入する。
+# gateway.paired_tokensはZeroClawがこのfileへ書き込むため、版番号を上げるとdashboardの再pairingが必要になる。
+schema_version = 4
+
+[gateway]
+port = 42617
+host = "[::]"
+allow_public_bind = true
+web_dist_dir = "/usr/share/zeroclawlabs/web/dist"
+
+[agents.default]
+risk_profile = "default"
+runtime_profile = "default"
+
+[risk_profiles.default]
+level = "supervised"
+
+[runtime_profiles.default]
+
+[storage.sqlite.default]
+
+[memory]
+backend = "sqlite.default"

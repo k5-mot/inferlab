@@ -4,8 +4,8 @@
 #   - https://docs.litellm.ai/docs/simple_proxy
 # - TEI; HuggingFace Text Embedding Inference
 #   - https://huggingface.co/docs/text-embeddings-inference/quick_tour
-# - QwenPaw
-#   - https://github.com/agentscope-ai/QwenPaw
+# - ZeroClaw
+#   - https://github.com/zeroclaw-labs/zeroclaw
 #
 
 x-external-dns-stabilizer: &external-dns-stabilizer
@@ -551,81 +551,111 @@ services:
       - homepage.description=AI agent
       - homepage.href=http://${PUBLIC_HOST}:31002
 
-  # https://qwenpaw.agentscope.io/docs/channels#Discord
-  # https://github.com/agentscope-ai/QwenPaw/blob/main/docker-compose.yml
-  qwenpaw-init:
-    image: docker.io/agentscope/qwenpaw:v2.3.0
-    container_name: ${STACK_NAME}-qwenpaw-init
-    restart: no
+  # https://github.com/zeroclaw-labs/zeroclaw/blob/master/docs/book/src/setup/container.md
+  # https://github.com/zeroclaw-labs/zeroclaw/blob/master/docker-compose.yml
+  zeroclaw-init:
+    image: docker.io/alpine/openssl:3.5.9
+    container_name: ${STACK_NAME}-zeroclaw-init
+    restart: "no"
     profiles:
       - inference
-      - qwenpaw
-    environment:
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      QWENPAW_DISCORD_BOT_TOKEN: ${QWENPAW_DISCORD_BOT_TOKEN:-}
-      QWENPAW_ENABLED_CHANNELS: console,discord
-      TZ: Asia/Tokyo
+      - zeroclaw
+    user: "0:0"
     entrypoint:
-      - /opt/inferlab/init.sh
+      - sh
+      - -euc
+    command:
+      - |
+        # 人格fileのbind mountより先にworkspaceを作り、ZeroClawの実行userが書き込めるようにする。
+        mkdir -p /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw
+        # release image同梱のconfig.tomlは旧schema (V1) のため、repository管理の基底設定へ置き換える。
+        # ZeroClawはpairing tokenをconfig.tomlへ保存し、comment無しで書き戻すため、
+        # 適用済みの版番号を別fileへ記録し、版番号が変わった場合だけ置き換える。
+        marker=/zeroclaw-data/.zeroclaw/.inferlab-managed-config
+        managed=$$(head -n 1 /opt/inferlab/config.toml)
+        current=$$(cat "$${marker}" 2>/dev/null || true)
+        if [ "$${managed}" != "$${current}" ]; then
+          echo "Install managed ZeroClaw config: $${managed}"
+          cp /opt/inferlab/config.toml /zeroclaw-data/.zeroclaw/config.toml
+          printf '%s\n' "$${managed}" > "$${marker}"
+        fi
+        chown 65534:65534 /zeroclaw-data/workspace /zeroclaw-data/.zeroclaw /zeroclaw-data/.zeroclaw/config.toml
     volumes:
-      - ./qwenpaw/init.sh:/opt/inferlab/init.sh:ro
-      - ./qwenpaw/configure.py:/opt/inferlab/configure.py:ro
-      - qwenpaw-data:/app/working
-      - qwenpaw-secrets:/app/working.secret
-      - qwenpaw-backups:/app/working.backups
-    networks:
-      - internal-nw
+      - zeroclaw-data:/zeroclaw-data
+      - ./zeroclaw/config.toml:/opt/inferlab/config.toml:ro
+    network_mode: none
 
-  qwenpaw:
+  zeroclaw:
     <<: *external-dns-stabilizer
-    image: docker.io/agentscope/qwenpaw:v2.3.0
-    container_name: ${STACK_NAME}-qwenpaw
+    image: ghcr.io/zeroclaw-labs/zeroclaw:v0.9.0
+    container_name: ${STACK_NAME}-zeroclaw
     restart: unless-stopped
     profiles:
       - inference
-      - qwenpaw
+      - zeroclaw
     init: true
+    # 設定はimage同梱config.tomlへZEROCLAW_<dotted path>形式の環境変数で上書きする。
     environment:
-      QWENPAW_PORT: "8088"
-      QWENPAW_AUTH_ENABLED: "true"
-      QWENPAW_AUTH_USERNAME: ${QWENPAW_AUTH_USERNAME:-qwenpaw-admin}
-      QWENPAW_AUTH_PASSWORD: ${QWENPAW_AUTH_PASSWORD:-pw-qwenpaw-admin-password}
-      QWENPAW_ENABLED_CHANNELS: console,discord
       TZ: Asia/Tokyo
+      ZEROCLAW_gateway__require_pairing: "true"
+      # air-gap環境ではGitHubへ到達できないため、更新確認を無効化する。
+      ZEROCLAW_gateway__check_updates: "false"
+      ZEROCLAW_providers__models__litellm__default__uri: http://litellm:4000/v1
+      ZEROCLAW_providers__models__litellm__default__api_key: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      ZEROCLAW_providers__models__litellm__default__model: google/gemma4:31b
+      # rate limit時はprovider alias単位でcooldownするため、fallback modelは別aliasに分ける。
+      ZEROCLAW_providers__models__litellm__default__fallback: '["litellm.gptoss"]'
+      ZEROCLAW_providers__models__litellm__default__extra_headers__langfuse_trace_name: ZeroClaw
+      ZEROCLAW_providers__models__litellm__default__extra_headers__langfuse_generation_name: zeroclaw
+      ZEROCLAW_providers__models__litellm__default__extra_headers__langfuse_tags: '["zeroclaw"]'
+      ZEROCLAW_providers__models__litellm__gptoss__uri: http://litellm:4000/v1
+      ZEROCLAW_providers__models__litellm__gptoss__api_key: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      ZEROCLAW_providers__models__litellm__gptoss__model: openai/gpt-oss:20b
+      ZEROCLAW_providers__models__litellm__gptoss__extra_headers__langfuse_trace_name: ZeroClaw
+      ZEROCLAW_providers__models__litellm__gptoss__extra_headers__langfuse_generation_name: zeroclaw
+      ZEROCLAW_providers__models__litellm__gptoss__extra_headers__langfuse_tags: '["zeroclaw"]'
+      ZEROCLAW_agents__default__model_provider: litellm.default
+      ZEROCLAW_agents__default__workspace__path: /zeroclaw-data/workspace
+      ZEROCLAW_agents__default__channels: '["discord.default"]'
+      ZEROCLAW_channels__discord__default__enabled: "true"
+      ZEROCLAW_channels__discord__default__bot_token: ${ZEROCLAW_DISCORD_BOT_TOKEN:-}
+      ZEROCLAW_channels__discord__default__mention_only: "true"
+      # 空のpeer setは全員を拒否するため、QwenPawと同じく全発言者を許可する。
+      ZEROCLAW_peer_groups__discord__channel: discord
+      ZEROCLAW_peer_groups__discord__external_peers: '["*"]'
     ports:
-      - 31003:8088
+      - 31003:42617
     volumes:
-      - qwenpaw-data:/app/working
-      - qwenpaw-secrets:/app/working.secret
-      - qwenpaw-backups:/app/working.backups
-      - ./qwenpaw/persona/AGENTS.md:/app/working/workspaces/default/AGENTS.md
-      - ./qwenpaw/persona/SOUL.md:/app/working/workspaces/default/SOUL.md
-      - ./qwenpaw/persona/PROFILE.md:/app/working/workspaces/default/PROFILE.md
+      - zeroclaw-data:/zeroclaw-data
+      - ./zeroclaw/persona/SOUL.md:/zeroclaw-data/workspace/SOUL.md:ro
+      - ./zeroclaw/persona/IDENTITY.md:/zeroclaw-data/workspace/IDENTITY.md:ro
+      - ./zeroclaw/persona/USER.md:/zeroclaw-data/workspace/USER.md:ro
+      - ./zeroclaw/persona/AGENTS.md:/zeroclaw-data/workspace/AGENTS.md:ro
     networks:
       - internal-nw
     depends_on:
-      qwenpaw-init:
+      zeroclaw-init:
         condition: service_completed_successfully
     healthcheck:
       test:
-        - CMD-SHELL
-        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/', timeout=5)"
+        - CMD
+        - zeroclaw
+        - status
+        - --format=exit-code
       interval: 30s
       timeout: 10s
-      retries: 12
-      start_period: 60s
+      retries: 5
+      start_period: 30s
     labels:
-      - homepage.icon=/icons/qwenpaw.png
+      - homepage.icon=/icons/zeroclaw.png
       - homepage.group=10-inference
-      - homepage.name=QwenPaw
+      - homepage.name=ZeroClaw
       - homepage.description=Personal AI agent
       - homepage.href=http://${PUBLIC_HOST}:31003
 
 volumes:
   openclaw-data:
-  qwenpaw-data:
-  qwenpaw-secrets:
-  qwenpaw-backups:
+  zeroclaw-data:
   tei-cache:
   vllm-cache:
   hermes-data:

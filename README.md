@@ -15,7 +15,7 @@
 | `inference-tei` | `10-inference/docker-compose.yml` | TEIによる埋め込みとreranking |
 | `hermes-agent` | `10-inference/docker-compose.yml` | Hermes Agentだけの選択起動 |
 | `openclaw` | `10-inference/docker-compose.yml` | OpenClawだけの選択起動 |
-| `qwenpaw` | `10-inference/docker-compose.yml` | QwenPawだけの選択起動 |
+| `zeroclaw` | `10-inference/docker-compose.yml` | ZeroClawだけの選択起動 |
 | `rag` | `11-rag/docker-compose.yml` | 文書処理とベクトル検索 |
 | `registry` | `12-registry/docker-compose.yml` | 開発用パッケージ配布 |
 | `translate` | `13-translate/docker-compose.yml` | 機械翻訳API |
@@ -55,8 +55,8 @@
 | `inference`, `hermes-agent` | `hermes-agent` | `31001` | `10-inference/docker-compose.yml` |
 | `inference`, `openclaw` | `openclaw` | `31002` | `10-inference/docker-compose.yml` |
 | `inference`, `openclaw` | `openclaw-init` | - | `10-inference/docker-compose.yml` |
-| `inference`, `qwenpaw` | `qwenpaw` | `31003` | `10-inference/docker-compose.yml` |
-| `inference`, `qwenpaw` | `qwenpaw-init` | - | `10-inference/docker-compose.yml` |
+| `inference`, `zeroclaw` | `zeroclaw` | `31003` | `10-inference/docker-compose.yml` |
+| `inference`, `zeroclaw` | `zeroclaw-init` | - | `10-inference/docker-compose.yml` |
 | `inference` | `kokoro` | - | `10-inference/docker-compose.yml` |
 | `rag` | `docling` | `31100` | `11-rag/docker-compose.yml` |
 | `rag` | `qdrant` | `31101` | `11-rag/docker-compose.yml` |
