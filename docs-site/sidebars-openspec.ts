@@ -16,7 +16,6 @@ const profileSpecifications = [
   "specs/profile-o11y-gpu/spec",
   "specs/profile-obsidian/spec",
   "specs/profile-openclaw/spec",
-  "specs/profile-openkb/spec",
   "specs/profile-owui/spec",
   "specs/profile-pubnet/spec",
   "specs/profile-qwenpaw/spec",

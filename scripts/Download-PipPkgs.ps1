@@ -11,7 +11,7 @@ scriptのhelpを表示して終了します。
 .EXAMPLE
 .\scripts\Download-PipPkgs.ps1 -OutputDir C:\airgap
 
-Dify plugin、private-chat、OpenKBのPython依存を`C:\airgap\pypi`へ取得します。
+Dify pluginとprivate-chatのPython依存を`C:\airgap\pypi`へ取得します。
 
 .NOTES
 download対象はこのscriptの`$Packages`で固定します。一時directoryはOutputDirと同じvolumeへ作成し、pip cacheは使用しません。

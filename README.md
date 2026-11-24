@@ -30,7 +30,6 @@
 | `gitlab` | `34-gitlab/docker-compose.yml` | Git 管理とCI |
 | `affine` | `35-affine/docker-compose.yml` | HTTPS対応knowledge workspace |
 | `obsidian` | `40-obsidian/docker-compose.yml` | Obsidian同期用CouchDB |
-| `openkb` | `40-obsidian/docker-compose.yml` | 旧OpenKB向けCouchDB互換profile |
 | `o11y` | `50-o11y/docker-compose.yml` | 監視 |
 | `o11y-gpu` | `50-o11y/docker-compose.yml` | NVIDIA GPU metrics |
 | `langfuse` | `51-langfuse/docker-compose.yml` | Langfuse |
@@ -121,7 +120,7 @@
 | `affine` | `affine-redis` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-postgres` | - | `35-affine/docker-compose.yml` |
 | `affine` | `affine-caddy` | `33500` | `35-affine/docker-compose.yml` |
-| `obsidian`, `openkb` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
+| `obsidian` | `couchdb` | `34000` | `40-obsidian/docker-compose.yml` |
 | `o11y` | `grafana` | `35000` | `50-o11y/docker-compose.yml` |
 | `o11y` | `prometheus` | `35001` | `50-o11y/docker-compose.yml` |
 | `o11y` | `node-exporter` | - | `50-o11y/docker-compose.yml` |
