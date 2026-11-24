@@ -243,7 +243,7 @@ services:
     profiles:
       - registry
     ports:
-      - 31203:8080
+      - 31203:80
     volumes:
       - /srv/12-registry/rpm:/usr/share/nginx/html:ro
     networks:
@@ -257,7 +257,7 @@ services:
         - -q
         - -O
         - /dev/null
-        - http://127.0.0.1:8080/
+        - http://127.0.0.1:80/
       interval: 30s
       timeout: 5s
       retries: 5
@@ -310,7 +310,7 @@ services:
     profiles:
       - registry
     ports:
-      - 31204:8080
+      - 31204:80
     volumes:
       - /srv/12-registry/deb/public:/usr/share/nginx/html:ro
     networks:
@@ -324,7 +324,7 @@ services:
         - -q
         - -O
         - /dev/null
-        - http://127.0.0.1:8080/
+        - http://127.0.0.1:80/
       interval: 30s
       timeout: 5s
       retries: 5
