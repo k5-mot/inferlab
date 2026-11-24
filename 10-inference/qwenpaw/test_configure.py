@@ -19,8 +19,8 @@ from configure import MODEL_IDS, configure
 class ConfigureTest(unittest.TestCase):
     """DiscordとLiteLLM設定の生成結果を検証する。"""
 
-    def test_configure_enables_discord_and_three_models(self) -> None:
-        """既存agentを保ったままDiscordと3モデルを設定する。"""
+    def test_configure_enables_discord_and_two_models(self) -> None:
+        """既存agentを保ったままDiscordと2モデルを設定する。"""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             working_dir = root / "working"

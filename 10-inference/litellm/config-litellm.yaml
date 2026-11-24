@@ -17,42 +17,6 @@ router_settings:
   cooldown_time: 30
 
 model_list:
-  ### Ollama
-  ### - https://openrouter.ai/google/gemma-4-31b-it
-  ### - https://openrouter.ai/openai/gpt-oss-20b
-  - model_name: google/gemma4:31b
-    litellm_params:
-      model: ollama_chat/gemma4:31b-cloud
-      api_base: http://ollama:11434
-      tags: ["ollama", "foundation"]
-      weight: 1
-    model_info:
-      supports_function_calling: true
-      supports_parallel_function_calling: false
-      input_cost_per_token:  0.00000009 # $0.09 / M tokens
-      output_cost_per_token: 0.00000034 # $0.34 / M tokens
-  - model_name: openai/gpt-oss:20b
-    litellm_params:
-      model: ollama_chat/gpt-oss:20b-cloud
-      api_base: http://ollama:11434
-      tags: ["ollama", "foundation"]
-      weight: 1
-    model_info:
-      supports_function_calling: true
-      supports_parallel_function_calling: false
-      input_cost_per_token:  0.00000002 # $0.02 / M tokens
-      output_cost_per_token: 0.00000010 # $0.10 / M tokens
-  - model_name: nvidia/nemotron-3-nano:4b
-    litellm_params:
-      model: ollama_chat/nemotron-3-nano:4b
-      api_base: http://ollama:11434
-      tags: ["ollama", "foundation"]
-      weight: 1
-    model_info:
-      supports_function_calling: true
-      supports_parallel_function_calling: false
-      input_cost_per_token:  0.00000000 # ローカル推論のためAPI利用料なし
-      output_cost_per_token: 0.00000000 # ローカル推論のためAPI利用料なし
 
   ### OpenRouter
   - model_name: google/gemma4:31b

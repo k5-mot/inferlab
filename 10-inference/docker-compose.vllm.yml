@@ -36,8 +36,6 @@ services:
     networks:
       - internal-nw
     depends_on:
-      ollama:
-        condition: service_healthy
       vllm-foundation:
         condition: service_healthy
       vllm-embedding:

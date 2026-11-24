@@ -43,7 +43,7 @@ PDFの分割ページ数は`.env`の`DOCLING_PDF_BATCH_PAGES`で指定する。�
 
 ## 残存risk
 
-画像数が多い文書では、100ページ単位でも処理時間が長くなり、model backendのmemory使用量が継続する。分割途中で失敗した場合は元PDF全体が失敗となり、OIKBのretryでは先頭の分割から再処理する。TEI、Ollama、Doclingを同時に高負荷にする操作はhost resourceの余力を確認してから実施する。
+画像数が多い文書では、100ページ単位でも処理時間が長くなり、model backendのmemory使用量が継続する。分割途中で失敗した場合は元PDF全体が失敗となり、OIKBのretryでは先頭の分割から再処理する。TEIとDoclingを同時に高負荷にする操作はhost resourceの余力を確認してから実施する。
 
 ## References
 

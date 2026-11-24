@@ -18,7 +18,6 @@ LOGGER = logging.getLogger(__name__)
 MODEL_IDS = (
     "google/gemma4:31b",
     "openai/gpt-oss:20b",
-    "nvidia/nemotron-3-nano:30b",
 )
 
 

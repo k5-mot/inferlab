@@ -57,7 +57,6 @@
 ## Docker
 
 - hello-world
-- ollama/ollama
 
 ## Hugging Face
 

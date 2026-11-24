@@ -64,7 +64,6 @@ $Packages = @(
     "docker.io/cloudflare/cloudflared:2026.11.2",
     ### 10-inference
     "docker.io/litellm/litellm:v1.110.2",
-    "docker.io/ollama/ollama:0.40.17",
     "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3",
     "docker.io/vllm/vllm-openai:v0.34.0-x86_64",
     "docker.io/vllm/vllm-openai-cpu:v0.34.0-x86_64",

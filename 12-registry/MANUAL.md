@@ -111,8 +111,6 @@ cp -a <REGISTRY_ASSETS>/oci-archive/. /srv/oci-archive/
 # hello-world archiveをDocker Registryへ投入する。
 skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:/srv/oci-archive/hello-world_latest.tar docker://<REGISTRY_HOST>:31205/library/hello-world:latest
 
-# ollama archiveをDocker Registryへ投入する。
-skopeo copy --src-tls-verify=false --dest-tls-verify=false docker-archive:/srv/oci-archive/ollama_ollama_latest.tar docker://<REGISTRY_HOST>:31205/library/ollama:latest
 ```
 
 期待結果: `http://<REGISTRY_HOST>:31205/v2/` が応答し、投入した image を pull できる。
@@ -153,8 +151,6 @@ npx cowsay ok
 # hello-worldをDocker Registryからpullする。
 sudo docker pull <REGISTRY_HOST>:31205/library/hello-world:latest
 
-# ollamaをDocker Registryからpullする。
-sudo docker pull <REGISTRY_HOST>:31205/library/ollama:latest
 ```
 
 期待結果: image を pull できる。

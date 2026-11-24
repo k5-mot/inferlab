@@ -127,7 +127,7 @@ curl -fsS "http://${PUBLIC_HOST:-localhost}:35000/api/health" >/dev/null
 | Nextcloud | `openmetrics_allowed_clients`へDocker内部networkを追加し、`/metrics`をscrapeする。 |
 | CouchDB | `/_node/_local/_prometheus`をbasic auth付きでscrapeする。 |
 | LiteLLM | `prometheus` callbackを有効化し、`/metrics`をBearer認証付きでscrapeする。 |
-| LLM Quota Exporter | OpenRouterはAPI値、Google AI Studio/Cerebras/Ollama Cloudは設定値と`/ingest`の利用実績から無料枠残量を表示する。 |
+| LLM Quota Exporter | OpenRouterはAPI値、Google AI Studio/Cerebrasは設定値と`/ingest`の利用実績から無料枠残量を表示する。 |
 | SearXNG | `open_metrics`を有効化し、`/metrics`をBasic Auth付きでscrapeする。 |
 | Qdrant | `api-key` header付きで`/metrics`をscrapeする。 |
 | PostgreSQL | `postgres_exporter` serviceを用意している。初期状態ではコメントアウト。 |

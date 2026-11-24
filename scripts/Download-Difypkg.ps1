@@ -33,7 +33,6 @@ $Registries = @(
 )
 $Packages = @(
     [pscustomobject]@{ Id = "langgenius/openai_api_compatible"; Version = "0.0.64" },
-    [pscustomobject]@{ Id = "langgenius/ollama"; Version = "1.0.0" },
     [pscustomobject]@{ Id = "langgenius/huggingface_tei"; Version = "0.1.10" },
     [pscustomobject]@{ Id = "langgenius/cohere"; Version = "0.0.17" },
     [pscustomobject]@{ Id = "langgenius/json_process"; Version = "0.0.7" },

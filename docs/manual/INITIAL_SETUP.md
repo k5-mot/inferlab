@@ -1,6 +1,6 @@
 # Initial Setup
 
-Ollama Cloudのsign in、Keycloakの初回ログイン、Open-WebUIのKnowledge作成、OIKB連携までの初期設定手順。
+Keycloakの初回ログイン、Open-WebUIのKnowledge作成、OIKB連携までの初期設定手順。
 
 ## 前提
 
@@ -10,7 +10,6 @@ Ollama Cloudのsign in、Keycloakの初回ログイン、Open-WebUIのKnowledge�
 - Open-WebUI用Keycloak clientは`open-webui`、client secretは`OPEN_WEBUI_OIDC_CLIENT_SECRET`で上書きできる。
 - OIKBはNextcloud volumeの`admin/files/oikb`とRustFS bucketの`s3://oikb-bucket/documents`をOpen-WebUI Knowledgeへ同期する。
 - 既存のKeycloak realmがある環境では`--import-realm`だけではclient secretが更新されない場合がある。その場合はKeycloak管理consoleで`open-webui` clientのsecretを`OPEN_WEBUI_OIDC_CLIENT_SECRET`と一致させる。
-- 既定のinference stackはOllama Cloud modelを`LiteLLM -> Ollama -> Ollama Cloud`の経路で使用する。
 
 ## 1. 基本stackを起動する
 
@@ -37,38 +36,7 @@ sudo docker compose --env-file .env --profile common --profile keycloak --profil
 sudo docker compose --env-file .env --profile common --profile keycloak --profile rag --profile owui --profile nextcloud ps keycloak open-webui nextcloud oikb-rustfs oikb
 ```
 
-## 2. Ollama Cloudへsign inする
-
-Ollama Cloud modelを使う場合、LiteLLMはOllama containerのlocal APIだけを呼び出す。Ollama Cloudへの認証はOllama containerのsign in状態で行い、`OLLAMA_API_KEY`をLiteLLMからOllama containerへ渡さない。
-
-`ollama pull`はsign in前でも成功するが、Cloud modelの実行にはsign inが必要。
-
-```bash
-# Ollama Cloudのsign in状態をollama-cache volumeへ保存する。
-sudo docker compose --env-file .env --profile inference exec -it ollama ollama signin
-```
-
-期待結果:
-
-- `ollama signin`が表示するURLでOllama Cloudへのsign inを完了できる。
-- LiteLLMのOllama deploymentが`http://ollama:11434`を参照し、`https://ollama.com/api`を参照しない。
-- LiteLLM経由のCloud model実行がOllama serviceのsign in状態を使える。
-
-失敗条件:
-
-- `ollama signin`が完了しない。
-- sign in後もCloud model実行時に`You need to be signed in to Ollama to run Cloud models.`が出る。
-- LiteLLMまたはOllama containerへ`OLLAMA_API_KEY`を渡す構成に戻っている。
-
-```bash
-# Ollama initの終了状態を確認する。
-sudo docker compose --env-file .env --profile inference ps ollama-init
-
-# Ollamaに登録済みmodel一覧を確認する。
-sudo docker compose --env-file .env --profile inference exec ollama ollama list
-```
-
-## 3. Keycloakへ初回ログインする
+## 2. Keycloakへ初回ログインする
 
 1. `http://${PUBLIC_HOST}:30001`を開く。
 2. 管理consoleへ`admin` / `admin`でログインする。
@@ -87,7 +55,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 - `open-webui` clientのsecretが一致しない。
 - `groups` claimがID tokenまたはuser infoに含まれない。
 
-## 4. Open-WebUIへKeycloakでログインする
+## 3. Open-WebUIへKeycloakでログインする
 
 1. `http://${PUBLIC_HOST}:32000`を開く。
 2. `Keycloak`でログインする。
@@ -104,7 +72,7 @@ sudo docker compose --env-file .env --profile inference exec ollama ollama list
 - Keycloakログイン後にOpen-WebUIへredirectされない。
 - Open-WebUIにAPI key作成画面が表示されない。
 
-## 5. Dify管理者アカウントを作成する
+## 4. Dify管理者アカウントを作成する
 
 DifyはDify自身のemail/password認証を使用する。管理者アカウントはDifyの初回セットアップ画面で作成する。
 [OpenSpecの`dify` profile仕様](/specs/profile-dify/spec)に従い、productionでは`.env`の`DIFY_INIT_PASSWORD`を環境固有の一時passwordへ変更する。air-gap環境では先に[Dify Air-gap Setup](DIFY_AIRGAP.md)の資材取得と検証を完了する。
@@ -139,7 +107,7 @@ sudo docker compose --env-file .env --profile dify up -d
 sudo docker compose --env-file .env --profile dify ps dify-api dify-web dify-nginx
 ```
 
-## 6. Open-WebUI Knowledgeを作成する
+## 5. Open-WebUI Knowledgeを作成する
 
 1. Open-WebUIで`Workspace`から`Knowledge`を開く。
 2. Nextcloud同期用とRustFS同期用のKnowledgeを作成する。
@@ -174,7 +142,7 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `NEXTCLOUD_OPENWEBUI_KB_ID`が空のままになっている。
 - `RUSTFS_OPENWEBUI_KB_ID`が空のままになっている。
 
-## 7. OIKB同期対象を用意する
+## 6. OIKB同期対象を用意する
 
 ### Nextcloud
 
@@ -211,7 +179,7 @@ RUSTFS_OPENWEBUI_KB_ID=<Open-WebUIで作成したKnowledge ID>
 - `documents/`以外のprefixへfileを配置している。
 - `.env`のRustFS認証情報とRustFS containerの認証情報が一致しない。
 
-## 8. OIKBを再buildして定時同期する
+## 7. OIKBを再buildして定時同期する
 
 ```bash
 # OIKB imageをbuildし、内蔵schedulerを有効にしたdaemonを起動する。
@@ -237,7 +205,7 @@ sudo docker compose --env-file .env --profile owui --profile nextcloud up -d --b
 sudo docker compose --env-file .env --profile owui --profile nextcloud logs --tail 200 oikb
 ```
 
-## 9. 再実行とrollback
+## 8. 再実行とrollback
 
 再実行:
 
@@ -263,14 +231,9 @@ sudo docker compose --env-file .env --profile owui --profile nextcloud stop oikb
 - 再実行後も同じ認証エラーが続く。
 - rollback後も`oikb` containerがrunningのまま残る。
 
-## 10. OpenClawをセットアップする
+## 9. OpenClawをセットアップする
 
 ```bash
 # OpenClawのOpenAI provider認証をdevice code flowで設定する。
 sudo docker compose exec -it openclaw openclaw models auth login --provider openai --device-code
 ```
-
-## References
-
-- [Ollama API Authentication](https://docs.ollama.com/api/authentication)
-- [Ollama Cloud](https://docs.ollama.com/cloud)

@@ -49,8 +49,6 @@
 | `keycloak` | `keycloak-config` | - | `01-keycloak/docker-compose.yml` |
 | `pubnet` | `cloudflare` | - | `02-pubnet/docker-compose.yml` |
 | `inference` | `litellm` | `31000` | `10-inference/docker-compose.yml` |
-| `inference` | `ollama` | - | `10-inference/docker-compose.yml` |
-| `inference` | `ollama-init` | - | `10-inference/docker-compose.yml` |
 | `inference` | `vllm-embedding` | - | `10-inference/docker-compose.yml` |
 | `inference` | `vllm-reranking` | - | `10-inference/docker-compose.yml` |
 | `inference-tei` | `tei-embedding` | - | `10-inference/docker-compose.yml` |

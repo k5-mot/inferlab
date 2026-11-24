@@ -22,10 +22,6 @@
     - abbr: GS
       icon: /icons/google-gemini.png
       href: https://aistudio.google.com/rate-limit?timeRange=last-90-days
-  - Ollama:
-    - abbr: OL
-      icon: /icons/ollama.png
-      href: https://ollama.com/settings
   - OpenRouter:
     - abbr: OR
       icon: /icons/open-router.png
