@@ -28,7 +28,7 @@ Docker Composeの`openkb` profileが利用者と運用者へ提供する能力�
 
 ### Requirement: openkb profileの連携
 
-`openkb` profileは、`obsidian`および`llmwiki` profileと同じCouchDB serviceと永続dataを共有するものとする（MUST）。
+`openkb` profileは、`obsidian` profileと同じCouchDB serviceと永続dataを共有するものとする（MUST）。
 
 #### Scenario: 連携先を利用する
 

@@ -86,21 +86,6 @@ services:
           },
           {
             "type": "openapi",
-            "url": "http://mcpo:8000/llmwiki",
-            "spec_type": "url",
-            "spec": "",
-            "path": "openapi.json",
-            "auth_type": "bearer",
-            "key": "${MCPO_API_KEY:-sk-mcpo-api-secret-key}",
-            "config": { "enable": true },
-            "info": {
-              "id": "llmwiki",
-              "name": "llmwiki",
-              "description": "Repository knowledge tools provided by llmwiki through mcpo."
-            }
-          },
-          {
-            "type": "openapi",
             "url": "http://libretranslate:5000",
             "spec_type": "json",
             "spec": "{\"openapi\":\"3.0.3\",\"info\":{\"title\":\"LibreTranslate\",\"version\":\"1.9.6\"},\"paths\":{\"/translate\":{\"post\":{\"operationId\":\"translateText\",\"summary\":\"Translate text\",\"requestBody\":{\"required\":true,\"content\":{\"application/json\":{\"schema\":{\"type\":\"object\",\"required\":[\"q\",\"source\",\"target\"],\"properties\":{\"q\":{\"type\":\"string\",\"description\":\"Text to translate\"},\"source\":{\"type\":\"string\",\"description\":\"Source language code or auto\"},\"target\":{\"type\":\"string\",\"description\":\"Target language code\"},\"format\":{\"type\":\"string\",\"enum\":[\"text\",\"html\"],\"default\":\"text\"}}}}}},\"responses\":{\"200\":{\"description\":\"Translation result\"}}}}}}",
@@ -335,8 +320,6 @@ services:
     restart: unless-stopped
     profiles:
       - owui
-    environment:
-      LLMWIKI_CONTAINER_NAME: ${STACK_NAME}-llmwiki
     entrypoint:
       - /app/.venv/bin/mcpo
     command:
@@ -352,8 +335,6 @@ services:
       - 32004:8000
     volumes:
       - ./mcpo/config.json:/config/config.json:ro
-      - ./mcpo/llmwiki-mcp.sh:/config/llmwiki-mcp.sh:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - internal-nw
     healthcheck:

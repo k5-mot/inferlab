@@ -115,13 +115,6 @@ $Packages = @(
     # "docker.io/valkey/valkey:9.1.1-alpine3.24",
     ### 25-cloudflareos
     "ghcr.io/cloudflare/cloudflare-os:df04e239ed85376643c586a7329d3b8604df489e-patch2",
-    ### 26-octos
-    "ghcr.io/octos/octos:v2.0.2",
-    ### 27-aion
-    "ghcr.io/aion/aion:2.2.1",
-    ### 28-assistantmd
-    "docker.io/library/busybox:1.37.0-musl",
-    "inferlab/assistantmd:v0.8.1",
     ### 30-nextcloud
     "docker.io/library/nextcloud:34.0.3-apache",
     # "docker.io/library/postgres:18.6-alpine3.24",
@@ -147,13 +140,6 @@ $Packages = @(
     "docker.io/library/caddy:2.11.6-alpine",
     ### 40-obsidian
     "docker.io/library/couchdb:3.5.2.1",
-    ### 41-llmwiki
-    "docker.io/library/node:24.20.0-bookworm-slim",
-    "ghcr.io/atomicstrata/llm-wiki-compiler:v1.1.0",
-    "ghcr.io/atomicstrata/llm-wiki-ingester:v1.1.0",
-    ### 42-sage-wiki
-    "ghcr.io/xoai/sage-wiki:v0.2.10",
-    "ghcr.io/xoai/sage-wiki-ingester:v0.2.10",
     ### 50-o11y
     "docker.io/grafana/grafana:13.2.0",
     "docker.io/prom/prometheus:v3.14.0",

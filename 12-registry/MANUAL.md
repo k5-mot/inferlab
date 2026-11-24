@@ -80,7 +80,7 @@ cd /path/to/repository
 # PyPI packageをpypiserverの配信directoryへ配置する。
 cp -a <REGISTRY_ASSETS>/12-registry/pypi/. /srv/12-registry/pypi/
 
-# npm packageをllmwikiとVerdaccio importerが共用する入力directoryへ配置する。
+# npm packageをVerdaccio importerの入力directoryへ配置する。
 cp -a <REGISTRY_ASSETS>/npm/. /srv/npm/
 
 # RPM packageをcreaterepo_cの入力directoryへ配置する。

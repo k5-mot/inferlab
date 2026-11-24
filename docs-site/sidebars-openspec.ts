@@ -1,7 +1,6 @@
 import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
 
 const profileSpecifications = [
-  "specs/profile-aion/spec",
   "specs/profile-cloudflareos/spec",
   "specs/profile-common/spec",
   "specs/profile-dify/spec",
@@ -12,12 +11,10 @@ const profileSpecifications = [
   "specs/profile-kaneo/spec",
   "specs/profile-keycloak/spec",
   "specs/profile-langfuse/spec",
-  "specs/profile-llmwiki/spec",
   "specs/profile-nextcloud/spec",
   "specs/profile-o11y/spec",
   "specs/profile-o11y-gpu/spec",
   "specs/profile-obsidian/spec",
-  "specs/profile-octos/spec",
   "specs/profile-openclaw/spec",
   "specs/profile-openkb/spec",
   "specs/profile-owui/spec",
@@ -26,7 +23,6 @@ const profileSpecifications = [
   "specs/profile-rag/spec",
   "specs/profile-ragflow/spec",
   "specs/profile-registry/spec",
-  "specs/profile-sage-wiki/spec",
   "specs/profile-translate/spec",
   "specs/profile-xwiki/spec",
   "specs/profile-zulip/spec",
