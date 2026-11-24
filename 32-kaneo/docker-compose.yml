@@ -50,7 +50,7 @@ services:
       POSTGRES_USER: kaneo_db_user
       POSTGRES_PASSWORD: kaneo_db_password
     volumes:
-      - kaneo-postgres-data:/var/lib/postgresql/data
+      - kaneo-postgres-18-data:/var/lib/postgresql
     networks:
       - internal-nw
     healthcheck:
@@ -65,7 +65,7 @@ services:
       - homepage.icon=/icons/postgresql.png
 
 volumes:
-  kaneo-postgres-data:
+  kaneo-postgres-18-data:
 
 networks:
   internal-nw:
