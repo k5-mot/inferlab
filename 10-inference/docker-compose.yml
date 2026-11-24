@@ -45,6 +45,8 @@ services:
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-langfuse-project-secret-key}
       LANGFUSE_OTEL_HOST: http://langfuse-web:3000
       OTEL_SEMCONV_STABILITY_OPT_IN: gen_ai_latest_experimental
+      LM_STUDIO_API_BASE: "http://192.168.1.183:1234/v1"
+      LM_STUDIO_API_KEY: ""
     ports:
       - 31000:4000
     volumes:
@@ -215,8 +217,8 @@ services:
       - "Qwen/Qwen3-Embedding-0.6B"
       - --dtype
       - auto
-      # - --gpu-memory-utilization
-      # - "0.05"
+      - --gpu-memory-utilization
+      - "0.15"
       - --kv-cache-memory-bytes
       - "1G"
       - --max-model-len
@@ -274,8 +276,8 @@ services:
       - "Qwen/Qwen3-Reranker-0.6B"
       - --dtype
       - auto
-      # - --gpu-memory-utilization
-      # - "0.05"
+      - --gpu-memory-utilization
+      - "0.15"
       - --kv-cache-memory-bytes
       - "1G"
       - --max-model-len
