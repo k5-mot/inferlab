@@ -299,7 +299,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" http://127.0.0.1:8000/files/list"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list"
       interval: 10s
       timeout: 5s
       retries: 3

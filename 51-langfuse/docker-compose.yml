@@ -69,7 +69,7 @@ services:
     networks:
       - internal-nw
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3030/api/health" ]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://127.0.0.1:3030/api/health" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -109,7 +109,7 @@ services:
     networks:
       - internal-nw
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://$$(hostname):3000/api/public/health" ]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 -O - http://127.0.0.1:3000/api/public/health" ]
       interval: 5s
       timeout: 5s
       retries: 10
