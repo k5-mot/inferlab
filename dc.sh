@@ -25,6 +25,7 @@ readonly PROFILES=(
 #   "kaneo"
 #   "zulip"
 #   "gitlab"
+#   "affine"
   "obsidian"
 #   "o11y"
   "langfuse"

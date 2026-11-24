@@ -185,6 +185,11 @@
 ## LiteLLM動作確認
 
 ```bash
+# LiteLLM gatewayに登録されたmodel一覧を確認する。
+curl -fsS -X GET 'http://localhost:31000/models' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer sk-litellm-master-key'
+
 # LiteLLM gateway経由でchat completions APIの応答を確認する。
 curl -fsS -X POST 'http://localhost:31000/chat/completions' \
   -H 'Content-Type: application/json' \

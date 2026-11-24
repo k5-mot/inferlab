@@ -18,6 +18,30 @@ router_settings:
 
 model_list:
 
+  - model_name: google/gemma4:12b
+    litellm_params:
+      model: lm_studio/google/gemma-4-12b
+      api_base: "http://192.168.1.183:1234/v1"
+      tags: ["lm_studio", "foundation"]
+      weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.00000009 # $0.09 / M tokens
+      output_cost_per_token: 0.00000034 # $0.34 / M tokens
+
+  - model_name: prism-ml/bonsai-27b
+    litellm_params:
+      model: lm_studio/prism-ml/bonsai-27b
+      api_base: "http://192.168.1.183:1234/v1"
+      tags: ["lm_studio", "foundation"]
+      weight: 1
+    model_info:
+      supports_function_calling: true
+      supports_parallel_function_calling: false
+      input_cost_per_token:  0.000000424 # $0.424 / M tokens
+      output_cost_per_token: 0.000001696 # $1.696 / M tokens
+
   ### OpenRouter
   - model_name: google/gemma4:31b
     litellm_params:
