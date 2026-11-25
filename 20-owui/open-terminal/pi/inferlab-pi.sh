@@ -15,6 +15,8 @@ sync_managed_config() {
   # model定義とsettingsはrepository側をauthoritative sourceとして毎回上書きする。
   cp "${MANAGED_DIR}/models.json" "${AGENT_DIR}/models.json"
   cp "${MANAGED_DIR}/settings.json" "${AGENT_DIR}/settings.json"
+  # 全working directory共通の指示。Open WebUI連携の規則とOffice生成の手順を含む。
+  cp "${MANAGED_DIR}/AGENTS.md" "${AGENT_DIR}/AGENTS.md"
   # 管理skillだけを置き換え、userが追加したskillは残す。
   local skill
   for skill in "${MANAGED_DIR}"/skills/*; do

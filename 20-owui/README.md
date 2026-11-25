@@ -104,52 +104,126 @@ sudo docker compose --env-file .env --profile owui up -d
 
 3つの保守scriptの設定、実行方法、期待結果、失敗条件は、[`scripts/oikb/README.md`](../scripts/oikb/README.md)を参照する。
 
-## Open TerminalのPiとOffice機能 (試行)
+## Open WebUI Agent SkillsとPi
 
-`open-terminal`は、[Pi coding agent](https://github.com/earendil-works/pi)と[OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)を追加した派生image (`open-terminal/Dockerfile`) から起動する。Open WebUIでterminalを選択すると、`inferlab/`で始まるPiのmodelを選択できる。
+Open WebUIを業務機能の提供基盤 (Capability Provider) とし、Open Terminal上の[Pi coding agent](https://github.com/earendil-works/pi)が、userごとのAPI keyでOpen WebUIのREST APIをAgent Skills経由で利用する。PiにはKnowledge、Memory、Notesなどのdatabaseを持たせない。設計の背景は[`NEXT.md`](../NEXT.md)を参照する。
+
+### 構成
 
 | file | 役割 |
 | --- | --- |
-| `open-terminal/Dockerfile` | PiとOfficeCLIを`/usr/local`へ導入し、OfficeCLIのWord、PowerPoint、Excel skillをbuild時に固定する。 |
+| `open-terminal/Dockerfile` | Pi、[OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)、OfficeCLIのWord/PowerPoint/Excel skill、`skills/`を導入する派生image。build contextは`20-owui`。 |
 | `open-terminal/pi/models.json` | PiのLiteLLM provider定義。API keyは`/run/secrets/pi-litellm-api-key`から読む。 |
-| `open-terminal/pi/settings.json` | 既定modelとtelemetry無効化。 |
-| `open-terminal/pi/inferlab-pi.sh` | Pi起動前に、管理設定をOpen WebUI userごとの`~/.pi/agent`へ同期する。 |
+| `open-terminal/pi/settings.json` | 既定model (`google/gemma4:12b`) とtelemetry無効化。 |
+| `open-terminal/pi/AGENTS.md` | Pi全体の指示。Open WebUI連携の規則とOffice生成の短縮手順を持つ。 |
+| `open-terminal/pi/inferlab-pi.sh` | Pi起動前に、管理設定とskillをOpen WebUI userごとの`~/.pi/agent`へ同期する。 |
+| `skills/open-webui/` | 共通skill。規則、認証、API index、共通client `owui-api`。 |
+| `skills/owui-*/` | 機能別skill。`references/api.md`はOpenAPI Schemaから生成する。 |
+| `../scripts/owui-skills/` | Schemaの保存先とreference生成script。 |
 
-multi-user modeでは、agentはOpen WebUI userごとのOS userで起動する。Open TerminalはそのOS userへ`PI_`で始まる環境変数を渡さないため、`PI_CODING_AGENT_DIR`ではなく`OPEN_TERMINAL_PI_COMMAND`のwrapperで設定を配布する。npm packageを`/home/user`配下へ導入すると、他のOS userが実行できない (`/home/user`はmode `700`)。
+skillはPi専用の記法を使わない[Agent Skills](https://agentskills.io/specification)形式のため、他のagent harnessへも配布できる。
+
+### 権限境界
+
+| 制御 | 実装 |
+| --- | --- |
+| userの識別 | Open Terminalのmulti-user modeが、Open WebUI userごとに別OS userでPiを起動する。homeはmode `2770`で、他userからは読めない。 |
+| API認証 | 各userが自分のAPI keyを発行し、`owui-api login`で自分のhome (`~/.config/open-webui/api-key`、mode `600`) へ保存する。共通管理者keyは使わない。 |
+| データ権限 | Open WebUIのACL。共有されていないKnowledge、Notes、chatは取得できない。 |
+| 到達できるAPI | `ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS`と`API_KEYS_ALLOWED_ENDPOINTS`。全API key共通のprefix allowlistで、Hermes、OIKB、skillが使うものだけを含める。 |
+| 再帰防止 | chat completions、Anthropic互換messages、terminals、automationsをallowlistから除外する。PiがOpen WebUI経由で自分自身を起動できない。 |
+| host権限 | `open-terminal`へ`/var/run/docker.sock`をmountしない。mountすると新規OS userがdocker groupへ自動追加される。 |
+| 破壊的操作 | `owui-api`はDELETE、`*/delete`、`*/reset`を`OWUI_CONFIRM=yes`なしで拒否する。これはagentへの指示であり、権限境界ではない。 |
+
+multi-user modeのOS user分離は、上流の説明どおりuser間のsecurity boundaryではない。全userへterminalを開放する前に、container単位の分離を検討する。
+
+Open Terminalの接続 (`TERMINAL_SERVER_CONNECTIONS`) は`access_grants: []`のため、管理者だけが利用できる。一般userへPiを提供する場合は、Open WebUIの管理画面でterminal接続のaccessへ対象userまたはgroupを追加する。
+
+### 導入
 
 ```bash
-# 派生imageをbuildし、Open Terminalを再作成する。
-sudo docker compose --env-file .env --profile owui up -d --build --force-recreate open-terminal
+# 派生imageをbuildし、Open WebUIとOpen Terminalを再作成する。
+sudo docker compose --env-file .env --profile owui up -d --build --force-recreate open-webui open-terminal
 ```
 
 期待結果:
 
-- `open-terminal`が`healthy`になる。
-- Open WebUIのterminal選択時に、Piの`inferlab/openai/gpt-oss:20b`、`inferlab/google/gemma4:31b`、`inferlab/google/gemma4:12b`が表示される。
+- `open-webui`と`open-terminal`が`healthy`になる。
+- terminal接続を許可されたuserが、Open WebUIのmodel選択で`pi/inferlab/...`を選べる。
+- `open-terminal`のmountに`/var/run/docker.sock`が含まれない。
 
 失敗条件:
 
 - build時にnpm registryまたはOfficeCLIのrelease binaryへ到達できない。
 - Piの一覧に`Agent discovery failed`が表示される。
 
-### 試行結果
+### userごとの初期設定
 
-2026-11-25に次を確認した。
+各userは、Open WebUIの設定 > アカウント > APIキーでkeyを発行し、Open WebUIのterminalで次を実行する。
+
+```bash
+# API keyを入力し、自分のhomeへ保存して有効性を確認する。
+owui-api login
+```
+
+期待結果:
+
+- `~/.config/open-webui/api-key`がmode `600`で作成され、`API keyを...へ保存しました。`と表示される。
+
+失敗条件:
+
+- `features.api_keys`権限が無く、key発行またはAPI呼び出しが403になる。
+
+### API referenceの更新
+
+Open WebUIを更新したときは、検証用containerからSchemaを取得し、referenceを再生成して差分を確認する。本番Open WebUIで`ENV=dev`を有効化しない。
+
+```bash
+# 検証用Open WebUIを開発modeで起動する。
+docker run -d --name owui-schema -e ENV=dev -e WEBUI_SECRET_KEY=schema-only ghcr.io/open-webui/open-webui:v0.13.4
+
+# OpenAPI Schemaを取得し、検証用containerを削除する。
+docker exec owui-schema curl -fsS http://127.0.0.1:8080/openapi.json > /tmp/openapi.json && docker rm -f owui-schema
+
+# 整形して保存し、skillのreferenceとAPI indexを再生成する。
+python3 -c "import json,sys;json.dump(json.load(open('/tmp/openapi.json')),open('scripts/owui-skills/openapi/open-webui-v0.13.4.json','w'),indent=1,sort_keys=True,ensure_ascii=False)"
+python3 scripts/owui-skills/generate_api_reference.py scripts/owui-skills/openapi/open-webui-v0.13.4.json --version v0.13.4
+```
+
+期待結果:
+
+- `20-owui/skills/owui-*/references/api.md`と`20-owui/skills/open-webui/references/api-index.md`が更新される。
+- `api-index.md`の未分類operationに、新しくskill化すべきAPIが無い。
+
+失敗条件:
+
+- Schema取得がtimeoutする。起動完了まで待ってから再実行する。
+- 新しいrouterがallowlistとskillの両方に無い。`generate_api_reference.py`の`SKILLS`または`EXCLUDED`と`API_KEYS_ALLOWED_ENDPOINTS`を同時に更新する。
+
+### 検証結果
+
+2026-11-25に、一般user 2名 (A、B) とAだけが読める検証用Knowledgeを作り、次を確認した。terminal接続の`access_grants`は検証中だけuser Aへ付与した。
 
 | 確認内容 | 結果 |
 | --- | --- |
-| 新規OS userでのPi discoveryとmodel一覧 | 成功 |
-| 新規OS userでのPiからLiteLLMへの推論 | 成功 |
-| OfficeCLIでのpptx、xlsx作成、`validate`、LibreOfficeでのPDF化と日本語描画 | 成功 |
-| `openai/gpt-oss:20b`でのOffice生成agent loop | 失敗。tool callを思考文へ出力して停止した |
-| `google/gemma4:31b`でのOffice生成agent loop | 未完了。上流providerのrate limit (429) |
-| `google/gemma4:12b` (LM Studio) でのOffice生成agent loop | 未完了。tool callは正しいが、15分で文書を完成できなかった |
-
-基盤とtoolは動作する。Office生成の完走には、tool callingが安定し、十分な生成速度を持つmodelが必要である。
+| user AがOpen WebUIのmodel一覧で`pi/inferlab/...`を選べる | 成功 |
+| `owui-api login`でkeyがuserのhomeへmode `600`で保存され、入力がterminalへ表示されない | 成功 |
+| `open-terminal`再作成後もkey、Pi session、成果物が残る | 成功 |
+| user Bがuser Aのhomeを読めない | 成功 (`Permission denied`) |
+| user BがAのKnowledgeを一覧・検索できない | 成功 (一覧に出ず、検索は403) |
+| API keyでchat completions、messages、terminals、automations作成、users、configs、code実行を呼べない | 成功 (403) |
+| `owui-api`がallowlist外と破壊的操作を事前に拒否する | 成功 |
+| skillに記載した全API例 (files、notes、memory、chats、folders、calendar、channels、models、prompts、skills、tools、evaluations、notifications) | 成功 |
+| Open WebUI経由でuser AのPi (`google/gemma4:12b`) がKnowledgeを検索し、出典付きのWord設計書を1回の依頼で生成する | 成功。1回目約5分、skill改善後の2回目約1分。`officecli validate`成功、記載内容は根拠文書と一致 |
+| 生成したdocxをLibreOfficeでPDF化し日本語を描画する | 成功 |
+| 生成物をOpen WebUIのterminal proxy (`/files/view`) からdownloadする | 成功 (元fileと同一) |
+| LangfuseでPiのLLM requestを確認する | 成功 (`pi` tag付き14 generation) |
+| web search (`owui-web-search`) | 未達。SearXNGの結果取得後、CPU上のembeddingに数分以上かかりtimeoutした |
 
 既知の未対応事項:
 
-- `open-terminal`の`/var/run/docker.sock`のmountは残っている。Piがshellを操作できるため、本番利用前に除去する必要がある。
+- Open WebUIのweb searchは取得pageをembeddingしてから返すため、CPU版vLLMでは実用速度にならない。`BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL`は通常chatの挙動も変えるため、未変更とした。
+- `RAG_EXTERNAL_RERANKER_URL`はpathを含まないためrerankが常に失敗し、元の順序で返っている。`/v1/rerank`を指定するとrerankは動くが、CPU版vLLM (2 core) で1 queryに約20分かかるため、未変更とした。
 - LiteLLMはdatabaseなしで動作しているため、Pi専用のvirtual keyを発行できず、master keyを共有している。
 
 ## References
@@ -159,3 +233,6 @@ sudo docker compose --env-file .env --profile owui up -d --build --force-recreat
 - [Pi: Choose a Model](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md)
 - [Pi: Configuration](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/configuration.md)
 - [OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)
+- [Agent Skills Specification](https://agentskills.io/specification)
+- [Open Terminal user isolation](https://github.com/open-webui/open-terminal/blob/v0.17.22/open_terminal/utils/user_isolation.py)
+- [Open WebUI API Endpoints](https://docs.openwebui.com/getting-started/api-endpoints/)

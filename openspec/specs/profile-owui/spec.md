@@ -75,3 +75,25 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 - **WHEN** PDFの読み込み、分割、またはいずれかのDocling変換が失敗する
 - **THEN** 元PDFのfile処理を`failed`として扱う
 - **THEN** 不完全な分割結果をKnowledge Baseへlinkしない
+
+### Requirement: Open WebUI Agent Skills
+
+`owui` profileは、Open Terminal上のPiが、Open WebUI userごとのAPI keyとAgent Skillsを使い、Open WebUIのREST APIを当該userの権限で利用できるものとする（MUST）。Piは独自のKnowledge、Memory、Notesのdatabaseを持ってはならない（MUST NOT）。
+
+#### Scenario: userがKnowledgeを参照して成果物を作る
+
+- **WHEN** terminal接続を許可されたuserが自分のAPI keyを`owui-api login`で保存し、Open WebUIで`pi/`modelを選んで依頼する
+- **THEN** Piは`owui-api`でOpen WebUIのKnowledge検索APIを呼び、userが読めるKnowledgeだけを根拠に回答または成果物を作る
+- **THEN** API keyはuserのhomeにmode `600`で保存され、他のOS userから読めない
+
+#### Scenario: 権限外のAPIまたはdataを要求する
+
+- **WHEN** PiがAPI keyでchat completions、terminals、automations、管理者API、または共有されていないKnowledgeへアクセスする
+- **THEN** Open WebUIは403を返す
+- **THEN** PiはOpen WebUI経由で自分自身を再帰起動できない
+
+#### Scenario: Open Terminalを再作成する
+
+- **WHEN** 運用者が`open-terminal`を再作成する
+- **THEN** userごとのhome (API key、Pi session、成果物) は`open-terminal-homes` volumeに残る
+- **THEN** `open-terminal`には`/var/run/docker.sock`がmountされない

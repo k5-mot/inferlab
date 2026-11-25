@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# Open WebUI REST APIを、実行userのAPI keyで呼び出す共通client。
+# keyは環境変数OWUI_API_KEY、または~/.config/open-webui/api-key (mode 600) から読む。
+# keyをcommand line引数やlogへ出さないため、Authorization headerは一時fileで渡す。
+set -euo pipefail
+
+readonly BASE_URL="${OWUI_BASE_URL:-http://open-webui:8080}"
+readonly KEY_FILE="${OWUI_API_KEY_FILE:-${HOME}/.config/open-webui/api-key}"
+# server側API_KEYS_ALLOWED_ENDPOINTSと同じprefix。server側が最終的に強制する。
+readonly ALLOWED_PREFIXES=(
+  /api/models
+  /api/v1/knowledge
+  /api/v1/retrieval/query
+  /api/v1/retrieval/process/web
+  /api/v1/files
+  /api/v1/tools
+  /api/v1/memories
+  /api/v1/notes
+  /api/v1/chats
+  /api/v1/folders
+  /api/v1/calendars
+  /api/v1/channels
+  /api/v1/models
+  /api/v1/prompts
+  /api/v1/skills
+  /api/v1/images
+  /api/v1/audio
+  /api/v1/evaluations
+  /api/v1/notifications
+)
+
+# 使い方を標準エラー出力へ表示する。
+# 引数: なし。
+# 戻り値: 2。
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  owui-api GET|POST|DELETE <path> [json-body|@file.json]
+  owui-api upload <local-file>            # POST /api/v1/files/ (multipart)
+  owui-api download <file-id> <out-path>  # GET /api/v1/files/{id}/content
+  owui-api login                          # 標準入力のAPI keyを保存して検証する
+  owui-api whoami                         # keyの所有userを表示する
+
+Destructive requests (DELETE, */delete, */reset) require OWUI_CONFIRM=yes
+after the user has explicitly approved the operation.
+EOF
+  return 2
+}
+
+# API keyを読み込む。
+# 引数: なし。
+# 戻り値: 0。keyを標準出力へ出す。keyが無い場合は終了code 3で終了する。
+read_key() {
+  if [[ -n "${OWUI_API_KEY:-}" ]]; then
+    printf '%s' "${OWUI_API_KEY}"
+  elif [[ -r "${KEY_FILE}" ]]; then
+    tr -d '\r\n' <"${KEY_FILE}"
+  else
+    echo "owui-api: API keyが未設定です。Open WebUIの設定 > アカウント > APIキーで発行し、'owui-api login'で保存してください。" >&2
+    exit 3
+  fi
+}
+
+# pathがallowlistに含まれるか判定する。
+# 引数: $1 query stringを除いたAPI path。
+# 戻り値: 許可される場合0、それ以外1。
+is_allowed() {
+  local path="$1" prefix
+  for prefix in "${ALLOWED_PREFIXES[@]}"; do
+    if [[ "${path}" == "${prefix}" || "${path}" == "${prefix}/"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 破壊的requestかを判定する。
+# 引数: $1 HTTP method、$2 API path。
+# 戻り値: 破壊的な場合0、それ以外1。
+is_destructive() {
+  local method="$1" path="$2"
+  [[ "${method}" == "DELETE" || "${path}" =~ /(delete|reset)(/|$) ]]
+}
+
+# curlを実行する。Authorization headerは一時file経由で渡す。
+# 引数: curlへ渡す追加引数。
+# 戻り値: curlの終了code。
+call() {
+  local header_file status
+  header_file="$(mktemp)"
+  chmod 600 "${header_file}"
+  printf 'Authorization: Bearer %s\n' "$(read_key)" >"${header_file}"
+  status=0
+  curl --fail-with-body --silent --show-error --max-time "${OWUI_TIMEOUT:-300}" \
+    -H "@${header_file}" "$@" || status=$?
+  rm -f "${header_file}"
+  echo >&2
+  return "${status}"
+}
+
+# method、path、bodyを検査してAPIを呼ぶ。
+# 引数: $1 method、$2 path、$3 JSON body (省略可、@fileでfile指定)。
+# 戻り値: curlの終了code。拒否時は4。
+request() {
+  local method="${1^^}" path="$2" body="${3:-}"
+  local bare="${path%%\?*}"
+  if ! is_allowed "${bare}"; then
+    echo "owui-api: ${bare}はAgent Skillsから利用できないAPIです。" >&2
+    return 4
+  fi
+  if is_destructive "${method}" "${bare}" && [[ "${OWUI_CONFIRM:-}" != "yes" ]]; then
+    echo "owui-api: 破壊的操作です。userの明示的な承認を得てからOWUI_CONFIRM=yesで再実行してください。" >&2
+    return 4
+  fi
+  local args=(-X "${method}" "${BASE_URL}${path}")
+  if [[ "${path}" == *\?* && -z "${body}" ]]; then
+    # 日本語などを含むqueryをそのまま送るとHTTP requestとして不正になるため、値をURL encodeする。
+    # -Gは--data-urlencodeをquery stringへ移すため、bodyがあるrequestでは使わない。
+    local pair pairs
+    args=(-X "${method}" "${BASE_URL}${bare}")
+    IFS='&' read -r -a pairs <<<"${path#*\?}"
+    for pair in "${pairs[@]}"; do
+      args+=(--data-urlencode "${pair}")
+    done
+    args+=(-G)
+  fi
+  if [[ -n "${body}" ]]; then
+    args+=(-H "Content-Type: application/json" --data-binary "${body}")
+  fi
+  call "${args[@]}"
+}
+
+main() {
+  (($# >= 1)) || usage
+  case "$1" in
+    GET | get | POST | post | DELETE | delete | PUT | put | PATCH | patch)
+      (($# >= 2)) || usage
+      request "$@"
+      ;;
+    upload)
+      (($# == 2)) || usage
+      call -X POST -F "file=@$2" "${BASE_URL}/api/v1/files/?process=true"
+      ;;
+    download)
+      (($# == 3)) || usage
+      call -o "$3" "${BASE_URL}/api/v1/files/$2/content"
+      ;;
+    login)
+      local key
+      # promptを出す前にechoを止め、入力が早く届いてもterminalへ表示しない。
+      if [[ -t 0 ]]; then
+        stty -echo
+        trap 'stty echo' EXIT
+      fi
+      printf 'Open WebUI API key: ' >&2
+      read -r key
+      echo >&2
+      mkdir -p "$(dirname "${KEY_FILE}")"
+      (umask 077 && printf '%s\n' "${key}" >"${KEY_FILE}")
+      OWUI_API_KEY="${key}" request GET /api/models >/dev/null
+      echo "owui-api: API keyを${KEY_FILE}へ保存しました。" >&2
+      ;;
+    whoami)
+      # /api/v1/auths/はallowlist外のため、/api/modelsへの到達でkeyの有効性だけを確認する。
+      request GET /api/models >/dev/null && echo "owui-api: API keyは有効です。" >&2
+      ;;
+    *)
+      usage
+      ;;
+  esac
+}
+
+main "$@"
