@@ -1,0 +1,9 @@
+{
+  "name": "inferlab-open-terminal-tools",
+  "private": true,
+  "description": "Open Terminal派生imageへ導入するPiとOfficeCLIの版を固定する。",
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "1.6.0",
+    "@officecli/officecli": "1.0.163"
+  }
+}

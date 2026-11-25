@@ -59,3 +59,6 @@ node_modules/
 # Keep shareable examples trackable
 !10-inference/hermes-agent/hermes-config.example.yaml
 !10-inference/hermes-agent/SOUL.example.md
+
+# Open Terminal派生imageの閉域build資材 (20-owui/open-terminal/predownload.ps1で取得する)
+20-owui/open-terminal/offline/

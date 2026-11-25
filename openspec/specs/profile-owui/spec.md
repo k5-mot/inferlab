@@ -75,3 +75,29 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 - **WHEN** PDFの読み込み、分割、またはいずれかのDocling変換が失敗する
 - **THEN** 元PDFのfile処理を`failed`として扱う
 - **THEN** 不完全な分割結果をKnowledge Baseへlinkしない
+
+### Requirement: Open TerminalでのOffice作成
+
+`owui` profileは、Open WebUIのchatでterminalを選んだuserが、通常modelまたはPi coding agentを使い、Open WebUI userごとのOS userとしてOpen Terminal上でOffice文書を作成できるものとする（MUST）。社内dataへのaccessはOpen WebUIの組み込みtoolだけで行い、Open WebUIのAPI keyをOpen Terminalへ置いてはならない（MUST NOT）。Open WebUIとOpen Terminalのsource codeを改修してはならない（MUST NOT）。
+
+#### Scenario: 通常modelで社内dataから成果物を作る
+
+- **WHEN** userが通常modelとterminalを選び、Knowledge、Notes、Memoryを根拠にした文書の作成を依頼する
+- **THEN** modelはOpen WebUIの組み込みtoolでuserが読めるdataだけを取得し、terminal toolでOpen Terminal上に文書を作る
+- **THEN** modelはuserのhomeの`~/AGENTS.md`と`~/.agents/skills`を指示として受け取る
+
+#### Scenario: RAGの回答をPiへ渡す
+
+- **WHEN** userが同じchatで、通常modelにKnowledgeを付けて質問した後、modelをPiへ切り替えて依頼する
+- **THEN** Piは前の回答を会話履歴として受け取り、Open WebUIのAPIを呼ばずに成果物を作る
+
+#### Scenario: PiがLiteLLMを呼ぶ
+
+- **WHEN** PiがLiteLLMを呼ぶ
+- **THEN** PiはComposeのsecret `/run/secrets/pi-litellm-api-key`のkeyを使う
+
+#### Scenario: Open Terminalを再作成する
+
+- **WHEN** 運用者が`open-terminal`を再作成する
+- **THEN** userごとのhome (Pi session、成果物、`~/AGENTS.md`と`~/.agents/skills`のlink) は`open-terminal-homes` volumeに残る
+- **THEN** `open-terminal`には`/var/run/docker.sock`がmountされない

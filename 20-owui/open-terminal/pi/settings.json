@@ -1,0 +1,6 @@
+{
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
+  "defaultProvider": "inferlab",
+  "defaultModel": "google/gemma4:12b",
+  "enableInstallTelemetry": false
+}
