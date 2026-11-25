@@ -113,10 +113,12 @@ Open WebUIを業務機能の提供基盤 (Capability Provider) とし、Open Ter
 | file | 役割 |
 | --- | --- |
 | `open-terminal/Dockerfile` | Pi、[OfficeCLI](https://github.com/iOfficeAI/OfficeCLI)、OfficeCLIのWord/PowerPoint/Excel skill、`skills/`を導入する派生image。build contextは`20-owui`。 |
-| `open-terminal/pi/models.json` | PiのLiteLLM provider定義。API keyは`/run/secrets/pi-litellm-api-key`から読む。 |
+| `open-terminal/pi/models.json` | PiのLiteLLM provider定義。`owui-broker` (`127.0.0.1:8765/litellm`) 経由で呼び、master keyを持たない。 |
 | `open-terminal/pi/settings.json` | 既定model (`google/gemma4:12b`) とtelemetry無効化。 |
 | `open-terminal/pi/AGENTS.md` | Pi全体の指示。Open WebUI連携の規則とOffice生成の短縮手順を持つ。 |
 | `open-terminal/pi/inferlab-pi.sh` | Pi起動前に、管理設定とskillをOpen WebUI userごとの`~/.pi/agent`へ同期する。 |
+| `open-terminal/broker/owui_broker.py` | `owui-broker`。userごとのOpen WebUI API keyとLiteLLM master keyを保持し、Open WebUI、LiteLLM、tool serverへ中継する。 |
+| `open-terminal/broker/inferlab-entrypoint.sh` | `owui-broker`を専用OS userで起動してからOpen Terminalを起動する。どちらかが終了するとcontainerを終了する。 |
 | `skills/open-webui/` | 共通skill。規則、認証、API index、共通client `owui-api`。 |
 | `skills/owui-*/` | 機能別skill。`references/api.md`はOpenAPI Schemaから生成する。 |
 | `../scripts/owui-skills/` | Schemaの保存先とreference生成script。 |
@@ -128,12 +130,16 @@ skillはPi専用の記法を使わない[Agent Skills](https://agentskills.io/sp
 | 制御 | 実装 |
 | --- | --- |
 | userの識別 | Open Terminalのmulti-user modeが、Open WebUI userごとに別OS userでPiを起動する。homeはmode `2770`で、他userからは読めない。 |
-| API認証 | 各userが自分のAPI keyを発行し、`owui-api login`で自分のhome (`~/.config/open-webui/api-key`、mode `600`) へ保存する。共通管理者keyは使わない。 |
+| API認証 | 各userが自分のAPI keyを発行し、`owui-api login`で`owui-broker`へ登録する。keyは`open-terminal-broker` volume (mode `700`、owner `owui-broker`) に保存され、user本人のshellとPiからも読めない。共通管理者keyは使わない。 |
+| 呼び出し元の判定 | `owui-broker`は`127.0.0.1:8765`で待ち受け、接続元socketの所有uidを`/proc/net/tcp`から得てOS userを判定する。clientは識別子を送らないため詐称できない。brokerが停止するとcontainerごと終了し、user processがportを奪う隙を作らない。 |
+| LiteLLM | master keyは`owui-broker`だけが持つ。brokerはchat completionsとmodel一覧だけを中継し、`langfuse_trace_user_id`にOS user名を付ける。 |
+| tool server | `owui-api tool`はbroker経由で`TOOL_SERVER_CONNECTIONS`のOpenAPI serverを呼ぶ。brokerはOpen WebUIの`GET /api/v1/tools/`で当該userに見えるserverだけを中継する。LibreTranslateは全user、mcpoは管理者だけが使える。 |
 | データ権限 | Open WebUIのACL。共有されていないKnowledge、Notes、chatは取得できない。 |
 | 到達できるAPI | `ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS`と`API_KEYS_ALLOWED_ENDPOINTS`。全API key共通のprefix allowlistで、Hermes、OIKB、skillが使うものだけを含める。 |
 | 再帰防止 | chat completions、Anthropic互換messages、terminals、automationsをallowlistから除外する。PiがOpen WebUI経由で自分自身を起動できない。 |
 | host権限 | `open-terminal`へ`/var/run/docker.sock`をmountしない。mountすると新規OS userがdocker groupへ自動追加される。 |
 | 破壊的操作 | `owui-api`はDELETE、`*/delete`、`*/reset`を`OWUI_CONFIRM=yes`なしで拒否する。これはagentへの指示であり、権限境界ではない。 |
+| 監査 | `owui-broker`はuser、method、path (query stringを除く)、statusを`docker logs`へ記録する。keyとbodyは記録しない。 |
 
 Open Terminalの接続 (`TERMINAL_SERVER_CONNECTIONS`) は、`access_grants`に`principal_id: "*"`を指定し、全userへ提供する。特定のuserやgroupだけへ絞る場合は、`principal_type`を`user`または`group`にし、`principal_id`へそのIDを指定する。`access_grants`を空にすると管理者専用になる。
 
@@ -151,28 +157,49 @@ sudo docker compose --env-file .env --profile owui up -d --build --force-recreat
 - `open-webui`と`open-terminal`が`healthy`になる。
 - terminal接続を許可されたuserが、Open WebUIのmodel選択で`pi/inferlab/...`を選べる。
 - `open-terminal`のmountに`/var/run/docker.sock`が含まれない。
+- `docker logs inferlab-open-terminal`に`owui-broker INFO listening on 127.0.0.1:8765`が出る。
 
 失敗条件:
 
 - build時にnpm registryまたはOfficeCLIのrelease binaryへ到達できない。
 - Piの一覧に`Agent discovery failed`が表示される。
+- `inferlab-entrypoint: owui-brokerが起動しませんでした。`が出てcontainerが再起動を繰り返す。`OWUI_BROKER_LITELLM_API_KEY`が空でないか確認する。
+- `open-webui`のlogが`Initialized 0 terminal server(s)`で、terminalを選んでも`pi/`modelが出ない。Open WebUIは起動時にだけterminal serverを登録するため、`open-terminal`が`healthy`になってから次を実行する。
+
+```bash
+# open-terminalの起動後にOpen WebUIを再起動し、terminal serverを登録し直す。
+sudo docker compose --env-file .env --profile owui restart open-webui
+```
 
 ### userごとの初期設定
 
 各userは、Open WebUIの設定 > アカウント > APIキーでkeyを発行し、Open WebUIのterminalで次を実行する。
 
 ```bash
-# API keyを入力し、自分のhomeへ保存して有効性を確認する。
+# API keyを入力し、owui-brokerへ登録する。入力したkeyは画面に表示されない。
 owui-api login
+
+# 登録状態とkeyの有効性を確認する。
+owui-api whoami
 ```
 
 期待結果:
 
-- `~/.config/open-webui/api-key`がmode `600`で作成され、`API keyを...へ保存しました。`と表示される。
+- `API keyをowui-brokerへ登録しました。`と表示される。
+- `owui-api whoami`が`"api_key_registered": true`と`API keyは有効です。`を表示する。
+- 旧構成で`~/.config/open-webui/api-key`へ保存したkeyがある場合、`owui-api login`はそのkeyをbrokerへ移し、fileを削除する。
 
 失敗条件:
 
 - `features.api_keys`権限が無く、key発行またはAPI呼び出しが403になる。
+- `Open WebUIがAPI keyを受け付けません`と表示される。keyを発行し直す。
+
+### keyの削除 (rollback)
+
+```bash
+# owui-brokerから自分のkeyを削除する。Open WebUIの設定でkey自体も削除する。
+owui-api logout
+```
 
 ### API referenceの更新
 
@@ -193,38 +220,78 @@ python3 scripts/owui-skills/generate_api_reference.py scripts/owui-skills/openap
 期待結果:
 
 - `20-owui/skills/owui-*/references/api.md`と`20-owui/skills/open-webui/references/api-index.md`が更新される。
-- `api-index.md`の未分類operationに、新しくskill化すべきAPIが無い。
+- `api-index.md`の未分類operationが`なし。`である。
 
 失敗条件:
 
 - Schema取得がtimeoutする。起動完了まで待ってから再実行する。
-- 新しいrouterがallowlistとskillの両方に無い。`generate_api_reference.py`の`SKILLS`または`EXCLUDED`と`API_KEYS_ALLOWED_ENDPOINTS`を同時に更新する。
+- 生成scriptが`未分類: N operations`で終了code 1になる。新しいrouterを`generate_api_reference.py`の`SKILLS`または`EXCLUDED`へ追加し、skill化する場合は`API_KEYS_ALLOWED_ENDPOINTS`と`owui-api`の`ALLOWED_PREFIXES`も同時に更新する。
+
+### Contract Test
+
+Open WebUIの更新後やallowlistの変更後に、一般userのAPI keyで実機のresponse形状と拒否を確認する。
+
+```bash
+# 一般userのAPI keyをmode 600のfileへ保存してから、稼働中のOpen WebUIに対して実行する。
+OWUI_CONTRACT_BASE_URL=http://localhost:32000 OWUI_CONTRACT_API_KEY_FILE=/path/to/api-key \
+  python3 -m unittest tests.test_owui_contract -v
+```
+
+期待結果:
+
+- 2件のtestが成功する。Skillのendpointは200で想定どおりの形状を返し、再帰起動、管理、認証、code実行のAPIは403になる。
+
+失敗条件:
+
+- 形状が変わったendpointがある。該当skillの`SKILL.md`の例と`tests/test_owui_contract.py`の`SHAPES`を更新する。
+- 403を期待したAPIが到達可能になっている。`API_KEYS_ALLOWED_ENDPOINTS`を見直す。
 
 ### 検証結果
 
-2026-11-25に、一般user 2名 (A、B) とAだけが読める検証用Knowledgeを作り、次を確認した。terminal接続の`access_grants`は検証中だけuser Aへ付与した (全userへの開放は検証後に設定した)。
+2026-11-25に、一般user 2名 (A、B) と、Aだけが読める検証用Knowledgeを作って確認した。初回の検証 (owui-brokerの導入前) では、terminal接続の`access_grants`を検証中だけuser Aへ付与した。2回目の検証 (owui-broker導入後) は、全userへ開放した状態で行った。Piのmodelは`google/gemma4:12b` (LM Studio) である。
+
+権限境界とkeyの扱い:
 
 | 確認内容 | 結果 |
 | --- | --- |
-| user AがOpen WebUIのmodel一覧で`pi/inferlab/...`を選べる | 成功 |
-| `owui-api login`でkeyがuserのhomeへmode `600`で保存され、入力がterminalへ表示されない | 成功 |
-| `open-terminal`再作成後もkey、Pi session、成果物が残る | 成功 |
+| terminalを選んだ一般userに`pi/inferlab/...`の3 modelが表示される | 成功 |
+| `owui-api login`の入力がterminalへ表示されず、keyがowui-brokerへ登録される。userのhomeにkey fileが残らない | 成功 |
+| user本人のshellから`/var/lib/owui-broker`を読めない | 成功 (`Permission denied`) |
+| LiteLLM master keyがOpen Terminal serverのprocess環境に無く、brokerのprocessだけが持つ | 成功 |
+| brokerがLiteLLMの管理API (`/key/generate`) を中継しない | 成功 (403) |
+| `open-terminal`を再作成しても、keyの登録、Pi session、成果物が残る | 成功 |
 | user Bがuser Aのhomeを読めない | 成功 (`Permission denied`) |
 | user BがAのKnowledgeを一覧・検索できない | 成功 (一覧に出ず、検索は403) |
-| API keyでchat completions、messages、terminals、automations作成、users、configs、code実行を呼べない | 成功 (403) |
-| `owui-api`がallowlist外と破壊的操作を事前に拒否する | 成功 |
-| skillに記載した全API例 (files、notes、memory、chats、folders、calendar、channels、models、prompts、skills、tools、evaluations、notifications) | 成功 |
-| Open WebUI経由でuser AのPi (`google/gemma4:12b`) がKnowledgeを検索し、出典付きのWord設計書を1回の依頼で生成する | 成功。1回目約5分、skill改善後の2回目約1分。`officecli validate`成功、記載内容は根拠文書と一致 |
-| 生成したdocxをLibreOfficeでPDF化し日本語を描画する | 成功 |
-| 生成物をOpen WebUIのterminal proxy (`/files/view`) からdownloadする | 成功 (元fileと同一) |
-| LangfuseでPiのLLM requestを確認する | 成功 (`pi` tag付き14 generation) |
-| web search (`owui-web-search`) | 未達。SearXNGの結果取得後、CPU上のembeddingに数分以上かかりtimeoutした |
+| API keyでchat completions、messages、terminals、automations作成、auths、users、configs、code実行、appsを呼べない | 成功 (403。`tests/test_owui_contract.py`) |
+| `owui-api tool`で、一般userがLibreTranslateを呼べ、管理者専用のmcpoは呼べない | 成功 (mcpoは403) |
+| LangfuseでPiのrequestにOS user名 (`langfuse_trace_user_id`) が付く | 成功 |
+
+Piへの依頼 (Open WebUIから1回の依頼で実行):
+
+| シナリオ | 結果 |
+| --- | --- |
+| Knowledgeを検索し、出典付きのWord設計書を作る | 成功 (約1〜5分)。`officecli validate`成功、内容は根拠文書と一致 |
+| Notesのアクションアイテムから、SUMIF数式と棒グラフ付きのExcelを作る | 成功 (約2分)。数式と、集計範囲を参照する棒グラフを確認 |
+| Memoryの好みに従ってNotesを要約し、関連chatのtitleを添えて新しいNoteへ保存する | 一部成功 (下記の改善後、約2分)。Memoryの形式に従い、Noteは1件だけ保存された。ただし本文の改行が`\n`の文字のまま残り、担当者名1件を誤記した (高橋→高寺) |
+| Knowledgeから、編集可能な図形の構成図を含む3枚のPowerPointを作り、はみ出しを確認する | 成功 (約2分)。`pptx-check`がOK、`officecli validate`成功 |
+| web search (`owui-web-search`) | 成功 (13分14秒)。結果のcollectionは`"hybrid":false`で読める |
+| 生成物をLibreOfficeでPDF化し日本語を描画する、terminal proxyからdownloadする | 成功 |
+
+検証中に見つかり、修正した問題:
+
+- 存在しないpathを呼ぶと、Open WebUIは画面のHTMLを200で返す。Piがこれを受け取ってcontextを使い切ったため、`owui-api`はHTMLを検出して失敗させる。
+- Piはqueryを含むpathのquote忘れ、改行を含むJSONの手書き、空のbodyの送信をした。`owui-api`は、GETに付いたbody、bodyの位置のoption、空の標準入力を拒否する。JSONは`jq`で組み立てて`@-`で渡すよう、skillとAGENTS.mdに記載した。
+- 失敗した書き込みを、Piが成功と報告した。書き込み後に読み戻して確認する規則をAGENTS.mdへ追加した。
+- PowerPointの文字のはみ出しを、Piはrender画像で見落とした。描画されない行を機械的に報告する`pptx-check`を追加した。
+- URL encodeされていない日本語のpathで、owui-brokerが応答せずに接続を切った。path全体をencodeして中継し、想定外の例外では500を返すよう修正した。
 
 既知の未対応事項:
 
-- Open WebUIのweb searchは取得pageをembeddingしてから返すため、CPU版vLLMでは実用速度にならない。`BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL`は通常chatの挙動も変えるため、未変更とした。
-- `RAG_EXTERNAL_RERANKER_URL`はpathを含まないためrerankが常に失敗し、元の順序で返っている。`/v1/rerank`を指定するとrerankは動くが、CPU版vLLM (2 core) で1 queryに約20分かかるため、未変更とした。
-- LiteLLMはdatabaseなしで動作しているため、Pi専用のvirtual keyを発行できず、master keyを共有している。
+- Open WebUIのweb searchは、取得pageをembeddingしてから返すため、CPU版vLLMでは1回に10分以上かかる。当面は許容し、skillのtimeoutを30分にした。
+- `RAG_EXTERNAL_RERANKER_URL`はpathを含まないためrerankが常に失敗し、元の順序で返っている。web searchのcollectionでは、このためにhybrid searchが400になる。`/v1/rerank`を指定するとrerankは動くが、CPU版vLLM (2 core) では1 queryに約20分かかるため、GPUを用意するまで変更しない。
+- LiteLLMはdatabaseなしで動作しているため、user別のvirtual keyと利用上限は無い。master keyはowui-brokerだけが持つ。
+- `google/gemma4:12b`は、Noteの本文に`\n`の文字を残す、固有名詞を誤記するなど、生成内容の誤りがある。成果物はuserが確認する。
+- `google/gemma4:12b`は、手順を誤って同じ書き込みを繰り返すことがある。`owui-api`の拒否で大半は防げるが、誤って作られたdataはuserが確認して削除する。
 
 ## References
 

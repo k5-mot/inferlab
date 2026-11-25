@@ -19,7 +19,7 @@ Open WebUIを共通のCapability Provider（業務機能の提供基盤）とし
 | Open WebUI | `v0.13.4`。`ENABLE_API_KEYS: "true"`は設定済み。 |
 | Open Terminal | `0.17.22`。Piとのネイティブ連携（`pi --mode rpc`）を持つバージョン。 |
 | 旧エージェント | QwenPawはZeroClawへ置き換え済み（main `b0687b2`）。Ollama、AionUi、Octosは削除済み。 |
-| LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。現状はMaster Keyのみが使える。 |
+| LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。Master Keyは`owui-broker`だけが持ち、Piには渡さない（9章）。 |
 | 本構成の実装 | `feature/add-owui-agent-skills`で実装・検証済み（12章を参照）。 |
 
 ### 2.1. Pi + OfficeCLI試行で確定した事項（実装前）
@@ -101,10 +101,12 @@ v0.13.4の`open_webui/main.py`で、ルーターのprefixを実機確認した�
 | `owui-audio` | 音声認識と音声合成 | `/api/v1/audio` | REST | P2 |
 | `owui-evaluations` | 評価とフィードバック | `/api/v1/evaluations` | REST | P2 |
 | `owui-notifications` | 通知 | `/api/v1/notifications` | REST / WebSocket | P2 |
+| `owui-search` | チャット、Channelメッセージ、Notesの横断検索 | `/api/v1/search` | REST | P2 |
+| `owui-comments` | Notes、チャットなどへのコメント | `/api/v1/comments` | REST | P2 |
 | `owui-terminal` | Terminal API | `/api/v1/terminals` | REST | P2 |
 | `owui-admin` | 管理機能（管理者専用） | `/api/v1/users`、`/api/v1/groups`、`/api/v1/configs` | REST | P3・原則無効 |
 
-上記のほか、v0.13.4には`comments`、`functions`、`pipelines`、`videos`、`analytics`、`scim`、`tether`などのルーターがある。これらはPhase 1のAPIカタログ作成時に、Skill化するか対象外とするかを判定する。
+v0.13.4の全operationは、上表のSkillか対象外のいずれかへ分類済みである（Phase 7）。`owui-automations`と`owui-terminal`は再帰防止、`owui-admin`は管理機能のため、Skill化せずAPIキーのallowlistからも外した。`apps`（channel返信でモデルを呼ぶ）、`events`（外部へのwebhook送信先の登録）、`videos`（動画生成engine未構成）、`functions`、`pipelines`、`analytics`なども対象外とした。分類と理由は`20-owui/skills/open-webui/references/api-index.md`にあり、未分類が残ると生成スクリプトは失敗する。
 
 機能ごとの扱いは次のとおりである。
 
@@ -125,9 +127,13 @@ API機能ごとに個別のクライアントは作らない。共通APIクラ�
 ├── README.md
 ├── open-terminal/
 │   ├── Dockerfile
+│   ├── broker/
+│   │   ├── owui_broker.py          # APIキーとLiteLLMキーを保持して中継する（9章）
+│   │   └── inferlab-entrypoint.sh  # brokerを専用ユーザーで起動してからOpen Terminalを起動する
 │   └── pi/
-│       ├── AGENTS.md         # Piの共通ルール（追加）
+│       ├── AGENTS.md         # Piの共通ルールとOffice生成の手順
 │       ├── inferlab-pi.sh    # 設定とSkillをユーザーへ同期するラッパー
+│       ├── pptx_check.py     # PowerPointの文字のはみ出し検査（pptx-check）
 │       ├── models.json
 │       └── settings.json
 ├── skills/                   # 汎用Agent Skills（Pi専用にしない）
@@ -140,7 +146,7 @@ API機能ごとに個別のクライアントは作らない。共通APIクラ�
 │   ├── owui-knowledge/
 │   │   ├── SKILL.md
 │   │   └── references/api.md  # OpenAPIから生成
-│   └── owui-files/ ... owui-notifications/
+│   └── owui-files/ ... owui-search/ owui-comments/
 └── pkgs/                     # 閉域ビルド用（独立した変更として扱う）
     ├── download.ps1
     └── apt/ npm/ pip/
@@ -219,14 +225,33 @@ Read references/retrieval-api.md before calling APIs.
 
 ### 7.3. API呼び出し
 
-機能別のCLIは作らない。認証ヘッダーの付与、allowlistの事前確認、破壊的操作の拒否、日本語クエリのURLエンコードだけを担う薄い共通クライアント`owui-api`（bash）を用意し、Skill内には`owui-api`と`jq`による手順を記述する。
+機能別のCLIは作らない。薄い共通クライアント`owui-api`（bash）を用意し、Skill内には`owui-api`と`jq`による手順を記述する。`owui-api`の役割は次のとおりである。
+
+- broker経由の呼び出し。直接呼ぶ場合は認証ヘッダーを付与する。
+- allowlistの事前確認と、破壊的操作の拒否。
+- クエリのURLエンコード。
+- 本文の標準入力（`@-`）からの受け取り。
+- ツールサーバーの直接呼び出し（`owui-api tool`）。
+
+Pi（gemma4:12b）の検証で、次の誤用を実際に確認した。
+
+- 存在しないパスを呼んで画面のHTMLを受け取り、コンテキストを使い切った。
+- クエリをクォートせずに引数が分かれた。
+- 改行を含むJSONを手書きして失敗した。
+
+そのため、`owui-api`は次の場合に、理由を表示して失敗する。
+
+- 画面のHTMLが返った場合
+- GETに本文がある場合
+
+JSONは`jq`で組み立てるよう、SkillとAGENTS.mdに記載した。
 
 ```bash
 # 現在のユーザーがアクセスできるKnowledge一覧を取得する。
 owui-api GET /api/v1/knowledge/ | jq -r '.items[] | [.id, .name] | @tsv'
 ```
 
-ページネーションや機能別サブコマンド（`owui knowledge search --query ...`のような形）は、必要になった時点で検討する。
+機能別サブコマンド（`owui knowledge search --query ...`のような形）は作らない。ページネーションは、APIごとに方式（`page`、`cursor`、`skip`）が異なるため、各Skillの例で扱う。
 
 ## 8. APIカタログの自動生成
 
@@ -263,9 +288,20 @@ Open TerminalにはOpen WebUIから`X-User-Id`と`X-Session-Id`が渡る（v0.13
 | --- | --- |
 | 共通の管理者APIキー | 不採用 |
 | 共通のサービスアカウント | 限定した共有Knowledgeのみ |
-| ユーザー別APIキー（各ユーザーがOpen WebUIで発行し、自分のホームに保存する） | 初期PoC向け |
-| ユーザー別の短期トークン委譲 | 本番向け |
-| 認証付きAPI Broker | 本番向け。必要に応じて導入 |
+| ユーザー別APIキー（各ユーザーがOpen WebUIで発行し、自分のホームに保存する） | 初期PoC。キーをエージェントが読めるため廃止 |
+| ユーザー別の短期トークン委譲 | 不採用。v0.13.4のJWTはDB上の`session_stamp`と照合されるため、発行にはOpen WebUIのDBと署名鍵が要る。本体を改修しない方針と両立しない |
+| 認証付きAPI Broker（`owui-broker`） | 採用（Phase 7） |
+
+`owui-broker`はOpen Terminalコンテナ内で、専用のOSユーザーとして動く。
+
+- **キーの保持**：各ユーザーがOpen WebUIで発行したAPIキーを、`owui-api login`で受け取る。キーはmode 700のディレクトリ（`open-terminal-broker` volume）に保存し、ユーザー本人のシェルからもPiからも読めない。
+- **呼び出し元の判定**：`127.0.0.1:8765`で待ち受け、接続元ソケットの所有uidをkernelの`/proc/net/tcp`から得てOSユーザーを判定する。クライアントは識別子を送らないため、詐称できない。
+- **中継**：Open WebUIへはそのユーザーのキーを付けて中継する。LiteLLMへはMaster Keyを付けて、chat completionsとモデル一覧だけを中継する。ツールサーバーへは、Open WebUIでそのユーザーに見えるものだけを中継する。
+- **起動時の秘密の扱い**：Master Keyなどは`sudo --preserve-env`でbrokerだけへ渡し、Open Terminal本体の環境からは消す。
+- **停止時の扱い**：brokerが止まるとコンテナごと終了する。停止中にユーザーのプロセスがポートを奪うことを防ぐためである。
+- **監査ログ**：ユーザー、メソッド、パス、ステータスを記録する。
+
+これにより、プロンプトインジェクションでPiがキーを読み出して外部へ持ち出すことはできなくなった。ただし、セッション中にPiがユーザー権限でAPIを呼ぶこと自体は防げない。Open TerminalのOSユーザー分離は、上流の説明どおりsecurity boundaryではないため、brokerの保護もその範囲にとどまる。
 
 SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリティ制御にならない。次の項目は実行基盤側で強制する。
 
@@ -274,7 +310,7 @@ SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリ
 - **権限の分離**：読み取り権限と書き込み権限を分ける。
 - **承認**：削除や送信の操作は、実行前に承認を得る。
 - **Docker Socketの除去**：Open Terminalから`/var/run/docker.sock`を外す（P0）。
-- **秘密情報の保護**：Qdrant管理キーやLiteLLM Master Keyへアクセスさせない。APIキーをログへ出力しない。
+- **秘密情報の保護**：Qdrant管理キーやLiteLLM Master Keyへアクセスさせない。APIキーをログへ出力しない。`owui-broker`で実装した。
 - **セッションの分離**：Piのセッションをユーザーごとに分離する。
 - **再帰呼び出しの禁止**：Server-side Tool CallingからPi自身を呼び出せないようにする。Open WebUIとPiの間でエージェントループが無限に再帰することを防ぐためである。
 
@@ -283,11 +319,12 @@ SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリ
 | 優先度 | 課題 | 状態・対応方針 |
 | --- | --- | --- |
 | P0 | Open Terminalに`docker.sock`がマウントされていた。multi-user modeでは新規OSユーザーがdocker groupへ自動追加されるため、全ユーザーがhost権限を得ていた。 | 解決。mountを削除した。 |
-| P0 | PiがLiteLLM Master Keyを共有している。 | 未解決。LiteLLMにDBを導入してVirtual Keyを発行する。 |
+| P0 | PiがLiteLLM Master Keyを読める状態だった。 | 解決。Master Keyは`owui-broker`だけが持ち、chat completionsとモデル一覧だけを中継する。Langfuseには`langfuse_trace_user_id`としてOSユーザー名が残る。ユーザー別の利用上限が必要になった場合は、LiteLLMにDBを導入してVirtual Keyを発行する。 |
 | P1 | Open Terminalの接続が`access_grants: []`のため管理者専用だった。 | 解決。`principal_id: "*"`で全ユーザーへ提供する。 |
 | P1 | multi-user modeのOSユーザー分離は、上流の説明どおりsecurity boundaryではない。 | 個人や小規模チームはmulti-user modeで運用する。全社展開や機密業務では、ユーザー別またはタスク別のサンドボックスを使う。 |
-| P1 | Web検索はOpen WebUIが取得ページをembeddingしてから返すため、CPU版vLLMでは数分以上かかる。 | 未解決。GPU化、または`BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL`（通常チャットにも影響）を判断する。 |
-| P1 | `RAG_EXTERNAL_RERANKER_URL`にpathが無く、rerankが常に失敗している。修正するとCPU版vLLM（2コア）で1クエリ約20分かかる。 | 未解決。rerankerのGPU化またはリソース増強と同時にURLを修正する。 |
+| P1 | Web検索はOpen WebUIが取得ページをembeddingしてから返すため、CPU版vLLMでは数分以上かかる。 | 当面は許容する（1クエリで13分14秒で完走）。Skillのタイムアウトを30分にした。GPUを用意した時点で再検討する。 |
+| P1 | `RAG_EXTERNAL_RERANKER_URL`にpathが無く、rerankが常に失敗している。修正するとCPU版vLLM（2コア）で1クエリ約20分かかる。Web検索のコレクションでは、rerankの失敗でhybrid searchが400になる。 | GPUが無いため保留。Web検索の結果は`"hybrid":false`で読むようSkillに記載した。GPUを用意した時点でURLを修正する。 |
+| P2 | Open WebUIは起動時にだけterminal serverを登録する。`open-terminal`より先に起動すると、`pi/`モデルが出ない。 | 手順で対処。`open-terminal`がhealthyになってから`open-webui`を再起動する（README）。 |
 | P2 | Open WebUIのLangfuse相関ヘッダーは、Piのリクエストへ自動では引き継がれない。 | `models.json`でPi用ヘッダーを固定済み。チャット単位の相関付けは別途検討する。 |
 
 ## 11. 実装ロードマップ
@@ -298,12 +335,12 @@ SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリ
 | 1 | Open WebUI v0.13.4のAPIカタログ取得と機能分類 | 完了（`scripts/owui-skills/`） |
 | 2 | 共通`open-webui` Skill、`owui-api`、ユーザー別APIキー、APIキーのallowlist | 完了 |
 | 3 | Knowledge、Files、RAGのSkills | 完了 |
-| 4 | Web Search、Tools、MCPのSkills | Skillは作成済み。Web検索は速度不足（10章）。Tool Callingは再帰防止のため対象外 |
-| 5 | Notes、Memory、ChatsのSkills | 完了（API例を実機確認） |
+| 4 | Web Search、Tools、MCPのSkills | 完了。Web検索は遅いが完走する（10章）。OpenAPIツールサーバーは`owui-api tool`で直接呼べる（ACLはOpen WebUIに従う）。Server-side Tool Callingは再帰防止のため対象外 |
+| 5 | Notes、Memory、ChatsのSkills | 完了（Pi経由の複合依頼を12章で確認） |
 | 6 | Calendar、ChannelsのSkills | 完了。Automationsは再帰防止のため対象外 |
-| 7 | 残りのAPIへの対応、共通CLI、認証強化（短期トークンまたはBroker） | 未着手 |
-| 8 | 全機能のContract Testと回帰テスト | 一部（`tests/test_owui_skills.py`で整合性を検査） |
-| 9 | Pi Durableによる耐久実行（14章） | 検討中 |
+| 7 | 残りのAPIへの対応、共通CLI、認証強化（短期トークンまたはBroker） | 完了。`owui-search`と`owui-comments`を追加し、未分類のAPIを0件にした。共通CLIは`owui-api`。認証はAPI Broker（9章） |
+| 8 | 全機能のContract Testと回帰テスト | 完了。`tests/test_owui_contract.py`（実機のレスポンス形状と403）、`tests/test_owui_skills.py`（allowlistと生成物）、`tests/test_owui_broker.py`、`tests/test_pptx_check.py` |
+| 9 | Pi Durableによる耐久実行（14章） | 保留（14.4の推奨どおり、長時間タスクが必要になった時点でPoCする） |
 
 閉域向けカスタムビルド（`pkgs/`）は、独立した変更として管理する。
 
@@ -313,28 +350,28 @@ SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリ
 
 | 基準 | 状態 |
 | --- | --- |
-| Open WebUIで`pi/`モデルを選択できる | 達成（terminal接続を許可した一般ユーザー） |
-| PiからLiteLLM経由で推論できる | 達成 |
-| Langfuseで推論リクエストを確認できる | 達成 |
+| Open WebUIで`pi/`モデルを選択できる | 達成（全ユーザー。ターミナルを選ぶと表示される） |
+| PiからLiteLLM経由で推論できる | 達成（`owui-broker`経由。PiはMaster Keyを持たない） |
+| Langfuseで推論リクエストを確認できる | 達成（OSユーザー名が`userId`に付く） |
 | PiがKnowledgeを検索し、出典付きで回答できる | 達成 |
-| PiがNotesとMemoryを検索できる | APIレベルで達成。Pi経由の依頼は未実施 |
+| PiがNotesとMemoryを検索できる | 達成。Memoryの好みに従ってNotesを要約し、関連チャットのタイトルを添えて新しいNoteへ保存した。ただし本文の改行が`\n`の文字のまま残り、担当者名を1件誤記した（モデルの品質） |
 | 他ユーザーのKnowledgeを取得できない（ACL） | 達成（一覧に出ず、検索は403） |
 | 日本語のWord設計書を生成できる | 達成（gemma4:12bで1回の依頼で完走。約1〜5分） |
-| PowerPointを編集可能な図形で生成できる | 未実施 |
-| Excelを数式とグラフ付きで生成できる | OfficeCLI単体で数式まで確認。Pi経由は未実施 |
-| レンダリング結果を確認して自律修正できる | 未実施 |
+| PowerPointを編集可能な図形で生成できる | 達成（図形と矢印の構成図を含む3枚、約2分） |
+| Excelを数式とグラフ付きで生成できる | 達成（SUMIF数式と棒グラフ、約2分） |
+| レンダリング結果を確認して自律修正できる | 一部達成。gemma4:12bはレンダリング画像を見てもはみ出しを見落とした。描画されない行を機械的に報告する`pptx-check`を追加し、AGENTS.mdで修正のループを指示した |
 | 成果物をブラウザからダウンロードできる | 達成（terminal proxy経由） |
 | 再起動後も成果物が保持される | 達成 |
-| 他ユーザーのホームやDockerホストへ不正アクセスできない | 達成（homeは`Permission denied`、docker.sock無し） |
+| 他ユーザーのホームやDockerホストへ不正アクセスできない | 達成（homeとbrokerのキー保存先は`Permission denied`、docker.sock無し） |
 | PiがOpen WebUI経由で自分自身を再帰起動できない | 達成（chat completions、terminals、automationsは403） |
 | 既存のDocling・RAG機能に回帰がない | Knowledge検索は確認済み。OIKBとHermesはallowlist内のprefixのみ使用 |
 
 ## 13. 未検証事項
 
-- PowerPoint、Excelの生成と、レンダリング結果を見た自律修正をPi経由で行えるか。
-- Notes、Memory、Chatsを組み合わせた依頼をPiが1回で完走できるか。
-- ユーザー別の短期トークン委譲またはAPI Broker。現状は各ユーザーが手動でAPIキーを登録する。
-- WebSocketを使う機能（Channels、Notifications）のリアルタイム性。
+- WebSocketを使う機能（Channels、Notifications）のリアルタイム性。`owui-api`はRESTだけを扱う。
+- APIキーの登録は、各ユーザーが一度だけ手動で行う。Open WebUIのログインから自動で委譲する方式は、本体の改修が必要なため未実施。
+- gemma4:12bより大きいモデル（gemma4:31b、gpt-oss:20b）での同じシナリオ。試行時は429とツール呼び出し形式の問題で完走しなかった。
+- 画像生成、音声、動画など、未構成のエンジンに依存するSkillのPi経由の動作。
 
 ## 14. Pi Durableの採用検討
 
