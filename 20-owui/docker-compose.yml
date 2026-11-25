@@ -301,8 +301,9 @@ services:
     ports:
       - 32003:8000
     volumes:
+      # docker.sockはmountしない。multi-user modeでは新規OS userがdocker groupへ追加され、
+      # Piを含む全userがhost権限を得るため。
       - open-terminal-data:/home/user
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - internal-nw
     healthcheck:
