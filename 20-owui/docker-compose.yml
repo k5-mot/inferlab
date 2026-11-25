@@ -303,6 +303,9 @@ services:
     volumes:
       # docker.sockはmountしない。multi-user modeでは新規OS userがdocker groupへ追加され、
       # Piを含む全userがhost権限を得るため。
+      # /homeはOpen WebUI userごとのOS user home (API key、Pi session、成果物) を永続化する。
+      # 既存の/home/user volumeはその下へnestする。
+      - open-terminal-homes:/home
       - open-terminal-data:/home/user
     networks:
       - internal-nw
@@ -506,6 +509,7 @@ services:
 volumes:
   open-webui-data:
   open-terminal-data:
+  open-terminal-homes:
   oikb-rustfs-data:
 
 secrets:
