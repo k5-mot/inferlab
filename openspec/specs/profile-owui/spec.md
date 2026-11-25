@@ -78,7 +78,7 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 
 ### Requirement: Open TerminalでのOffice作成
 
-`owui` profileは、Open WebUIのchatでterminalを選んだuserが、通常modelまたはPi coding agentを使い、Open WebUI userごとのOS userとしてOpen Terminal上でOffice文書を作成できるものとする（MUST）。社内dataへのaccessはOpen WebUIの組み込みtoolだけで行い、Open WebUIのAPI keyとLiteLLM master keyをuserのprocessから読めてはならない（MUST NOT）。Open WebUIとOpen Terminalのsource codeを改修してはならない（MUST NOT）。
+`owui` profileは、Open WebUIのchatでterminalを選んだuserが、通常modelまたはPi coding agentを使い、Open WebUI userごとのOS userとしてOpen Terminal上でOffice文書を作成できるものとする（MUST）。社内dataへのaccessはOpen WebUIの組み込みtoolだけで行い、Open WebUIのAPI keyをOpen Terminalへ置いてはならない（MUST NOT）。Open WebUIとOpen Terminalのsource codeを改修してはならない（MUST NOT）。
 
 #### Scenario: 通常modelで社内dataから成果物を作る
 
@@ -93,12 +93,11 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 
 #### Scenario: PiがLiteLLMを呼ぶ
 
-- **WHEN** Piが`llm-broker`経由でLiteLLMを呼ぶ
-- **THEN** `llm-broker`はchat completionsとmodel一覧だけをmaster key付きで中継し、それ以外は403を返す
-- **THEN** `llm-broker`は接続元socketの所有uidで判定したOS user名をLangfuseのtrace userとして付ける
+- **WHEN** PiがLiteLLMを呼ぶ
+- **THEN** PiはComposeのsecret `/run/secrets/pi-litellm-api-key`のkeyを使う
 
 #### Scenario: Open Terminalを再作成する
 
 - **WHEN** 運用者が`open-terminal`を再作成する
-- **THEN** userごとのhome (Pi session、成果物) は`open-terminal-homes` volumeに残り、既存homeにも`~/AGENTS.md`と`~/.agents/skills`のlinkが作られる
+- **THEN** userごとのhome (Pi session、成果物、`~/AGENTS.md`と`~/.agents/skills`のlink) は`open-terminal-homes` volumeに残る
 - **THEN** `open-terminal`には`/var/run/docker.sock`がmountされない

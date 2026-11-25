@@ -302,9 +302,10 @@ services:
       OPEN_TERMINAL_PI_COMMAND: /usr/local/bin/inferlab-pi
       NPM_CONFIG_PREFIX: /home/user/.npm-global
       PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      # llm-brokerだけが読むkey。entrypointがbrokerへ渡した後、Open Terminal serverの環境から消す。
-      # Piはbroker (127.0.0.1:8765) 経由でLiteLLMを呼び、master keyを読めない。
-      LLM_BROKER_LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+    secrets:
+      # Piのmodels.jsonが!commandで読むLiteLLM API key。閉域での利用を前提に、全OS userが読めることを許容する。
+      - source: pi-litellm-api-key
+        target: /run/secrets/pi-litellm-api-key
     ports:
       - 32003:8000
     volumes:
@@ -319,7 +320,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list && curl -fsS http://127.0.0.1:8765/health"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -518,6 +519,10 @@ volumes:
   open-terminal-data:
   open-terminal-homes:
   oikb-rustfs-data:
+
+secrets:
+  pi-litellm-api-key:
+    environment: LITELLM_MASTER_KEY
 
 networks:
   internal-nw:

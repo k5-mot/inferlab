@@ -2,9 +2,9 @@
   "$schema": "https://pi.dev/schemas/models.schema.json",
   "providers": {
     "inferlab": {
-      "baseUrl": "http://127.0.0.1:8765/v1",
+      "baseUrl": "http://litellm:4000/v1",
       "api": "openai-completions",
-      "apiKey": "llm-broker",
+      "apiKey": "!cat /run/secrets/pi-litellm-api-key",
       "headers": {
         "langfuse_trace_name": "Pi",
         "langfuse_generation_name": "pi",

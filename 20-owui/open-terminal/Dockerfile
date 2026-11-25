@@ -1,5 +1,5 @@
 # Open TerminalへOfficeCLI、Office用skill、共通のAGENTS.md、Pi coding agentを追加する派生image。
-# build contextは20-owui。上流imageには手を加えず、/usr/local、/etc/inferlab、/etc/skelへ追加するだけにする。
+# build contextは20-owui。上流imageのentrypointと動作は変えず、/usr/local、/etc/inferlab、/etc/skelへ追加するだけにする。
 # multi-user modeではOpen WebUI userごとのOS userで動くため、/home/user (mode 700) ではなく
 # 全userが実行できる/usr/localへ導入する。
 FROM ghcr.io/open-webui/open-terminal:0.17.22
@@ -27,22 +27,13 @@ RUN mkdir -p /tmp/officecli-skel/.pi/agent \
     && ln -s /etc/inferlab/agent/AGENTS.md /etc/skel/AGENTS.md \
     && ln -s /etc/inferlab/agent/skills /etc/skel/.agents/skills
 
-# Piのmodel定義。LiteLLMはllm-broker経由で呼ぶため、keyを含まない。
+# Piのmodel定義。LiteLLMのkeyはcomposeのsecretから読む。
 COPY open-terminal/pi/models.json /etc/inferlab/pi/agent/models.json
 COPY open-terminal/pi/settings.json /etc/inferlab/pi/agent/settings.json
 COPY --chmod=0755 open-terminal/pi/inferlab-pi.sh /usr/local/bin/inferlab-pi
 # PowerPointのはみ出し検査。agentが画像を見落としても、描画されない行を機械的に報告する。
 COPY --chmod=0755 open-terminal/agent/pptx_check.py /usr/local/bin/pptx-check
 
-# llm-brokerはLiteLLM master keyを保持し、Piへchat completionsとmodel一覧だけを中継する。
-# 専用system userで動かし、keyをuser processから読めないようにする。
-COPY --chmod=0644 open-terminal/broker/llm_broker.py /usr/local/lib/inferlab/llm_broker.py
-COPY --chmod=0755 open-terminal/broker/inferlab-entrypoint.sh /usr/local/bin/inferlab-entrypoint
-# COPY --chmodはcopy先に作るdirectoryにも同じmodeを付けるため、実行権を戻す。
-RUN chmod 0755 /usr/local/lib/inferlab \
-    && chmod -R a+rX /etc/inferlab \
-    && useradd --system --no-create-home --shell /usr/sbin/nologin llm-broker
+RUN chmod -R a+rX /etc/inferlab
 
 USER user
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/inferlab-entrypoint"]
-CMD ["run"]

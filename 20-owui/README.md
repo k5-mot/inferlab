@@ -119,15 +119,13 @@ Open WebUIのchatでterminal (Open-Terminal) を選ぶと、modelはOpen WebUI u
 
 | file | 役割 |
 | --- | --- |
-| `open-terminal/Dockerfile` | OfficeCLI、OfficeCLIのWord/PowerPoint/Excel skill、共通の`AGENTS.md`、`pptx-check`、Pi、`llm-broker`を追加する派生image。build contextは`20-owui`。 |
+| `open-terminal/Dockerfile` | OfficeCLI、OfficeCLIのWord/PowerPoint/Excel skill、共通の`AGENTS.md`、`pptx-check`、Piを追加する派生image。上流のentrypointと動作は変えない。build contextは`20-owui`。 |
 | `open-terminal/agent/AGENTS.md` | 通常modelとPiが共通で読む指示。社内dataの扱いと、検証済みのOffice作成手順 (docx、xlsx、pptx) を持つ。 |
 | `open-terminal/agent/pptx_check.py` | `pptx-check`。PowerPointをPDFへ描画し、slideからはみ出して表示されない行を報告する。 |
-| `open-terminal/pi/models.json`、`settings.json` | PiのLiteLLM provider定義と既定model。LiteLLMは`llm-broker`経由で呼び、keyを含まない。 |
+| `open-terminal/pi/models.json`、`settings.json` | PiのLiteLLM provider定義と既定model。LiteLLMのkeyはcomposeのsecret (`/run/secrets/pi-litellm-api-key`) から読む。 |
 | `open-terminal/pi/inferlab-pi.sh` | Pi起動前にmodel定義をuserの`~/.pi/agent`へ配布する。 |
-| `open-terminal/broker/llm_broker.py` | `llm-broker`。LiteLLM master keyを専用OS userで保持し、Piへchat completionsとmodel一覧だけを中継する。 |
-| `open-terminal/broker/inferlab-entrypoint.sh` | `llm-broker`の起動、既存userのhomeへの`AGENTS.md`とskillのlink作成の後、Open Terminal本来のentrypointを起動する。 |
 
-`AGENTS.md`とskillは、imageの`/etc/inferlab/agent`へ置く。新規userのhomeには`/etc/skel`から`~/AGENTS.md`と`~/.agents/skills`へのsymbolic linkが作られ、既存userのhomeにはentrypointが同じlinkを作る。Open TerminalはこのhomeのファイルをOpen WebUIへ渡し、Piも同じ場所を読む。imageを更新すると、全userの指示とskillが更新される。
+`AGENTS.md`とskillは、imageの`/etc/inferlab/agent`へ置く。Open Terminalがuserを作るとき (`useradd -m`)、`/etc/skel`から`~/AGENTS.md`と`~/.agents/skills`へのsymbolic linkがhomeへ作られる。このimageより前に作られたhomeにはlinkが無いため、必要ならuserが同じlinkを作る。Open TerminalはこのhomeのファイルをOpen WebUIへ渡し、Piも同じ場所を読む。imageを更新すると、全userの指示とskillが更新される。
 
 ### 権限境界
 
@@ -135,8 +133,7 @@ Open WebUIのchatでterminal (Open-Terminal) を選ぶと、modelはOpen WebUI u
 | --- | --- |
 | userの識別 | Open Terminalのmulti-user modeが、Open WebUI userごとに別OS userでcommandとPiを実行する。homeはmode `2770`で、他userからは読めない。 |
 | 社内data | 通常modelの組み込みtoolは、Open WebUI内でuser本人のsessionとACLで動く。PiはOpen WebUIのAPIを呼ばない。 |
-| LiteLLM | master keyは`llm-broker`だけが持つ。brokerは`127.0.0.1:8765`で待ち受け、接続元socketの所有uidを`/proc/net/tcp`から得てOS userを判定し、`langfuse_trace_user_id`として付ける。chat completionsとmodel一覧以外は403を返す。 |
-| brokerの停止 | brokerが終了するとcontainerごと終了し、restart policyで再起動する。停止中にuser processがbrokerのportを奪うことを防ぐ。 |
+| LiteLLM | Piは`/run/secrets/pi-litellm-api-key`のmaster keyでLiteLLMを呼ぶ。閉域での利用を前提に、全OS userがkeyを読めることを許容する。 |
 | host権限 | `open-terminal`へ`/var/run/docker.sock`をmountしない。mountすると新規OS userがdocker groupへ自動追加される。 |
 | terminalの提供範囲 | `TERMINAL_SERVER_CONNECTIONS`の`access_grants`に`principal_id: "*"`を指定し、全userへ提供する。特定のuserやgroupだけへ絞る場合は、`principal_type`を`user`または`group`にし、`principal_id`へそのIDを指定する。`access_grants`を空にすると管理者専用になる。 |
 
@@ -161,14 +158,13 @@ sudo docker compose --env-file .env --profile owui restart open-webui
 期待結果:
 
 - `open-webui`と`open-terminal`が`healthy`になる。
-- `docker logs inferlab-open-terminal`に`llm-broker INFO listening on 127.0.0.1:8765`が出る。
 - `open-webui`のlogに`Initialized 1 terminal server(s)`が出る。
 - chatでterminalを選ぶと、model一覧に`pi/inferlab/...`が表示される。
 
 失敗条件:
 
 - build時にnpm registryまたはOfficeCLIのrelease binaryへ到達できない。閉域環境では、事前にbuildしたimageを持ち込む。
-- `inferlab-entrypoint: llm-brokerが起動しませんでした。`が出てcontainerが再起動を繰り返す。`LITELLM_MASTER_KEY`が空でないか確認する。
+- Piが`401`を返す。`.env`の`LITELLM_MASTER_KEY`が空でないか確認する。
 - `open-webui`のlogが`Initialized 0 terminal server(s)`になる。Open WebUIは起動時にだけterminal serverを登録するため、`open-terminal`の起動後に上記の`restart open-webui`を実行する。
 
 ### rollback
@@ -195,11 +191,10 @@ sudo docker compose --env-file .env --profile owui up -d --force-recreate open-t
 | 標準: 通常modelがMemoryの好みとNoteを読み、SUMIF数式と棒グラフ付きのExcelを作る | 成功 (約2分)。初回は集計表の数式範囲が誤っていたため、`AGENTS.md`へ検証済みの集計表とgraphの手順を追加した後の結果 |
 | 特化: 同じchatで通常modelがKnowledgeをRAGで要約し、Piへ切り替えて出典付きのWordを作る | 成功 (要約15秒、Word 45秒)。Piは前の回答だけを根拠にした |
 | 新規userのhomeに`~/AGENTS.md`と`~/.agents/skills`が作られ、Open Terminalのskill一覧に出る | 成功 |
-| container再作成後、既存userのhomeにもlinkが作られる | 成功 |
 | user BがAのhomeを読めない | 成功 (`Permission denied`) |
 | user BがAのKnowledgeを一覧・検索できない | 成功 (一覧に出ず、検索は403) |
-| user processの環境変数とfileにLiteLLM master keyが無い。LiteLLMへ直接はkey無しで401、brokerは管理API (`/key/generate`) を403で拒否する | 成功 |
-| LangfuseでuserごとのLLM requestを確認する | 成功。通常modelはOpen WebUI user ID、PiはOS user名で記録される |
+| PiがcomposeのsecretのkeyでLiteLLMを呼べる (LiteLLM用の中継を廃止した後の確認) | 成功 |
+| LangfuseでLLM requestを確認する | 成功。通常modelはOpen WebUI user IDで記録される。PiはLiteLLMを共通keyで呼ぶため、userは区別されない |
 | PowerPointの図形による構成図とはみ出し検査 (Pi、前回の検証) | 成功。`pptx-check`はslideからはみ出した行を検出する |
 
 既知の未対応事項:

@@ -25,7 +25,7 @@ Open WebUIを業務機能の提供基盤とし、Office文書の作成はOpen Te
 | Open Terminal | `0.17.22`の派生image（`inferlab/open-terminal:0.17.22-pi`）。上流imageへファイルを追加するだけで、改修はしない。 |
 | Pi coding agent | `1.6.0`。Open WebUIで`pi/inferlab/...`のモデルとして選べる。 |
 | OfficeCLI | `1.0.163`。Word、Excel、PowerPointのSkillを同梱する。 |
-| LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。Master Keyは`llm-broker`だけが持つ。 |
+| LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。PiはMaster Keyをcomposeのsecretから読む（閉域での利用を前提に許容する）。 |
 | 本構成の実装 | `feature/add-owui-agent-skills`で実装・検証済み（7章を参照）。 |
 
 ## 3. アーキテクチャ
@@ -34,7 +34,7 @@ Open WebUIを業務機能の提供基盤とし、Office文書の作成はOpen Te
 User ─ Keycloak ─ Open WebUI ─┬─ 通常モデル ─ 組み込みツール（本人のセッション、ACL）─ Knowledge / Notes / Memory
                               │      └─ ターミナルツール ─ Open Terminal（ユーザーごとのOSユーザー）─ OfficeCLI
                               └─ Pi（同じチャットの会話履歴を受け取る）─ Open Terminal ─ OfficeCLI
-                                                                         └─ llm-broker ─ LiteLLM ─ Langfuse
+                                                                         └─ LiteLLM ─ Langfuse
 ```
 
 | コンポーネント | 責務 |
@@ -42,7 +42,6 @@ User ─ Keycloak ─ Open WebUI ─┬─ 通常モデル ─ 組み込みツ�
 | Open WebUI | UI、認証、業務データ、RAG、組み込みツール、ターミナルへの中継 |
 | Open Terminal | ユーザーごとのOSユーザーでのコマンド実行、ファイル管理、Piの実行 |
 | `~/AGENTS.md`、`~/.agents/skills` | 通常モデルとPiが共通で読む指示とSkill。Open Terminalがホームから読み、Open WebUIへ渡す |
-| `llm-broker` | LiteLLM Master Keyを保持し、Piへchat completionsとモデル一覧だけを中継する |
 | OfficeCLI、`pptx-check` | 成果物の生成、検証、PowerPointのはみ出し検査 |
 | LiteLLM、Langfuse | 推論Gateway、トレース |
 
@@ -65,7 +64,7 @@ Open WebUIはエージェントモデルへの依頼を、RAGやフィルター�
 | --- | --- |
 | ユーザーの識別 | Open Terminalのmulti-user modeが、Open WebUIのユーザーごとに別のOSユーザーで実行する。ホームはmode `2770`で、他ユーザーからは読めない |
 | 社内data | 通常モデルの組み込みツールは、Open WebUI内でユーザー本人のセッションとACLで動く。PiはOpen WebUIのAPIを呼ばない |
-| LiteLLM | Master Keyは`llm-broker`だけが持つ。接続元ソケットの所有uidを`/proc/net/tcp`から得て、OSユーザー名をLangfuseのtrace userに付ける。管理APIは中継しない |
+| LiteLLM | PiはcomposeのsecretのMaster KeyでLiteLLMを呼ぶ。閉域での利用を前提に、全OSユーザーがキーを読めることを許容する。Master Keyを隠す中継（broker）は、保守の負担に見合わないため廃止した |
 | ホスト権限 | `open-terminal`へ`docker.sock`をマウントしない |
 | ターミナルの提供範囲 | `access_grants`に`principal_id: "*"`を指定し、全ユーザーへ提供する |
 
@@ -76,7 +75,7 @@ Open TerminalのOSユーザー分離は、上流の説明どおりsecurity bound
 | 配布先 | 方法 |
 | --- | --- |
 | 新規ユーザー | imageの`/etc/skel`に、`~/AGENTS.md`と`~/.agents/skills`から`/etc/inferlab/agent`へのシンボリックリンクを置く。Open Terminalがユーザーを作るとき（`useradd -m`）にコピーされる |
-| 既存ユーザー | `inferlab-entrypoint`が起動時に同じリンクを作る。ユーザーが自分で置いたファイルは上書きしない |
+| 既存ユーザー | ホームのボリュームは本構成で導入したため、導入時点の既存ユーザーは無い。このimageより前に作られたホームには、必要ならユーザーが同じリンクを作る |
 | 更新 | imageを作り直すと、リンク先が変わるため全ユーザーへ反映される |
 
 `AGENTS.md`には、Office作成の検証済み手順（docx、xlsx、pptx、`pptx-check`）を載せる。小さなモデル（gemma4:12b）は手順書に無い作業を誤りやすいため、Skillへ分けずに常にコンテキストへ入る`AGENTS.md`へ置く。
@@ -92,8 +91,8 @@ Open TerminalのOSユーザー分離は、上流の説明どおりsecurity bound
 | 通常モデルのRAGの回答を、同じチャットでPiへ渡してWordを作れる（X） | 達成（要約15秒、Word 45秒） |
 | PiがPowerPointを編集可能な図形で作り、はみ出しを検査できる（X） | 達成（`pptx-check`） |
 | 他ユーザーのホームやナレッジへアクセスできない | 達成（ホームは`Permission denied`、ナレッジは403） |
-| ユーザーのプロセスからLiteLLM Master Keyを読めない | 達成 |
-| Langfuseでユーザーごとの推論を確認できる | 達成 |
+| PiがcomposeのsecretでLiteLLMを呼べる | 達成 |
+| Langfuseで推論を確認できる | 達成（通常モデルはユーザー単位。Piは共通キーのため区別されない） |
 | ユーザーにキー登録などの追加手順が無い | 達成 |
 
 ## 8. 既知の課題
