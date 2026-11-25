@@ -284,7 +284,7 @@ SKILL.mdに「管理者APIを呼ばない」と書くだけでは、セキュリ
 | --- | --- | --- |
 | P0 | Open Terminalに`docker.sock`がマウントされていた。multi-user modeでは新規OSユーザーがdocker groupへ自動追加されるため、全ユーザーがhost権限を得ていた。 | 解決。mountを削除した。 |
 | P0 | PiがLiteLLM Master Keyを共有している。 | 未解決。LiteLLMにDBを導入してVirtual Keyを発行する。 |
-| P1 | Open Terminalの接続は`access_grants: []`のため管理者専用である。 | 運用判断待ち。一般ユーザーへ提供する場合は、対象ユーザーまたはグループへ接続を許可する。 |
+| P1 | Open Terminalの接続が`access_grants: []`のため管理者専用だった。 | 解決。`principal_id: "*"`で全ユーザーへ提供する。 |
 | P1 | multi-user modeのOSユーザー分離は、上流の説明どおりsecurity boundaryではない。 | 個人や小規模チームはmulti-user modeで運用する。全社展開や機密業務では、ユーザー別またはタスク別のサンドボックスを使う。 |
 | P1 | Web検索はOpen WebUIが取得ページをembeddingしてから返すため、CPU版vLLMでは数分以上かかる。 | 未解決。GPU化、または`BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL`（通常チャットにも影響）を判断する。 |
 | P1 | `RAG_EXTERNAL_RERANKER_URL`にpathが無く、rerankが常に失敗している。修正するとCPU版vLLM（2コア）で1クエリ約20分かかる。 | 未解決。rerankerのGPU化またはリソース増強と同時にURLを修正する。 |

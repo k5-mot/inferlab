@@ -172,7 +172,9 @@ services:
             "name": "Open-Terminal",
             "auth_type": "bearer",
             "config": {
-              "access_grants": []
+              "access_grants": [
+                {"principal_type": "user", "principal_id": "*", "permission": "read"}
+              ]
             }
           }
         ]

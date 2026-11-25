@@ -135,9 +135,9 @@ skillはPi専用の記法を使わない[Agent Skills](https://agentskills.io/sp
 | host権限 | `open-terminal`へ`/var/run/docker.sock`をmountしない。mountすると新規OS userがdocker groupへ自動追加される。 |
 | 破壊的操作 | `owui-api`はDELETE、`*/delete`、`*/reset`を`OWUI_CONFIRM=yes`なしで拒否する。これはagentへの指示であり、権限境界ではない。 |
 
-multi-user modeのOS user分離は、上流の説明どおりuser間のsecurity boundaryではない。全userへterminalを開放する前に、container単位の分離を検討する。
+Open Terminalの接続 (`TERMINAL_SERVER_CONNECTIONS`) は、`access_grants`に`principal_id: "*"`を指定し、全userへ提供する。特定のuserやgroupだけへ絞る場合は、`principal_type`を`user`または`group`にし、`principal_id`へそのIDを指定する。`access_grants`を空にすると管理者専用になる。
 
-Open Terminalの接続 (`TERMINAL_SERVER_CONNECTIONS`) は`access_grants: []`のため、管理者だけが利用できる。一般userへPiを提供する場合は、Open WebUIの管理画面でterminal接続のaccessへ対象userまたはgroupを追加する。
+multi-user modeのOS user分離は、上流の説明どおりuser間のsecurity boundaryではない。本構成は個人や小規模チームでの利用を前提とし、全社展開や機密業務ではcontainer単位の分離を検討する。
 
 ### 導入
 
@@ -202,7 +202,7 @@ python3 scripts/owui-skills/generate_api_reference.py scripts/owui-skills/openap
 
 ### 検証結果
 
-2026-11-25に、一般user 2名 (A、B) とAだけが読める検証用Knowledgeを作り、次を確認した。terminal接続の`access_grants`は検証中だけuser Aへ付与した。
+2026-11-25に、一般user 2名 (A、B) とAだけが読める検証用Knowledgeを作り、次を確認した。terminal接続の`access_grants`は検証中だけuser Aへ付与した (全userへの開放は検証後に設定した)。
 
 | 確認内容 | 結果 |
 | --- | --- |
