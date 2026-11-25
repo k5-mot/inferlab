@@ -16,7 +16,7 @@ CHECKER = (
     Path(__file__).resolve().parents[1]
     / "20-owui"
     / "open-terminal"
-    / "pi"
+    / "agent"
     / "pptx_check.py"
 )
 

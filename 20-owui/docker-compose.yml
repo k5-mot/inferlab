@@ -59,17 +59,7 @@ services:
       ENABLE_API_KEYS: "true"
       ENABLE_PERSISTENT_CONFIG: "false"
       ENABLE_FORWARD_USER_INFO_HEADERS: "true"
-      # API keyで到達できるprefix。Hermes (channels、chats)、OIKB (files、knowledge)、
-      # Agent Skills (20-owui/skills) が使うものに限定する。chat completions、terminals、
-      # automationsはPiを再帰起動できるため含めない。分類は20-owui/skills/open-webui/references/api-index.mdを参照する。
-      ENABLE_API_KEYS_ENDPOINT_RESTRICTIONS: "true"
-      API_KEYS_ALLOWED_ENDPOINTS: >-
-        /api/models,/api/v1/models,/api/v1/knowledge,/api/v1/retrieval/query,/api/v1/retrieval/process/web,
-        /api/v1/files,/api/v1/tools,/api/v1/memories,/api/v1/notes,/api/v1/chats,/api/v1/folders,
-        /api/v1/calendars,/api/v1/channels,/api/v1/prompts,/api/v1/skills,/api/v1/images,/api/v1/audio,
-        /api/v1/evaluations,/api/v1/notifications,/api/v1/search,/api/v1/comments
-      # Agent SkillsはuserごとのAPI keyで動くため、一般userにもAPI key発行を許可する。
-      USER_PERMISSIONS_FEATURES_API_KEYS: "true"
+      API_KEYS_ALLOWED_ENDPOINTS: "/api/models,/api/v1/chats,/api/v1/chats/all/db,/api/v1/messages,/api/v1/channels,/api/v1/chat/completions,/api/v1/knowledge"
       ### Tasks
       TASK_MODEL: "google/gemma4:31b"
       ENABLE_CONTEXT_COMPACTION: "true"
@@ -77,8 +67,7 @@ services:
       ENABLE_TITLE_GENERATION: "false"
       ### MCPO
       ENABLE_DIRECT_CONNECTIONS: "true"
-      # open-terminalのowui-brokerも同じ値を読み、userが使えるserverだけを中継する。
-      TOOL_SERVER_CONNECTIONS: &tool-server-connections >-
+      TOOL_SERVER_CONNECTIONS: >-
         [
           {
             "type": "openapi",
@@ -294,7 +283,7 @@ services:
   # https://docs.openwebui.com/reference/env-configuration/#terminal_server_connections
   open-terminal:
     <<: *external-dns-stabilizer
-    # Pi coding agent、OfficeCLI、Open WebUI Agent Skillsを/usr/localと/etc/inferlabへ追加した派生image。
+    # OfficeCLI、Office用skill、共通のAGENTS.md、Pi coding agentを追加した派生image。
     build:
       context: .
       dockerfile: open-terminal/Dockerfile
@@ -309,31 +298,28 @@ services:
       OPEN_TERMINAL_NPM_PACKAGES: "typescript tsx"
       OPEN_TERMINAL_MULTI_USER: "true"
       OPEN_TERMINAL_API_KEY: ${OPEN_TERMINAL_API_KEY:-sk-open-terminal-api-key}
-      # Piは管理設定をuserごとの~/.pi/agentへ配布するwrapper経由で起動する。
+      # Piはmodel定義をuserごとの~/.pi/agentへ配布するwrapper経由で起動する。
       OPEN_TERMINAL_PI_COMMAND: /usr/local/bin/inferlab-pi
       NPM_CONFIG_PREFIX: /home/user/.npm-global
       PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      # owui-brokerだけが読むkey。entrypointがbrokerへ渡した後、Open Terminal serverの環境から消す。
+      # llm-brokerだけが読むkey。entrypointがbrokerへ渡した後、Open Terminal serverの環境から消す。
       # Piはbroker (127.0.0.1:8765) 経由でLiteLLMを呼び、master keyを読めない。
-      OWUI_BROKER_LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
-      OWUI_BROKER_TOOL_SERVERS: *tool-server-connections
+      LLM_BROKER_LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
     ports:
       - 32003:8000
     volumes:
       # docker.sockはmountしない。multi-user modeでは新規OS userがdocker groupへ追加され、
       # Piを含む全userがhost権限を得るため。
-      # /homeはOpen WebUI userごとのOS user home (API key、Pi session、成果物) を永続化する。
+      # /homeはOpen WebUI userごとのOS user home (Pi session、成果物) を永続化する。
       # 既存の/home/user volumeはその下へnestする。
       - open-terminal-homes:/home
       - open-terminal-data:/home/user
-      # owui-brokerが保持するuserごとのOpen WebUI API key。
-      - open-terminal-broker:/var/lib/owui-broker
     networks:
       - internal-nw
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list && curl -fsS http://127.0.0.1:8765/broker/health"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list && curl -fsS http://127.0.0.1:8765/health"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -531,7 +517,6 @@ volumes:
   open-webui-data:
   open-terminal-data:
   open-terminal-homes:
-  open-terminal-broker:
   oikb-rustfs-data:
 
 networks:

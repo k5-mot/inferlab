@@ -76,31 +76,29 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 - **THEN** 元PDFのfile処理を`failed`として扱う
 - **THEN** 不完全な分割結果をKnowledge Baseへlinkしない
 
-### Requirement: Open WebUI Agent Skills
+### Requirement: Open TerminalでのOffice作成
 
-`owui` profileは、Open Terminal上のPiが、Open WebUI userごとのAPI keyとAgent Skillsを使い、Open WebUIのREST APIを当該userの権限で利用できるものとする（MUST）。Piは独自のKnowledge、Memory、Notesのdatabaseを持ってはならない（MUST NOT）。Open WebUI API keyとLiteLLM master keyは`owui-broker`だけが保持し、Piとuserのshellから読めてはならない（MUST NOT）。
+`owui` profileは、Open WebUIのchatでterminalを選んだuserが、通常modelまたはPi coding agentを使い、Open WebUI userごとのOS userとしてOpen Terminal上でOffice文書を作成できるものとする（MUST）。社内dataへのaccessはOpen WebUIの組み込みtoolだけで行い、Open WebUIのAPI keyとLiteLLM master keyをuserのprocessから読めてはならない（MUST NOT）。Open WebUIとOpen Terminalのsource codeを改修してはならない（MUST NOT）。
 
-#### Scenario: userがKnowledgeを参照して成果物を作る
+#### Scenario: 通常modelで社内dataから成果物を作る
 
-- **WHEN** userが自分のAPI keyを`owui-api login`で登録し、Open WebUIで`pi/`modelを選んで依頼する
-- **THEN** Piは`owui-api`でOpen WebUIのKnowledge検索APIを呼び、userが読めるKnowledgeだけを根拠に回答または成果物を作る
-- **THEN** API keyは`owui-broker`のkey directoryに保存され、当該userを含むどのOpen Terminal userからも読めない
-- **THEN** `owui-broker`は接続元socketの所有uidで呼び出し元のOS userを判定し、そのuserのkeyだけを付与する
+- **WHEN** userが通常modelとterminalを選び、Knowledge、Notes、Memoryを根拠にした文書の作成を依頼する
+- **THEN** modelはOpen WebUIの組み込みtoolでuserが読めるdataだけを取得し、terminal toolでOpen Terminal上に文書を作る
+- **THEN** modelはuserのhomeの`~/AGENTS.md`と`~/.agents/skills`を指示として受け取る
 
-#### Scenario: 権限外のAPIまたはdataを要求する
+#### Scenario: RAGの回答をPiへ渡す
 
-- **WHEN** PiがAPI keyでchat completions、terminals、automations、管理者API、または共有されていないKnowledgeへアクセスする
-- **THEN** Open WebUIは403を返す
-- **THEN** PiはOpen WebUI経由で自分自身を再帰起動できない
+- **WHEN** userが同じchatで、通常modelにKnowledgeを付けて質問した後、modelをPiへ切り替えて依頼する
+- **THEN** Piは前の回答を会話履歴として受け取り、Open WebUIのAPIを呼ばずに成果物を作る
 
-#### Scenario: PiがLiteLLMまたはtool serverを呼ぶ
+#### Scenario: PiがLiteLLMを呼ぶ
 
-- **WHEN** Piが`owui-broker`経由でLiteLLMまたはOpen WebUIのtool serverを呼ぶ
-- **THEN** `owui-broker`はLiteLLMのchat completionsとmodel一覧だけをmaster key付きで中継し、それ以外は403を返す
-- **THEN** `owui-broker`はOpen WebUIの`GET /api/v1/tools/`で当該userに見えるtool serverだけを中継する
+- **WHEN** Piが`llm-broker`経由でLiteLLMを呼ぶ
+- **THEN** `llm-broker`はchat completionsとmodel一覧だけをmaster key付きで中継し、それ以外は403を返す
+- **THEN** `llm-broker`は接続元socketの所有uidで判定したOS user名をLangfuseのtrace userとして付ける
 
 #### Scenario: Open Terminalを再作成する
 
 - **WHEN** 運用者が`open-terminal`を再作成する
-- **THEN** userごとのhome (Pi session、成果物) は`open-terminal-homes` volume、API keyは`open-terminal-broker` volumeに残る
+- **THEN** userごとのhome (Pi session、成果物) は`open-terminal-homes` volumeに残り、既存homeにも`~/AGENTS.md`と`~/.agents/skills`のlinkが作られる
 - **THEN** `open-terminal`には`/var/run/docker.sock`がmountされない
