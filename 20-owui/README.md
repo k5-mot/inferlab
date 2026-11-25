@@ -119,7 +119,10 @@ Open WebUIのchatでterminal (Open-Terminal) を選ぶと、modelはOpen WebUI u
 
 | file | 役割 |
 | --- | --- |
-| `open-terminal/Dockerfile` | OfficeCLI、OfficeCLIのWord/PowerPoint/Excel skill、共通の`AGENTS.md`、`pptx-check`、Piを追加する派生image。上流のentrypointと動作は変えない。build contextは`20-owui`。 |
+| `open-terminal/Dockerfile.offline` | OfficeCLI、OfficeCLIのWord/PowerPoint/Excel skill、共通の`AGENTS.md`、`pptx-check`、Piを追加する派生image (閉域build用、composeの既定)。`open-terminal/offline`の資材だけを使い、build中に外部へ接続しない。上流のentrypointと動作は変えない。build contextは`20-owui`。 |
+| `open-terminal/Dockerfile` | 同じ派生imageを、npm registryとGitHubから取得してbuildする (online build用)。PiとOfficeCLIの導入以外は`Dockerfile.offline`と同一で、`tests/test_open_terminal_image.py`が一致を検査する。 |
+| `open-terminal/npm/package.json`、`package-lock.json` | PiとOfficeCLIの版の固定先。2つのDockerfileと`predownload.ps1`が共有する。 |
+| `open-terminal/predownload.ps1` | 閉域build用の資材 (npm archiveとOfficeCLIのrelease binary) をinternetへ接続できるWindowsで取得し、`open-terminal/offline`へ保存する。 |
 | `open-terminal/agent/AGENTS.md` | 通常modelとPiが共通で読む指示。社内dataの扱いと、検証済みのOffice作成手順 (docx、xlsx、pptx) を持つ。 |
 | `open-terminal/agent/pptx_check.py` | `pptx-check`。PowerPointをPDFへ描画し、slideからはみ出して表示されない行を報告する。 |
 | `open-terminal/pi/models.json`、`settings.json` | PiのLiteLLM provider定義と既定model。LiteLLMのkeyはcomposeのsecret (`/run/secrets/pi-litellm-api-key`) から読む。 |
@@ -145,10 +148,31 @@ multi-user modeのOS user分離は、上流の説明どおりuser間のsecurity 
 - 通常modelがterminal toolと組み込みtoolを使うには、modelのfunction callingが`native` (既定値) である必要がある。
 - Memoryを使う依頼では、userが設定 > パーソナライズでMemoryを有効にする。
 
+### 閉域build用の資材取得
+
+internetへ接続できるWindowsで、repository rootから次を実行する。Node.jsとnpmが必要である。
+
+```powershell
+# PiとOfficeCLIのnpm archiveと、checksumを検証したOfficeCLIのbinaryを20-owui/open-terminal/offlineへ取得する。
+powershell -NoProfile -NonInteractive -ExecutionPolicy "Bypass" -File 20-owui/open-terminal/predownload.ps1
+```
+
+期待結果:
+
+- `20-owui/open-terminal/offline/npm`に`.tgz`が作成される。
+- `20-owui/open-terminal/offline/officecli`に`officecli-linux-x64`と`officecli-linux-x64.sha256`が作成され、`OfficeCLI binary verified`と表示される。
+
+失敗条件:
+
+- npm registryまたはGitHubへ接続できない。
+- `OfficeCLI binaryのchecksumが一致しません`と表示される。取得し直す。
+
+取得した`offline` directoryを、閉域のrepositoryの`20-owui/open-terminal/offline`へ配置する。base imageの`ghcr.io/open-webui/open-terminal`は、`scripts/Download-DockerImages.ps1`で取得して持ち込む。PiまたはOfficeCLIを更新するときは、`npm/package.json`の版を変更して`npm/package-lock.json`を作り直し、資材を取得し直す。
+
 ### 導入
 
 ```bash
-# 派生imageをbuildし、Open Terminalを再作成する。
+# 派生imageをbuildし、Open Terminalを再作成する。既定はDockerfile.offlineで、open-terminal/offlineの資材を使う。
 sudo docker compose --env-file .env --profile owui up -d --build --force-recreate open-terminal
 
 # Open Terminalがhealthyになってから、Open WebUIを再起動してterminal serverを登録し直す。
@@ -163,7 +187,8 @@ sudo docker compose --env-file .env --profile owui restart open-webui
 
 失敗条件:
 
-- build時にnpm registryまたはOfficeCLIのrelease binaryへ到達できない。閉域環境では、事前にbuildしたimageを持ち込む。
+- `sha256sum: WARNING`または`npm ci`の`ENOTCACHED`でbuildが失敗する。`open-terminal/offline`の資材が無いか、`npm/package-lock.json`と一致しない。`predownload.ps1`で取得し直す。
+- internetへ接続できる環境で`OPEN_TERMINAL_DOCKERFILE=Dockerfile`を指定した場合に、npm registryまたはOfficeCLIのrelease binaryへ到達できない。
 - Piが`401`を返す。`.env`の`LITELLM_MASTER_KEY`が空でないか確認する。
 - `open-webui`のlogが`Initialized 0 terminal server(s)`になる。Open WebUIは起動時にだけterminal serverを登録するため、`open-terminal`の起動後に上記の`restart open-webui`を実行する。
 
@@ -196,6 +221,7 @@ sudo docker compose --env-file .env --profile owui up -d --force-recreate open-t
 | PiがcomposeのsecretのkeyでLiteLLMを呼べる (LiteLLM用の中継を廃止した後の確認) | 成功 |
 | LangfuseでLLM requestを確認する | 成功。通常modelはOpen WebUI user IDで記録される。PiはLiteLLMを共通keyで呼ぶため、userは区別されない |
 | PowerPointの図形による構成図とはみ出し検査 (Pi、前回の検証) | 成功。`pptx-check`はslideからはみ出した行を検出する |
+| `predownload.ps1`で資材を取得し、build networkを無効にして`Dockerfile.offline`でbuildする | 成功。PowerShell 7.4 (Linux) で`predownload.ps1`を実行し、`docker build --network=none`でbuildした。network無しのcontainerでPi 1.6.0、OfficeCLI 1.0.163、docx作成と`validate`が動いた |
 
 既知の未対応事項:
 

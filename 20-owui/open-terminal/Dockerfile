@@ -1,19 +1,22 @@
 # Open TerminalへOfficeCLI、Office用skill、共通のAGENTS.md、Pi coding agentを追加する派生image。
 # build contextは20-owui。上流imageのentrypointと動作は変えず、/usr/local、/etc/inferlab、/etc/skelへ追加するだけにする。
-# multi-user modeではOpen WebUI userごとのOS userで動くため、/home/user (mode 700) ではなく
-# 全userが実行できる/usr/localへ導入する。
+# このfileはbuild時にnpm registryとOfficeCLIのrelease binaryへ接続する。閉域ではDockerfile.offlineを使う。
 FROM ghcr.io/open-webui/open-terminal:0.17.22
-
-ARG PI_VERSION=1.6.0
-ARG OFFICECLI_VERSION=1.0.163
 
 USER root
 
-# OfficeCLIのpostinstallはrelease binaryを取得するため、build時だけnetworkを必要とする。
-RUN npm install --global --prefix /usr/local \
-      "@earendil-works/pi-coding-agent@${PI_VERSION}" \
-      "@officecli/officecli@${OFFICECLI_VERSION}" \
-    && npm cache clean --force
+# PiとOfficeCLIの版はnpm/package-lock.jsonで固定し、Dockerfile.offlineと共有する。
+# multi-user modeではOpen WebUI userごとのOS userで動くため、全userが実行できる/usr/local配下へ導入する。
+# OfficeCLIのpostinstallがrelease binaryを取得する。
+COPY open-terminal/npm/package.json open-terminal/npm/package-lock.json /usr/local/lib/inferlab-tools/
+RUN cd /usr/local/lib/inferlab-tools \
+    && npm ci --omit=dev --no-audit --no-fund \
+    && npm cache clean --force \
+    && test -s node_modules/@officecli/officecli/vendor/officecli \
+    && ln -s /usr/local/lib/inferlab-tools/node_modules/.bin/pi /usr/local/bin/pi \
+    && ln -s /usr/local/lib/inferlab-tools/node_modules/.bin/officecli /usr/local/bin/officecli
+
+# ---- DockerfileとDockerfile.offlineで共通 (tests/test_open_terminal_image.pyで一致を検査する) ----
 
 # Open WebUIの通常modelとPiが共通で読むAGENTS.mdとskill。Open Terminalはuser homeの
 # ~/AGENTS.mdと~/.agents/skillsをOpen WebUIへ渡し、Piも同じ場所を読む。OfficeCLIのskillはbuild時に固定する。

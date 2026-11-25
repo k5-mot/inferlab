@@ -1,0 +1,49 @@
+# Open TerminalへOfficeCLI、Office用skill、共通のAGENTS.md、Pi coding agentを追加する派生image (閉域build用)。
+# build contextは20-owui。build時に外部networkへ接続せず、predownload.ps1で取得したopen-terminal/offline配下の
+# 資材だけを使う。base imageは事前に閉域へ持ち込む (scripts/Download-DockerImages.ps1)。
+FROM ghcr.io/open-webui/open-terminal:0.17.22
+
+USER root
+
+# PiとOfficeCLIの版はnpm/package-lock.jsonで固定し、Dockerfileと共有する。
+# 資材はbuild時だけbind mountし、npm archiveをimage layerへ残さない。
+# OfficeCLIのpostinstallはrelease binaryを取得するため止め、事前に取得してchecksumを確認したbinaryを配置する。
+COPY open-terminal/npm/package.json open-terminal/npm/package-lock.json /usr/local/lib/inferlab-tools/
+RUN --mount=type=bind,source=open-terminal/offline,target=/tmp/inferlab-offline \
+    cd /tmp/inferlab-offline/officecli \
+    && sha256sum -c officecli-linux-x64.sha256 \
+    && mkdir -p /tmp/inferlab-npm-cache \
+    && for archive in /tmp/inferlab-offline/npm/*.tgz; do \
+        npm cache add --cache=/tmp/inferlab-npm-cache "${archive}" >/dev/null; \
+    done \
+    && cd /usr/local/lib/inferlab-tools \
+    && OFFICECLI_SKIP_BINARY_DOWNLOAD=1 npm ci --offline --omit=dev --no-audit --no-fund --cache=/tmp/inferlab-npm-cache \
+    && install -D -m 0755 /tmp/inferlab-offline/officecli/officecli-linux-x64 node_modules/@officecli/officecli/vendor/officecli \
+    && rm -rf /tmp/inferlab-npm-cache \
+    && ln -s /usr/local/lib/inferlab-tools/node_modules/.bin/pi /usr/local/bin/pi \
+    && ln -s /usr/local/lib/inferlab-tools/node_modules/.bin/officecli /usr/local/bin/officecli
+
+# ---- DockerfileとDockerfile.offlineで共通 (tests/test_open_terminal_image.pyで一致を検査する) ----
+
+# Open WebUIの通常modelとPiが共通で読むAGENTS.mdとskill。Open Terminalはuser homeの
+# ~/AGENTS.mdと~/.agents/skillsをOpen WebUIへ渡し、Piも同じ場所を読む。OfficeCLIのskillはbuild時に固定する。
+COPY open-terminal/agent/AGENTS.md /etc/inferlab/agent/AGENTS.md
+RUN mkdir -p /tmp/officecli-skel/.pi/agent \
+    && HOME=/tmp/officecli-skel officecli skills pi \
+    && for skill in word pptx excel; do HOME=/tmp/officecli-skel officecli skills install "${skill}" pi; done \
+    && cp -r /tmp/officecli-skel/.pi/agent/skills /etc/inferlab/agent/skills \
+    && rm -rf /tmp/officecli-skel \
+    && mkdir -p /etc/skel/.agents \
+    && ln -s /etc/inferlab/agent/AGENTS.md /etc/skel/AGENTS.md \
+    && ln -s /etc/inferlab/agent/skills /etc/skel/.agents/skills
+
+# Piのmodel定義。LiteLLMのkeyはcomposeのsecretから読む。
+COPY open-terminal/pi/models.json /etc/inferlab/pi/agent/models.json
+COPY open-terminal/pi/settings.json /etc/inferlab/pi/agent/settings.json
+COPY --chmod=0755 open-terminal/pi/inferlab-pi.sh /usr/local/bin/inferlab-pi
+# PowerPointのはみ出し検査。agentが画像を見落としても、描画されない行を機械的に報告する。
+COPY --chmod=0755 open-terminal/agent/pptx_check.py /usr/local/bin/pptx-check
+
+RUN chmod -R a+rX /etc/inferlab
+
+USER user

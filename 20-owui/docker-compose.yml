@@ -284,9 +284,11 @@ services:
   open-terminal:
     <<: *external-dns-stabilizer
     # OfficeCLI、Office用skill、共通のAGENTS.md、Pi coding agentを追加した派生image。
+    # 既定は閉域build用のDockerfile.offline (open-terminal/predownload.ps1で取得した資材を使う)。
+    # registryとGitHubへ接続できる環境では、OPEN_TERMINAL_DOCKERFILE=Dockerfileでbuildできる。
     build:
       context: .
-      dockerfile: open-terminal/Dockerfile
+      dockerfile: open-terminal/${OPEN_TERMINAL_DOCKERFILE:-Dockerfile.offline}
     image: inferlab/open-terminal:0.17.22-pi
     container_name: ${STACK_NAME}-open-terminal
     restart: unless-stopped

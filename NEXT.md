@@ -22,7 +22,7 @@ Open WebUIを業務機能の提供基盤とし、Office文書の作成はOpen Te
 | 項目 | 状態 |
 | --- | --- |
 | Open WebUI | `v0.13.4`。改修なし。 |
-| Open Terminal | `0.17.22`の派生image（`inferlab/open-terminal:0.17.22-pi`）。上流imageへファイルを追加するだけで、改修はしない。 |
+| Open Terminal | `0.17.22`の派生image（`inferlab/open-terminal:0.17.22-pi`）。上流imageへファイルを追加するだけで、改修はしない。閉域では`Dockerfile.offline`で、事前に取得した資材だけを使ってビルドする。 |
 | Pi coding agent | `1.6.0`。Open WebUIで`pi/inferlab/...`のモデルとして選べる。 |
 | OfficeCLI | `1.0.163`。Word、Excel、PowerPointのSkillを同梱する。 |
 | LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。PiはMaster Keyをcomposeのsecretから読む（閉域での利用を前提に許容する）。 |
@@ -104,7 +104,7 @@ Open TerminalのOSユーザー分離は、上流の説明どおりsecurity bound
 | P1 | gemma4:12bは、手順に無い作業を誤り、誤った結果を正しいと報告することがある | 検証済みの手順を`AGENTS.md`へ追加して対処する。成果物はユーザーが確認する |
 | P1 | Web検索は、取得ページをCPU版vLLMで埋め込むため1回に10分以上かかる。`RAG_EXTERNAL_RERANKER_URL`はpathが無く、rerankが失敗している | GPUを用意した時点で対処する |
 | P2 | Open WebUIは起動時にだけターミナルサーバーを登録する | `open-terminal`の起動後に`open-webui`を再起動する（README） |
-| P2 | 閉域環境では、imageのビルド時にnpmとOfficeCLIのバイナリを取得できない | 事前にビルドしたimageを持ち込む |
+| P2 | 閉域環境では、imageのビルド時にnpmとOfficeCLIのバイナリを取得できない | 解決。`predownload.ps1`で資材を事前に取得し、`Dockerfile.offline`でネットワークなしにビルドする（composeの既定） |
 
 ## 9. 今後の候補
 
