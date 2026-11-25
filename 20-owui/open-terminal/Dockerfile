@@ -32,5 +32,21 @@ RUN chmod -R a+rX /etc/inferlab \
     && ln -s /etc/inferlab/pi/agent/skills/open-webui/scripts/owui-api /usr/local/bin/owui-api
 
 COPY --chmod=0755 open-terminal/pi/inferlab-pi.sh /usr/local/bin/inferlab-pi
+# PowerPointのはみ出し検査。agentが画像を見落としても、描画されない行を機械的に報告する。
+COPY --chmod=0755 open-terminal/pi/pptx_check.py /usr/local/bin/pptx-check
+
+# owui-brokerはuserのOpen WebUI API keyとLiteLLM master keyを保持し、user processへ中継する。
+# 専用system userで動かし、key directory (mode 700) をuserから読めないようにする。
+# owui-api.confはowui-apiにbroker経由の呼び出しを指示する。
+COPY --chmod=0644 open-terminal/broker/owui_broker.py /usr/local/lib/inferlab/owui_broker.py
+COPY --chmod=0755 open-terminal/broker/inferlab-entrypoint.sh /usr/local/bin/inferlab-entrypoint
+# COPY --chmodはcopy先に作るdirectoryにも同じmodeを付けるため、実行権を戻す。
+RUN chmod 0755 /usr/local/lib/inferlab \
+    && useradd --system --no-create-home --shell /usr/sbin/nologin owui-broker \
+    && install -d -o owui-broker -g owui-broker -m 0700 /var/lib/owui-broker /var/lib/owui-broker/keys \
+    && printf 'OWUI_BROKER_URL=http://127.0.0.1:8765\n' >/etc/inferlab/owui-api.conf \
+    && chmod 0644 /etc/inferlab/owui-api.conf
 
 USER user
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/inferlab-entrypoint"]
+CMD ["run"]

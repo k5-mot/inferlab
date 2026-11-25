@@ -1,11 +1,30 @@
 #!/usr/bin/env bash
 # Open WebUI REST APIを、実行userのAPI keyで呼び出す共通client。
-# keyは環境変数OWUI_API_KEY、または~/.config/open-webui/api-key (mode 600) から読む。
-# keyをcommand line引数やlogへ出さないため、Authorization headerは一時fileで渡す。
+# Open Terminalでは/etc/inferlab/owui-api.confのowui-broker経由で呼び、keyはbrokerだけが持つ。
+# brokerが無い環境 (他のharness) では、環境変数OWUI_API_KEY、または
+# ~/.config/open-webui/api-key (mode 600) のkeyで直接呼ぶ。
+# keyをcommand line引数やlogへ出さないため、Authorization headerとkeyは一時fileか標準入力で渡す。
 set -euo pipefail
 
 readonly BASE_URL="${OWUI_BASE_URL:-http://open-webui:8080}"
 readonly KEY_FILE="${OWUI_API_KEY_FILE:-${HOME}/.config/open-webui/api-key}"
+readonly CONF_FILE=/etc/inferlab/owui-api.conf
+
+# broker URLを決める。OWUI_API_KEYを明示した場合はbrokerを使わない。
+# 引数: なし。
+# 戻り値: 0。broker URL (無い場合は空文字列) を標準出力へ出す。
+broker_url() {
+  if [[ -n "${OWUI_API_KEY:-}" ]]; then
+    return 0
+  fi
+  if [[ -n "${OWUI_BROKER_URL:-}" ]]; then
+    printf '%s' "${OWUI_BROKER_URL}"
+  elif [[ -r "${CONF_FILE}" ]]; then
+    sed -n 's/^OWUI_BROKER_URL=//p' "${CONF_FILE}" | head -n 1
+  fi
+}
+BROKER="$(broker_url)"
+readonly BROKER
 # server側API_KEYS_ALLOWED_ENDPOINTSと同じprefix。server側が最終的に強制する。
 readonly ALLOWED_PREFIXES=(
   /api/models
@@ -27,6 +46,8 @@ readonly ALLOWED_PREFIXES=(
   /api/v1/audio
   /api/v1/evaluations
   /api/v1/notifications
+  /api/v1/search
+  /api/v1/comments
 )
 
 # 使い方を標準エラー出力へ表示する。
@@ -35,11 +56,15 @@ readonly ALLOWED_PREFIXES=(
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  owui-api GET|POST|DELETE <path> [json-body|@file.json]
+  owui-api GET|POST|DELETE <path> [json-body|@file.json|@-]
+                                          # query付きpathは'...'で囲む。@-はbodyを標準入力から読む
   owui-api upload <local-file>            # POST /api/v1/files/ (multipart)
   owui-api download <file-id> <out-path>  # GET /api/v1/files/{id}/content
-  owui-api login                          # 標準入力のAPI keyを保存して検証する
-  owui-api whoami                         # keyの所有userを表示する
+  owui-api tool <server-id> GET|POST <path> [json-body|@file.json]
+                                          # Open WebUIのtool serverを直接呼ぶ (broker経由のみ)
+  owui-api login                          # 標準入力のAPI keyを検証して登録する
+  owui-api logout                         # 登録したAPI keyを削除する
+  owui-api whoami                         # 登録状態とkeyの有効性を表示する
 
 Destructive requests (DELETE, */delete, */reset) require OWUI_CONFIRM=yes
 after the user has explicitly approved the operation.
@@ -82,20 +107,70 @@ is_destructive() {
   [[ "${method}" == "DELETE" || "${path}" =~ /(delete|reset)(/|$) ]]
 }
 
-# curlを実行する。Authorization headerは一時file経由で渡す。
-# 引数: curlへ渡す追加引数。
-# 戻り値: curlの終了code。
+# Open WebUI APIのbase URLを返す。
+# 引数: なし。
+# 戻り値: 0。broker経由なら`<broker>/owui`、直接なら`OWUI_BASE_URL`を標準出力へ出す。
+api_base() {
+  if [[ -n "${BROKER}" ]]; then
+    printf '%s/owui' "${BROKER}"
+  else
+    printf '%s' "${BASE_URL}"
+  fi
+}
+
+# curlを実行する。直接呼ぶ場合、Authorization headerは一時file経由で渡す。
+# 存在しないAPI pathにはOpen WebUIが画面のHTMLを200で返すため、HTMLは出力せずに失敗させる。
+# 引数: curlへ渡す追加引数。`-o <file>`を含む場合はそのfileへ保存する。
+# 戻り値: curlの終了code。HTMLが返った場合は5。
 call() {
-  local header_file status
-  header_file="$(mktemp)"
-  chmod 600 "${header_file}"
-  printf 'Authorization: Bearer %s\n' "$(read_key)" >"${header_file}"
-  status=0
-  curl --fail-with-body --silent --show-error --max-time "${OWUI_TIMEOUT:-300}" \
-    -H "@${header_file}" "$@" || status=$?
-  rm -f "${header_file}"
+  local auth_file response_headers body_file out_file="" status=0 previous=""
+  local arg
+  for arg in "$@"; do
+    [[ "${previous}" == "-o" ]] && out_file="${arg}"
+    previous="${arg}"
+  done
+  response_headers="$(mktemp)"
+  body_file="$(mktemp)"
+  local args=(--fail-with-body --silent --show-error --max-time "${OWUI_TIMEOUT:-300}" -D "${response_headers}")
+  [[ -n "${out_file}" ]] || args+=(-o "${body_file}")
+  if [[ -n "${BROKER}" ]]; then
+    # brokerが接続元OS userを判定してkeyを付けるため、clientはkeyを持たない。
+    curl "${args[@]}" "$@" || status=$?
+  else
+    auth_file="$(mktemp)"
+    chmod 600 "${auth_file}"
+    printf 'Authorization: Bearer %s\n' "$(read_key)" >"${auth_file}"
+    curl "${args[@]}" -H "@${auth_file}" "$@" || status=$?
+    rm -f "${auth_file}"
+  fi
+  if grep -qi '^content-type: *text/html' "${response_headers}"; then
+    echo "owui-api: APIではなくOpen WebUIの画面が返りました。pathが誤っています (末尾の/やsubpathを確認し、skillの例をそのまま使ってください)。" >&2
+    [[ -z "${out_file}" ]] || rm -f "${out_file}"
+    status=5
+  elif [[ -z "${out_file}" ]]; then
+    cat "${body_file}"
+  fi
+  rm -f "${response_headers}" "${body_file}"
   echo >&2
   return "${status}"
+}
+
+# API keyを登録する。brokerがある場合はbrokerへ、無い場合はKEY_FILEへ保存する。
+# 引数: $1 API key。
+# 戻り値: 登録と検証に成功した場合0。
+register_key() {
+  local key="$1"
+  if [[ -n "${BROKER}" ]]; then
+    # keyはcommand lineへ出さず、標準入力からbodyとして送る。
+    printf '%s' "${key}" | curl --fail-with-body --silent --show-error --max-time 60 \
+      -X PUT --data-binary @- "${BROKER}/broker/key" >/dev/null
+    echo "owui-api: API keyをowui-brokerへ登録しました。keyはこのuserからは読めません。" >&2
+  else
+    mkdir -p "$(dirname "${KEY_FILE}")"
+    (umask 077 && printf '%s\n' "${key}" >"${KEY_FILE}")
+    OWUI_API_KEY="${key}" request GET /api/models >/dev/null
+    echo "owui-api: API keyを${KEY_FILE}へ保存しました。" >&2
+  fi
 }
 
 # method、path、bodyを検査してAPIを呼ぶ。
@@ -112,19 +187,58 @@ request() {
     echo "owui-api: 破壊的操作です。userの明示的な承認を得てからOWUI_CONFIRM=yesで再実行してください。" >&2
     return 4
   fi
-  local args=(-X "${method}" "${BASE_URL}${path}")
-  if [[ "${path}" == *\?* && -z "${body}" ]]; then
-    # 日本語などを含むqueryをそのまま送るとHTTP requestとして不正になるため、値をURL encodeする。
-    # -Gは--data-urlencodeをquery stringへ移すため、bodyがあるrequestでは使わない。
-    local pair pairs
-    args=(-X "${method}" "${BASE_URL}${bare}")
-    IFS='&' read -r -a pairs <<<"${path#*\?}"
-    for pair in "${pairs[@]}"; do
-      args+=(--data-urlencode "${pair}")
-    done
-    args+=(-G)
+  send "${method}" "$(api_base)" "${path}" "${body}"
+}
+
+# query stringの値をURL encodeする。encode済みの値 (ASCIIと%XXだけ) はそのまま使う。
+# 引数: $1 `?`を除いたquery string。
+# 戻り値: 0。encodeしたquery stringを標準出力へ出す。
+encode_query() {
+  local pair pairs key value encoded=()
+  IFS='&' read -r -a pairs <<<"$1"
+  for pair in "${pairs[@]}"; do
+    if [[ "${pair}" =~ ^[A-Za-z0-9._~%=+:,/-]*$ ]]; then
+      encoded+=("${pair}")
+      continue
+    fi
+    key="${pair%%=*}"
+    value="${pair#*=}"
+    [[ "${pair}" == *=* ]] || value=""
+    encoded+=("$(jq -rn --arg k "${key}" --arg v "${value}" '"\($k|@uri)=\($v|@uri)"')")
+  done
+  local IFS='&'
+  printf '%s' "${encoded[*]}"
+}
+
+# URLを組み立ててcurlを呼ぶ。queryは値をURL encodeする。
+# 引数: $1 method、$2 base URL、$3 query付きpath、$4 JSON body (空文字列可、@fileと@-は標準入力)。
+# 戻り値: curlの終了code。GETとDELETEにbodyがある場合は4。
+send() {
+  local method="$1" base="$2" path="$3" body="$4"
+  local url="${base}${path%%\?*}"
+  if [[ -n "${body}" && ("${method}" == GET || "${method}" == DELETE) ]]; then
+    # pathをquoteし忘れるとquery中の空白で引数が分かれ、残りがbodyとして渡される。
+    echo "owui-api: ${method}はbodyを取りません。query付きのpathは'...'で囲んでください。" >&2
+    return 4
   fi
-  if [[ -n "${body}" ]]; then
+  if [[ "${body}" == -* && "${body}" != "-" ]]; then
+    echo "owui-api: optionは使えません。bodyはJSON、@file.json、@- (標準入力) で渡してください。" >&2
+    return 4
+  fi
+  if [[ "${path}" == *\?* ]]; then
+    url+="?$(encode_query "${path#*\?}")"
+  fi
+  local args=(-X "${method}" "${url}")
+  if [[ "${body}" == "@-" ]]; then
+    # 空の標準入力をそのまま送ると、内容の無いdataが作られることがあるため事前に読む。
+    local stdin_body
+    stdin_body="$(cat)"
+    if [[ -z "${stdin_body//[[:space:]]/}" ]]; then
+      echo "owui-api: 標準入力のbodyが空です。送信しません。" >&2
+      return 4
+    fi
+    args+=(-H "Content-Type: application/json" --data-binary "${stdin_body}")
+  elif [[ -n "${body}" ]]; then
     args+=(-H "Content-Type: application/json" --data-binary "${body}")
   fi
   call "${args[@]}"
@@ -139,14 +253,30 @@ main() {
       ;;
     upload)
       (($# == 2)) || usage
-      call -X POST -F "file=@$2" "${BASE_URL}/api/v1/files/?process=true"
+      call -X POST -F "file=@$2" "$(api_base)/api/v1/files/?process=true"
       ;;
     download)
       (($# == 3)) || usage
-      call -o "$3" "${BASE_URL}/api/v1/files/$2/content"
+      call -o "$3" "$(api_base)/api/v1/files/$2/content"
+      ;;
+    tool)
+      (($# >= 4)) || usage
+      [[ -n "${BROKER}" ]] || {
+        echo "owui-api: tool serverの直接呼び出しはowui-broker経由でのみ利用できます。" >&2
+        return 4
+      }
+      send "${3^^}" "${BROKER}/tools/$2" "$4" "${5:-}"
       ;;
     login)
       local key
+      if [[ -n "${BROKER}" && -r "${KEY_FILE}" ]]; then
+        # 旧構成でhomeへ保存したkeyをbrokerへ移し、agentが読めるfileを残さない。
+        key="$(tr -d '\r\n' <"${KEY_FILE}")"
+        register_key "${key}"
+        rm -f "${KEY_FILE}"
+        echo "owui-api: ${KEY_FILE}をbrokerへ移行して削除しました。" >&2
+        return 0
+      fi
       # promptを出す前にechoを止め、入力が早く届いてもterminalへ表示しない。
       if [[ -t 0 ]]; then
         stty -echo
@@ -155,12 +285,22 @@ main() {
       printf 'Open WebUI API key: ' >&2
       read -r key
       echo >&2
-      mkdir -p "$(dirname "${KEY_FILE}")"
-      (umask 077 && printf '%s\n' "${key}" >"${KEY_FILE}")
-      OWUI_API_KEY="${key}" request GET /api/models >/dev/null
-      echo "owui-api: API keyを${KEY_FILE}へ保存しました。" >&2
+      register_key "${key}"
+      ;;
+    logout)
+      if [[ -n "${BROKER}" ]]; then
+        curl --fail-with-body --silent --show-error --max-time 60 -X DELETE "${BROKER}/broker/key"
+        echo >&2
+      else
+        rm -f "${KEY_FILE}"
+      fi
+      echo "owui-api: API keyの登録を削除しました。Open WebUIの設定でkey自体も削除できます。" >&2
       ;;
     whoami)
+      if [[ -n "${BROKER}" ]]; then
+        curl --fail-with-body --silent --show-error --max-time 60 "${BROKER}/broker/whoami"
+        echo
+      fi
       # /api/v1/auths/はallowlist外のため、/api/modelsへの到達でkeyの有効性だけを確認する。
       request GET /api/models >/dev/null && echo "owui-api: API keyは有効です。" >&2
       ;;

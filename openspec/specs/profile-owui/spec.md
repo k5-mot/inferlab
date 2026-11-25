@@ -78,13 +78,14 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 
 ### Requirement: Open WebUI Agent Skills
 
-`owui` profileは、Open Terminal上のPiが、Open WebUI userごとのAPI keyとAgent Skillsを使い、Open WebUIのREST APIを当該userの権限で利用できるものとする（MUST）。Piは独自のKnowledge、Memory、Notesのdatabaseを持ってはならない（MUST NOT）。
+`owui` profileは、Open Terminal上のPiが、Open WebUI userごとのAPI keyとAgent Skillsを使い、Open WebUIのREST APIを当該userの権限で利用できるものとする（MUST）。Piは独自のKnowledge、Memory、Notesのdatabaseを持ってはならない（MUST NOT）。Open WebUI API keyとLiteLLM master keyは`owui-broker`だけが保持し、Piとuserのshellから読めてはならない（MUST NOT）。
 
 #### Scenario: userがKnowledgeを参照して成果物を作る
 
-- **WHEN** terminal接続を許可されたuserが自分のAPI keyを`owui-api login`で保存し、Open WebUIで`pi/`modelを選んで依頼する
+- **WHEN** userが自分のAPI keyを`owui-api login`で登録し、Open WebUIで`pi/`modelを選んで依頼する
 - **THEN** Piは`owui-api`でOpen WebUIのKnowledge検索APIを呼び、userが読めるKnowledgeだけを根拠に回答または成果物を作る
-- **THEN** API keyはuserのhomeにmode `600`で保存され、他のOS userから読めない
+- **THEN** API keyは`owui-broker`のkey directoryに保存され、当該userを含むどのOpen Terminal userからも読めない
+- **THEN** `owui-broker`は接続元socketの所有uidで呼び出し元のOS userを判定し、そのuserのkeyだけを付与する
 
 #### Scenario: 権限外のAPIまたはdataを要求する
 
@@ -92,8 +93,14 @@ Docker Composeの`owui` profileが利用者と運用者へ提供する能力、�
 - **THEN** Open WebUIは403を返す
 - **THEN** PiはOpen WebUI経由で自分自身を再帰起動できない
 
+#### Scenario: PiがLiteLLMまたはtool serverを呼ぶ
+
+- **WHEN** Piが`owui-broker`経由でLiteLLMまたはOpen WebUIのtool serverを呼ぶ
+- **THEN** `owui-broker`はLiteLLMのchat completionsとmodel一覧だけをmaster key付きで中継し、それ以外は403を返す
+- **THEN** `owui-broker`はOpen WebUIの`GET /api/v1/tools/`で当該userに見えるtool serverだけを中継する
+
 #### Scenario: Open Terminalを再作成する
 
 - **WHEN** 運用者が`open-terminal`を再作成する
-- **THEN** userごとのhome (API key、Pi session、成果物) は`open-terminal-homes` volumeに残る
+- **THEN** userごとのhome (Pi session、成果物) は`open-terminal-homes` volume、API keyは`open-terminal-broker` volumeに残る
 - **THEN** `open-terminal`には`/var/run/docker.sock`がmountされない

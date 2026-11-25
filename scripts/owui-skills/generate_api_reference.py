@@ -57,6 +57,8 @@ SKILLS: tuple[SkillSpec, ...] = (
     SkillSpec("owui-audio", ("/api/v1/audio",)),
     SkillSpec("owui-evaluations", ("/api/v1/evaluations",)),
     SkillSpec("owui-notifications", ("/api/v1/notifications",)),
+    SkillSpec("owui-search", ("/api/v1/search",)),
+    SkillSpec("owui-comments", ("/api/v1/comments",)),
 )
 
 # Skill化しないAPIと理由。api-index.mdへ記録し、判断を版管理する。
@@ -83,6 +85,18 @@ EXCLUDED: tuple[tuple[str, str], ...] = (
     ("/ollama", "推論はLiteLLMへ集約する。"),
     ("/openai", "推論はLiteLLMへ集約する。"),
     ("/oauth", "認証flow。"),
+    ("/api/v1/apps", "外部app連携の管理。app interactionはchannel返信としてmodelを呼ぶため、再帰防止で禁止する。"),
+    ("/api/events", "event webhookの登録。外部へのdata送信先を変更できるため禁止する。"),
+    ("/api/v1/videos", "動画生成engineを構成していない。configは管理機能。"),
+    ("/api/usage", "server全体の利用統計 (experimental)。agentから使う必要がない。"),
+    ("/api/version", "server meta情報。agentから使う必要がない。"),
+    ("/api/config", "UI用のserver設定。agentから使う必要がない。"),
+    ("/api/changelog", "UI用のchangelog。"),
+    ("/health", "死活確認。"),
+    ("/ready", "死活確認。"),
+    ("/manifest.json", "UI用のweb app manifest。"),
+    ("/opensearch.xml", "UI用のbrowser検索定義。"),
+    ("/cache", "UI用のcache file配信。fileはowui-filesで取得する。"),
 )
 
 
@@ -266,9 +280,9 @@ def write_index(schema: Mapping[str, Any], skills_dir: Path, version: str) -> li
         "",
         "## 未分類",
         "",
-        "次のoperationはSkill化しておらず、API keyのallowlistにも含めない。",
+        "Skillにも除外にも分類していないoperation。生成scriptは未分類があると終了code 1で終了する。",
         "",
-        *[f"- `{item}`" for item in unclassified],
+        *([f"- `{item}`" for item in unclassified] or ["なし。"]),
     ]
     target = skills_dir / "open-webui" / "references" / "api-index.md"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -301,8 +315,11 @@ def main(argv: Sequence[str]) -> int:
         count = write_skill_reference(schema, skill, args.skills_dir, args.version)
         logger.info("%s: %d operations", skill.name, count)
     unclassified = write_index(schema, args.skills_dir, args.version)
-    logger.info("未分類: %d operations", len(unclassified))
     logger.info("完了: %.2fs", time.perf_counter() - started)
+    if unclassified:
+        # 新しいrouterを権限境界の判断なしに放置しないため、SKILLSかEXCLUDEDへの追加を求める。
+        logger.error("未分類: %d operations。SKILLSまたはEXCLUDEDへ追加してください。", len(unclassified))
+        return 1
     return 0
 
 

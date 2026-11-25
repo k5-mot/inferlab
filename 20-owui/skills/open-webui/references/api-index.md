@@ -4,18 +4,24 @@ Open WebUI v0.13.4のOpenAPI Schemaから生成した。手で編集しない。
 
 | Skillまたは除外理由 | operation数 |
 | --- | --- |
+| 除外: UI用のchangelog。 | 1 |
 | 除外: Pi自身をagent modelとして呼べるため、再帰防止で禁止する。 | 3 |
+| 除外: UI用のserver設定。agentから使う必要がない。 | 1 |
 | 除外: 推論はLiteLLMへ集約する。RAGはowui-knowledge経由で使う。 | 1 |
+| 除外: event webhookの登録。外部へのdata送信先を変更できるため禁止する。 | 5 |
 | 除外: Anthropic Messages互換のchat APIであり、再帰防止で禁止する。 | 2 |
 | owui-models | 24 |
 | 除外: 同上。 | 9 |
+| 除外: server全体の利用統計 (experimental)。agentから使う必要がない。 | 1 |
 | 除外: 管理機能。 | 20 |
+| 除外: 外部app連携の管理。app interactionはchannel返信としてmodelを呼ぶため、再帰防止で禁止する。 | 8 |
 | owui-audio | 6 |
 | 除外: 認証情報の発行・変更を伴うため禁止する。 | 39 |
 | 除外: agent modelを定期実行できるため、再帰防止で禁止する。 | 10 |
 | owui-calendar | 14 |
 | owui-channels | 33 |
 | owui-chats | 56 |
+| owui-comments | 11 |
 | 除外: 管理機能（owui-admin、原則無効）。 | 64 |
 | owui-evaluations | 15 |
 | owui-files | 16 |
@@ -29,57 +35,23 @@ Open WebUI v0.13.4のOpenAPI Schemaから生成した。手で編集しない。
 | owui-prompts | 15 |
 | 除外: query、web以外はRAG設定の変更やresetを含む管理機能。 | 12 |
 | owui-web-search | 2 |
+| owui-search | 1 |
 | owui-skills | 21 |
 | 除外: chat taskの制御であり、agent loopから使う必要がない。 | 10 |
 | 除外: Open Terminal経由でagent sessionを起動できるため、再帰防止で禁止する。 | 31 |
 | owui-tools | 23 |
 | 除外: server側code実行とDB downloadを含むため禁止する。 | 4 |
+| 除外: 動画生成engineを構成していない。configは管理機能。 | 6 |
+| 除外: server meta情報。agentから使う必要がない。 | 2 |
+| 除外: UI用のcache file配信。fileはowui-filesで取得する。 | 1 |
+| 除外: 死活確認。 | 3 |
+| 除外: UI用のweb app manifest。 | 1 |
 | 除外: 認証flow。 | 6 |
 | 除外: 推論はLiteLLMへ集約する。 | 64 |
+| 除外: UI用のbrowser検索定義。 | 1 |
 
 ## 未分類
 
-次のoperationはSkill化しておらず、API keyのallowlistにも含めない。
+Skillにも除外にも分類していないoperation。生成scriptは未分類があると終了code 1で終了する。
 
-- `GET /api/changelog`
-- `GET /api/config`
-- `GET /api/events`
-- `GET /api/events/webhooks`
-- `POST /api/events/webhooks`
-- `PUT /api/events/webhooks/{webhook_id}`
-- `DELETE /api/events/webhooks/{webhook_id}`
-- `GET /api/usage`
-- `GET /api/v1/apps`
-- `POST /api/v1/apps`
-- `POST /api/v1/apps/manifest/preview`
-- `GET /api/v1/apps/{app_id}`
-- `PATCH /api/v1/apps/{app_id}`
-- `DELETE /api/v1/apps/{app_id}`
-- `POST /api/v1/apps/{app_id}/connect`
-- `POST /api/v1/apps/{app_id}/interactions`
-- `GET /api/v1/comments/`
-- `POST /api/v1/comments/`
-- `GET /api/v1/comments/context`
-- `GET /api/v1/comments/mentions`
-- `GET /api/v1/comments/{id}`
-- `PATCH /api/v1/comments/{id}`
-- `DELETE /api/v1/comments/{id}`
-- `PUT /api/v1/comments/{id}/reactions`
-- `DELETE /api/v1/comments/{id}/reactions`
-- `GET /api/v1/comments/{id}/replies`
-- `POST /api/v1/comments/{id}/replies`
-- `GET /api/v1/search`
-- `GET /api/v1/videos/config`
-- `POST /api/v1/videos/config/update`
-- `GET /api/v1/videos/connections/models`
-- `POST /api/v1/videos/connections/verify`
-- `POST /api/v1/videos/generations`
-- `GET /api/v1/videos/models`
-- `GET /api/version`
-- `GET /api/version/updates`
-- `GET /cache/{path}`
-- `GET /health`
-- `GET /health/db`
-- `GET /manifest.json`
-- `GET /opensearch.xml`
-- `GET /ready`
+なし。

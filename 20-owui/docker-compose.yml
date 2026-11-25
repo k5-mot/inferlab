@@ -67,7 +67,7 @@ services:
         /api/models,/api/v1/models,/api/v1/knowledge,/api/v1/retrieval/query,/api/v1/retrieval/process/web,
         /api/v1/files,/api/v1/tools,/api/v1/memories,/api/v1/notes,/api/v1/chats,/api/v1/folders,
         /api/v1/calendars,/api/v1/channels,/api/v1/prompts,/api/v1/skills,/api/v1/images,/api/v1/audio,
-        /api/v1/evaluations,/api/v1/notifications
+        /api/v1/evaluations,/api/v1/notifications,/api/v1/search,/api/v1/comments
       # Agent SkillsはuserごとのAPI keyで動くため、一般userにもAPI key発行を許可する。
       USER_PERMISSIONS_FEATURES_API_KEYS: "true"
       ### Tasks
@@ -77,7 +77,8 @@ services:
       ENABLE_TITLE_GENERATION: "false"
       ### MCPO
       ENABLE_DIRECT_CONNECTIONS: "true"
-      TOOL_SERVER_CONNECTIONS: >-
+      # open-terminalのowui-brokerも同じ値を読み、userが使えるserverだけを中継する。
+      TOOL_SERVER_CONNECTIONS: &tool-server-connections >-
         [
           {
             "type": "openapi",
@@ -102,7 +103,12 @@ services:
             "path": "",
             "auth_type": "none",
             "key": "",
-            "config": { "enable": true },
+            "config": {
+              "enable": true,
+              "access_grants": [
+                {"principal_type": "user", "principal_id": "*", "permission": "read"}
+              ]
+            },
             "info": {
               "id": "libretranslate",
               "name": "LibreTranslate",
@@ -307,10 +313,10 @@ services:
       OPEN_TERMINAL_PI_COMMAND: /usr/local/bin/inferlab-pi
       NPM_CONFIG_PREFIX: /home/user/.npm-global
       PATH: /home/user/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-    secrets:
-      # Piのmodels.jsonが!commandで読むLiteLLM API key。multi-userの全OS userが読める。
-      - source: pi-litellm-api-key
-        target: /run/secrets/pi-litellm-api-key
+      # owui-brokerだけが読むkey。entrypointがbrokerへ渡した後、Open Terminal serverの環境から消す。
+      # Piはbroker (127.0.0.1:8765) 経由でLiteLLMを呼び、master keyを読めない。
+      OWUI_BROKER_LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-master-key}
+      OWUI_BROKER_TOOL_SERVERS: *tool-server-connections
     ports:
       - 32003:8000
     volumes:
@@ -320,12 +326,14 @@ services:
       # 既存の/home/user volumeはその下へnestする。
       - open-terminal-homes:/home
       - open-terminal-data:/home/user
+      # owui-brokerが保持するuserごとのOpen WebUI API key。
+      - open-terminal-broker:/var/lib/owui-broker
     networks:
       - internal-nw
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list"
+        - "curl -fsS -H \"Authorization: Bearer $${OPEN_TERMINAL_API_KEY}\" -H \"X-User-Id: healthcheck\" http://127.0.0.1:8000/files/list && curl -fsS http://127.0.0.1:8765/broker/health"
       interval: 10s
       timeout: 5s
       retries: 3
@@ -523,11 +531,8 @@ volumes:
   open-webui-data:
   open-terminal-data:
   open-terminal-homes:
+  open-terminal-broker:
   oikb-rustfs-data:
-
-secrets:
-  pi-litellm-api-key:
-    environment: LITELLM_MASTER_KEY
 
 networks:
   internal-nw:

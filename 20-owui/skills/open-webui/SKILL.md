@@ -3,7 +3,7 @@ name: open-webui
 description: >
   Access InferLab's Open WebUI services (knowledge bases / RAG, files, web search,
   memory, notes, chats, folders, calendar, channels, tools, models, prompts, skills,
-  images, audio, evaluations, notifications) with the current user's permissions.
+  images, audio, evaluations, notifications, global search, comments) with the current user's permissions.
   Read this first whenever a task needs internal documents, user data or Open WebUI features.
 ---
 
@@ -15,7 +15,7 @@ instead of re-implementing search, storage or retrieval yourself.
 ## Command
 
 ```bash
-# Call an API with the current user's API key (key is never printed).
+# Call an API as the current user. In Open Terminal the key stays in owui-broker; you never see it.
 owui-api GET /api/v1/knowledge/
 owui-api POST /api/v1/retrieval/query/collection '{"collection_names":["<id>"],"query":"..."}'
 owui-api upload ./report.docx
@@ -25,11 +25,16 @@ owui-api download <file-id> ./original.pdf
 `owui-api` is on `PATH` and also at `scripts/owui-api` in this skill directory.
 Responses are JSON on stdout. Pipe to `jq` to extract fields.
 
+- Single-quote paths that have a query string: `owui-api GET '/api/v1/search?q=認証 基盤'`.
+- Build bodies that contain user text with `jq -n --arg/--rawfile ...` and pass them with `@-`
+  (stdin) or `@file.json`. Hand-written JSON with raw newlines is rejected.
+- After a write, read the item back. If `owui-api` failed, say so; never report success.
+
 ## Rules
 
 - Act only with the current user's permissions. Never ask for or use another user's key.
 - Never print, echo, log or write the API key anywhere.
-- Never access Qdrant, LiteLLM admin APIs or other containers directly.
+- Never access Qdrant, LiteLLM admin APIs or other containers directly. Never look for key files.
 - Prefer direct REST APIs. Chat completion, terminal and automation APIs are blocked
   (they could start this agent recursively).
 - Preserve source names, file ids and page numbers, and cite them in answers and documents.
@@ -39,7 +44,7 @@ Responses are JSON on stdout. Pipe to `jq` to extract fields.
 
 ## If the API key is missing
 
-`owui-api` exits with code 3. Tell the user to create a key in
+`owui-api` fails with HTTP 401 ("API keyが未登録") or exits with code 3. Tell the user to create a key in
 Open WebUI > Settings > Account > API Keys and run `owui-api login` in their terminal
 (paste the key, then Enter). Do not ask the user to paste the key into the chat.
 
@@ -52,7 +57,9 @@ Read the matching skill before calling its API.
 | Search internal documents / knowledge bases | owui-knowledge |
 | Get, upload or read files | owui-files |
 | Search the web or fetch a URL | owui-web-search |
-| Inspect registered tools / MCP / OpenAPI servers | owui-tools |
+| Inspect or call registered tools / MCP / OpenAPI servers | owui-tools |
+| Find where something was discussed (chats, channels, notes) | owui-search |
+| Review comments on notes, chats and other resources | owui-comments |
 | User memory | owui-memory |
 | Notes | owui-notes |
 | Past chats | owui-chats |
