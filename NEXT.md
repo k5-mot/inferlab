@@ -22,7 +22,7 @@ Open WebUIを業務機能の提供基盤とし、Office文書の作成はOpen Te
 | 項目 | 状態 |
 | --- | --- |
 | Open WebUI | `v0.13.4`。改修なし。 |
-| Open Terminal | `0.17.22`の派生image（`inferlab/open-terminal:0.17.22-pi`）。上流imageへファイルを追加するだけで、改修はしない。閉域では`Dockerfile.offline`で、事前に取得した資材だけを使ってビルドする。 |
+| Open Terminal | `0.17.22`の派生image（`local/open-terminal:0.17.22-pi`）。上流imageへファイルを追加するだけで、改修はしない。閉域では`Dockerfile.offline`で、事前に取得した資材だけを使ってビルドする。 |
 | Pi coding agent | `1.6.0`。Open WebUIで`pi/inferlab/...`のモデルとして選べる。 |
 | OfficeCLI | `1.0.163`。Word、Excel、PowerPointのSkillを同梱する。 |
 | LiteLLM | DBを持たない構成のため、Virtual Keyは発行できない。PiはMaster Keyをcomposeのsecretから読む（閉域での利用を前提に許容する）。 |

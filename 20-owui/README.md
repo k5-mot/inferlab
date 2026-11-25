@@ -106,7 +106,7 @@ sudo docker compose --env-file .env --profile owui up -d
 
 ## Open TerminalでのOffice作成とPi
 
-Open WebUIのchatでterminal (Open-Terminal) を選ぶと、modelはOpen WebUI userごとのOS userとしてOpen Terminal上でcommandを実行し、Word、Excel、PowerPointを作成できる。用途で次の2つを使い分ける。設計の背景は[`NEXT.md`](../NEXT.md)を参照する。
+Open WebUIのchatでterminal (Open-Terminal) を選ぶと、modelはOpen WebUI userごとのOS userとしてOpen Terminal上でcommandを実行し、Word、Excel、PowerPointを作成できる。用途で次の2つを使い分ける。設計の背景はrepository rootの`NEXT.md`を参照する。
 
 | 用途 | model | 社内data (Knowledge、Notes、Memory、chat) の使い方 |
 | --- | --- | --- |
